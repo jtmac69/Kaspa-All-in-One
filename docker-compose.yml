@@ -1,0 +1,180 @@
+version: '3.8'
+
+services:
+  # Kaspa Node - Official Docker image
+  kaspa-node:
+    image: kaspanet/rusty-kaspad:latest
+    container_name: kaspa-node
+    restart: unless-stopped
+    ports:
+      - "16110:16110"  # P2P port
+      - "16111:16111"  # RPC port
+    volumes:
+      - kaspa-data:/app/data
+    command: [
+      "--utxoindex",
+      "--rpcbind=0.0.0.0:16111",
+      "--rpclisten-borsh=0.0.0.0:17110",
+      "--rpclisten-json=0.0.0.0:18110"
+    ]
+    networks:
+      - kaspa-network
+
+  # Kaspa Mining Stratum (optional)
+  kaspa-stratum:
+    build:
+      context: ./services/kaspa-stratum
+      dockerfile: Dockerfile
+    container_name: kaspa-stratum
+    restart: unless-stopped
+    ports:
+      - "5555:5555"  # Stratum port
+    environment:
+      - KASPA_RPC_SERVER=kaspa-node:16111
+    depends_on:
+      - kaspa-node
+    networks:
+      - kaspa-network
+    profiles:
+      - mining
+
+  # Kasia Messaging App
+  kasia-app:
+    build:
+      context: ./services/kasia
+      dockerfile: Dockerfile
+    container_name: kasia-app
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - KASPA_NODE_URL=http://kaspa-node:16111
+    depends_on:
+      - kaspa-node
+      - kasia-indexer
+    networks:
+      - kaspa-network
+
+  # Kasia Indexer
+  kasia-indexer:
+    build:
+      context: ./services/kasia-indexer
+      dockerfile: Dockerfile
+    container_name: kasia-indexer
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      - KASPA_NODE_URL=http://kaspa-node:16111
+      - DATABASE_URL=postgresql://kasia:password@kasia-db:5432/kasia
+    depends_on:
+      - kaspa-node
+      - kasia-db
+    networks:
+      - kaspa-network
+
+  # Kasia Database
+  kasia-db:
+    image: postgres:15-alpine
+    container_name: kasia-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=kasia
+      - POSTGRES_USER=kasia
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - kasia-db-data:/var/lib/postgresql/data
+    networks:
+      - kaspa-network
+
+  # K Social App
+  k-social:
+    build:
+      context: ./services/k-social
+      dockerfile: Dockerfile
+    container_name: k-social
+    restart: unless-stopped
+    ports:
+      - "3003:3000"
+    environment:
+      - KASPA_NODE_URL=http://kaspa-node:16111
+    depends_on:
+      - kaspa-node
+      - k-indexer
+    networks:
+      - kaspa-network
+
+  # K Social Indexer
+  k-indexer:
+    build:
+      context: ./services/k-indexer
+      dockerfile: Dockerfile
+    container_name: k-indexer
+    restart: unless-stopped
+    ports:
+      - "3004:3000"
+    environment:
+      - KASPA_NODE_URL=http://kaspa-node:16111
+      - DATABASE_URL=postgresql://ksocial:password@k-social-db:5432/ksocial
+    depends_on:
+      - kaspa-node
+      - k-social-db
+    networks:
+      - kaspa-network
+
+  # K Social Database
+  k-social-db:
+    image: postgres:15-alpine
+    container_name: k-social-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=ksocial
+      - POSTGRES_USER=ksocial
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - k-social-db-data:/var/lib/postgresql/data
+    networks:
+      - kaspa-network
+
+  # Management Dashboard
+  dashboard:
+    build:
+      context: ./services/dashboard
+      dockerfile: Dockerfile
+    container_name: kaspa-dashboard
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - KASPA_NODE_URL=http://kaspa-node:16111
+    depends_on:
+      - kaspa-node
+    networks:
+      - kaspa-network
+
+  # Reverse Proxy (Nginx)
+  nginx:
+    image: nginx:alpine
+    container_name: kaspa-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - dashboard
+      - kasia-app
+      - k-social
+    networks:
+      - kaspa-network
+
+volumes:
+  kaspa-data:
+  kasia-db-data:
+  k-social-db-data:
+
+networks:
+  kaspa-network:
+    driver: bridge

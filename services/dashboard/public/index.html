@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaspa All-in-One Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ Kaspa All-in-One Dashboard</h1>
+            <div class="status-indicator" id="connection-status">
+                <span class="dot"></span>
+                <span class="text">Connecting...</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- Overview Cards -->
+            <section class="overview">
+                <div class="card kaspa-stats">
+                    <h2>Kaspa Network</h2>
+                    <div class="stats-grid">
+                        <div class="stat">
+                            <span class="label">Block Height</span>
+                            <span class="value" id="block-height">-</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Network Hash Rate</span>
+                            <span class="value" id="hash-rate">-</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Difficulty</span>
+                            <span class="value" id="difficulty">-</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Peers</span>
+                            <span class="value" id="peer-count">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card node-info">
+                    <h2>Local Node Status</h2>
+                    <div class="node-status" id="node-status">
+                        <div class="status-item">
+                            <span class="label">Sync Status</span>
+                            <span class="value" id="sync-status">Checking...</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="label">Version</span>
+                            <span class="value" id="node-version">-</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="label">Uptime</span>
+                            <span class="value" id="uptime">-</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Services Status -->
+            <section class="services">
+                <h2>Services Status</h2>
+                <div class="services-grid" id="services-grid">
+                    <!-- Services will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="actions">
+                <h2>Quick Actions</h2>
+                <div class="actions-grid">
+                    <button class="action-btn" onclick="restartServices()">
+                        🔄 Restart All Services
+                    </button>
+                    <button class="action-btn" onclick="viewLogs()">
+                        📋 View Logs
+                    </button>
+                    <button class="action-btn" onclick="updateServices()">
+                        ⬆️ Update Services
+                    </button>
+                    <button class="action-btn" onclick="backupData()">
+                        💾 Backup Data
+                    </button>
+                </div>
+            </section>
+
+            <!-- System Resources -->
+            <section class="resources">
+                <h2>System Resources</h2>
+                <div class="resource-cards">
+                    <div class="resource-card">
+                        <h3>CPU Usage</h3>
+                        <div class="progress-bar">
+                            <div class="progress" id="cpu-progress"></div>
+                        </div>
+                        <span id="cpu-text">-</span>
+                    </div>
+                    <div class="resource-card">
+                        <h3>Memory Usage</h3>
+                        <div class="progress-bar">
+                            <div class="progress" id="memory-progress"></div>
+                        </div>
+                        <span id="memory-text">-</span>
+                    </div>
+                    <div class="resource-card">
+                        <h3>Disk Usage</h3>
+                        <div class="progress-bar">
+                            <div class="progress" id="disk-progress"></div>
+                        </div>
+                        <span id="disk-text">-</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Modal for logs -->
+        <div id="logs-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeLogs()">&times;</span>
+                <h2>Service Logs</h2>
+                <div class="logs-container">
+                    <pre id="logs-content">Loading logs...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

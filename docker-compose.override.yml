@@ -1,0 +1,66 @@
+# Development overrides for docker-compose.yml
+# This file is automatically loaded by docker-compose and provides
+# development-specific configurations
+
+version: '3.8'
+
+services:
+  # Development overrides for easier debugging
+  kaspa-node:
+    environment:
+      - LOG_LEVEL=debug
+    volumes:
+      - ./logs/kaspa-node:/app/logs
+
+  kaspa-dashboard:
+    environment:
+      - NODE_ENV=development
+      - DEBUG=kaspa:*
+    volumes:
+      - ./logs/dashboard:/app/logs
+
+  kasia-app:
+    environment:
+      - NODE_ENV=development
+      - DEBUG=kasia:*
+    volumes:
+      - ./logs/kasia-app:/app/logs
+
+  kasia-indexer:
+    environment:
+      - NODE_ENV=development
+      - DEBUG=kasia:*
+    volumes:
+      - ./logs/kasia-indexer:/app/logs
+
+  k-social:
+    environment:
+      - NODE_ENV=development
+      - DEBUG=ksocial:*
+    volumes:
+      - ./logs/k-social:/app/logs
+
+  k-indexer:
+    environment:
+      - NODE_ENV=development
+      - DEBUG=ksocial:*
+    volumes:
+      - ./logs/k-indexer:/app/logs
+
+  # Add development tools
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: kaspa-portainer
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    networks:
+      - kaspa-network
+    profiles:
+      - development
+
+volumes:
+  portainer-data:
