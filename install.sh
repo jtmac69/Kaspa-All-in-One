@@ -162,9 +162,53 @@ configure_services() {
     
     if [[ $PUBLIC_NODE =~ ^[Yy]$ ]]; then
         echo "PUBLIC_NODE=true" >> .env
+        echo "ENABLE_PUBLIC_ACCESS=true" >> .env
+        
+        echo
+        echo -e "${YELLOW}Public Node Configuration:${NC}"
+        echo "Your node will accept connections from other Kaspa nodes."
+        echo "This helps strengthen the Kaspa network!"
+        echo
+        echo "IMPORTANT: You'll need to configure port forwarding on your router:"
+        echo "- Forward external port 16110 to this device's port 16110"
+        echo "- Protocol: TCP"
+        echo
+        read -p "Have you configured port forwarding? (y/N): " PORT_FORWARDING
+        
+        if [[ ! $PORT_FORWARDING =~ ^[Yy]$ ]]; then
+            echo
+            echo -e "${YELLOW}Port Forwarding Setup Required:${NC}"
+            echo "1. Access your router's admin panel (usually http://192.168.1.1)"
+            echo "2. Find 'Port Forwarding' or 'Virtual Server' settings"
+            echo "3. Forward external port 16110 to internal port 16110"
+            echo "4. Set the internal IP to this device's IP address"
+            echo
+            echo "After installation, run: ./test-kaspa-node.sh to verify setup"
+            echo "See docs/public-node-setup.md for detailed instructions"
+        fi
+        
+        # Custom P2P port option
+        read -p "Use custom P2P port? (default 16110): " CUSTOM_P2P_PORT
+        if [[ -n $CUSTOM_P2P_PORT && $CUSTOM_P2P_PORT != "16110" ]]; then
+            echo "KASPA_NODE_P2P_PORT=$CUSTOM_P2P_PORT" >> .env
+            echo
+            echo -e "${YELLOW}Custom Port Configuration:${NC}"
+            echo "Remember to forward port $CUSTOM_P2P_PORT instead of 16110"
+        else
+            echo "KASPA_NODE_P2P_PORT=16110" >> .env
+        fi
     else
         echo "PUBLIC_NODE=false" >> .env
+        echo "ENABLE_PUBLIC_ACCESS=false" >> .env
+        echo "KASPA_NODE_P2P_PORT=16110" >> .env
+        echo
+        echo -e "${BLUE}Private Node Configuration:${NC}"
+        echo "Your node will only make outgoing connections."
+        echo "No port forwarding required."
     fi
+    
+    # RPC port (always local only)
+    echo "KASPA_NODE_RPC_PORT=16111" >> .env
     
     # Dashboard configuration
     read -p "Set dashboard admin password (default: admin): " ADMIN_PASSWORD

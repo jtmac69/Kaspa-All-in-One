@@ -34,33 +34,45 @@ error() {
 show_usage() {
     echo "Kaspa All-in-One Management Script"
     echo ""
-    echo "Usage: $0 <command> [options]"
+    echo "Usage: $0 <command> [options] [profiles...]"
     echo ""
     echo "Commands:"
-    echo "  start [service]     Start all services or specific service"
-    echo "  stop [service]      Stop all services or specific service"
-    echo "  restart [service]   Restart all services or specific service"
-    echo "  status              Show status of all services"
-    echo "  logs [service]      Show logs for all services or specific service"
-    echo "  update              Update all services to latest versions"
+    echo "  start [service]     Start services (with optional profiles)"
+    echo "  stop [service]      Stop services (with optional profiles)"
+    echo "  restart [service]   Restart services (with optional profiles)"
+    echo "  status [profiles]   Show status of services"
+    echo "  logs [service]      Show logs for services"
+    echo "  update [profiles]   Update services to latest versions"
     echo "  backup              Create backup of all data"
     echo "  restore <file>      Restore from backup file"
     echo "  health              Run comprehensive health check"
     echo "  clean               Clean up unused containers and volumes"
     echo "  reset               Reset entire stack (WARNING: destroys data)"
+    echo "  profiles            List available profiles and their services"
+    echo ""
+    echo "Available Profiles:"
+    echo "  prod                Production applications (Kasia, K Social)"
+    echo "  explorer            Indexing services (Kasia, K Social, Simply Kaspa indexers)"
+    echo "  archive             Long-term data storage and archival"
+    echo "  development         Development tools (Portainer, pgAdmin)"
+    echo "  mining              Mining stratum bridge"
     echo ""
     echo "Options:"
     echo "  -f, --follow        Follow log output (for logs command)"
     echo "  -d, --detach        Run in background (for start command)"
     echo "  -v, --verbose       Verbose output"
+    echo "  -p, --profile       Specify profile(s) to use"
     echo "  -h, --help          Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 start                    # Start all services"
-    echo "  $0 start kaspa-node         # Start only Kaspa node"
-    echo "  $0 logs -f                  # Follow all logs"
-    echo "  $0 logs kaspa-node          # Show Kaspa node logs"
-    echo "  $0 health                   # Run health check"
+    echo "  $0 start                           # Start core services only"
+    echo "  $0 start -p prod                   # Start core + production services"
+    echo "  $0 start -p prod -p explorer       # Start core + prod + explorer"
+    echo "  $0 start kaspa-node                # Start only Kaspa node"
+    echo "  $0 status -p explorer              # Show status of explorer services"
+    echo "  $0 logs -f kasia-indexer           # Follow Kasia indexer logs"
+    echo "  $0 health                          # Run health check"
+    echo "  $0 profiles                        # List all profiles and services"
 }
 
 # Check if Docker and Docker Compose are available
@@ -78,30 +90,55 @@ check_dependencies() {
 start_services() {
     local service=$1
     local detach_flag=""
+    local profile_flags=""
     
     if [[ $DETACH == true ]]; then
         detach_flag="-d"
     fi
     
+    # Build profile flags
+    for profile in "${PROFILES[@]}"; do
+        profile_flags="$profile_flags --profile $profile"
+    done
+    
     if [[ -n $service ]]; then
         log "Starting service: $service"
-        docker compose up $detach_flag $service
+        if [[ -n $profile_flags ]]; then
+            log "Using profiles: ${PROFILES[*]}"
+        fi
+        docker compose $profile_flags up $detach_flag $service
     else
-        log "Starting all services..."
-        docker compose up $detach_flag
+        if [[ ${#PROFILES[@]} -gt 0 ]]; then
+            log "Starting services with profiles: ${PROFILES[*]}"
+            docker compose $profile_flags up $detach_flag
+        else
+            log "Starting core services only..."
+            docker compose up $detach_flag
+        fi
     fi
 }
 
 # Stop services
 stop_services() {
     local service=$1
+    local profile_flags=""
+    
+    # Build profile flags
+    for profile in "${PROFILES[@]}"; do
+        profile_flags="$profile_flags --profile $profile"
+    done
     
     if [[ -n $service ]]; then
         log "Stopping service: $service"
-        docker compose stop $service
+        docker compose $profile_flags stop $service
     else
-        log "Stopping all services..."
-        docker compose down
+        if [[ ${#PROFILES[@]} -gt 0 ]]; then
+            log "Stopping services with profiles: ${PROFILES[*]}"
+            docker compose $profile_flags down
+        else
+            log "Stopping all services..."
+            docker compose down
+        fi
     fi
 }
 
@@ -120,12 +157,29 @@ restart_services() {
 
 # Show service status
 show_status() {
-    log "Service Status:"
-    docker compose ps
+    local profile_flags=""
+    
+    # Build profile flags
+    for profile in "${PROFILES[@]}"; do
+        profile_flags="$profile_flags --profile $profile"
+    done
+    
+    if [[ ${#PROFILES[@]} -gt 0 ]]; then
+        log "Service Status (Profiles: ${PROFILES[*]}):"
+    else
+        log "Service Status (Core Services):"
+    fi
+    
+    docker compose $profile_flags ps
     echo ""
     
     log "Resource Usage:"
-    docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\t{{.BlockIO}}"
+    local containers=$(docker compose $profile_flags ps -q)
+    if [[ -n $containers ]]; then
+        docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\t{{.BlockIO}}" $containers
+    else
+        echo "No containers running"
+    fi
 }
 
 # Show logs
@@ -284,6 +338,7 @@ reset_stack() {
 FOLLOW=false
 DETACH=false
 VERBOSE=false
+PROFILES=()
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -299,11 +354,15 @@ while [[ $# -gt 0 ]]; do
             VERBOSE=true
             shift
             ;;
+        -p|--profile)
+            PROFILES+=("$2")
+            shift 2
+            ;;
         -h|--help)
             show_usage
             exit 0
             ;;
-        start|stop|restart|status|logs|update|backup|restore|health|clean|reset)
+        start|stop|restart|status|logs|update|backup|restore|health|clean|reset|profiles)
             COMMAND=$1
             shift
             break
@@ -322,6 +381,50 @@ fi
 
 # Check dependencies
 check_dependencies
+
+# Show available profiles and their services
+show_profiles() {
+    log "Available Deployment Profiles:"
+    echo ""
+    
+    echo -e "${BLUE}Core Infrastructure (Always Active):${NC}"
+    echo "  - kaspa-node      : Kaspa blockchain node"
+    echo "  - dashboard       : Web management interface"
+    echo "  - nginx           : Reverse proxy and load balancer"
+    echo ""
+    
+    echo -e "${BLUE}Profile: prod (Production Applications):${NC}"
+    echo "  - kasia-app       : Decentralized messaging application"
+    echo "  - k-social        : Social media platform"
+    echo ""
+    
+    echo -e "${BLUE}Profile: explorer (Data Indexing):${NC}"
+    echo "  - indexer-db      : Shared PostgreSQL database"
+    echo "  - kasia-indexer   : Message indexing service"
+    echo "  - k-indexer       : Social content indexing"
+    echo "  - simply-kaspa-indexer : General blockchain indexing"
+    echo ""
+    
+    echo -e "${BLUE}Profile: archive (Long-term Storage):${NC}"
+    echo "  - archive-db      : Archive PostgreSQL database"
+    echo "  - archive-indexer : Historical data preservation"
+    echo ""
+    
+    echo -e "${BLUE}Profile: development (Development Tools):${NC}"
+    echo "  - portainer       : Container management interface"
+    echo "  - pgadmin         : Database administration tool"
+    echo ""
+    
+    echo -e "${BLUE}Profile: mining (Mining Operations):${NC}"
+    echo "  - kaspa-stratum   : Solo mining stratum bridge"
+    echo ""
+    
+    echo -e "${GREEN}Usage Examples:${NC}"
+    echo "  ./scripts/manage.sh start -p prod"
+    echo "  ./scripts/manage.sh start -p prod -p explorer"
+    echo "  ./scripts/manage.sh status -p explorer"
+    echo "  ./scripts/manage.sh logs -p development"
+}
 
 # Execute command
 case $COMMAND in
@@ -357,6 +460,9 @@ case $COMMAND in
         ;;
     reset)
         reset_stack
+        ;;
+    profiles)
+        show_profiles
         ;;
     *)
         error "Unknown command: $COMMAND"

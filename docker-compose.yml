@@ -1,26 +1,80 @@
 version: '3.8'
 
 services:
-  # Kaspa Node - Official Docker image
+  # ============================================================================
+  # CORE INFRASTRUCTURE (Always Available)
+  # ============================================================================
+  
+  # Kaspa Node - Official Docker image (Core component)
   kaspa-node:
     image: kaspanet/rusty-kaspad:latest
     container_name: kaspa-node
     restart: unless-stopped
     ports:
-      - "16110:16110"  # P2P port
-      - "16111:16111"  # RPC port
+      - "${KASPA_NODE_P2P_PORT:-16110}:16110"  # P2P port (public)
+      - "${KASPA_NODE_RPC_PORT:-16111}:16111"  # RPC port (local access)
     volumes:
       - kaspa-data:/app/data
+      - ./logs/kaspa-node:/app/logs
+    environment:
+      - PUBLIC_NODE=${PUBLIC_NODE:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     command: [
       "--utxoindex",
       "--rpcbind=0.0.0.0:16111",
-      "--rpclisten-borsh=0.0.0.0:17110",
-      "--rpclisten-json=0.0.0.0:18110"
+      "--rpclisten-borsh=0.0.0.0:17110", 
+      "--rpclisten-json=0.0.0.0:18110",
+      "--loglevel=${LOG_LEVEL:-info}",
+      "--appdir=/app/data",
+      "--logdir=/app/logs"
     ]
     networks:
       - kaspa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:16111", "-X", "POST", "-H", "Content-Type: application/json", "-d", '{"method":"ping","params":{}}']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
-  # Kaspa Mining Stratum (optional)
+  # Management Dashboard (Core component)
+  dashboard:
+    build:
+      context: ./services/dashboard
+      dockerfile: Dockerfile
+    container_name: kaspa-dashboard
+    restart: unless-stopped
+    ports:
+      - "${DASHBOARD_PORT:-8080}:8080"
+    environment:
+      - KASPA_NODE_URL=http://kaspa-node:16111
+      - REMOTE_KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-}
+    depends_on:
+      - kaspa-node
+    networks:
+      - kaspa-network
+
+  # Reverse Proxy (Core component)
+  nginx:
+    image: nginx:alpine
+    container_name: kaspa-nginx
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - dashboard
+    networks:
+      - kaspa-network
+
+  # ============================================================================
+  # PRODUCTION PROFILE - User-facing applications
+  # ============================================================================
+
+  # Kaspa Mining Stratum
   kaspa-stratum:
     build:
       context: ./services/kaspa-stratum
@@ -28,14 +82,15 @@ services:
     container_name: kaspa-stratum
     restart: unless-stopped
     ports:
-      - "5555:5555"  # Stratum port
+      - "${STRATUM_PORT:-5555}:5555"  # Stratum port
     environment:
-      - KASPA_RPC_SERVER=kaspa-node:16111
+      - KASPA_RPC_SERVER=${REMOTE_KASPA_NODE_URL:-kaspa-node:16111}
     depends_on:
       - kaspa-node
     networks:
       - kaspa-network
     profiles:
+      - prod
       - mining
 
   # Kasia Messaging App
@@ -46,46 +101,14 @@ services:
     container_name: kasia-app
     restart: unless-stopped
     ports:
-      - "3001:3000"
+      - "${KASIA_APP_PORT:-3001}:3000"
     environment:
-      - KASPA_NODE_URL=http://kaspa-node:16111
-    depends_on:
-      - kaspa-node
-      - kasia-indexer
+      - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
+      - KASIA_INDEXER_URL=${REMOTE_KASIA_INDEXER_URL:-http://kasia-indexer:3000}
     networks:
       - kaspa-network
-
-  # Kasia Indexer
-  kasia-indexer:
-    build:
-      context: ./services/kasia-indexer
-      dockerfile: Dockerfile
-    container_name: kasia-indexer
-    restart: unless-stopped
-    ports:
-      - "3002:3000"
-    environment:
-      - KASPA_NODE_URL=http://kaspa-node:16111
-      - DATABASE_URL=postgresql://kasia:password@kasia-db:5432/kasia
-    depends_on:
-      - kaspa-node
-      - kasia-db
-    networks:
-      - kaspa-network
-
-  # Kasia Database
-  kasia-db:
-    image: postgres:15-alpine
-    container_name: kasia-db
-    restart: unless-stopped
-    environment:
-      - POSTGRES_DB=kasia
-      - POSTGRES_USER=kasia
-      - POSTGRES_PASSWORD=password
-    volumes:
-      - kasia-db-data:/var/lib/postgresql/data
-    networks:
-      - kaspa-network
+    profiles:
+      - prod
 
   # K Social App
   k-social:
@@ -95,14 +118,61 @@ services:
     container_name: k-social
     restart: unless-stopped
     ports:
-      - "3003:3000"
+      - "${KSOCIAL_APP_PORT:-3003}:3000"
     environment:
-      - KASPA_NODE_URL=http://kaspa-node:16111
-    depends_on:
-      - kaspa-node
-      - k-indexer
+      - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
+      - KSOCIAL_INDEXER_URL=${REMOTE_KSOCIAL_INDEXER_URL:-http://k-indexer:3000}
     networks:
       - kaspa-network
+    profiles:
+      - prod
+
+  # ============================================================================
+  # EXPLORER PROFILE - Indexing and data services
+  # ============================================================================
+
+  # Shared Database for Indexers
+  indexer-db:
+    image: postgres:15-alpine
+    container_name: indexer-db
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-kaspa_indexers}
+      - POSTGRES_USER=${POSTGRES_USER:-indexer}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-secure_password}
+    volumes:
+      - indexer-db-data:/var/lib/postgresql/data
+      - ./config/postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - kaspa-network
+    profiles:
+      - explorer
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-indexer} -d ${POSTGRES_DB:-kaspa_indexers}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Kasia Indexer
+  kasia-indexer:
+    build:
+      context: ./services/kasia-indexer
+      dockerfile: Dockerfile
+    container_name: kasia-indexer
+    restart: unless-stopped
+    ports:
+      - "${KASIA_INDEXER_PORT:-3002}:3000"
+    environment:
+      - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-indexer}:${POSTGRES_PASSWORD:-secure_password}@indexer-db:5432/kasia
+    depends_on:
+      - indexer-db
+    networks:
+      - kaspa-network
+    profiles:
+      - explorer
 
   # K Social Indexer
   k-indexer:
@@ -112,68 +182,128 @@ services:
     container_name: k-indexer
     restart: unless-stopped
     ports:
-      - "3004:3000"
+      - "${KSOCIAL_INDEXER_PORT:-3004}:3000"
     environment:
-      - KASPA_NODE_URL=http://kaspa-node:16111
-      - DATABASE_URL=postgresql://ksocial:password@k-social-db:5432/ksocial
+      - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-indexer}:${POSTGRES_PASSWORD:-secure_password}@indexer-db:5432/ksocial
     depends_on:
-      - kaspa-node
-      - k-social-db
+      - indexer-db
     networks:
       - kaspa-network
+    profiles:
+      - explorer
 
-  # K Social Database
-  k-social-db:
-    image: postgres:15-alpine
-    container_name: k-social-db
-    restart: unless-stopped
-    environment:
-      - POSTGRES_DB=ksocial
-      - POSTGRES_USER=ksocial
-      - POSTGRES_PASSWORD=password
-    volumes:
-      - k-social-db-data:/var/lib/postgresql/data
-    networks:
-      - kaspa-network
-
-  # Management Dashboard
-  dashboard:
+  # Simply Kaspa Indexer
+  simply-kaspa-indexer:
     build:
-      context: ./services/dashboard
+      context: ./services/simply-kaspa-indexer
       dockerfile: Dockerfile
-    container_name: kaspa-dashboard
+    container_name: simply-kaspa-indexer
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${SIMPLY_INDEXER_PORT:-3005}:3000"
     environment:
-      - KASPA_NODE_URL=http://kaspa-node:16111
+      - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-indexer}:${POSTGRES_PASSWORD:-secure_password}@indexer-db:5432/simply_kaspa
+      - INDEXER_MODE=${SIMPLY_INDEXER_MODE:-full}  # full, light, archive
     depends_on:
-      - kaspa-node
+      - indexer-db
     networks:
       - kaspa-network
+    profiles:
+      - explorer
 
-  # Reverse Proxy (Nginx)
-  nginx:
-    image: nginx:alpine
-    container_name: kaspa-nginx
+  # ============================================================================
+  # ARCHIVE PROFILE - Extended data retention and historical analysis
+  # ============================================================================
+
+  # Archive Database (separate for long-term storage)
+  archive-db:
+    image: postgres:15-alpine
+    container_name: archive-db
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "${ARCHIVE_POSTGRES_PORT:-5433}:5432"
+    environment:
+      - POSTGRES_DB=${ARCHIVE_POSTGRES_DB:-kaspa_archive}
+      - POSTGRES_USER=${ARCHIVE_POSTGRES_USER:-archiver}
+      - POSTGRES_PASSWORD=${ARCHIVE_POSTGRES_PASSWORD:-archive_password}
     volumes:
-      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./config/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - dashboard
-      - kasia-app
-      - k-social
+      - archive-db-data:/var/lib/postgresql/data
+      - ./config/postgres/archive-init:/docker-entrypoint-initdb.d
     networks:
       - kaspa-network
+    profiles:
+      - archive
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ARCHIVE_POSTGRES_USER:-archiver} -d ${ARCHIVE_POSTGRES_DB:-kaspa_archive}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Archive Indexer (for historical data)
+  archive-indexer:
+    build:
+      context: ./services/simply-kaspa-indexer
+      dockerfile: Dockerfile
+    container_name: archive-indexer
+    restart: unless-stopped
+    ports:
+      - "${ARCHIVE_INDEXER_PORT:-3006}:3000"
+    environment:
+      - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
+      - DATABASE_URL=postgresql://${ARCHIVE_POSTGRES_USER:-archiver}:${ARCHIVE_POSTGRES_PASSWORD:-archive_password}@archive-db:5432/kaspa_archive
+      - INDEXER_MODE=archive
+      - RETENTION_DAYS=${ARCHIVE_RETENTION_DAYS:-0}  # 0 = keep forever
+    depends_on:
+      - archive-db
+    networks:
+      - kaspa-network
+    profiles:
+      - archive
+
+  # ============================================================================
+  # DEVELOPMENT PROFILE - Development and debugging tools
+  # ============================================================================
+
+  # Portainer for container management
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: kaspa-portainer
+    restart: unless-stopped
+    ports:
+      - "${PORTAINER_PORT:-9000}:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    networks:
+      - kaspa-network
+    profiles:
+      - development
+
+  # pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: kaspa-pgadmin
+    restart: unless-stopped
+    ports:
+      - "${PGADMIN_PORT:-9001}:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@kaspa-aio.local}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:-admin}
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - kaspa-network
+    profiles:
+      - development
 
 volumes:
   kaspa-data:
-  kasia-db-data:
-  k-social-db-data:
+  indexer-db-data:
+  archive-db-data:
+  portainer-data:
+  pgadmin-data:
 
 networks:
   kaspa-network:
