@@ -62,7 +62,7 @@ graph TB
 - **K Social App**: Social media platform ([thesheepcat/K](https://github.com/thesheepcat/K))
 
 ### Profile: `explorer` (Data Indexing)
-- **Kasia Indexer**: Message indexing service ([K-Kluster/kasia-indexer](https://github.com/K-Kluster/kasia-indexer))
+- **Kasia Indexer**: Message indexing service ([K-Kluster/kasia-indexer](https://github.com/K-Kluster/kasia-indexer)) - Uses official Docker image `kkluster/kasia-indexer:main`
 - **K Social Indexer**: Social content indexing ([thesheepcat/K-indexer](https://github.com/thesheepcat/K-indexer))
 - **Simply Kaspa Indexer**: General blockchain indexing ([supertypo/simply-kaspa-indexer](https://github.com/supertypo/simply-kaspa-indexer))
 - **Shared Database**: PostgreSQL for all indexers with automatic database creation

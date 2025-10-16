@@ -157,22 +157,33 @@ services:
 
   # Kasia Indexer
   kasia-indexer:
-    build:
-      context: ./services/kasia-indexer
-      dockerfile: Dockerfile
+    image: kkluster/kasia-indexer:main
     container_name: kasia-indexer
     restart: unless-stopped
+    stdin_open: true
+    tty: true
     ports:
-      - "${KASIA_INDEXER_PORT:-3002}:3000"
+      - "${KASIA_INDEXER_PORT:-3002}:8080"
     environment:
-      - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-indexer}:${POSTGRES_PASSWORD:-secure_password}@indexer-db:5432/kasia
+      - KASPA_NODE_WBORSH_URL=${KASPA_NODE_WBORSH_URL:-ws://kaspa-node:17110}
+      - RUST_LOG=${KASIA_RUST_LOG:-info}
+      - KASIA_INDEXER_DB_ROOT=/app/data
+      - NETWORK_TYPE=${NETWORK_TYPE:-mainnet}
+      - RUST_BACKTRACE=1
+    volumes:
+      - kasia-indexer-data:/app/data
     depends_on:
-      - indexer-db
+      - kaspa-node
     networks:
       - kaspa-network
     profiles:
       - explorer
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   # K Social Indexer
   k-indexer:
@@ -300,6 +311,7 @@ services:
 
 volumes:
   kaspa-data:
+  kasia-indexer-data:
   indexer-db-data:
   archive-db-data:
   portainer-data:

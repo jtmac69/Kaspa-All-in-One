@@ -11,7 +11,7 @@ This document provides a comprehensive overview of all components in the Kaspa A
 | **Nginx** | Core | [nginx:alpine](https://hub.docker.com/_/nginx) | ✅ Complete | 80/443 | Reverse proxy and load balancer |
 | **Kasia App** | prod | [K-Kluster/Kasia](https://github.com/K-Kluster/Kasia) | 🔄 Integration | 3001 | Decentralized messaging app |
 | **K Social** | prod | [thesheepcat/K](https://github.com/thesheepcat/K) | 🔄 Integration | 3003 | Social media platform |
-| **Kasia Indexer** | explorer | [K-Kluster/kasia-indexer](https://github.com/K-Kluster/kasia-indexer) | 🔄 Integration | 3002 | Message indexing service |
+| **Kasia Indexer** | explorer | [K-Kluster/kasia-indexer](https://github.com/K-Kluster/kasia-indexer) | ✅ Ready | 3002 | Message indexing service |
 | **K Social Indexer** | explorer | [thesheepcat/K-indexer](https://github.com/thesheepcat/K-indexer) | 🔄 Integration | 3004 | Social content indexer |
 | **Simply Kaspa Indexer** | explorer | [supertypo/simply-kaspa-indexer](https://github.com/supertypo/simply-kaspa-indexer) | 🔄 Integration | 3005 | General blockchain indexer |
 | **Indexer Database** | explorer | [postgres:15-alpine](https://hub.docker.com/_/postgres) | ✅ Complete | 5432 | Shared PostgreSQL for indexers |
@@ -139,10 +139,10 @@ The following components need repository cloning and integration:
    - Configure environment variables
 
 2. **Kasia Indexer** ([K-Kluster/kasia-indexer](https://github.com/K-Kluster/kasia-indexer))
-   - Clone repository to `services/kasia-indexer/`
-   - Set up database connection
-   - Configure Kaspa node integration
-   - Test indexing functionality
+   - ✅ Using official Docker image: `kkluster/kasia-indexer:main`
+   - ✅ Configured with WebSocket connection to Kaspa node
+   - ✅ File-based data storage (no external database required)
+   - 🔄 Test indexing functionality and performance
 
 3. **K Social App** ([thesheepcat/K](https://github.com/thesheepcat/K))
    - Clone repository to `services/k-social/`

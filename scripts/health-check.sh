@@ -56,6 +56,7 @@ declare -A SERVICES=(
     ["kasia-indexer"]="http://localhost:3002/health"
     ["k-social"]="http://localhost:3003/health"
     ["k-indexer"]="http://localhost:3004/health"
+    ["simply-kaspa-indexer"]="http://localhost:3005/health"
     ["nginx"]="http://localhost:80/health"
 )
 
