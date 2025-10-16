@@ -25,16 +25,33 @@ kaspa-aio/
 ## 🐳 Docker Configuration
 
 ### docker-compose.yml
-Main service orchestration file defining:
-- **kaspa-node**: Official Kaspa node container
-- **kaspa-stratum**: Mining stratum bridge (optional)
+Profile-based service orchestration file with modular architecture:
+
+**Core Infrastructure (Always Active):**
+- **kaspa-node**: Official Kaspa node container with public P2P access
+- **dashboard**: Management web interface with profile awareness
+- **nginx**: Reverse proxy and load balancer with security headers
+
+**Production Profile (`prod`):**
 - **kasia-app**: Messaging application
-- **kasia-indexer**: Message indexing service
 - **k-social**: Social media platform
+
+**Explorer Profile (`explorer`):**
+- **indexer-db**: Shared PostgreSQL database for all indexers
+- **kasia-indexer**: Message indexing service
 - **k-indexer**: Social content indexer
-- **dashboard**: Management web interface
-- **nginx**: Reverse proxy and load balancer
-- **Databases**: PostgreSQL instances for indexers
+- **simply-kaspa-indexer**: General blockchain indexer
+
+**Archive Profile (`archive`):**
+- **archive-db**: Separate PostgreSQL for long-term storage
+- **archive-indexer**: Historical data preservation
+
+**Mining Profile (`mining`):**
+- **kaspa-stratum**: Mining stratum bridge
+
+**Development Profile (`development`):**
+- **portainer**: Container management interface
+- **pgadmin**: Database administration tool
 
 ### docker-compose.override.yml
 Development-specific overrides:
@@ -48,9 +65,14 @@ Development-specific overrides:
 ```
 config/
 ├── nginx.conf                   # Nginx reverse proxy configuration
-└── ssl/                         # SSL certificates (optional)
-    ├── cert.pem
-    └── key.pem
+├── ssl/                         # SSL certificates (optional)
+│   ├── cert.pem
+│   └── key.pem
+└── postgres/                    # Database initialization scripts
+    ├── init/                    # Explorer profile database setup
+    │   └── 01-create-databases.sql
+    └── archive-init/            # Archive profile database setup
+        └── 01-create-archive-database.sql
 ```
 
 ### nginx.conf Features
@@ -64,24 +86,27 @@ config/
 
 ```
 services/
-├── dashboard/                   # Management dashboard
+├── dashboard/                   # Management dashboard (Core)
 │   ├── Dockerfile
 │   ├── package.json
-│   ├── server.js               # Express.js backend
+│   ├── server.js               # Express.js backend with profile awareness
 │   └── public/                 # Frontend assets
 │       ├── index.html
 │       ├── styles.css
 │       └── script.js
-├── kaspa-stratum/              # Mining stratum bridge
+├── kaspa-stratum/              # Mining stratum bridge (Mining Profile)
 │   └── Dockerfile
-├── kasia/                      # Messaging application
+├── kasia/                      # Messaging application (Production Profile)
 │   └── Dockerfile
-├── kasia-indexer/              # Message indexer
+├── kasia-indexer/              # Message indexer (Explorer Profile)
 │   ├── Dockerfile
 │   └── wait-for-db.sh
-├── k-social/                   # Social platform
+├── k-social/                   # Social platform (Production Profile)
 │   └── Dockerfile
-└── k-indexer/                  # Social indexer
+├── k-indexer/                  # Social indexer (Explorer Profile)
+│   ├── Dockerfile
+│   └── wait-for-db.sh
+└── simply-kaspa-indexer/       # General blockchain indexer (Explorer Profile)
     ├── Dockerfile
     └── wait-for-db.sh
 ```
@@ -119,13 +144,59 @@ scripts/
 
 ```
 docs/
-├── user-guide.md               # End-user documentation
-├── admin-guide.md              # System administration
-├── api.md                      # API reference
-├── troubleshooting.md          # Common issues and solutions
-├── contributing.md             # Contribution guidelines
-└── architecture.md             # Technical architecture
+├── deployment-profiles.md       # Profile-based deployment guide
+├── public-node-setup.md        # Public node configuration and networking
+├── user-guide.md               # End-user documentation (planned)
+├── admin-guide.md              # System administration (planned)
+├── api.md                      # API reference (planned)
+├── troubleshooting.md          # Common issues and solutions (planned)
+└── architecture.md             # Technical architecture (planned)
 ```
+
+## 🏗️ Profile-Based Architecture
+
+The system uses Docker Compose profiles to enable modular deployment:
+
+### Profile Definitions
+```yaml
+# Core Infrastructure (always active)
+services:
+  kaspa-node: {}      # Kaspa blockchain node
+  dashboard: {}       # Management interface
+  nginx: {}          # Reverse proxy
+
+# Production Profile
+services:
+  kasia-app:         # profiles: [prod]
+  k-social:          # profiles: [prod]
+
+# Explorer Profile  
+services:
+  indexer-db:        # profiles: [explorer]
+  kasia-indexer:     # profiles: [explorer]
+  k-indexer:         # profiles: [explorer]
+  simply-kaspa-indexer: # profiles: [explorer]
+
+# Archive Profile
+services:
+  archive-db:        # profiles: [archive]
+  archive-indexer:   # profiles: [archive]
+
+# Mining Profile
+services:
+  kaspa-stratum:     # profiles: [mining]
+
+# Development Profile
+services:
+  portainer:         # profiles: [development]
+  pgadmin:          # profiles: [development]
+```
+
+### Deployment Flexibility
+- **Single Machine**: All profiles on one powerful mini PC
+- **Distributed**: Node on mini PC, indexers on server
+- **Specialized**: Mining-only, explorer-only, or development setups
+- **Scalable**: Add profiles as needs grow
 
 ## 🔍 Kiro IDE Specifications
 

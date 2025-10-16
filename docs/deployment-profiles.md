@@ -58,26 +58,25 @@ graph TB
 - **Nginx**: Reverse proxy and load balancer
 
 ### Profile: `prod` (Production Applications)
-- **Kasia App**: Decentralized messaging application
-- **K Social App**: Social media platform
-- **Stratum Bridge**: Mining pool bridge (with `mining` profile)
+- **Kasia App**: Decentralized messaging application ([K-Kluster/Kasia](https://github.com/K-Kluster/Kasia))
+- **K Social App**: Social media platform ([thesheepcat/K](https://github.com/thesheepcat/K))
 
 ### Profile: `explorer` (Data Indexing)
-- **Kasia Indexer**: Message indexing service
-- **K Social Indexer**: Social content indexing
-- **Simply Kaspa Indexer**: General blockchain indexing
-- **Shared Database**: PostgreSQL for all indexers
+- **Kasia Indexer**: Message indexing service ([K-Kluster/kasia-indexer](https://github.com/K-Kluster/kasia-indexer))
+- **K Social Indexer**: Social content indexing ([thesheepcat/K-indexer](https://github.com/thesheepcat/K-indexer))
+- **Simply Kaspa Indexer**: General blockchain indexing ([supertypo/simply-kaspa-indexer](https://github.com/supertypo/simply-kaspa-indexer))
+- **Shared Database**: PostgreSQL for all indexers with automatic database creation
 
 ### Profile: `archive` (Long-term Storage)
-- **Archive Indexer**: Historical data preservation
-- **Archive Database**: Separate database for long-term storage
+- **Archive Indexer**: Historical data preservation using Simply Kaspa Indexer in archive mode
+- **Archive Database**: Separate PostgreSQL instance with partitioning and long-term storage optimization
 
 ### Profile: `development` (Development Tools)
-- **Portainer**: Container management interface
-- **pgAdmin**: Database administration tool
+- **Portainer**: Container management interface for Docker administration
+- **pgAdmin**: Database administration tool for PostgreSQL management
 
 ### Profile: `mining` (Mining Operations)
-- **Stratum Bridge**: Solo mining support
+- **Kaspa Stratum Bridge**: Solo mining support ([aglov413/kaspa-stratum-bridge](https://github.com/aglov413/kaspa-stratum-bridge))
 
 ## 🚀 Deployment Scenarios
 

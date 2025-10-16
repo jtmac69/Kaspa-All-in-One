@@ -4,15 +4,31 @@ A comprehensive Docker Compose setup for running a complete Kaspa ecosystem on a
 
 ## 🚀 Components Included
 
-- **Kaspa Node** - Full Kaspa network node with RPC API
-- **Kaspa Mining Stratum** - Solo mining stratum (optional)
-- **Kasia Messaging App** - Decentralized messaging platform
-- **Kasia Indexer** - Message indexing and search service
-- **K Social** - Decentralized social media platform
-- **K Social Indexer** - Social content indexing service
-- **Management Dashboard** - Web-based service management interface
-- **Nginx Reverse Proxy** - Load balancing and SSL termination
-- **PostgreSQL Databases** - Data storage for indexers
+### Core Infrastructure (Always Active)
+- **Kaspa Node** - Full Kaspa network node with RPC API and public P2P access
+- **Management Dashboard** - Web-based service management and monitoring interface
+- **Nginx Reverse Proxy** - Load balancing, SSL termination, and security headers
+
+### Production Profile (`prod`) - User Applications
+- **Kasia Messaging App** - Decentralized messaging platform ([K-Kluster/Kasia](https://github.com/K-Kluster/Kasia))
+- **K Social App** - Decentralized social media platform ([thesheepcat/K](https://github.com/thesheepcat/K))
+
+### Explorer Profile (`explorer`) - Data Indexing Services
+- **Kasia Indexer** - Message indexing and search service ([K-Kluster/kasia-indexer](https://github.com/K-Kluster/kasia-indexer))
+- **K Social Indexer** - Social content indexing service ([thesheepcat/K-indexer](https://github.com/thesheepcat/K-indexer))
+- **Simply Kaspa Indexer** - General blockchain indexing ([supertypo/simply-kaspa-indexer](https://github.com/supertypo/simply-kaspa-indexer))
+- **Shared PostgreSQL Database** - Optimized data storage for all indexers
+
+### Archive Profile (`archive`) - Long-term Data Storage
+- **Archive Indexer** - Historical data preservation and analysis
+- **Archive Database** - Separate PostgreSQL instance for long-term storage with partitioning
+
+### Mining Profile (`mining`) - Mining Operations
+- **Kaspa Mining Stratum** - Solo mining stratum bridge ([aglov413/kaspa-stratum-bridge](https://github.com/aglov413/kaspa-stratum-bridge))
+
+### Development Profile (`development`) - Development Tools
+- **Portainer** - Container management and monitoring interface
+- **pgAdmin** - Database administration and query interface
 
 ## 💻 Hardware Requirements
 
@@ -57,36 +73,50 @@ docker compose up -d
 
 ## 🎛️ Management
 
-### Using the Management Script
+### Profile-Based Deployment
+Choose the components you need based on your hardware and requirements:
+
 ```bash
-# Start all services
+# Core services only (node + dashboard)
 ./scripts/manage.sh start
 
-# Check service status
-./scripts/manage.sh status
+# Production applications (messaging + social)
+./scripts/manage.sh start -p prod
 
-# View logs
-./scripts/manage.sh logs -f
+# Data indexing services
+./scripts/manage.sh start -p explorer
 
-# Run health check
-./scripts/manage.sh health
+# Complete setup (all profiles)
+./scripts/manage.sh start -p prod -p explorer -p development
 
-# Create backup
-./scripts/manage.sh backup
+# Mining operation
+./scripts/manage.sh start -p mining
+```
 
-# Update services
-./scripts/manage.sh update
+### Management Commands
+```bash
+# Profile management
+./scripts/manage.sh profiles              # List all available profiles
+./scripts/manage.sh start -p prod         # Start production profile
+./scripts/manage.sh status -p explorer    # Check explorer services
+./scripts/manage.sh logs -p development   # View development tools logs
+
+# Service management
+./scripts/manage.sh start kaspa-node      # Start specific service
+./scripts/manage.sh health                # Run comprehensive health check
+./scripts/manage.sh backup                # Create data backup
+./scripts/manage.sh update                # Update all services
 ```
 
 ### Web Dashboard
 Access the management dashboard at: `http://localhost:8080`
 
 Features:
-- Real-time service monitoring
-- Kaspa network statistics
-- System resource usage
-- Service logs and controls
-- Performance metrics
+- Real-time service monitoring across all profiles
+- Kaspa network statistics and node status
+- System resource usage and performance metrics
+- Profile-specific service controls and logs
+- Public node accessibility status
 
 ## 🔧 Configuration
 
@@ -108,15 +138,41 @@ KASIA_APP_PORT=3001
 KSOCIAL_APP_PORT=3003
 ```
 
-### Service Selection
-Enable/disable services using Docker Compose profiles:
+### Profile-Based Configuration
+Configure services based on your deployment needs:
 
 ```bash
-# Start with mining enabled
-docker compose --profile mining up -d
+# Production applications
+ENABLE_PROD_PROFILE=true
+KASIA_APP_PORT=3001
+KSOCIAL_APP_PORT=3003
 
-# Start development environment
-docker compose --profile development up -d
+# Data indexing services
+ENABLE_EXPLORER_PROFILE=true
+KASIA_INDEXER_PORT=3002
+KSOCIAL_INDEXER_PORT=3004
+SIMPLY_INDEXER_PORT=3005
+
+# Mining operations
+ENABLE_MINING_PROFILE=true
+STRATUM_PORT=5555
+
+# Development tools
+ENABLE_DEVELOPMENT_PROFILE=true
+PORTAINER_PORT=9000
+PGADMIN_PORT=9001
+```
+
+### Distributed Deployment
+For multi-machine setups, configure remote connections:
+
+```bash
+# Point applications to remote indexers
+REMOTE_KASIA_INDEXER_URL=http://192.168.1.101:3002
+REMOTE_KSOCIAL_INDEXER_URL=http://192.168.1.101:3004
+
+# Point indexers to remote node
+REMOTE_KASPA_NODE_URL=http://192.168.1.100:16111
 ```
 
 ## 📊 Monitoring & Health Checks
@@ -134,11 +190,32 @@ docker compose --profile development up -d
 ```
 
 ### Service Endpoints
+
+#### Core Infrastructure
 - **Dashboard**: http://localhost:8080
+- **Kaspa Node RPC**: http://localhost:16111 (local access only)
+- **Kaspa Node P2P**: tcp://localhost:16110 (public access)
+
+#### Production Profile
 - **Kasia App**: http://localhost:3001
 - **K Social**: http://localhost:3003
-- **Kaspa Node RPC**: http://localhost:16111
+
+#### Explorer Profile
+- **Kasia Indexer**: http://localhost:3002
+- **K Social Indexer**: http://localhost:3004
+- **Simply Kaspa Indexer**: http://localhost:3005
+- **PostgreSQL Database**: localhost:5432
+
+#### Archive Profile
+- **Archive Indexer**: http://localhost:3006
+- **Archive Database**: localhost:5433
+
+#### Mining Profile
 - **Mining Stratum**: tcp://localhost:5555
+
+#### Development Profile
+- **Portainer**: http://localhost:9000
+- **pgAdmin**: http://localhost:9001
 
 ## 🔒 Security Features
 
@@ -151,20 +228,31 @@ docker compose --profile development up -d
 
 ## 📚 Documentation
 
-- **User Guide**: [docs/user-guide.md](docs/user-guide.md)
-- **API Documentation**: [docs/api.md](docs/api.md)
-- **Troubleshooting**: [docs/troubleshooting.md](docs/troubleshooting.md)
-- **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Component Matrix**: [docs/component-matrix.md](docs/component-matrix.md) - Complete component overview and status
+- **Deployment Profiles**: [docs/deployment-profiles.md](docs/deployment-profiles.md) - Profile-based deployment guide
+- **Public Node Setup**: [docs/public-node-setup.md](docs/public-node-setup.md) - Network configuration guide
+- **Project Structure**: [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Architecture and file organization
+- **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
+
+### Planned Documentation
+- **User Guide**: Step-by-step usage instructions
+- **API Documentation**: Service API references
+- **Troubleshooting**: Common issues and solutions
+- **Admin Guide**: System administration procedures
 
 ## 🛠️ Development
 
 ### Development Environment
 ```bash
-# Start with development overrides
-docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
+# Start with development tools
+./scripts/manage.sh start -p development
 
-# Access Portainer for container management
-open http://localhost:9000
+# Full development setup
+./scripts/manage.sh start -p prod -p explorer -p development
+
+# Access development tools
+open http://localhost:9000  # Portainer
+open http://localhost:9001  # pgAdmin
 ```
 
 ### Building from Source
@@ -172,8 +260,26 @@ open http://localhost:9000
 # Build all services
 docker compose build
 
+# Build specific profile services
+docker compose --profile prod build
+docker compose --profile explorer build
+
 # Build specific service
 docker compose build kasia-app
+```
+
+### Profile-Based Development
+```bash
+# Work on production applications
+./scripts/manage.sh start -p prod -p development
+./scripts/manage.sh logs -f kasia-app
+
+# Work on indexing services
+./scripts/manage.sh start -p explorer -p development
+./scripts/manage.sh logs -f kasia-indexer
+
+# Test mining functionality
+./scripts/manage.sh start -p mining -p development
 ```
 
 ## 🔄 Updates & Maintenance
