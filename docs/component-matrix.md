@@ -155,18 +155,33 @@ The following components need repository cloning and integration:
    - Set up database schema
    - Configure social data indexing
    - Test performance and scaling
+   - 📋 **PR Proposal**: [TimescaleDB optimization](../pr-proposals/k-social-indexer-timescaledb-pr.md)
 
 5. **Simply Kaspa Indexer** ([supertypo/simply-kaspa-indexer](https://github.com/supertypo/simply-kaspa-indexer))
    - Clone repository to `services/simply-kaspa-indexer/`
    - Configure for both explorer and archive modes
    - Set up database partitioning for archive
    - Optimize for different indexing modes
+   - 📋 **PR Proposal**: [TimescaleDB optimization](../pr-proposals/simply-kaspa-indexer-timescaledb-pr.md)
 
 6. **Kaspa Stratum Bridge** ([aglov413/kaspa-stratum-bridge](https://github.com/aglov413/kaspa-stratum-bridge))
    - Clone repository to `services/kaspa-stratum/`
    - Configure Go build environment
    - Set up Kaspa node connection
    - Test mining pool functionality
+
+### 🤝 Community Contributions
+
+We've created detailed PR proposals for optimizing the PostgreSQL-based indexers with TimescaleDB:
+
+- **[K Social Indexer TimescaleDB PR](../pr-proposals/k-social-indexer-timescaledb-pr.md)**: Comprehensive optimization for social media data with 10-100x query performance improvements
+- **[Simply Kaspa Indexer TimescaleDB PR](../pr-proposals/simply-kaspa-indexer-timescaledb-pr.md)**: Enhanced time-series capabilities for high-performance blockchain indexing
+
+These proposals include:
+- Detailed implementation plans with code examples
+- Performance benchmarks and optimization strategies
+- Migration guides for existing deployments
+- Kaspa-specific optimizations for 10 blocks/second rate
 
 ## 🔗 Component Dependencies
 

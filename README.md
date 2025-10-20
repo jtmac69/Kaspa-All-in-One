@@ -230,9 +230,15 @@ REMOTE_KASPA_NODE_URL=http://192.168.1.100:16111
 
 - **Component Matrix**: [docs/component-matrix.md](docs/component-matrix.md) - Complete component overview and status
 - **Deployment Profiles**: [docs/deployment-profiles.md](docs/deployment-profiles.md) - Profile-based deployment guide
+- **TimescaleDB Integration**: [docs/timescaledb-integration.md](docs/timescaledb-integration.md) - Time-series database optimization
 - **Public Node Setup**: [docs/public-node-setup.md](docs/public-node-setup.md) - Network configuration guide
 - **Project Structure**: [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Architecture and file organization
 - **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
+
+### Community Contributions
+- **PR Proposals**: [docs/pr-proposals/](docs/pr-proposals/) - TimescaleDB optimization proposals for upstream repositories
+  - [K Social Indexer Enhancement](docs/pr-proposals/k-social-indexer-timescaledb-pr.md)
+  - [Simply Kaspa Indexer Enhancement](docs/pr-proposals/simply-kaspa-indexer-timescaledb-pr.md)
 
 ### Planned Documentation
 - **User Guide**: Step-by-step usage instructions
