@@ -131,9 +131,9 @@ services:
   # EXPLORER PROFILE - Indexing and data services
   # ============================================================================
 
-  # Shared Database for Indexers
+  # Shared TimescaleDB for Indexers
   indexer-db:
-    image: postgres:15-alpine
+    image: timescale/timescaledb:latest-pg16
     container_name: indexer-db
     restart: unless-stopped
     ports:
@@ -142,6 +142,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-kaspa_indexers}
       - POSTGRES_USER=${POSTGRES_USER:-indexer}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-secure_password}
+      - TIMESCALEDB_TELEMETRY=${TIMESCALEDB_TELEMETRY:-off}
     volumes:
       - indexer-db-data:/var/lib/postgresql/data
       - ./config/postgres/init:/docker-entrypoint-initdb.d
@@ -228,9 +229,9 @@ services:
   # ARCHIVE PROFILE - Extended data retention and historical analysis
   # ============================================================================
 
-  # Archive Database (separate for long-term storage)
+  # Archive TimescaleDB (separate for long-term storage)
   archive-db:
-    image: postgres:15-alpine
+    image: timescale/timescaledb:latest-pg16
     container_name: archive-db
     restart: unless-stopped
     ports:
@@ -239,6 +240,7 @@ services:
       - POSTGRES_DB=${ARCHIVE_POSTGRES_DB:-kaspa_archive}
       - POSTGRES_USER=${ARCHIVE_POSTGRES_USER:-archiver}
       - POSTGRES_PASSWORD=${ARCHIVE_POSTGRES_PASSWORD:-archive_password}
+      - TIMESCALEDB_TELEMETRY=${TIMESCALEDB_TELEMETRY:-off}
     volumes:
       - archive-db-data:/var/lib/postgresql/data
       - ./config/postgres/archive-init:/docker-entrypoint-initdb.d

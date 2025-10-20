@@ -14,9 +14,9 @@ This document provides a comprehensive overview of all components in the Kaspa A
 | **Kasia Indexer** | explorer | [K-Kluster/kasia-indexer](https://github.com/K-Kluster/kasia-indexer) | ✅ Ready | 3002 | Message indexing service |
 | **K Social Indexer** | explorer | [thesheepcat/K-indexer](https://github.com/thesheepcat/K-indexer) | 🔄 Integration | 3004 | Social content indexer |
 | **Simply Kaspa Indexer** | explorer | [supertypo/simply-kaspa-indexer](https://github.com/supertypo/simply-kaspa-indexer) | 🔄 Integration | 3005 | General blockchain indexer |
-| **Indexer Database** | explorer | [postgres:15-alpine](https://hub.docker.com/_/postgres) | ✅ Complete | 5432 | Shared PostgreSQL for indexers |
+| **Indexer Database** | explorer | [timescale/timescaledb](https://hub.docker.com/r/timescale/timescaledb) | ✅ Complete | 5432 | Shared TimescaleDB for indexers |
 | **Archive Indexer** | archive | [supertypo/simply-kaspa-indexer](https://github.com/supertypo/simply-kaspa-indexer) | 🔄 Integration | 3006 | Historical data preservation |
-| **Archive Database** | archive | [postgres:15-alpine](https://hub.docker.com/_/postgres) | ✅ Complete | 5433 | Long-term storage database |
+| **Archive Database** | archive | [timescale/timescaledb](https://hub.docker.com/r/timescale/timescaledb) | ✅ Complete | 5433 | Long-term storage TimescaleDB |
 | **Kaspa Stratum** | mining | [aglov413/kaspa-stratum-bridge](https://github.com/aglov413/kaspa-stratum-bridge) | 🔄 Integration | 5555 | Solo mining stratum bridge |
 | **Portainer** | development | [portainer/portainer-ce](https://hub.docker.com/r/portainer/portainer-ce) | ✅ Complete | 9000 | Container management |
 | **pgAdmin** | development | [dpage/pgadmin4](https://hub.docker.com/r/dpage/pgadmin4) | ✅ Complete | 9001 | Database administration |
