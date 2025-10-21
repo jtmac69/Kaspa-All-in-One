@@ -2,7 +2,7 @@
 # This file is automatically loaded by docker-compose and provides
 # development-specific configurations
 
-version: '3.8'
+# Development overrides for docker-compose.yml
 
 services:
   # Development overrides for easier debugging
@@ -12,7 +12,7 @@ services:
     volumes:
       - ./logs/kaspa-node:/app/logs
 
-  kaspa-dashboard:
+  dashboard:
     environment:
       - NODE_ENV=development
       - DEBUG=kaspa:*

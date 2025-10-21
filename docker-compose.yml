@@ -1,4 +1,4 @@
-version: '3.8'
+# Docker Compose for Kaspa All-in-One
 
 services:
   # ============================================================================
@@ -19,15 +19,11 @@ services:
     environment:
       - PUBLIC_NODE=${PUBLIC_NODE:-true}
       - LOG_LEVEL=${LOG_LEVEL:-info}
-    command: [
-      "--utxoindex",
-      "--rpcbind=0.0.0.0:16111",
-      "--rpclisten-borsh=0.0.0.0:17110", 
-      "--rpclisten-json=0.0.0.0:18110",
-      "--loglevel=${LOG_LEVEL:-info}",
-      "--appdir=/app/data",
-      "--logdir=/app/logs"
-    ]
+      - KASPAD_UTXOINDEX=true
+      - KASPAD_RPCBIND=0.0.0.0:16111
+      - KASPAD_RPCLISTEN_BORSH=0.0.0.0:17110
+      - KASPAD_RPCLISTEN_JSON=0.0.0.0:18110
+    command: "kaspad --utxoindex --rpclisten=0.0.0.0:16111 --listen=0.0.0.0:16110"
     networks:
       - kaspa-network
     healthcheck:
