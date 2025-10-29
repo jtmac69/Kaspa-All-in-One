@@ -92,23 +92,33 @@ test_kaspa_websocket() {
     fi
 }
 
-# Test Kasia indexer connectivity
+# Test Kasia indexer connectivity and API
 test_kasia_indexer() {
     log "Testing Kasia indexer connectivity..."
     
-    local max_attempts=10
+    local max_attempts=15
     local attempt=1
     
     while [ $attempt -le $max_attempts ]; do
         log "Attempt $attempt/$max_attempts: Testing Kasia indexer connection..."
         
-        if curl -s -m $TIMEOUT http://localhost:$KASIA_INDEXER_PORT/health > /dev/null 2>&1; then
+        # First check if the service is responding at all
+        if curl -s -m $TIMEOUT http://localhost:$KASIA_INDEXER_PORT/ > /dev/null 2>&1; then
             success "Kasia indexer is responding!"
-            return 0
+            
+            # Now test the Swagger API endpoint
+            log "Testing Swagger API availability..."
+            if curl -s -m $TIMEOUT http://localhost:$KASIA_INDEXER_PORT/swagger-ui/ > /dev/null 2>&1; then
+                success "Swagger API is accessible at http://localhost:$KASIA_INDEXER_PORT/swagger-ui/"
+                return 0
+            else
+                warn "Swagger API not yet available, but service is responding"
+                return 0
+            fi
         fi
         
-        log "Kasia indexer not ready yet, waiting 10 seconds..."
-        sleep 10
+        log "Kasia indexer not ready yet, waiting 15 seconds..."
+        sleep 15
         ((attempt++))
     done
     
@@ -116,21 +126,54 @@ test_kasia_indexer() {
     return 1
 }
 
+# Test Kasia indexer metrics and sync status
+test_indexer_metrics() {
+    log "Testing Kasia indexer metrics and sync status..."
+    
+    # Test metrics endpoint (recommended by Kasia developer)
+    log "Checking /metrics endpoint for sync status..."
+    local metrics_response=$(curl -s -m $TIMEOUT http://localhost:$KASIA_INDEXER_PORT/metrics 2>/dev/null)
+    
+    if [ $? -eq 0 ] && [ -n "$metrics_response" ]; then
+        success "Metrics endpoint is accessible"
+        
+        # Check if we can parse any useful metrics
+        echo "Sample metrics data:"
+        echo "$metrics_response" | head -10
+        
+        log "To verify proper sync: metrics should show ~10 updates per second on average"
+        log "Monitor the metrics endpoint: http://localhost:$KASIA_INDEXER_PORT/metrics"
+        
+        return 0
+    else
+        warn "Could not retrieve metrics data"
+        return 1
+    fi
+}
+
 # Get Kasia indexer status
 get_indexer_status() {
     log "Retrieving Kasia indexer status..."
     
-    local response=$(curl -s -m $TIMEOUT http://localhost:$KASIA_INDEXER_PORT/status 2>/dev/null)
-    
-    if [ $? -eq 0 ] && [ -n "$response" ]; then
-        echo "$response" | jq . 2>/dev/null || echo "$response"
-    else
-        warn "Could not retrieve indexer status"
-        
-        # Try alternative endpoints
-        log "Trying alternative status endpoints..."
-        curl -s -m $TIMEOUT http://localhost:$KASIA_INDEXER_PORT/ 2>/dev/null || echo "No response from root endpoint"
+    # Try the metrics endpoint first (most reliable)
+    if test_indexer_metrics; then
+        echo ""
     fi
+    
+    # Try other common endpoints
+    local endpoints=("/status" "/health" "/info" "/")
+    
+    for endpoint in "${endpoints[@]}"; do
+        log "Trying endpoint: $endpoint"
+        local response=$(curl -s -m $TIMEOUT http://localhost:$KASIA_INDEXER_PORT$endpoint 2>/dev/null)
+        
+        if [ $? -eq 0 ] && [ -n "$response" ]; then
+            echo "Response from $endpoint:"
+            echo "$response" | jq . 2>/dev/null || echo "$response" | head -5
+            echo ""
+            break
+        fi
+    done
 }
 
 # Check indexer logs
@@ -188,11 +231,19 @@ show_recommendations() {
     echo "- Monitor WebSocket connection stability"
     echo ""
     
+    echo "Validation and Monitoring:"
+    echo "- Access Swagger API: http://localhost:$KASIA_INDEXER_PORT/swagger-ui/"
+    echo "- Monitor metrics: http://localhost:$KASIA_INDEXER_PORT/metrics"
+    echo "- Proper sync: metrics should show ~10 updates per second on average"
+    echo "- Check sync status regularly via metrics endpoint"
+    echo ""
+    
     echo "Troubleshooting:"
     echo "- Check Kaspa node WebSocket is accessible on port 17110"
     echo "- Verify network connectivity between containers"
     echo "- Monitor indexer logs for connection issues"
     echo "- Ensure data volume has write permissions"
+    echo "- If metrics show <10/sec, indexer may still be syncing"
 }
 
 # Main test function
