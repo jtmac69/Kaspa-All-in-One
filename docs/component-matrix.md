@@ -9,8 +9,8 @@ This document provides a comprehensive overview of all components in the Kaspa A
 | **Kaspa Node** | Core | [kaspanet/rusty-kaspad](https://hub.docker.com/r/kaspanet/rusty-kaspad) | ✅ Complete | 16110/16111 | Official Kaspa blockchain node |
 | **Dashboard** | Core | Built-in | ✅ Complete | 8080 | Web management interface |
 | **Nginx** | Core | [nginx:alpine](https://hub.docker.com/_/nginx) | ✅ Complete | 80/443 | Reverse proxy and load balancer |
-| **Kasia App** | prod | [K-Kluster/Kasia](https://github.com/K-Kluster/Kasia) | 🔄 Integration | 3001 | Decentralized messaging app |
-| **K Social** | prod | [thesheepcat/K](https://github.com/thesheepcat/K) | 🔄 Integration | 3003 | Social media platform |
+| **Kasia App** | prod | [K-Kluster/Kasia](https://github.com/K-Kluster/Kasia) | 🔄 Integration | 3001 | Decentralized messaging app (requires Kasia Indexer) |
+| **K Social** | prod | [thesheepcat/K](https://github.com/thesheepcat/K) | 🔄 Integration | 3003 | Social media platform (indexer dependency TBD) |
 | **Kasia Indexer** | explorer | [K-Kluster/kasia-indexer](https://github.com/K-Kluster/kasia-indexer) | ✅ Ready | 3002 | Message indexing service |
 | **K Social Indexer** | explorer | [thesheepcat/K-indexer](https://github.com/thesheepcat/K-indexer) | 🔄 Integration | 3004 | Social content indexer |
 | **Simply Kaspa Indexer** | explorer | [supertypo/simply-kaspa-indexer](https://github.com/supertypo/simply-kaspa-indexer) | 🔄 Integration | 3005 | General blockchain indexer |
@@ -213,10 +213,18 @@ graph TB
 
 ### Service Communication
 - **Applications → Indexers**: REST API calls for data queries
+  - **Kasia App → Kasia Indexer**: ✅ CONFIRMED ABSOLUTE DEPENDENCY via KASIA_INDEXER_URL
+  - **K Social → K-indexer**: ✅ CONFIRMED ABSOLUTE DEPENDENCY via apiBaseUrl configuration
 - **Indexers → Node**: RPC calls for blockchain data
 - **Indexers → Databases**: SQL connections for data storage
 - **Dashboard → All Services**: Health checks and monitoring
 - **Nginx → Applications**: HTTP proxy and load balancing
+
+### Critical Dependencies
+- **Kasia App**: ✅ CONFIRMED - Requires Kasia Indexer to be running and synced (completely non-functional without it)
+- **K Social**: ✅ CONFIRMED - Requires K-indexer to be running and synced (completely non-functional without it)
+- **All Indexers**: Require Kaspa node WebSocket/RPC connection
+- **Database Services**: Required before database-dependent indexers can start
 
 ## 📋 Deployment Scenarios
 

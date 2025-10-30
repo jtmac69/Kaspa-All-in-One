@@ -81,8 +81,6 @@ services:
       - "${STRATUM_PORT:-5555}:5555"  # Stratum port
     environment:
       - KASPA_RPC_SERVER=${REMOTE_KASPA_NODE_URL:-kaspa-node:16111}
-    depends_on:
-      - kaspa-node
     networks:
       - kaspa-network
     profiles:
@@ -101,6 +99,9 @@ services:
     environment:
       - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
       - KASIA_INDEXER_URL=${REMOTE_KASIA_INDEXER_URL:-http://kasia-indexer:3000}
+    depends_on:
+      kasia-indexer:
+        condition: service_healthy
     networks:
       - kaspa-network
     profiles:
@@ -118,6 +119,9 @@ services:
     environment:
       - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
       - KSOCIAL_INDEXER_URL=${REMOTE_KSOCIAL_INDEXER_URL:-http://k-indexer:3000}
+    depends_on:
+      k-indexer:
+        condition: service_healthy
     networks:
       - kaspa-network
     profiles:
@@ -169,8 +173,6 @@ services:
       - RUST_BACKTRACE=1
     volumes:
       - kasia-indexer-data:/app/data
-    depends_on:
-      - kaspa-node
     networks:
       - kaspa-network
     profiles:
@@ -195,11 +197,18 @@ services:
       - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-indexer}:${POSTGRES_PASSWORD:-secure_password}@indexer-db:5432/ksocial
     depends_on:
-      - indexer-db
+      indexer-db:
+        condition: service_healthy
     networks:
       - kaspa-network
     profiles:
       - explorer
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   # Simply Kaspa Indexer
   simply-kaspa-indexer:
@@ -215,11 +224,18 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-indexer}:${POSTGRES_PASSWORD:-secure_password}@indexer-db:5432/simply_kaspa
       - INDEXER_MODE=${SIMPLY_INDEXER_MODE:-full}  # full, light, archive
     depends_on:
-      - indexer-db
+      indexer-db:
+        condition: service_healthy
     networks:
       - kaspa-network
     profiles:
       - explorer
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   # ============================================================================
   # ARCHIVE PROFILE - Extended data retention and historical analysis
@@ -265,11 +281,18 @@ services:
       - INDEXER_MODE=archive
       - RETENTION_DAYS=${ARCHIVE_RETENTION_DAYS:-0}  # 0 = keep forever
     depends_on:
-      - archive-db
+      archive-db:
+        condition: service_healthy
     networks:
       - kaspa-network
     profiles:
       - archive
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   # ============================================================================
   # DEVELOPMENT PROFILE - Development and debugging tools

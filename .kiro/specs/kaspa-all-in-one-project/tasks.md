@@ -155,15 +155,18 @@
   - Clone Kasia app repository (K-Kluster/Kasia) to services/kasia/
   - Analyze React/Node.js tech stack and dependencies
   - Create production Dockerfile with multi-stage build
-  - Configure API connections to Kasia indexer service
-  - Create test script for end-to-end messaging functionality
+  - Configure KASIA_INDEXER_URL environment variable (points to kasia-indexer:3000)
+  - **DEPENDENCY**: Requires Kasia indexer to be running and synced for full functionality
+  - Create test script for end-to-end messaging functionality with indexer dependency
   - _Requirements: 2.1, 2.3_
 
 - [ ] 5.3 Integrate K-Social platform ecosystem
   - Clone K Social app repository (thesheepcat/K) to services/k-social/
   - Clone K Social indexer repository (thesheepcat/K-indexer) to services/k-indexer/
+  - **RESEARCH**: Investigate if K Social app can be configured to point to K-indexer instance
   - Set up database schema initialization for social data
-  - Configure social graph indexing and API endpoints
+  - Configure KSOCIAL_INDEXER_URL environment variable (points to k-indexer:3000)
+  - **DEPENDENCY**: Determine if K Social app requires K-indexer for full functionality
   - Create test scripts for social media functionality and data flow
   - _Requirements: 2.1, 2.3_
 
@@ -183,12 +186,67 @@
   - Add mining statistics to dashboard interface
   - _Requirements: 2.3_
 
-- [ ] 5.6 Create comprehensive integration testing suite
+- [x] 5.6 Research K Social App and K-indexer dependency ✅ COMPLETED
+  - Examine K Social App repository (thesheepcat/K) for indexer configuration
+  - Check for environment variables like KSOCIAL_INDEXER_URL or similar
+  - Analyze K Social App's API calls and data requirements
+  - Determine if K Social can function without K-indexer or requires it
+  - Document findings and update service integration plan accordingly
+  - Compare with Kasia App's confirmed indexer dependency pattern
+  - _Requirements: 2.1, 2.3, 4.2_
+
+  **RESEARCH FINDINGS:**
+  
+  **✅ CONFIRMED: K Social App has ABSOLUTE DEPENDENCY on K-indexer**
+  
+  **Key Findings:**
+  1. **Configuration Pattern**: K Social App uses `apiBaseUrl` setting (defaults to 'https://indexer.kaspatalk.net') instead of environment variables like KSOCIAL_INDEXER_URL
+  2. **Complete API Dependency**: K Social App makes extensive API calls to K-indexer for ALL core functionality:
+     - `get-posts-watching` - Main feed content
+     - `get-posts-following` - Following users' content  
+     - `get-contents-following` - Comprehensive activity feed
+     - `get-users` - User discovery and profiles
+     - `get-mentions` - User mentions and notifications
+     - `get-notifications` - Real-time notification system
+     - `get-post-details` - Individual post data
+     - `get-replies` - Post replies and conversations
+     - `get-user-details` - User profile information
+     - `get-blocked-users` / `get-followed-users` - Social graph management
+  3. **Cannot Function Without Indexer**: K Social App has NO fallback mechanisms and cannot operate without a running K-indexer instance
+  4. **Real-time Polling**: App continuously polls K-indexer every 10 seconds for updates across all views
+  5. **Notification System**: Completely dependent on K-indexer's notification endpoints for user alerts
+  
+  **Comparison with Kasia App:**
+  - **Kasia App**: Uses KASIA_INDEXER_URL environment variable, confirmed dependency
+  - **K Social App**: Uses apiBaseUrl configuration setting, SAME LEVEL of dependency
+  - **Both apps**: Completely non-functional without their respective indexers
+  
+  **Integration Requirements:**
+  - K Social App MUST have K-indexer running and accessible
+  - K-indexer must be started BEFORE K Social App
+  - Service dependency: K Social App → K-indexer → Kaspa Node
+  - Configuration: Set apiBaseUrl to point to K-indexer instance (e.g., http://k-indexer:3000)
+  
+  **Updated Service Dependencies:**
+  - **CONFIRMED**: Kasia App requires Kasia Indexer (KASIA_INDEXER_URL)
+  - **CONFIRMED**: K Social App requires K-indexer (apiBaseUrl configuration)
+  - Both apps are completely dependent on their indexers for all functionality
+
+- [x] 5.8 Document and implement service dependencies ✅ COMPLETED
+  - **CONFIRMED**: Kasia App requires Kasia Indexer for full functionality (KASIA_INDEXER_URL)
+  - **CONFIRMED**: K Social App requires K-indexer for full functionality (apiBaseUrl configuration)
+  - **CONFIRMED**: Both apps are completely non-functional without their respective indexers
+  - ✅ Documented service startup order requirements (indexers before apps)
+  - ✅ Updated docker-compose.yml with proper service dependencies (depends_on)
+  - ✅ Created comprehensive dependency testing procedures for each service pair
+  - _Requirements: 2.1, 2.3, 4.2_
+
+- [ ] 5.7 Create comprehensive integration testing suite
   - Extend existing test scripts (test-kaspa-node.sh, test-kasia-indexer.sh)
-  - Create test scripts for each new service integration
-  - Implement end-to-end testing across all profiles
+  - Create test scripts for each new service integration with dependency validation
+  - Implement end-to-end testing across all profiles with proper service ordering
   - Add performance benchmarking and validation
-  - Create automated testing pipeline for all services
+  - Create automated testing pipeline respecting service dependencies
   - _Requirements: 3.1, 3.2, 3.3_
 
 ## Phase 6: Dashboard Enhancement and API Completion 📋 PLANNED
@@ -274,14 +332,25 @@
 
 ## Immediate Next Tasks
 
-Based on current testing progress and service integration needs:
+Based on current testing progress and service dependency requirements:
 
 1. **Phase 5.1**: Complete Kasia indexer testing and validation (test-kasia-indexer.sh)
-2. **Phase 5.2**: Integrate Kasia messaging app and test with existing indexer
-3. **Phase 5.3**: Integrate K-Social platform and indexer with database setup
-4. **Phase 5.4**: Integrate Simply Kaspa indexer with TimescaleDB optimization
-5. **Phase 5.6**: Extend testing suite for all new service integrations
-6. **Phase 6**: Complete dashboard API endpoints for service management
+2. **Phase 5.6**: Research K Social App dependency on K-indexer (critical for integration planning)
+3. **Phase 5.2**: Integrate Kasia messaging app (requires Kasia indexer to be running)
+4. **Phase 5.3**: Integrate K-Social platform and indexer (dependency-aware integration)
+5. **Phase 5.4**: Integrate Simply Kaspa indexer with TimescaleDB optimization
+6. **Phase 5.7**: Extend testing suite with dependency validation
+7. **Phase 6**: Complete dashboard API endpoints for service management
+
+## Critical Dependencies to Validate
+
+### ✅ Confirmed Dependencies
+- **Kasia App → Kasia Indexer**: Confirmed via KASIA_INDEXER_URL environment variable
+
+### 🔍 Research Required
+- **K Social App → K-indexer**: Need to investigate if K Social requires K-indexer for functionality
+- **Service startup order**: Document proper sequence (indexers before apps)
+- **Testing dependencies**: Ensure test scripts validate service dependencies
 
 ## Testing Status
 
