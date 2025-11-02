@@ -92,13 +92,27 @@ services:
     build:
       context: ./services/kasia
       dockerfile: Dockerfile
+      args:
+        KASIA_VERSION: ${KASIA_VERSION:-master}
     container_name: kasia-app
     restart: unless-stopped
     ports:
       - "${KASIA_APP_PORT:-3001}:3000"
     environment:
-      - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
-      - KASIA_INDEXER_URL=${REMOTE_KASIA_INDEXER_URL:-http://kasia-indexer:3000}
+      # Network configuration
+      - VITE_DEFAULT_KASPA_NETWORK=${KASPA_NETWORK:-mainnet}
+      - VITE_ALLOWED_KASPA_NETWORKS=${KASPA_NETWORK:-mainnet}
+      - VITE_DISABLE_PASSWORD_REQUIREMENTS=${KASIA_DISABLE_PASSWORD_REQUIREMENTS:-false}
+      # Logging
+      - VITE_LOG_LEVEL=${KASIA_LOG_LEVEL:-info}
+      - VITE_DEV_MODE=false
+      # Indexer configuration - point to local Kasia indexer
+      - VITE_INDEXER_MAINNET_URL=${REMOTE_KASIA_INDEXER_URL:-http://kasia-indexer:8080/}
+      - VITE_INDEXER_TESTNET_URL=${REMOTE_KASIA_INDEXER_URL:-http://kasia-indexer:8080/}
+      - VITE_DISABLE_INDEXER=false
+      # Kaspa node configuration - point to local node WebSocket
+      - VITE_DEFAULT_MAINNET_KASPA_NODE_URL=${REMOTE_KASPA_NODE_WBORSH_URL:-ws://kaspa-node:17110}
+      - VITE_DEFAULT_TESTNET_KASPA_NODE_URL=${REMOTE_KASPA_NODE_WBORSH_URL:-ws://kaspa-node:17110}
     depends_on:
       kasia-indexer:
         condition: service_healthy
@@ -159,6 +173,7 @@ services:
   # Kasia Indexer
   kasia-indexer:
     image: kkluster/kasia-indexer:main
+    platform: linux/amd64
     container_name: kasia-indexer
     restart: unless-stopped
     stdin_open: true

@@ -38,7 +38,7 @@
   - Added PostgreSQL configuration with proper networking
   - _Requirements: 2.1, 2.2, 2.4_
 
-- [ ] 2.1 Integrate Kasia messaging application
+- [x] 2.1 Integrate Kasia messaging application
   - Clone and integrate Kasia app repository (K-Kluster/Kasia)
   - Analyze tech stack and create production Dockerfile
   - Configure environment variables and service connections
@@ -102,6 +102,15 @@
   - Implemented log aggregation and analysis tools
   - Added configuration validation and troubleshooting guides
   - _Requirements: 3.3, 4.2_
+
+- [x] 3.4 Implement standardized test cleanup system
+  - Enhanced test-kasia-indexer.sh, test-kasia-app.sh, and test-service-dependencies.sh with comprehensive cleanup
+  - Added automatic cleanup on exit with trap handlers for graceful shutdown
+  - Implemented manual cleanup options (--cleanup-only, --cleanup-full, --cleanup-volumes, --no-cleanup)
+  - Created comprehensive cleanup-tests.sh script for centralized cleanup management
+  - Added safety features including dry-run mode, confirmation prompts, and data protection
+  - Documented cleanup system in docs/test-cleanup.md with usage examples and best practices
+  - _Requirements: 3.1, 3.2, 3.3_
 
 ## Phase 4: Documentation and User Experience ✅ COMPLETED
 
@@ -249,6 +258,15 @@
   - Create automated testing pipeline respecting service dependencies
   - _Requirements: 3.1, 3.2, 3.3_
 
+- [ ] 5.8 Standardize cleanup functionality across all test scripts
+  - Enhance test-kaspa-node.sh with standardized cleanup options and comprehensive container management
+  - Update test-kaspa-node-only.sh with automatic cleanup traps and manual cleanup options
+  - Add cleanup functionality to any future test scripts following the established pattern
+  - Ensure all test scripts support --cleanup-only, --cleanup-full, --cleanup-volumes, and --no-cleanup options
+  - Update cleanup-tests.sh to include all test script containers in centralized cleanup
+  - Validate cleanup functionality across all test scripts with comprehensive testing
+  - _Requirements: 3.1, 3.2, 3.3_
+
 ## Phase 6: Dashboard Enhancement and API Completion 📋 PLANNED
 
 - [ ] 6. Complete dashboard backend API implementation
@@ -334,13 +352,14 @@
 
 Based on current testing progress and service dependency requirements:
 
-1. **Phase 5.1**: Complete Kasia indexer testing and validation (test-kasia-indexer.sh)
-2. **Phase 5.6**: Research K Social App dependency on K-indexer (critical for integration planning)
-3. **Phase 5.2**: Integrate Kasia messaging app (requires Kasia indexer to be running)
-4. **Phase 5.3**: Integrate K-Social platform and indexer (dependency-aware integration)
-5. **Phase 5.4**: Integrate Simply Kaspa indexer with TimescaleDB optimization
-6. **Phase 5.7**: Extend testing suite with dependency validation
-7. **Phase 6**: Complete dashboard API endpoints for service management
+1. **Phase 5.8**: Standardize cleanup functionality across all test scripts (test-kaspa-node.sh, test-kaspa-node-only.sh)
+2. **Phase 5.1**: Complete Kasia indexer testing and validation (test-kasia-indexer.sh)
+3. **Phase 5.6**: Research K Social App dependency on K-indexer (critical for integration planning)
+4. **Phase 5.2**: Integrate Kasia messaging app (requires Kasia indexer to be running)
+5. **Phase 5.3**: Integrate K-Social platform and indexer (dependency-aware integration)
+6. **Phase 5.4**: Integrate Simply Kaspa indexer with TimescaleDB optimization
+7. **Phase 5.7**: Extend testing suite with dependency validation
+8. **Phase 6**: Complete dashboard API endpoints for service management
 
 ## Critical Dependencies to Validate
 
@@ -355,13 +374,24 @@ Based on current testing progress and service dependency requirements:
 ## Testing Status
 
 ### ✅ Available Test Scripts
-- **test-kaspa-node.sh**: Comprehensive Kaspa node connectivity and public accessibility testing
-- **test-kasia-indexer.sh**: Kasia indexer WebSocket connection and data persistence testing
+- **test-kaspa-node.sh**: Comprehensive Kaspa node connectivity and public accessibility testing (basic cleanup)
+- **test-kaspa-node-only.sh**: Standalone Kaspa node testing (basic cleanup)
+- **test-kasia-indexer.sh**: Kasia indexer WebSocket connection and data persistence testing (✅ enhanced cleanup)
+- **test-kasia-app.sh**: Kasia messaging app integration testing (✅ enhanced cleanup)
+- **test-service-dependencies.sh**: Service dependency validation testing (✅ enhanced cleanup)
+- **cleanup-tests.sh**: Comprehensive centralized cleanup script (✅ complete)
 
 ### 🔄 Next Testing Tasks
+- **Priority**: Standardize cleanup functionality in test-kaspa-node.sh and test-kaspa-node-only.sh
 - Run and validate existing Kasia indexer test
-- Create test scripts for each new service integration
+- Create test scripts for each new service integration with standardized cleanup
 - Implement end-to-end testing across all profiles
 - Add performance benchmarking for all services
+
+### ✅ Cleanup System Status
+- **Enhanced Scripts**: test-kasia-indexer.sh, test-kasia-app.sh, test-service-dependencies.sh
+- **Pending Enhancement**: test-kaspa-node.sh, test-kaspa-node-only.sh
+- **Centralized Cleanup**: cleanup-tests.sh (supports all test artifacts)
+- **Documentation**: docs/test-cleanup.md (comprehensive usage guide)
 
 This updated plan properly reflects the testing work that needs to be completed alongside service integration to ensure a fully functional and validated Kaspa All-in-One system.

@@ -274,14 +274,154 @@ main() {
     fi
 }
 
-# Cleanup function
-cleanup() {
-    log "Cleaning up..."
+# Cleanup functions
+cleanup_containers() {
+    local cleanup_level=${1:-basic}
+    
+    log "Cleaning up containers..."
+    
+    # Stop and remove test containers
+    local test_containers=("kasia-indexer-test" "kaspa-node-test")
+    for container in "${test_containers[@]}"; do
+        if docker ps -a --format "{{.Names}}" | grep -q "^${container}$"; then
+            log "Removing test container: $container"
+            docker stop "$container" 2>/dev/null || true
+            docker rm "$container" 2>/dev/null || true
+        fi
+    done
+    
+    # Stop compose services
+    log "Stopping compose services..."
     docker compose down kasia-indexer kaspa-node 2>/dev/null || true
+    
+    if [ "$cleanup_level" = "full" ]; then
+        log "Performing full cleanup..."
+        
+        # Remove volumes (optional - preserves data by default)
+        if [ "$CLEANUP_VOLUMES" = "true" ]; then
+            warn "Removing data volumes..."
+            docker volume rm kaspa-aio_kasia-indexer-data 2>/dev/null || true
+            docker volume rm kaspa-aio_kaspa-data 2>/dev/null || true
+        fi
+        
+        # Remove networks
+        docker network rm kaspa-aio_kaspa-network 2>/dev/null || true
+        
+        # Remove unused images (optional)
+        if [ "$CLEANUP_IMAGES" = "true" ]; then
+            warn "Removing unused images..."
+            docker image prune -f 2>/dev/null || true
+        fi
+    fi
 }
 
-# Set trap for cleanup
-trap cleanup EXIT
+cleanup_on_exit() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        error "Test failed with exit code $exit_code"
+        log "Performing cleanup due to test failure..."
+    else
+        log "Test completed, performing cleanup..."
+    fi
+    
+    cleanup_containers basic
+    exit $exit_code
+}
+
+cleanup_full() {
+    log "Performing full cleanup (including volumes and networks)..."
+    cleanup_containers full
+}
+
+# Function to show cleanup options
+show_cleanup_help() {
+    echo "Cleanup Options:"
+    echo "  --cleanup-only     Run cleanup only (no tests)"
+    echo "  --cleanup-full     Full cleanup including volumes and networks"
+    echo "  --cleanup-volumes  Remove data volumes during cleanup"
+    echo "  --cleanup-images   Remove unused Docker images during cleanup"
+    echo "  --no-cleanup       Skip cleanup on exit"
+    echo
+}
+
+# Set trap for cleanup (can be disabled with --no-cleanup)
+ENABLE_CLEANUP=true
+CLEANUP_VOLUMES=false
+CLEANUP_IMAGES=false
+
+setup_cleanup_trap() {
+    if [ "$ENABLE_CLEANUP" = "true" ]; then
+        trap cleanup_on_exit EXIT INT TERM
+        log "Cleanup trap enabled (use --no-cleanup to disable)"
+    else
+        log "Cleanup disabled"
+    fi
+}
+
+# Parse command line arguments for cleanup options
+CLEANUP_ONLY=false
+FULL_CLEANUP=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --cleanup-only)
+            CLEANUP_ONLY=true
+            shift
+            ;;
+        --cleanup-full)
+            FULL_CLEANUP=true
+            shift
+            ;;
+        --cleanup-volumes)
+            CLEANUP_VOLUMES=true
+            shift
+            ;;
+        --cleanup-images)
+            CLEANUP_IMAGES=true
+            shift
+            ;;
+        --no-cleanup)
+            ENABLE_CLEANUP=false
+            shift
+            ;;
+        -h|--help)
+            echo "Kasia Indexer Test Suite"
+            echo
+            echo "Usage: $0 [OPTIONS]"
+            echo
+            echo "Test Options:"
+            echo "  -h, --help         Show this help message"
+            echo
+            show_cleanup_help
+            exit 0
+            ;;
+        *)
+            warn "Unknown option: $1"
+            shift
+            ;;
+    esac
+done
+
+# Handle cleanup-only mode
+if [ "$CLEANUP_ONLY" = "true" ]; then
+    log "Running cleanup only..."
+    if [ "$FULL_CLEANUP" = "true" ]; then
+        cleanup_full
+    else
+        cleanup_containers basic
+    fi
+    success "Cleanup completed!"
+    exit 0
+fi
+
+# Handle full cleanup mode
+if [ "$FULL_CLEANUP" = "true" ]; then
+    log "Full cleanup mode enabled"
+    CLEANUP_VOLUMES=true
+fi
+
+# Setup cleanup trap
+setup_cleanup_trap
 
 # Run main function
-main "$@"
+main
