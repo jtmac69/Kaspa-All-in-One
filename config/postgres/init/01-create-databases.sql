@@ -1,9 +1,6 @@
 -- Create databases for indexers with TimescaleDB
 -- This script runs when the TimescaleDB container starts for the first time
-
--- Create Kasia database
-CREATE DATABASE kasia;
-GRANT ALL PRIVILEGES ON DATABASE kasia TO indexer;
+-- NOTE: Kasia indexer uses file-based storage (RocksDB), not PostgreSQL
 
 -- Create K Social database  
 CREATE DATABASE ksocial;
@@ -12,13 +9,6 @@ GRANT ALL PRIVILEGES ON DATABASE ksocial TO indexer;
 -- Create Simply Kaspa database
 CREATE DATABASE simply_kaspa;
 GRANT ALL PRIVILEGES ON DATABASE simply_kaspa TO indexer;
-
--- Configure Kasia database with TimescaleDB
-\c kasia;
-CREATE EXTENSION IF NOT EXISTS timescaledb;
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-CREATE EXTENSION IF NOT EXISTS "btree_gin";
 
 -- Configure K Social database with TimescaleDB
 \c ksocial;

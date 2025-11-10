@@ -145,11 +145,12 @@ services:
   # EXPLORER PROFILE - Indexing and data services
   # ============================================================================
 
-  # Shared TimescaleDB for Indexers
+  # Shared TimescaleDB for Indexers (Enhanced for 10bps Kaspa rate)
   indexer-db:
     image: timescale/timescaledb:latest-pg16
     container_name: indexer-db
     restart: unless-stopped
+    shm_size: 4G  # Increased shared memory for TimescaleDB
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
@@ -157,6 +158,21 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-indexer}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-secure_password}
       - TIMESCALEDB_TELEMETRY=${TIMESCALEDB_TELEMETRY:-off}
+      - PGPORT=${POSTGRES_PORT:-5432}
+    # TimescaleDB optimizations for Kaspa's 10bps rate
+    command: >
+      -c shared_preload_libraries=timescaledb,pg_stat_statements
+      -c pg_stat_statements.max=10000
+      -c pg_stat_statements.track=all
+      -c timescaledb.max_background_workers=8
+      -c max_worker_processes=16
+      -c work_mem=256MB
+      -c shared_buffers=2GB
+      -c effective_cache_size=6GB
+      -c maintenance_work_mem=512MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
     volumes:
       - indexer-db-data:/var/lib/postgresql/data
       - ./config/postgres/init:/docker-entrypoint-initdb.d
@@ -256,11 +272,12 @@ services:
   # ARCHIVE PROFILE - Extended data retention and historical analysis
   # ============================================================================
 
-  # Archive TimescaleDB (separate for long-term storage)
+  # Archive TimescaleDB (separate for long-term storage with maximum compression)
   archive-db:
     image: timescale/timescaledb:latest-pg16
     container_name: archive-db
     restart: unless-stopped
+    shm_size: 8G  # Larger shared memory for archive operations
     ports:
       - "${ARCHIVE_POSTGRES_PORT:-5433}:5432"
     environment:
@@ -268,6 +285,23 @@ services:
       - POSTGRES_USER=${ARCHIVE_POSTGRES_USER:-archiver}
       - POSTGRES_PASSWORD=${ARCHIVE_POSTGRES_PASSWORD:-archive_password}
       - TIMESCALEDB_TELEMETRY=${TIMESCALEDB_TELEMETRY:-off}
+      - PGPORT=${ARCHIVE_POSTGRES_PORT:-5433}
+    # Archive-optimized TimescaleDB configuration
+    command: >
+      -c shared_preload_libraries=timescaledb,pg_stat_statements
+      -c pg_stat_statements.max=10000
+      -c pg_stat_statements.track=all
+      -c timescaledb.max_background_workers=16
+      -c max_worker_processes=32
+      -c work_mem=512MB
+      -c shared_buffers=4GB
+      -c effective_cache_size=12GB
+      -c maintenance_work_mem=1GB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=32MB
+      -c default_statistics_target=100
+      -c timescaledb.compress_segmentby_default=true
+      -c timescaledb.compress_orderby_default=true
     volumes:
       - archive-db-data:/var/lib/postgresql/data
       - ./config/postgres/archive-init:/docker-entrypoint-initdb.d

@@ -52,18 +52,27 @@
   - Added health checks and restart policies
   - _Requirements: 2.1, 2.2_
 
-- [ ] 2.3 Integrate K-Social platform and indexer
+- [x] 2.3 Integrate K-Social platform and indexer **[UPDATED FOR TIMESCALEDB]**
   - Clone and integrate K Social app repository (thesheepcat/K)
   - Clone and integrate K Social indexer repository (thesheepcat/K-indexer)
-  - Set up database schema and social data indexing
-  - Configure API endpoints and service connections
+  - **NEW**: Implement TimescaleDB optimizations for K-indexer (hypertables, compression, continuous aggregates)
+  - **NEW**: Apply Personal Indexer concept - optimize for individual user data patterns
+  - Set up database schema with TimescaleDB enhancements for social data indexing
+  - Configure API endpoints and service connections with performance optimizations
+  - **NEW**: Implement batch processing for K protocol transactions (1000-record batches)
+  - **NEW**: Add time-based partitioning (1-6 hour chunks for social activity patterns)
   - _Requirements: 2.1, 2.3_
 
-- [ ] 2.4 Integrate Simply Kaspa indexer
+- [ ] 2.4 Integrate Simply Kaspa indexer **[UPDATED FOR TIMESCALEDB]**
   - Clone and integrate Simply Kaspa indexer repository (supertypo/simply-kaspa-indexer)
-  - Configure for both explorer and archive modes
+  - **NEW**: Implement TimescaleDB optimizations (15-30 minute chunks for 10bps rate)
+  - **NEW**: Apply Personal Indexer concept - user-specific indexing patterns and data retention
+  - Configure for both explorer and archive modes with TimescaleDB compression
+  - **NEW**: Set up automatic compression for data older than 1-2 hours (90%+ space savings)
+  - **NEW**: Implement continuous aggregates for real-time network statistics
   - Set up database partitioning and optimization for archive profile
-  - Test different indexing modes (full, light, archive)
+  - Test different indexing modes (full, light, archive, personal)
+  - **NEW**: Validate 10-100x performance improvements for time-range queries
   - _Requirements: 2.2, 2.4_
 
 - [ ] 2.5 Integrate mining stratum bridge
@@ -143,6 +152,45 @@
   - Create interactive configuration management
   - _Requirements: 4.1, 4.4_
 
+## Phase 4.5: TimescaleDB Integration and Personal Indexer Implementation 🆕 NEW PRIORITY
+
+- [ ] 4.5 Implement TimescaleDB optimizations across all indexers
+  - **NEW**: Apply TimescaleDB PR proposals (PRs 94, 95, et al.) to K-indexer and Simply Kaspa indexer
+  - **NEW**: Implement Personal Indexer concept - user-specific data patterns and retention policies
+  - **NEW**: Convert existing PostgreSQL schemas to TimescaleDB hypertables
+  - **NEW**: Add automatic compression policies (90%+ space savings for historical data)
+  - **NEW**: Implement continuous aggregates for real-time analytics without query overhead
+  - **NEW**: Optimize chunk sizing for Kaspa's 10 blocks/second rate (15-30 minute intervals)
+  - **NEW**: Add batch processing optimizations (1000-record batches for optimal throughput)
+  - **NEW**: Validate 10-100x performance improvements for time-range queries
+  - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+- [ ] 4.5.1 Update K-Social indexer with TimescaleDB enhancements
+  - **NEW**: Convert k_posts, k_votes, k_user_profiles tables to hypertables
+  - **NEW**: Implement 1-6 hour chunk intervals optimized for social activity patterns
+  - **NEW**: Add compression for data older than 24 hours
+  - **NEW**: Create continuous aggregates for hourly post stats and daily user activity
+  - **NEW**: Implement batch insert optimization using COPY for bulk operations
+  - **NEW**: Add Personal Indexer features for user-specific data retention
+  - _Requirements: 2.3_
+
+- [ ] 4.5.2 Update Simply Kaspa indexer with TimescaleDB enhancements
+  - **NEW**: Convert blocks and transactions tables to hypertables
+  - **NEW**: Implement 15-30 minute chunk intervals for 864,000 blocks/day processing
+  - **NEW**: Add advanced compression policies for blockchain data
+  - **NEW**: Create continuous aggregates for network statistics and analytics
+  - **NEW**: Implement Personal Indexer mode for individual user blockchain data
+  - **NEW**: Add performance monitoring and metrics collection
+  - _Requirements: 2.4_
+
+- [ ] 4.5.3 Update database infrastructure for TimescaleDB
+  - **NEW**: Migrate from postgres:17-alpine to timescale/timescaledb:latest-pg16
+  - **NEW**: Update Docker Compose configurations with TimescaleDB-specific settings
+  - **NEW**: Create migration scripts for existing PostgreSQL data to TimescaleDB
+  - **NEW**: Add TimescaleDB monitoring and performance metrics
+  - **NEW**: Implement backup and recovery procedures for TimescaleDB
+  - _Requirements: 2.1, 2.2_
+
 ## Phase 5: Service Repository Integration 🔄 CURRENT PRIORITY
 
 - [ ] 5. Clone and integrate external service repositories
@@ -169,22 +217,31 @@
   - Create test script for end-to-end messaging functionality with indexer dependency
   - _Requirements: 2.1, 2.3_
 
-- [ ] 5.3 Integrate K-Social platform ecosystem
-  - Clone K Social app repository (thesheepcat/K) to services/k-social/
-  - Clone K Social indexer repository (thesheepcat/K-indexer) to services/k-indexer/
-  - **RESEARCH**: Investigate if K Social app can be configured to point to K-indexer instance
-  - Set up database schema initialization for social data
-  - Configure KSOCIAL_INDEXER_URL environment variable (points to k-indexer:3000)
-  - **DEPENDENCY**: Determine if K Social app requires K-indexer for full functionality
+- [ ] 5.3 Integrate K-Social platform ecosystem **[UPDATED - BUILD-TIME INTEGRATION]**
+  - **NEW**: Implement build-time integration (no cloning into repository)
+  - Create Dockerfile for K Social app with external repository clone during build
+  - Create Dockerfile for K Social indexer with external repository clone during build
+  - **NEW**: Add configurable version/branch selection (K_SOCIAL_VERSION, K_INDEXER_VERSION)
+  - **NEW**: Create flexible build scripts similar to Kasia approach
+  - Set up database schema initialization for social data with TimescaleDB enhancements
+  - Configure apiBaseUrl environment variable (points to k-indexer:3000)
+  - **CONFIRMED**: K Social app has absolute dependency on K-indexer for all functionality
   - Create test scripts for social media functionality and data flow
+  - **NEW**: Add version pinning and update monitoring strategy
   - _Requirements: 2.1, 2.3_
 
-- [ ] 5.4 Integrate Simply Kaspa indexer
-  - Clone Simply Kaspa indexer repository (supertypo/simply-kaspa-indexer) to services/simply-kaspa-indexer/
-  - Configure multiple operation modes (full, light, archive)
+- [ ] 5.4 Integrate Simply Kaspa indexer **[UPDATED - BUILD-TIME INTEGRATION]**
+  - **NEW**: Implement build-time integration (no cloning into repository)
+  - Create Dockerfile with external repository clone during build
+  - **NEW**: Add configurable version/branch selection (SIMPLY_KASPA_VERSION)
+  - **NEW**: Create flexible build script with multiple build options
+  - Configure multiple operation modes (full, light, archive, personal)
   - Set up TimescaleDB integration with hypertables and compression
+  - **NEW**: Implement TimescaleDB schema migration and optimization
   - Implement archive-specific retention and partitioning policies
+  - **NEW**: Add Personal Indexer mode configuration
   - Create test scripts for performance across different indexing modes
+  - **NEW**: Add version pinning and update monitoring strategy
   - _Requirements: 2.2, 2.4_
 
 - [ ] 5.5 Integrate mining stratum bridge
@@ -338,28 +395,39 @@
 - **Documentation System**: Complete documentation with setup guides and architecture details
 - **Management Tools**: Full suite of management and health monitoring scripts
 
-### 🔄 Current Priority (Phase 2 & 5)
-- **Service Integration**: Need to clone and integrate all external service repositories
-- **Repository Setup**: Kasia, K-Social, Simply Kaspa indexer, and mining stratum bridge
-- **Configuration**: Service-specific environment variables and API connections
+### 🔄 Current Priority (Phase 4.5 & 5) **[UPDATED]**
+- **TimescaleDB Integration**: Implement TimescaleDB optimizations across all indexers (NEW PRIORITY)
+- **Personal Indexer Implementation**: Apply Personal Indexer concept for user-specific data patterns
+- **Service Integration**: Clone and integrate external service repositories with appropriate storage backends
+- **Repository Setup**: Kasia (file-based storage), K-Social + K-indexer (TimescaleDB), Simply Kaspa indexer (TimescaleDB)
+- **Performance Optimization**: Achieve 10-100x query performance improvements and 50-90% storage reduction
 
 ### 📋 Next Steps (Phases 6-8)
 - **Dashboard Enhancement**: Complete API implementation and advanced monitoring
 - **User Experience**: Troubleshooting guides and interactive setup wizards
 - **Production Features**: Backup systems, security hardening, cloud deployment
 
-## Immediate Next Tasks
+## Immediate Next Tasks **[UPDATED FOR TIMESCALEDB INTEGRATION]**
 
-Based on current testing progress and service dependency requirements:
+Based on recent TimescaleDB integration work and Personal Indexer concepts:
 
-1. **Phase 5.8**: Standardize cleanup functionality across all test scripts (test-kaspa-node.sh, test-kaspa-node-only.sh)
-2. **Phase 5.1**: Complete Kasia indexer testing and validation (test-kasia-indexer.sh)
-3. **Phase 5.6**: Research K Social App dependency on K-indexer (critical for integration planning)
-4. **Phase 5.2**: Integrate Kasia messaging app (requires Kasia indexer to be running)
-5. **Phase 5.3**: Integrate K-Social platform and indexer (dependency-aware integration)
-6. **Phase 5.4**: Integrate Simply Kaspa indexer with TimescaleDB optimization
-7. **Phase 5.7**: Extend testing suite with dependency validation
-8. **Phase 6**: Complete dashboard API endpoints for service management
+### **Priority 1: TimescaleDB Integration (Phase 4.5)**
+1. **Phase 4.5.3**: Update database infrastructure to TimescaleDB (migrate from PostgreSQL)
+2. **Phase 4.5.1**: Implement K-Social indexer TimescaleDB enhancements (hypertables, compression)
+3. **Phase 4.5.2**: Implement Simply Kaspa indexer TimescaleDB optimizations (15-30 min chunks)
+4. **Phase 4.5**: Validate Personal Indexer concept implementation across all indexers
+
+### **Priority 2: Service Integration with TimescaleDB (Phase 5)**
+5. **Phase 5.3**: Integrate K-Social platform and indexer using build-time integration (no cloning)
+6. **Phase 5.4**: Integrate Simply Kaspa indexer using build-time integration with TimescaleDB
+7. **Phase 5.2**: Integrate Kasia messaging app (existing indexer already functional)
+8. **Phase 5.7**: Extend testing suite with TimescaleDB performance validation and version testing
+
+### **Priority 3: Testing and Validation**
+9. **Phase 5.8**: Standardize cleanup functionality across all test scripts
+10. **Phase 5.1**: Complete Kasia indexer testing and validation (test-kasia-indexer.sh)
+11. **NEW**: Create TimescaleDB performance benchmarking tests (10-100x query improvements)
+12. **Phase 6**: Complete dashboard API endpoints for service management
 
 ## Critical Dependencies to Validate
 

@@ -14,10 +14,10 @@ A comprehensive Docker Compose setup for running a complete Kaspa ecosystem on a
 - **K Social App** - Decentralized social media platform ([thesheepcat/K](https://github.com/thesheepcat/K))
 
 ### Explorer Profile (`explorer`) - Data Indexing Services
-- **Kasia Indexer** - Message indexing and search service ([K-Kluster/kasia-indexer](https://github.com/K-Kluster/kasia-indexer))
-- **K Social Indexer** - Social content indexing service ([thesheepcat/K-indexer](https://github.com/thesheepcat/K-indexer))
-- **Simply Kaspa Indexer** - General blockchain indexing ([supertypo/simply-kaspa-indexer](https://github.com/supertypo/simply-kaspa-indexer))
-- **Shared PostgreSQL Database** - Optimized data storage for all indexers
+- **Kasia Indexer** - Message indexing with file-based storage (RocksDB) ([K-Kluster/kasia-indexer](https://github.com/K-Kluster/kasia-indexer))
+- **K Social Indexer** - Social content indexing with TimescaleDB (Rust) ([thesheepcat/K-indexer](https://github.com/thesheepcat/K-indexer))
+- **Simply Kaspa Indexer** - General blockchain indexing with TimescaleDB ([supertypo/simply-kaspa-indexer](https://github.com/supertypo/simply-kaspa-indexer))
+- **Shared TimescaleDB** - Time-series optimized PostgreSQL for K-Social and Simply Kaspa indexers
 
 ### Archive Profile (`archive`) - Long-term Data Storage
 - **Archive Indexer** - Historical data preservation and analysis
