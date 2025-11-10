@@ -1,0 +1,166 @@
+# Simply Kaspa Indexer Batch Processing Configuration
+# Optimized for high-throughput blockchain data processing
+
+[batch_processing]
+# Enable batch processing for optimal throughput
+enabled = true
+mode = "parallel"  # parallel, sequential, adaptive
+
+[batch_processing.blocks]
+# Block processing configuration
+batch_size = 1000  # Process 1000 blocks per batch
+parallel_workers = 4
+queue_size = 5000
+timeout_seconds = 300
+retry_attempts = 3
+retry_delay_seconds = 5
+
+[batch_processing.transactions]
+# Transaction processing configuration
+batch_size = 1000  # Optimal for TimescaleDB COPY operations
+parallel_workers = 4
+queue_size = 10000
+timeout_seconds = 300
+retry_attempts = 3
+retry_delay_seconds = 5
+use_copy_command = true  # Use PostgreSQL COPY for bulk inserts
+
+[batch_processing.transaction_inputs]
+batch_size = 5000  # Larger batches for inputs
+parallel_workers = 2
+queue_size = 20000
+timeout_seconds = 300
+use_copy_command = true
+
+[batch_processing.transaction_outputs]
+batch_size = 5000  # Larger batches for outputs
+parallel_workers = 2
+queue_size = 20000
+timeout_seconds = 300
+use_copy_command = true
+
+[batch_processing.addresses]
+# Address updates (less frequent)
+batch_size = 500
+parallel_workers = 2
+queue_size = 2000
+timeout_seconds = 120
+merge_updates = true  # Merge multiple updates to same address
+
+[sync]
+# Blockchain synchronization settings
+initial_sync_batch_size = 5000  # Larger batches during initial sync
+normal_sync_batch_size = 1000   # Normal operation batch size
+catch_up_threshold_blocks = 1000  # Switch to catch-up mode if behind
+catch_up_batch_size = 2000      # Batch size when catching up
+
+[sync.strategy]
+mode = "adaptive"  # adaptive, fast, balanced, conservative
+start_from_block = 0  # 0 = start from genesis, -1 = start from latest
+checkpoint_interval_blocks = 10000  # Save progress every N blocks
+verify_data = true  # Verify data integrity during sync
+
+[queue]
+# Queue management for batch processing
+max_queue_size = 50000
+queue_timeout_seconds = 60
+priority_queue_enabled = true
+high_priority_threshold = 100  # Recent blocks get priority
+
+[memory]
+# Memory management for batch processing
+max_memory_mb = 2048
+buffer_pool_size_mb = 512
+cache_size_mb = 256
+gc_interval_seconds = 300
+
+[database]
+# Database-specific batch settings
+connection_pool_size = 20
+max_batch_connections = 10
+transaction_batch_size = 1000
+commit_interval_seconds = 5
+use_prepared_statements = true
+
+[database.copy_options]
+# PostgreSQL COPY command options for bulk inserts
+enabled = true
+format = "csv"
+delimiter = ","
+null_string = "\\N"
+buffer_size_kb = 8192
+
+[performance]
+# Performance optimization settings
+prefetch_blocks = true
+prefetch_count = 100
+parallel_validation = true
+skip_duplicate_checks = false  # Set to true for faster initial sync
+optimize_for_speed = false  # Set to true to prioritize speed over safety
+
+[monitoring]
+# Batch processing monitoring
+enabled = true
+log_batch_stats = true
+log_interval_seconds = 60
+track_processing_time = true
+track_queue_depth = true
+export_metrics = true
+
+[error_handling]
+# Error handling for batch processing
+stop_on_error = false
+max_consecutive_errors = 10
+error_cooldown_seconds = 30
+log_errors = true
+retry_failed_batches = true
+dead_letter_queue_enabled = true
+
+[checkpointing]
+# Checkpoint management for recovery
+enabled = true
+checkpoint_interval_blocks = 10000
+checkpoint_interval_seconds = 300
+keep_last_n_checkpoints = 5
+checkpoint_on_shutdown = true
+
+[recovery]
+# Recovery from failures
+auto_recovery_enabled = true
+recovery_batch_size = 500  # Smaller batches during recovery
+verify_after_recovery = true
+max_recovery_attempts = 3
+
+[optimization]
+# Batch processing optimizations
+deduplicate_inputs = true
+merge_address_updates = true
+skip_empty_blocks = false
+compress_in_memory = false
+use_bulk_operations = true
+
+# Kaspa-specific optimizations
+[kaspa]
+# Kaspa blockchain specific settings
+blocks_per_second = 10  # Kaspa's target rate
+expected_daily_blocks = 864000  # 10 * 60 * 60 * 24
+dag_processing = true  # Enable DAG-specific processing
+handle_reorgs = true
+reorg_depth_limit = 100
+
+[kaspa.validation]
+# Validation settings for Kaspa data
+validate_hashes = true
+validate_merkle_roots = true
+validate_daa_scores = true
+validate_blue_scores = true
+strict_mode = false  # Set to true for maximum validation
+
+[logging]
+# Logging configuration for batch processing
+level = "info"  # debug, info, warn, error
+log_batch_start = true
+log_batch_complete = true
+log_batch_errors = true
+log_performance_stats = true
+verbose_mode = false

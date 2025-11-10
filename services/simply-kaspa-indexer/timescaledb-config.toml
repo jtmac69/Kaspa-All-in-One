@@ -1,0 +1,213 @@
+# Simply Kaspa Indexer TimescaleDB Configuration
+# Optimized for Kaspa's 10 blocks/second rate (864,000 blocks/day)
+
+[database]
+# TimescaleDB connection settings
+enable_timescaledb = true
+connection_pool_size = 20
+connection_timeout_seconds = 30
+query_timeout_seconds = 60
+
+[hypertables]
+# Chunk intervals optimized for Kaspa's block rate
+# 10 blocks/second = 600 blocks/minute = 36,000 blocks/hour
+# 15-30 minute chunks provide optimal balance
+
+[hypertables.blocks]
+enabled = true
+chunk_interval_minutes = 30  # 18,000 blocks per chunk
+time_column = "created_at"
+partition_column = "created_at"
+compress_after_hours = 2
+compression_enabled = true
+
+[hypertables.transactions]
+enabled = true
+chunk_interval_minutes = 15  # High frequency, smaller chunks
+time_column = "created_at"
+partition_column = "created_at"
+compress_after_hours = 2
+compression_enabled = true
+
+[hypertables.transaction_inputs]
+enabled = true
+chunk_interval_minutes = 15
+time_column = "created_at"
+partition_column = "created_at"
+compress_after_hours = 2
+compression_enabled = true
+
+[hypertables.transaction_outputs]
+enabled = true
+chunk_interval_minutes = 15
+time_column = "created_at"
+partition_column = "created_at"
+compress_after_hours = 2
+compression_enabled = true
+
+[hypertables.addresses]
+enabled = true
+chunk_interval_minutes = 60  # Less frequent updates
+time_column = "created_at"
+partition_column = "created_at"
+compress_after_hours = 24
+compression_enabled = true
+
+[hypertables.network_stats]
+enabled = true
+chunk_interval_minutes = 60
+time_column = "created_at"
+partition_column = "created_at"
+compress_after_hours = 6
+compression_enabled = true
+
+[compression]
+# Compression settings for 90%+ space savings
+enabled = true
+compress_after_hours = 2
+compression_algorithm = "lz4"  # Fast compression, good ratio
+segment_by_columns = ["block_hash", "transaction_id"]
+order_by_columns = ["created_at DESC"]
+
+# Compression policies per table
+[compression.blocks]
+compress_after_hours = 2
+segment_by = ["hash"]
+order_by = ["created_at DESC", "daa_score DESC"]
+
+[compression.transactions]
+compress_after_hours = 2
+segment_by = ["block_hash"]
+order_by = ["created_at DESC", "block_time DESC"]
+
+[compression.transaction_inputs]
+compress_after_hours = 2
+segment_by = ["transaction_id"]
+order_by = ["created_at DESC"]
+
+[compression.transaction_outputs]
+compress_after_hours = 2
+segment_by = ["transaction_id"]
+order_by = ["created_at DESC", "output_index"]
+
+[compression.addresses]
+compress_after_hours = 24
+segment_by = ["address"]
+order_by = ["updated_at DESC"]
+
+[continuous_aggregates]
+# Real-time analytics without query overhead
+enabled = true
+refresh_interval_minutes = 15
+
+[continuous_aggregates.hourly_blockchain_stats]
+enabled = true
+time_bucket = "1 hour"
+refresh_lag_minutes = 60
+refresh_interval_minutes = 60
+materialized_only = false
+
+[continuous_aggregates.daily_network_activity]
+enabled = true
+time_bucket = "1 day"
+refresh_lag_hours = 6
+refresh_interval_hours = 6
+materialized_only = false
+
+[continuous_aggregates.hourly_address_activity]
+enabled = true
+time_bucket = "1 hour"
+refresh_lag_minutes = 60
+refresh_interval_minutes = 60
+materialized_only = false
+
+[continuous_aggregates.realtime_blockchain_metrics]
+enabled = true
+time_bucket = "15 minutes"
+refresh_lag_minutes = 15
+refresh_interval_minutes = 15
+materialized_only = false
+
+[retention]
+# Data retention policies (Personal Indexer concept)
+# Set to 0 to keep data forever
+enabled = false
+default_retention_days = 0
+
+[retention.blocks]
+enabled = false
+retention_days = 0  # Keep all blocks by default
+
+[retention.transactions]
+enabled = false
+retention_days = 0  # Keep all transactions by default
+
+[retention.transaction_inputs]
+enabled = false
+retention_days = 365  # Can be enabled for personal mode
+
+[retention.transaction_outputs]
+enabled = false
+retention_days = 365  # Can be enabled for personal mode
+
+[retention.addresses]
+enabled = false
+retention_days = 0  # Keep address data forever
+
+[indexes]
+# Strategic indexes for optimal query performance
+enabled = true
+create_on_startup = true
+
+[indexes.blocks]
+hash_index = true
+timestamp_index = true
+daa_score_index = true
+blue_score_index = true
+previous_hash_index = true
+
+[indexes.transactions]
+block_hash_index = true
+block_time_index = true
+value_index = true
+transaction_id_index = true
+
+[indexes.transaction_inputs]
+transaction_id_index = true
+address_index = true
+outpoint_index = true
+
+[indexes.transaction_outputs]
+transaction_id_index = true
+address_index = true
+value_index = true
+unspent_index = true
+
+[indexes.addresses]
+balance_index = true
+transaction_count_index = true
+last_seen_index = true
+
+[performance]
+# Performance tuning for Kaspa's high throughput
+batch_insert_size = 1000
+parallel_workers = 4
+max_connections = 20
+statement_timeout_seconds = 60
+lock_timeout_seconds = 30
+
+[monitoring]
+# Performance monitoring and metrics
+enabled = true
+collect_stats = true
+log_slow_queries = true
+slow_query_threshold_ms = 1000
+export_prometheus_metrics = true
+
+[logging]
+# Logging configuration
+level = "info"  # debug, info, warn, error
+log_queries = false
+log_compression_stats = true
+log_chunk_stats = true
+log_performance_metrics = true
