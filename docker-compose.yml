@@ -75,17 +75,32 @@ services:
     build:
       context: ./services/kaspa-stratum
       dockerfile: Dockerfile
+      args:
+        STRATUM_VERSION: ${STRATUM_VERSION:-master}
     container_name: kaspa-stratum
     restart: unless-stopped
     ports:
       - "${STRATUM_PORT:-5555}:5555"  # Stratum port
     environment:
       - KASPA_RPC_SERVER=${REMOTE_KASPA_NODE_URL:-kaspa-node:16111}
+      - STRATUM_PORT=5555
+      - LOG_LEVEL=${STRATUM_LOG_LEVEL:-info}
+      - MIN_SHARE_DIFF=${STRATUM_MIN_SHARE_DIFF:-4}
+      - EXTRA_NONCE_SIZE=${STRATUM_EXTRA_NONCE_SIZE:-0}
+    depends_on:
+      kaspa-node:
+        condition: service_started
     networks:
       - kaspa-network
     profiles:
       - prod
       - mining
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "5555"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # Kasia Messaging App
   kasia-app:
@@ -246,17 +261,39 @@ services:
     build:
       context: ./services/simply-kaspa-indexer
       dockerfile: Dockerfile
+      args:
+        SIMPLY_KASPA_VERSION: ${SIMPLY_KASPA_VERSION:-master}
+        ENABLE_TIMESCALEDB: "true"
     container_name: simply-kaspa-indexer
     restart: unless-stopped
     ports:
       - "${SIMPLY_INDEXER_PORT:-3005}:3000"
     environment:
+      # Kaspa node connection
       - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
+      # Database connection
       - DATABASE_URL=postgresql://${POSTGRES_USER:-indexer}:${POSTGRES_PASSWORD:-secure_password}@indexer-db:5432/simply_kaspa
-      - INDEXER_MODE=${SIMPLY_INDEXER_MODE:-full}  # full, light, archive
+      # Indexing mode
+      - INDEXER_MODE=${SIMPLY_INDEXER_MODE:-full}  # full, light, archive, personal
+      # TimescaleDB optimizations
+      - ENABLE_TIMESCALEDB=true
+      - ENABLE_COMPRESSION=true
+      - COMPRESSION_AGE_HOURS=${SIMPLY_COMPRESSION_AGE_HOURS:-2}
+      - BATCH_SIZE=${SIMPLY_BATCH_SIZE:-1000}
+      - CHUNK_INTERVAL_MINUTES=${SIMPLY_CHUNK_INTERVAL:-30}
+      # Retention policies (Personal Indexer)
+      - RETENTION_DAYS=${SIMPLY_RETENTION_DAYS:-0}  # 0 = keep forever
+      # Performance tuning
+      - LOG_LEVEL=${SIMPLY_LOG_LEVEL:-info}
+      - CACHE_SIZE=${SIMPLY_CACHE_SIZE:-1000}
+    volumes:
+      - simply-kaspa-data:/app/data
+      - simply-kaspa-logs:/app/logs
     depends_on:
       indexer-db:
         condition: service_healthy
+      kaspa-node:
+        condition: service_started
     networks:
       - kaspa-network
     profiles:
@@ -382,6 +419,8 @@ services:
 volumes:
   kaspa-data:
   kasia-indexer-data:
+  simply-kaspa-data:
+  simply-kaspa-logs:
   indexer-db-data:
   archive-db-data:
   portainer-data:

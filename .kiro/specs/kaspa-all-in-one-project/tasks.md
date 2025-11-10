@@ -63,7 +63,7 @@
   - **NEW**: Add time-based partitioning (1-6 hour chunks for social activity patterns)
   - _Requirements: 2.1, 2.3_
 
-- [ ] 2.4 Integrate Simply Kaspa indexer **[UPDATED FOR TIMESCALEDB]**
+- [x] 2.4 Integrate Simply Kaspa indexer **[UPDATED FOR TIMESCALEDB]**
   - Clone and integrate Simply Kaspa indexer repository (supertypo/simply-kaspa-indexer)
   - **NEW**: Implement TimescaleDB optimizations (15-30 minute chunks for 10bps rate)
   - **NEW**: Apply Personal Indexer concept - user-specific indexing patterns and data retention
@@ -75,7 +75,7 @@
   - **NEW**: Validate 10-100x performance improvements for time-range queries
   - _Requirements: 2.2, 2.4_
 
-- [ ] 2.5 Integrate mining stratum bridge
+- [x] 2.5 Integrate mining stratum bridge
   - Clone and integrate Kaspa stratum bridge repository (aglov413/kaspa-stratum-bridge)
   - Configure Go build environment and dependencies
   - Set up Kaspa node connection for mining operations
@@ -163,7 +163,8 @@
   - **NEW**: Optimize chunk sizing for Kaspa's 10 blocks/second rate (15-30 minute intervals)
   - **NEW**: Add batch processing optimizations (1000-record batches for optimal throughput)
   - **NEW**: Validate 10-100x performance improvements for time-range queries
-  - _Requirements: 2.1, 2.2, 2.3, 2.4_
+  - **NOTE**: Applies to K-indexer and Simply Kaspa indexer only (Kasia uses file-based RocksDB storage)
+  - _Requirements: 2.3, 2.4_
 
 - [ ] 4.5.1 Update K-Social indexer with TimescaleDB enhancements
   - **NEW**: Convert k_posts, k_votes, k_user_profiles tables to hypertables
@@ -189,7 +190,8 @@
   - **NEW**: Create migration scripts for existing PostgreSQL data to TimescaleDB
   - **NEW**: Add TimescaleDB monitoring and performance metrics
   - **NEW**: Implement backup and recovery procedures for TimescaleDB
-  - _Requirements: 2.1, 2.2_
+  - **NOTE**: This applies to K-indexer and Simply Kaspa indexer only (Kasia uses file-based storage)
+  - _Requirements: 2.3, 2.4_
 
 ## Phase 5: Service Repository Integration 🔄 CURRENT PRIORITY
 
