@@ -228,11 +228,16 @@ REMOTE_KASPA_NODE_URL=http://192.168.1.100:16111
 
 ## 📚 Documentation
 
+### Getting Started
+- **Quick Reference**: [docs/quick-reference.md](docs/quick-reference.md) - Essential commands and operations
 - **Component Matrix**: [docs/component-matrix.md](docs/component-matrix.md) - Complete component overview and status
 - **Deployment Profiles**: [docs/deployment-profiles.md](docs/deployment-profiles.md) - Profile-based deployment guide
-- **TimescaleDB Integration**: [docs/timescaledb-integration.md](docs/timescaledb-integration.md) - Time-series database optimization
 - **Public Node Setup**: [docs/public-node-setup.md](docs/public-node-setup.md) - Network configuration guide
+
+### Architecture and Development
 - **Project Structure**: [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Architecture and file organization
+- **TimescaleDB Integration**: [docs/timescaledb-integration.md](docs/timescaledb-integration.md) - Time-series database optimization
+- **Service Dependencies**: [docs/service-dependencies.md](docs/service-dependencies.md) - Service relationships and startup order
 - **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
 
 ### Community Contributions
@@ -240,11 +245,11 @@ REMOTE_KASPA_NODE_URL=http://192.168.1.100:16111
   - [K Social Indexer Enhancement](docs/pr-proposals/k-social-indexer-timescaledb-pr.md)
   - [Simply Kaspa Indexer Enhancement](docs/pr-proposals/simply-kaspa-indexer-timescaledb-pr.md)
 
-### Planned Documentation
-- **User Guide**: Step-by-step usage instructions
-- **API Documentation**: Service API references
-- **Troubleshooting**: Common issues and solutions
-- **Admin Guide**: System administration procedures
+### Operations and Maintenance
+- **Troubleshooting Guide**: [docs/troubleshooting.md](docs/troubleshooting.md) - Comprehensive problem diagnosis and solutions
+- **Maintenance Guide**: [docs/maintenance.md](docs/maintenance.md) - Maintenance schedules and procedures
+- **FAQ**: [docs/faq.md](docs/faq.md) - Frequently asked questions and answers
+- **Test Cleanup**: [docs/test-cleanup.md](docs/test-cleanup.md) - Test environment cleanup procedures
 
 ## 🛠️ Development
 
@@ -325,34 +330,29 @@ docker run --rm -v kaspa-aio_kaspa-data:/data -v $(pwd):/backup alpine tar czf /
 
 ## 🐛 Troubleshooting
 
+For comprehensive troubleshooting guidance, see [docs/troubleshooting.md](docs/troubleshooting.md).
+
+### Quick Diagnostics
+
+```bash
+# Run automated health check
+./scripts/health-check.sh
+
+# Check service status
+docker compose ps
+
+# View service logs
+docker compose logs [service-name]
+```
+
 ### Common Issues
 
-**Services won't start:**
-```bash
-# Check Docker status
-sudo systemctl status docker
+- **Services won't start**: Check Docker status, disk space, and port conflicts
+- **Node won't sync**: Verify firewall settings and peer connections
+- **High resource usage**: Monitor with `docker stats` and optimize configuration
+- **Database errors**: Check connection settings and run database maintenance
 
-# Check logs
-./scripts/manage.sh logs
-
-# Restart services
-./scripts/manage.sh restart
-```
-
-**High resource usage:**
-```bash
-# Check resource usage
-./scripts/manage.sh status
-
-# Monitor in real-time
-docker stats
-```
-
-**Network connectivity issues:**
-```bash
-# Test Kaspa node connectivity
-curl -X POST -H "Content-Type: application/json" -d '{"method":"ping","params":{}}' http://localhost:16111
-```
+See the [Troubleshooting Guide](docs/troubleshooting.md) for detailed solutions to these and many other issues.
 
 ## 🤝 Contributing
 
