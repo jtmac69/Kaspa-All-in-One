@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaspa All-in-One Installation Wizard</title>
+    
+    <!-- Kaspa Brand Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Favicons - SVG with PNG fallbacks -->
+    <link rel="icon" type="image/svg+xml" href="/assets/brand/icons/svg/kaspa-icon-light.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/icons/png/kaspa-icon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/icons/png/kaspa-icon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/icons/png/kaspa-icon-180.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles/wizard.css">
+</head>
+<body>
+    <!-- Wizard Container -->
+    <div id="wizard-app" class="wizard-container">
+        
+        <!-- Progress Indicator -->
+        <div class="wizard-progress">
+            <div class="progress-steps">
+                <div class="progress-step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Welcome</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">System Check</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Profiles</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="4">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Configure</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="5">
+                    <div class="step-number">5</div>
+                    <div class="step-label">Review</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="6">
+                    <div class="step-number">6</div>
+                    <div class="step-label">Install</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="7">
+                    <div class="step-number">7</div>
+                    <div class="step-label">Complete</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <main class="wizard-content">
+            
+            <!-- Step 1: Welcome -->
+            <div class="wizard-step active" id="step-welcome">
+                <div class="hero">
+                    <!-- Kaspa Logo - Automatically switches for dark mode -->
+                    <picture class="hero-logo-container">
+                        <source srcset="/assets/brand/logos/svg/kaspa-logo-dark.svg" 
+                                media="(prefers-color-scheme: dark)">
+                        <img src="/assets/brand/logos/svg/kaspa-logo-light.svg" 
+                             alt="Kaspa" 
+                             class="hero-logo"
+                             onerror="this.closest('.hero-logo-container').style.display='none'; document.querySelector('.hero-logo-placeholder').style.display='block';">
+                    </picture>
+                    
+                    <!-- Placeholder if logo not yet downloaded -->
+                    <div class="hero-logo-placeholder" style="display: none;">
+                        <div class="logo-placeholder-text">KASPA</div>
+                        <div class="logo-placeholder-note">Download logos from https://kaspa.org/media-kit/</div>
+                        <div class="logo-placeholder-note">Place in assets/brand/logos/svg/</div>
+                    </div>
+                    
+                    <h1 class="hero-title">Welcome to Kaspa All-in-One</h1>
+                    <p class="hero-subtitle">
+                        Set up your complete Kaspa ecosystem in minutes with our guided installation wizard
+                    </p>
+                    
+                    <div class="hero-features">
+                        <div class="feature-item">
+                            <div class="feature-icon">⚡</div>
+                            <div class="feature-text">Fast Setup</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🎯</div>
+                            <div class="feature-text">Guided Process</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">✅</div>
+                            <div class="feature-text">Validated</div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-primary btn-large" onclick="nextStep()">
+                        Get Started
+                        <span class="btn-icon">→</span>
+                    </button>
+                    
+                    <div class="hero-footer">
+                        <a href="https://kaspa.org" target="_blank" class="link-secondary">Learn more about Kaspa</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: System Check -->
+            <div class="wizard-step" id="step-system-check">
+                <div class="step-header">
+                    <h2 class="step-title">System Requirements Check</h2>
+                    <p class="step-description">
+                        Verifying your system meets the requirements for Kaspa All-in-One
+                    </p>
+                </div>
+                
+                <div class="check-results">
+                    <div class="check-item checking">
+                        <div class="check-icon">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="check-content">
+                            <h3 class="check-title">Docker Installation</h3>
+                            <p class="check-message">Checking for Docker...</p>
+                        </div>
+                        <div class="check-status">Checking</div>
+                    </div>
+                    
+                    <div class="check-item checking">
+                        <div class="check-icon">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="check-content">
+                            <h3 class="check-title">Docker Compose</h3>
+                            <p class="check-message">Checking for Docker Compose...</p>
+                        </div>
+                        <div class="check-status">Checking</div>
+                    </div>
+                    
+                    <div class="check-item checking">
+                        <div class="check-icon">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="check-content">
+                            <h3 class="check-title">System Resources</h3>
+                            <p class="check-message">Checking CPU, RAM, and disk space...</p>
+                        </div>
+                        <div class="check-status">Checking</div>
+                    </div>
+                    
+                    <div class="check-item checking">
+                        <div class="check-icon">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="check-content">
+                            <h3 class="check-title">Port Availability</h3>
+                            <p class="check-message">Checking required ports...</p>
+                        </div>
+                        <div class="check-status">Checking</div>
+                    </div>
+                </div>
+                
+                <div class="step-actions">
+                    <button class="btn-secondary" onclick="previousStep()">
+                        <span class="btn-icon">←</span>
+                        Back
+                    </button>
+                    <button class="btn-primary" onclick="nextStep()" disabled>
+                        Continue
+                        <span class="btn-icon">→</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Profile Selection -->
+            <div class="wizard-step" id="step-profiles">
+                <div class="step-header">
+                    <h2 class="step-title">Select Your Deployment Profile</h2>
+                    <p class="step-description">
+                        Choose which services you want to run. You can select multiple profiles.
+                    </p>
+                </div>
+                
+                <div class="profile-grid">
+                    <div class="profile-card" data-profile="core">
+                        <div class="profile-badge">Essential</div>
+                        <div class="profile-icon">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="3"/>
+                                <circle cx="24" cy="24" r="8" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h3 class="profile-title">Core Node</h3>
+                        <p class="profile-description">
+                            Essential Kaspa node for blockchain participation
+                        </p>
+                        <div class="profile-services">
+                            <span class="service-tag">kaspa-node</span>
+                            <span class="service-tag">dashboard</span>
+                        </div>
+                        <div class="profile-resources">
+                            <div class="resource-item">
+                                <span class="resource-label">CPU:</span>
+                                <span class="resource-value">2 cores</span>
+                            </div>
+                            <div class="resource-item">
+                                <span class="resource-label">RAM:</span>
+                                <span class="resource-value">4 GB</span>
+                            </div>
+                            <div class="resource-item">
+                                <span class="resource-label">Disk:</span>
+                                <span class="resource-value">50 GB</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- More profile cards will be added dynamically -->
+                </div>
+                
+                <div class="step-actions">
+                    <button class="btn-secondary" onclick="previousStep()">
+                        <span class="btn-icon">←</span>
+                        Back
+                    </button>
+                    <button class="btn-primary" onclick="nextStep()">
+                        Continue
+                        <span class="btn-icon">→</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Additional steps will be loaded dynamically -->
+            
+        </main>
+
+        <!-- Footer -->
+        <footer class="wizard-footer">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <picture>
+                        <source srcset="/assets/brand/icons/svg/kaspa-icon-dark.svg" 
+                                media="(prefers-color-scheme: dark)">
+                        <img src="/assets/brand/icons/svg/kaspa-icon-light.svg" 
+                             alt="Kaspa" 
+                             class="footer-logo-img">
+                    </picture>
+                    <span class="footer-text">Kaspa All-in-One</span>
+                </div>
+                <div class="footer-links">
+                    <a href="https://kaspa.org" target="_blank">kaspa.org</a>
+                    <a href="https://github.com/kaspanet" target="_blank">GitHub</a>
+                    <a href="https://discord.gg/kaspa" target="_blank">Discord</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/scripts/wizard.js"></script>
+</body>
+</html>
