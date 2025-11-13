@@ -104,6 +104,7 @@ cleanup_test_containers() {
         "kasia-app-test"
         "kasia-indexer-test" 
         "kaspa-node-test"
+        "kaspa-dashboard-test"
         "indexer-db-test"
         "k-social-test"
         "k-indexer-test"

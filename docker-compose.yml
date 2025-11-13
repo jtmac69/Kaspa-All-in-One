@@ -26,12 +26,14 @@ services:
     command: "kaspad --utxoindex --rpclisten=0.0.0.0:16111 --listen=0.0.0.0:16110"
     networks:
       - kaspa-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:16111", "-X", "POST", "-H", "Content-Type: application/json", "-d", '{"method":"ping","params":{}}']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+    # Healthcheck disabled - curl not available in kaspa node image
+    # Container stability is monitored via external health checks
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:16111", "-X", "POST", "-H", "Content-Type: application/json", "-d", '{"method":"ping","params":{}}']
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 60s
 
   # Management Dashboard (Core component)
   dashboard:

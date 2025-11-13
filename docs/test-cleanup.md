@@ -68,6 +68,21 @@ The Kaspa All-in-One project includes comprehensive cleanup functionality to man
 ./test-service-dependencies.sh --cleanup-full
 ```
 
+#### Dashboard Test
+```bash
+# Run tests with automatic cleanup (skip sync-dependent tests)
+./test-dashboard.sh --skip-sync-tests
+
+# Cleanup only (no tests)
+./test-dashboard.sh --cleanup-only
+
+# Full cleanup including volumes
+./test-dashboard.sh --cleanup-full
+
+# Disable automatic cleanup
+./test-dashboard.sh --no-cleanup
+```
+
 ### Comprehensive Cleanup Script
 
 The `cleanup-tests.sh` script provides centralized cleanup for all test artifacts:
