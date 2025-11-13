@@ -121,7 +121,7 @@
   - Documented cleanup system in docs/test-cleanup.md with usage examples and best practices
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 3.5 Create dashboard testing suite
+- [x] 3.5 Create dashboard testing suite
   - Implement automated dashboard API endpoint testing
   - Test service status and management operations (start/stop/restart)
   - Validate log retrieval and streaming functionality
@@ -427,6 +427,135 @@
   - ⏳ Create comprehensive test suite
   - _Requirements: See web-installation-wizard/requirements.md (Req 7-10)_
 
+## Phase 6.5: Non-Technical User Support 🎯 HIGH PRIORITY
+
+**See detailed analysis**: `NON_TECHNICAL_USER_ANALYSIS.md`, `NON_TECHNICAL_USER_TASKS.md`, `NON_TECHNICAL_USER_SUMMARY.md`
+
+**Goal**: Transform wizard from "technical users only" to "anyone can install" with 90% success rate
+
+### Phase 6.5.1: Foundation (Critical Priority - Weeks 1-2)
+
+- [ ] 6.5.1 Integrate resource checker into wizard backend
+  - Create resource detection module (OS-specific: Linux, macOS, Windows/WSL)
+  - Detect RAM (total, available, Docker limit), CPU cores, disk space and type
+  - Create component requirements database (JSON format with min/recommended/optimal specs)
+  - Implement recommendation engine (compatibility ratings, conflict detection)
+  - Create auto-configuration generator (optimal .env, profile selection, remote vs local node)
+  - Add resource checker API endpoints (/check, /requirements, /recommend, /auto-configure)
+  - _Requirements: Resource Checker Feature Doc, Web Installation Wizard Req 1_
+
+- [ ] 6.5.2 Plain language content rewrite
+  - Create plain language style guide (8th grade reading level, friendly tone)
+  - Rewrite profile descriptions with "What you get" and "What this means" sections
+  - Rewrite error messages with "What this means", "Why this happened", "How to fix"
+  - Add interactive glossary with tooltips for technical terms
+  - Create progress step descriptions with "What's happening now" explanations
+  - _Requirements: Web Installation Wizard Req 8, 11_
+
+- [ ] 6.5.3 Pre-installation checklist page
+  - Design checklist UI with expandable sections and progress indicators
+  - Implement system requirements checker with user-friendly display
+  - Create dependency status checker (Docker, Docker Compose, permissions)
+  - Add "Help Me Choose" profile selection quiz
+  - Display time estimates for each profile (setup, download, sync)
+  - _Requirements: Web Installation Wizard Req 1, 2, 11, 12_
+
+- [ ] 6.5.4 Dependency installation guides
+  - Create Docker installation detector (OS detection, Docker Desktop vs Engine)
+  - Build macOS installation guide (step-by-step with screenshots and video)
+  - Build Windows installation guide (WSL2 setup, Docker Desktop, Hyper-V troubleshooting)
+  - Build Linux installation guide (distribution-specific, Docker Engine, permissions)
+  - Add permission troubleshooting with "Why do I need this?" explanations
+  - _Requirements: Web Installation Wizard Req 1, 8_
+
+- [ ] 6.5.5 Auto-remediation for common errors
+  - Create error detection system (parse Docker errors, categorize, extract details)
+  - Implement port conflict auto-fix (detect, identify process, offer alternative port)
+  - Implement resource limit auto-fix (detect OOM, reduce limits, suggest remote node)
+  - Implement permission auto-fix (detect permission errors, guide through fix)
+  - Add retry with exponential backoff logic
+  - _Requirements: Web Installation Wizard Req 4, 8_
+
+### Phase 6.5.2: Guidance (High Priority - Weeks 3-4)
+
+- [ ] 6.5.6 Enhanced progress transparency
+  - Add contextual progress descriptions ("What's happening now", "Why this takes time")
+  - Implement time remaining estimates (per-step and overall)
+  - Add progress phase indicators (downloading, building, starting with sub-steps)
+  - Create "Is this normal?" indicators with reassurances
+  - Implement smart log filtering (show only important messages, "View detailed logs" option)
+  - _Requirements: Web Installation Wizard Req 5_
+
+- [ ] 6.5.7 Post-installation tour and guidance
+  - Create success screen with celebration animation and next steps
+  - Build interactive tour system (step-by-step, spotlight/highlight, save progress)
+  - Create dashboard tour (highlight features, explain sections, "Try it yourself")
+  - Add service verification guide ("Check everything is working" with health checks)
+  - Create getting started documentation ("What now?", "How do I use this?", video links)
+  - _Requirements: Web Installation Wizard Req 6, 11_
+
+- [ ] 6.5.8 Safety confirmations and warnings
+  - Implement resource warning system (detect profile exceeds resources, show consequences)
+  - Add "Are you sure?" confirmations (risky selections, long sync times, data deletion)
+  - Create recommendation override flow (allow advanced users, require acknowledgment)
+  - Implement safe mode fallback (detect repeated failures, offer minimal installation)
+  - Add configuration backup system (auto-backup before changes, restore capability)
+  - _Requirements: Web Installation Wizard Req 1, 7, 8, 11_
+
+### Phase 6.5.3: Support (High Priority - Weeks 5-6)
+
+- [ ] 6.5.9 Diagnostic export and help system
+  - Create diagnostic information collector (system info, Docker status, config, errors)
+  - Implement diagnostic report generator (human-readable, exclude sensitive data)
+  - Build "Get Help" dialog (search issues, generate report, forum link, contact support)
+  - Integrate common issues search (searchable FAQ, keyword search, solutions)
+  - Add community forum integration (pre-fill post with diagnostic info)
+  - _Requirements: Web Installation Wizard Req 8_
+
+- [ ] 6.5.10 Video tutorials and visual guides
+  - Create installation overview video (<10 minutes, voiceover, on-screen text)
+  - Create Docker installation videos (macOS, Windows WSL2, Linux with troubleshooting)
+  - Create profile selection guide video (explain options, show requirements, recommendations)
+  - Create post-installation tour video (dashboard features, verification, common tasks)
+  - Embed videos in wizard (video player component, "Watch video" buttons, transcripts)
+  - _Requirements: Web Installation Wizard Req 8, 11_
+
+### Phase 6.5.4: Polish (Medium Priority - Weeks 7-8)
+
+- [ ] 6.5.11 Interactive glossary and education
+  - Create glossary database (define terms, plain language, analogies, diagrams)
+  - Implement tooltip system (hover/tap, "Learn more" links, dismissible)
+  - Build glossary page (searchable, organized by category, visual examples)
+  - Add concept explainer modals ("What is a container?", "What is an indexer?")
+  - _Requirements: Web Installation Wizard Req 11_
+
+- [ ] 6.5.12 Rollback and recovery
+  - Implement configuration versioning (save history, track changes, view previous)
+  - Create rollback functionality ("Undo" button, restore config, restart services)
+  - Implement installation checkpoints (save state, resume from checkpoint, rollback)
+  - Add "Start Over" functionality (clean up, remove containers, reset config)
+  - _Requirements: Web Installation Wizard Req 7, 8, 11_
+
+### Phase 6.5.5: Testing and Validation
+
+- [ ] 6.5.13 User testing and validation
+  - Recruit 5-10 non-technical users for testing
+  - Observe installation process and collect feedback
+  - Measure success rate and time to complete
+  - Test with screen readers and mobile devices
+  - Test error recovery flows and documentation
+  - _Requirements: All non-technical user requirements_
+
+### Success Metrics for Phase 6.5
+
+- **Installation Success Rate**: 90%+ (currently unknown)
+- **Time to Complete**: <15 minutes average
+- **Support Requests**: <5% of installations
+- **User Satisfaction**: 4.5/5 or higher
+- **Abandonment Rate**: <10%
+- **Video View Rate**: >50% watch installation video
+- **Auto-Fix Success**: >80% of common errors fixed automatically
+
 ## Phase 7: Dashboard Enhancement and API Completion 📋 PLANNED
 
 - [ ] 7. Complete dashboard backend API implementation
@@ -501,8 +630,9 @@
 - **Service Integration**: All external services integrated (Kasia, K-Social, Simply Kaspa, Stratum)
 - **Performance Optimization**: 10-100x query performance improvements and 90%+ storage reduction achieved
 
-### 🔄 Current Priority (Phases 6-7)
+### 🔄 Current Priority (Phases 6-6.5-7)
 - **Installation Wizard**: Complete web-based installation wizard with backend API
+- **Non-Technical User Support**: Transform wizard for mainstream adoption (90% success rate)
 - **Dashboard Enhancement**: Add missing API endpoints and real-time monitoring
 - **Testing Coverage**: Complete infrastructure and integration testing (Tasks 3.5-3.8)
 - **User Experience**: Enhanced troubleshooting guides and interactive features
@@ -512,29 +642,52 @@
 - **Production Features**: Backup systems, security hardening, cloud deployment
 - **Advanced Features**: Monitoring, alerting, and scaling capabilities
 
-## Immediate Next Tasks **[UPDATED - FOCUS ON WIZARD AND TESTING]**
+## Immediate Next Tasks **[UPDATED - FOCUS ON NON-TECHNICAL USER SUPPORT]**
 
 Based on completed service integration and TimescaleDB work:
 
-### **Priority 1: Installation Wizard Completion (Phase 6)**
-1. **Phase 6.1**: Build wizard backend API (system checker, profile management, installation engine)
-2. **Phase 6.2**: Complete wizard frontend UI (Configure, Review, Install, Complete steps)
-3. **Phase 6.3**: Integrate wizard with main system (Docker service, auto-start, testing)
+### **Priority 1: Non-Technical User Support (Phase 6.5) - CRITICAL**
+**Goal**: Enable 90% installation success rate for non-technical users
 
-### **Priority 2: Testing Coverage Completion (Phase 3)**
-4. **Task 3.5**: Create dashboard testing suite (API endpoints, WebSocket, service management)
-5. **Task 3.6**: Create installation verification testing (install.sh validation, system checks)
-6. **Task 3.7**: Create infrastructure component testing (nginx, TimescaleDB standalone tests)
-7. **Task 3.8**: Create comprehensive integration testing (E2E, build verification, load testing)
+1. **Phase 6.5.1 (Weeks 1-2)**: Foundation
+   - Integrate resource checker into wizard backend
+   - Rewrite all content in plain language
+   - Create pre-installation checklist
+   - Build dependency installation guides
+   - Implement auto-remediation for common errors
 
-### **Priority 3: Dashboard Enhancement (Phase 7)**
-8. **Task 7**: Complete dashboard backend API (restart, logs streaming, configuration management)
-9. **Task 7.1**: Enhance dashboard frontend (interactive controls, real-time monitoring)
-10. **Task 7.2**: Implement advanced monitoring (Prometheus metrics, alerting, performance trends)
+2. **Phase 6.5.2 (Weeks 3-4)**: Guidance
+   - Enhanced progress transparency
+   - Post-installation tour and guidance
+   - Safety confirmations and warnings
 
-### **Priority 4: Documentation and User Experience (Phase 8)**
-11. **Task 8**: Complete troubleshooting and maintenance documentation
-12. **Task 8.1**: Implement user onboarding enhancements (guided tours, templates)
+3. **Phase 6.5.3 (Weeks 5-6)**: Support
+   - Diagnostic export and help system
+   - Video tutorials and visual guides
+
+4. **Phase 6.5.4 (Weeks 7-8)**: Polish
+   - Interactive glossary and education
+   - Rollback and recovery functionality
+
+### **Priority 2: Installation Wizard Completion (Phase 6)**
+5. **Phase 6.1**: Build wizard backend API (system checker, profile management, installation engine)
+6. **Phase 6.2**: Complete wizard frontend UI (Configure, Review, Install, Complete steps)
+7. **Phase 6.3**: Integrate wizard with main system (Docker service, auto-start, testing)
+
+### **Priority 3: Testing Coverage Completion (Phase 3)**
+8. **Task 3.5**: Create dashboard testing suite (API endpoints, WebSocket, service management)
+9. **Task 3.6**: Create installation verification testing (install.sh validation, system checks)
+10. **Task 3.7**: Create infrastructure component testing (nginx, TimescaleDB standalone tests)
+11. **Task 3.8**: Create comprehensive integration testing (E2E, build verification, load testing)
+
+### **Priority 4: Dashboard Enhancement (Phase 7)**
+12. **Task 7**: Complete dashboard backend API (restart, logs streaming, configuration management)
+13. **Task 7.1**: Enhance dashboard frontend (interactive controls, real-time monitoring)
+14. **Task 7.2**: Implement advanced monitoring (Prometheus metrics, alerting, performance trends)
+
+### **Priority 5: Documentation and User Experience (Phase 8)**
+15. **Task 8**: Complete troubleshooting and maintenance documentation
+16. **Task 8.1**: Implement user onboarding enhancements (guided tours, templates)
 
 ## Critical Dependencies to Validate
 
