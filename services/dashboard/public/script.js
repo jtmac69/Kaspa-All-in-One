@@ -1,15 +1,74 @@
 class KaspaDashboard {
     constructor() {
         this.updateInterval = null;
+        this.ws = null;
         this.connectionStatus = document.getElementById('connection-status');
+        this.activeProfiles = new Set(['core']);
+        this.logStreams = new Map();
         this.init();
     }
 
     async init() {
         this.updateConnectionStatus(true);
         await this.loadInitialData();
-        this.startPeriodicUpdates();
+        this.setupWebSocket();
         this.setupEventListeners();
+    }
+
+    setupWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}`;
+        
+        this.ws = new WebSocket(wsUrl);
+        
+        this.ws.onopen = () => {
+            console.log('WebSocket connected');
+            this.updateConnectionStatus(true);
+        };
+        
+        this.ws.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                
+                if (message.type === 'update') {
+                    this.handleRealtimeUpdate(message.data);
+                } else if (message.type === 'log') {
+                    this.handleLogStream(message);
+                }
+            } catch (error) {
+                console.error('WebSocket message error:', error);
+            }
+        };
+        
+        this.ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            this.updateConnectionStatus(false);
+        };
+        
+        this.ws.onclose = () => {
+            console.log('WebSocket disconnected, reconnecting...');
+            this.updateConnectionStatus(false);
+            setTimeout(() => this.setupWebSocket(), 5000);
+        };
+    }
+
+    handleRealtimeUpdate(data) {
+        if (data.services) {
+            this.updateServicesStatus(data.services);
+        }
+        if (data.resources) {
+            this.updateSystemResources(data.resources);
+        }
+    }
+
+    handleLogStream(message) {
+        const modal = document.getElementById('logs-modal');
+        const logsContent = document.getElementById('logs-content');
+        
+        if (modal.style.display === 'block') {
+            logsContent.textContent += message.data;
+            logsContent.scrollTop = logsContent.scrollHeight;
+        }
     }
 
     updateConnectionStatus(connected) {
@@ -27,13 +86,44 @@ class KaspaDashboard {
         try {
             await Promise.all([
                 this.updateKaspaStats(),
-                this.updateServicesStatus(),
-                this.updateSystemResources()
+                this.loadProfiles(),
+                this.loadDependencies()
             ]);
         } catch (error) {
             console.error('Failed to load initial data:', error);
             this.updateConnectionStatus(false);
         }
+    }
+
+    async loadProfiles() {
+        try {
+            const profiles = await fetch('/api/profiles').then(r => r.json());
+            this.activeProfiles = new Set(profiles);
+            this.updateProfileSelector();
+        } catch (error) {
+            console.error('Failed to load profiles:', error);
+        }
+    }
+
+    async loadDependencies() {
+        try {
+            this.dependencies = await fetch('/api/dependencies').then(r => r.json());
+        } catch (error) {
+            console.error('Failed to load dependencies:', error);
+            this.dependencies = {};
+        }
+    }
+
+    updateProfileSelector() {
+        const selector = document.getElementById('profile-filter');
+        if (!selector) return;
+        
+        selector.innerHTML = `
+            <option value="all">All Services</option>
+            ${Array.from(this.activeProfiles).map(profile => 
+                `<option value="${profile}">${this.capitalizeFirst(profile)}</option>`
+            ).join('')}
+        `;
     }
 
     async updateKaspaStats() {
@@ -66,44 +156,70 @@ class KaspaDashboard {
         }
     }
 
-    async updateServicesStatus() {
-        try {
-            const services = await fetch('/api/status').then(r => r.json());
-            const servicesGrid = document.getElementById('services-grid');
-            
-            servicesGrid.innerHTML = services.map(service => `
-                <div class="service-card ${service.status === 'healthy' ? '' : 'unhealthy'}">
-                    <h3>${service.name}</h3>
-                    <div class="service-status ${service.status === 'healthy' ? '' : 'unhealthy'}">
-                        <span class="indicator"></span>
-                        <span>${service.status === 'healthy' ? 'Running' : 'Stopped'}</span>
-                    </div>
-                    <small>Last check: ${new Date(service.lastCheck).toLocaleTimeString()}</small>
-                    ${service.error ? `<div class="error-msg">${service.error}</div>` : ''}
+    updateServicesStatus(services) {
+        const servicesGrid = document.getElementById('services-grid');
+        const selectedProfile = document.getElementById('profile-filter')?.value || 'all';
+        
+        const filteredServices = services.filter(service => 
+            selectedProfile === 'all' || service.profile === selectedProfile
+        );
+        
+        servicesGrid.innerHTML = filteredServices.map(service => `
+            <div class="service-card ${service.status === 'healthy' ? '' : service.status === 'stopped' ? 'stopped' : 'unhealthy'}">
+                <div class="service-header">
+                    <h3>${service.displayName}</h3>
+                    <span class="profile-badge">${service.profile}</span>
                 </div>
-            `).join('');
-
-        } catch (error) {
-            console.error('Failed to update services status:', error);
-        }
+                <div class="service-status ${service.status}">
+                    <span class="indicator"></span>
+                    <span>${this.getStatusText(service.status)}</span>
+                </div>
+                <small>Last check: ${new Date(service.lastCheck).toLocaleTimeString()}</small>
+                ${service.error ? `<div class="error-msg">${service.error}</div>` : ''}
+                <div class="service-actions">
+                    ${service.status === 'stopped' ? 
+                        `<button onclick="dashboard.startService('${service.name}')" class="btn-small btn-success">Start</button>` :
+                        `<button onclick="dashboard.stopService('${service.name}')" class="btn-small btn-danger">Stop</button>`
+                    }
+                    <button onclick="dashboard.restartService('${service.name}')" class="btn-small">Restart</button>
+                    <button onclick="dashboard.viewServiceLogs('${service.name}')" class="btn-small">Logs</button>
+                </div>
+                ${this.renderDependencies(service.name)}
+            </div>
+        `).join('');
     }
 
-    async updateSystemResources() {
-        // Mock system resource data - in production, this would come from the backend
-        const mockResources = {
-            cpu: Math.random() * 100,
-            memory: Math.random() * 100,
-            disk: Math.random() * 100
-        };
+    renderDependencies(serviceName) {
+        const deps = this.dependencies[serviceName] || [];
+        if (deps.length === 0) return '';
+        
+        return `
+            <div class="dependencies">
+                <small>Depends on: ${deps.join(', ')}</small>
+            </div>
+        `;
+    }
 
-        this.updateResourceBar('cpu', mockResources.cpu);
-        this.updateResourceBar('memory', mockResources.memory);
-        this.updateResourceBar('disk', mockResources.disk);
+    getStatusText(status) {
+        const statusMap = {
+            'healthy': 'Running',
+            'unhealthy': 'Unhealthy',
+            'stopped': 'Stopped'
+        };
+        return statusMap[status] || status;
+    }
+
+    updateSystemResources(resources) {
+        this.updateResourceBar('cpu', resources.cpu);
+        this.updateResourceBar('memory', resources.memory);
+        this.updateResourceBar('disk', resources.disk);
     }
 
     updateResourceBar(type, percentage) {
         const progress = document.getElementById(`${type}-progress`);
         const text = document.getElementById(`${type}-text`);
+        
+        if (!progress || !text) return;
         
         progress.style.width = `${percentage}%`;
         text.textContent = `${percentage.toFixed(1)}%`;
@@ -117,36 +233,174 @@ class KaspaDashboard {
         }
     }
 
-    startPeriodicUpdates() {
-        this.updateInterval = setInterval(async () => {
-            try {
-                await this.loadInitialData();
-                this.updateConnectionStatus(true);
-            } catch (error) {
-                console.error('Periodic update failed:', error);
-                this.updateConnectionStatus(false);
+    async startService(serviceName) {
+        try {
+            const response = await fetch(`/api/services/${serviceName}/start`, { method: 'POST' });
+            const result = await response.json();
+            if (response.ok) {
+                this.showNotification('success', result.message);
+            } else {
+                this.showNotification('error', result.error);
             }
-        }, 30000); // Update every 30 seconds
+        } catch (error) {
+            this.showNotification('error', `Failed to start service: ${error.message}`);
+        }
+    }
+
+    async stopService(serviceName) {
+        if (!confirm(`Are you sure you want to stop ${serviceName}?`)) return;
+        
+        try {
+            const response = await fetch(`/api/services/${serviceName}/stop`, { method: 'POST' });
+            const result = await response.json();
+            if (response.ok) {
+                this.showNotification('success', result.message);
+            } else {
+                this.showNotification('error', result.error);
+            }
+        } catch (error) {
+            this.showNotification('error', `Failed to stop service: ${error.message}`);
+        }
+    }
+
+    async restartService(serviceName) {
+        if (!confirm(`Are you sure you want to restart ${serviceName}?`)) return;
+        
+        try {
+            const response = await fetch(`/api/services/${serviceName}/restart`, { method: 'POST' });
+            const result = await response.json();
+            if (response.ok) {
+                this.showNotification('success', result.message);
+            } else {
+                this.showNotification('error', result.error);
+            }
+        } catch (error) {
+            this.showNotification('error', `Failed to restart service: ${error.message}`);
+        }
+    }
+
+    async viewServiceLogs(serviceName) {
+        const modal = document.getElementById('logs-modal');
+        const logsContent = document.getElementById('logs-content');
+        const logsTitle = document.getElementById('logs-title');
+        
+        modal.style.display = 'block';
+        logsTitle.textContent = `${serviceName} Logs`;
+        logsContent.textContent = 'Loading logs...';
+        
+        try {
+            const response = await fetch(`/api/services/${serviceName}/logs`);
+            const data = await response.json();
+            logsContent.textContent = data.logs;
+            
+            // Subscribe to real-time log updates
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({
+                    type: 'subscribe_logs',
+                    serviceName
+                }));
+            }
+        } catch (error) {
+            logsContent.textContent = 'Failed to load logs: ' + error.message;
+        }
+    }
+
+    showNotification(type, message) {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
     }
 
     setupEventListeners() {
         // Handle page visibility changes
         document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                if (this.updateInterval) {
-                    clearInterval(this.updateInterval);
-                }
-            } else {
-                this.startPeriodicUpdates();
+            if (!document.hidden && this.ws.readyState !== WebSocket.OPEN) {
+                this.setupWebSocket();
             }
         });
 
-        // Handle window beforeunload
-        window.addEventListener('beforeunload', () => {
-            if (this.updateInterval) {
-                clearInterval(this.updateInterval);
-            }
+        // Profile filter
+        const profileFilter = document.getElementById('profile-filter');
+        if (profileFilter) {
+            profileFilter.addEventListener('change', () => {
+                this.loadInitialData();
+            });
+        }
+
+        // Configuration modal
+        const configBtn = document.getElementById('config-btn');
+        if (configBtn) {
+            configBtn.addEventListener('click', () => this.openConfigModal());
+        }
+    }
+
+    async openConfigModal() {
+        const modal = document.getElementById('config-modal');
+        const configForm = document.getElementById('config-form');
+        
+        modal.style.display = 'block';
+        configForm.innerHTML = '<p>Loading configuration...</p>';
+        
+        try {
+            const config = await fetch('/api/config').then(r => r.json());
+            configForm.innerHTML = Object.entries(config).map(([key, value]) => `
+                <div class="config-item">
+                    <label for="config-${key}">${key}</label>
+                    <input type="text" id="config-${key}" name="${key}" value="${value}">
+                </div>
+            `).join('');
+            
+            configForm.innerHTML += `
+                <div class="config-actions">
+                    <button type="button" onclick="dashboard.saveConfig()" class="btn-primary">Save</button>
+                    <button type="button" onclick="dashboard.closeConfigModal()" class="btn-secondary">Cancel</button>
+                </div>
+            `;
+        } catch (error) {
+            configForm.innerHTML = `<p class="error">Failed to load configuration: ${error.message}</p>`;
+        }
+    }
+
+    async saveConfig() {
+        const configForm = document.getElementById('config-form');
+        const inputs = configForm.querySelectorAll('input');
+        const updates = {};
+        
+        inputs.forEach(input => {
+            updates[input.name] = input.value;
         });
+        
+        try {
+            const response = await fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                this.showNotification('success', 'Configuration updated successfully');
+                this.closeConfigModal();
+            } else {
+                this.showNotification('error', result.error);
+            }
+        } catch (error) {
+            this.showNotification('error', `Failed to save configuration: ${error.message}`);
+        }
+    }
+
+    closeConfigModal() {
+        document.getElementById('config-modal').style.display = 'none';
     }
 
     formatNumber(num) {
@@ -166,38 +420,26 @@ class KaspaDashboard {
         if (hours > 0) return `${hours}h ${minutes % 60}m`;
         return `${minutes}m ${seconds % 60}s`;
     }
+
+    capitalizeFirst(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
 }
 
 // Global functions for button actions
-async function restartServices() {
+async function restartAllServices() {
     if (confirm('Are you sure you want to restart all services?')) {
         try {
             const response = await fetch('/api/restart', { method: 'POST' });
             if (response.ok) {
-                alert('Services restart initiated');
+                dashboard.showNotification('success', 'Services restart initiated');
                 setTimeout(() => window.location.reload(), 3000);
             } else {
-                alert('Failed to restart services');
+                dashboard.showNotification('error', 'Failed to restart services');
             }
         } catch (error) {
-            alert('Error: ' + error.message);
+            dashboard.showNotification('error', 'Error: ' + error.message);
         }
-    }
-}
-
-async function viewLogs() {
-    const modal = document.getElementById('logs-modal');
-    const logsContent = document.getElementById('logs-content');
-    
-    modal.style.display = 'block';
-    logsContent.textContent = 'Loading logs...';
-    
-    try {
-        const response = await fetch('/api/logs');
-        const logs = await response.text();
-        logsContent.textContent = logs;
-    } catch (error) {
-        logsContent.textContent = 'Failed to load logs: ' + error.message;
     }
 }
 
@@ -210,12 +452,12 @@ async function updateServices() {
         try {
             const response = await fetch('/api/update', { method: 'POST' });
             if (response.ok) {
-                alert('Update initiated. This may take several minutes.');
+                dashboard.showNotification('success', 'Update initiated. This may take several minutes.');
             } else {
-                alert('Failed to start update');
+                dashboard.showNotification('error', 'Failed to start update');
             }
         } catch (error) {
-            alert('Error: ' + error.message);
+            dashboard.showNotification('error', 'Error: ' + error.message);
         }
     }
 }
@@ -232,22 +474,30 @@ async function backupData() {
             a.click();
             window.URL.revokeObjectURL(url);
         } else {
-            alert('Failed to create backup');
+            dashboard.showNotification('error', 'Failed to create backup');
         }
     } catch (error) {
-        alert('Error: ' + error.message);
+        dashboard.showNotification('error', 'Error: ' + error.message);
     }
 }
 
 // Close modal when clicking outside
 window.onclick = function(event) {
-    const modal = document.getElementById('logs-modal');
-    if (event.target === modal) {
-        modal.style.display = 'none';
+    const logsModal = document.getElementById('logs-modal');
+    const configModal = document.getElementById('config-modal');
+    
+    if (event.target === logsModal) {
+        logsModal.style.display = 'none';
+    }
+    if (event.target === configModal) {
+        configModal.style.display = 'none';
     }
 }
 
+// Global dashboard instance
+let dashboard;
+
 // Initialize dashboard when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    new KaspaDashboard();
+    dashboard = new KaspaDashboard();
 });

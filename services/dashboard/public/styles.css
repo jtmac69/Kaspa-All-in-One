@@ -304,3 +304,257 @@ main {
         font-size: 1.5rem;
     }
 }
+/* E
+nhanced header controls */
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.profile-selector {
+    padding: 8px 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    color: #2d3748;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.profile-selector:hover {
+    border-color: #4299e1;
+}
+
+.btn-icon {
+    padding: 8px 12px;
+    background: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-icon:hover {
+    background: #3182ce;
+    transform: scale(1.05);
+}
+
+/* Service card enhancements */
+.service-card.stopped {
+    border-left-color: #a0aec0;
+    opacity: 0.8;
+}
+
+.service-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.profile-badge {
+    padding: 4px 8px;
+    background: #4299e1;
+    color: white;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.service-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    background: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-small:hover {
+    background: #3182ce;
+    transform: translateY(-1px);
+}
+
+.btn-small.btn-success {
+    background: #48bb78;
+}
+
+.btn-small.btn-success:hover {
+    background: #38a169;
+}
+
+.btn-small.btn-danger {
+    background: #f56565;
+}
+
+.btn-small.btn-danger:hover {
+    background: #e53e3e;
+}
+
+.dependencies {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.dependencies small {
+    color: #718096;
+    font-size: 0.8rem;
+}
+
+.error-msg {
+    margin-top: 8px;
+    padding: 8px;
+    background: #fed7d7;
+    color: #c53030;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+/* Configuration modal */
+.config-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.config-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.config-item label {
+    font-weight: 500;
+    color: #2d3748;
+    font-size: 0.9rem;
+}
+
+.config-item input {
+    padding: 10px;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease;
+}
+
+.config-item input:focus {
+    outline: none;
+    border-color: #4299e1;
+}
+
+.config-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+}
+
+.btn-primary {
+    padding: 10px 20px;
+    background: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: #3182ce;
+}
+
+.btn-secondary {
+    padding: 10px 20px;
+    background: #e2e8f0;
+    color: #2d3748;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: #cbd5e0;
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 2000;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s ease;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.success {
+    border-left: 4px solid #48bb78;
+}
+
+.notification.error {
+    border-left: 4px solid #f56565;
+}
+
+/* Service status colors */
+.service-status.healthy .indicator {
+    background: #48bb78;
+}
+
+.service-status.unhealthy .indicator {
+    background: #f56565;
+}
+
+.service-status.stopped .indicator {
+    background: #a0aec0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .header-controls {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .profile-selector {
+        width: 100%;
+    }
+    
+    .service-actions {
+        flex-direction: column;
+    }
+    
+    .btn-small {
+        width: 100%;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+}

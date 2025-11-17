@@ -11,9 +11,15 @@
     <div class="container">
         <header>
             <h1>⚡ Kaspa All-in-One Dashboard</h1>
-            <div class="status-indicator" id="connection-status">
-                <span class="dot"></span>
-                <span class="text">Connecting...</span>
+            <div class="header-controls">
+                <select id="profile-filter" class="profile-selector">
+                    <option value="all">All Services</option>
+                </select>
+                <button id="config-btn" class="btn-icon" title="Configuration">⚙️</button>
+                <div class="status-indicator" id="connection-status">
+                    <span class="dot"></span>
+                    <span class="text">Connecting...</span>
+                </div>
             </div>
         </header>
 
@@ -73,11 +79,8 @@
             <section class="actions">
                 <h2>Quick Actions</h2>
                 <div class="actions-grid">
-                    <button class="action-btn" onclick="restartServices()">
+                    <button class="action-btn" onclick="restartAllServices()">
                         🔄 Restart All Services
-                    </button>
-                    <button class="action-btn" onclick="viewLogs()">
-                        📋 View Logs
                     </button>
                     <button class="action-btn" onclick="updateServices()">
                         ⬆️ Update Services
@@ -121,9 +124,20 @@
         <div id="logs-modal" class="modal">
             <div class="modal-content">
                 <span class="close" onclick="closeLogs()">&times;</span>
-                <h2>Service Logs</h2>
+                <h2 id="logs-title">Service Logs</h2>
                 <div class="logs-container">
                     <pre id="logs-content">Loading logs...</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for configuration -->
+        <div id="config-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="dashboard.closeConfigModal()">&times;</span>
+                <h2>Configuration</h2>
+                <div id="config-form" class="config-form">
+                    Loading configuration...
                 </div>
             </div>
         </div>

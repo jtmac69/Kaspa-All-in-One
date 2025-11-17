@@ -194,6 +194,7 @@
                 </div>
                 
                 <div class="profile-grid">
+                    <!-- Core Profile -->
                     <div class="profile-card" data-profile="core">
                         <div class="profile-badge">Essential</div>
                         <div class="profile-icon">
@@ -209,6 +210,7 @@
                         <div class="profile-services">
                             <span class="service-tag">kaspa-node</span>
                             <span class="service-tag">dashboard</span>
+                            <span class="service-tag">nginx</span>
                         </div>
                         <div class="profile-resources">
                             <div class="resource-item">
@@ -221,12 +223,184 @@
                             </div>
                             <div class="resource-item">
                                 <span class="resource-label">Disk:</span>
-                                <span class="resource-value">50 GB</span>
+                                <span class="resource-value">100 GB</span>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- More profile cards will be added dynamically -->
+                    <!-- Production Profile -->
+                    <div class="profile-card" data-profile="prod">
+                        <div class="profile-badge">Popular</div>
+                        <div class="profile-icon">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                <rect x="8" y="8" width="32" height="32" rx="4" stroke="currentColor" stroke-width="3"/>
+                                <path d="M16 24 L24 32 L32 16" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h3 class="profile-title">Production Apps</h3>
+                        <p class="profile-description">
+                            User-facing applications (Kasia, K-Social) with indexers
+                        </p>
+                        <div class="profile-services">
+                            <span class="service-tag">kasia-app</span>
+                            <span class="service-tag">kasia-indexer</span>
+                            <span class="service-tag">k-social</span>
+                            <span class="service-tag">k-indexer</span>
+                        </div>
+                        <div class="profile-resources">
+                            <div class="resource-item">
+                                <span class="resource-label">CPU:</span>
+                                <span class="resource-value">4 cores</span>
+                            </div>
+                            <div class="resource-item">
+                                <span class="resource-label">RAM:</span>
+                                <span class="resource-value">8 GB</span>
+                            </div>
+                            <div class="resource-item">
+                                <span class="resource-label">Disk:</span>
+                                <span class="resource-value">150 GB</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Explorer Profile -->
+                    <div class="profile-card" data-profile="explorer">
+                        <div class="profile-badge">Advanced</div>
+                        <div class="profile-icon">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="3"/>
+                                <circle cx="24" cy="24" r="3" fill="currentColor"/>
+                                <line x1="24" y1="4" x2="24" y2="12" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                                <line x1="24" y1="36" x2="24" y2="44" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                                <line x1="4" y1="24" x2="12" y2="24" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                                <line x1="36" y1="24" x2="44" y2="24" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h3 class="profile-title">Explorer</h3>
+                        <p class="profile-description">
+                            Blockchain indexing with TimescaleDB for analytics
+                        </p>
+                        <div class="profile-services">
+                            <span class="service-tag">timescaledb</span>
+                            <span class="service-tag">k-indexer</span>
+                            <span class="service-tag">simply-kaspa</span>
+                        </div>
+                        <div class="profile-resources">
+                            <div class="resource-item">
+                                <span class="resource-label">CPU:</span>
+                                <span class="resource-value">4 cores</span>
+                            </div>
+                            <div class="resource-item">
+                                <span class="resource-label">RAM:</span>
+                                <span class="resource-value">8 GB</span>
+                            </div>
+                            <div class="resource-item">
+                                <span class="resource-label">Disk:</span>
+                                <span class="resource-value">200 GB SSD</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Archive Profile -->
+                    <div class="profile-card" data-profile="archive">
+                        <div class="profile-badge">Storage</div>
+                        <div class="profile-icon">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                <rect x="8" y="12" width="32" height="8" rx="2" stroke="currentColor" stroke-width="3"/>
+                                <rect x="8" y="24" width="32" height="8" rx="2" stroke="currentColor" stroke-width="3"/>
+                                <rect x="8" y="36" width="32" height="8" rx="2" stroke="currentColor" stroke-width="3"/>
+                            </svg>
+                        </div>
+                        <h3 class="profile-title">Archive Node</h3>
+                        <p class="profile-description">
+                            Long-term data retention with separate archive database
+                        </p>
+                        <div class="profile-services">
+                            <span class="service-tag">archive-db</span>
+                            <span class="service-tag">archive-indexer</span>
+                        </div>
+                        <div class="profile-resources">
+                            <div class="resource-item">
+                                <span class="resource-label">CPU:</span>
+                                <span class="resource-value">2 cores</span>
+                            </div>
+                            <div class="resource-item">
+                                <span class="resource-label">RAM:</span>
+                                <span class="resource-value">4 GB</span>
+                            </div>
+                            <div class="resource-item">
+                                <span class="resource-label">Disk:</span>
+                                <span class="resource-value">500 GB+</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mining Profile -->
+                    <div class="profile-card" data-profile="mining">
+                        <div class="profile-badge">Mining</div>
+                        <div class="profile-icon">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                <path d="M24 8 L32 20 L24 24 L16 20 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+                                <path d="M24 24 L32 20 L32 32 L24 40 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+                                <path d="M24 24 L16 20 L16 32 L24 40 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h3 class="profile-title">Mining</h3>
+                        <p class="profile-description">
+                            Kaspa stratum bridge for solo or pool mining
+                        </p>
+                        <div class="profile-services">
+                            <span class="service-tag">kaspa-stratum</span>
+                        </div>
+                        <div class="profile-resources">
+                            <div class="resource-item">
+                                <span class="resource-label">CPU:</span>
+                                <span class="resource-value">2 cores</span>
+                            </div>
+                            <div class="resource-item">
+                                <span class="resource-label">RAM:</span>
+                                <span class="resource-value">2 GB</span>
+                            </div>
+                            <div class="resource-item">
+                                <span class="resource-label">Disk:</span>
+                                <span class="resource-value">10 GB</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Development Profile -->
+                    <div class="profile-card" data-profile="development">
+                        <div class="profile-badge">Dev Tools</div>
+                        <div class="profile-icon">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                <path d="M16 16 L8 24 L16 32" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M32 16 L40 24 L32 32" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="28" y1="12" x2="20" y2="36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h3 class="profile-title">Development</h3>
+                        <p class="profile-description">
+                            Development tools (Portainer, pgAdmin) for debugging
+                        </p>
+                        <div class="profile-services">
+                            <span class="service-tag">portainer</span>
+                            <span class="service-tag">pgadmin</span>
+                        </div>
+                        <div class="profile-resources">
+                            <div class="resource-item">
+                                <span class="resource-label">CPU:</span>
+                                <span class="resource-value">1 core</span>
+                            </div>
+                            <div class="resource-item">
+                                <span class="resource-label">RAM:</span>
+                                <span class="resource-value">1 GB</span>
+                            </div>
+                            <div class="resource-item">
+                                <span class="resource-label">Disk:</span>
+                                <span class="resource-value">5 GB</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="step-actions">
@@ -241,7 +415,362 @@
                 </div>
             </div>
 
-            <!-- Additional steps will be loaded dynamically -->
+            <!-- Step 4: Configure -->
+            <div class="wizard-step" id="step-configure">
+                <div class="step-header">
+                    <h2 class="step-title">Configure Your Services</h2>
+                    <p class="step-description">
+                        Customize settings for your selected services
+                    </p>
+                </div>
+                
+                <div class="config-sections">
+                    <div class="config-section">
+                        <h3 class="config-section-title">Network Configuration</h3>
+                        <div class="config-form">
+                            <div class="form-group">
+                                <label for="external-ip" class="form-label">
+                                    External IP Address
+                                    <span class="form-tooltip" title="Your public IP address for P2P connections">ⓘ</span>
+                                </label>
+                                <input type="text" id="external-ip" class="form-input" placeholder="Auto-detect" />
+                                <button class="btn-secondary btn-small" onclick="detectExternalIP()">Auto-Detect</button>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="public-node" class="form-label">
+                                    Public Node
+                                    <span class="form-tooltip" title="Allow external connections to your node">ⓘ</span>
+                                </label>
+                                <div class="form-toggle">
+                                    <input type="checkbox" id="public-node" class="toggle-input" />
+                                    <label for="public-node" class="toggle-label">
+                                        <span class="toggle-switch"></span>
+                                        <span class="toggle-text">Enable public access</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="config-section">
+                        <h3 class="config-section-title">Database Configuration</h3>
+                        <div class="config-form">
+                            <div class="form-group">
+                                <label for="db-password" class="form-label">
+                                    Database Password
+                                    <span class="form-tooltip" title="Password for PostgreSQL/TimescaleDB">ⓘ</span>
+                                </label>
+                                <div class="password-input-group">
+                                    <input type="password" id="db-password" class="form-input" placeholder="Auto-generated" />
+                                    <button class="btn-icon-only" onclick="togglePasswordVisibility('db-password')">
+                                        <span class="icon-eye">👁</span>
+                                    </button>
+                                    <button class="btn-secondary btn-small" onclick="generatePassword('db-password')">Generate</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="config-section">
+                        <h3 class="config-section-title">Advanced Options</h3>
+                        <div class="config-form">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <input type="checkbox" id="advanced-mode" />
+                                    Show advanced configuration options
+                                </label>
+                            </div>
+                            
+                            <div id="advanced-options" class="advanced-options" style="display: none;">
+                                <div class="form-group">
+                                    <label for="custom-env" class="form-label">Custom Environment Variables</label>
+                                    <textarea id="custom-env" class="form-textarea" rows="6" placeholder="KEY=value"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step-actions">
+                    <button class="btn-secondary" onclick="previousStep()">
+                        <span class="btn-icon">←</span>
+                        Back
+                    </button>
+                    <button class="btn-primary" onclick="nextStep()">
+                        Continue
+                        <span class="btn-icon">→</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 5: Review -->
+            <div class="wizard-step" id="step-review">
+                <div class="step-header">
+                    <h2 class="step-title">Review Your Configuration</h2>
+                    <p class="step-description">
+                        Verify your selections before installation
+                    </p>
+                </div>
+                
+                <div class="review-sections">
+                    <div class="review-section">
+                        <h3 class="review-section-title">Selected Profiles</h3>
+                        <div class="review-content">
+                            <div class="review-item">
+                                <span class="review-label">Profiles:</span>
+                                <span class="review-value" id="review-profiles">Core, Explorer</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Total Services:</span>
+                                <span class="review-value" id="review-service-count">5 services</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="review-section">
+                        <h3 class="review-section-title">Resource Requirements</h3>
+                        <div class="review-content">
+                            <div class="review-item">
+                                <span class="review-label">CPU:</span>
+                                <span class="review-value" id="review-cpu">4 cores</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">RAM:</span>
+                                <span class="review-value" id="review-ram">8 GB</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Disk:</span>
+                                <span class="review-value" id="review-disk">200 GB</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="review-section">
+                        <h3 class="review-section-title">Network Configuration</h3>
+                        <div class="review-content">
+                            <div class="review-item">
+                                <span class="review-label">External IP:</span>
+                                <span class="review-value" id="review-external-ip">Auto-detect</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Public Node:</span>
+                                <span class="review-value" id="review-public-node">Disabled</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="review-section warning">
+                        <div class="review-warning-icon">⚠️</div>
+                        <div class="review-warning-content">
+                            <h4 class="review-warning-title">Before You Continue</h4>
+                            <ul class="review-warning-list">
+                                <li>Ensure you have sufficient disk space available</li>
+                                <li>Initial blockchain sync may take several hours</li>
+                                <li>Services will be accessible on localhost by default</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step-actions">
+                    <button class="btn-secondary" onclick="previousStep()">
+                        <span class="btn-icon">←</span>
+                        Back
+                    </button>
+                    <button class="btn-primary" onclick="nextStep()">
+                        Start Installation
+                        <span class="btn-icon">→</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 6: Install -->
+            <div class="wizard-step" id="step-install">
+                <div class="step-header">
+                    <h2 class="step-title">Installing Kaspa All-in-One</h2>
+                    <p class="step-description">
+                        Please wait while we set up your services
+                    </p>
+                </div>
+                
+                <div class="install-progress">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" id="install-progress-bar" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-percentage" id="install-progress-percentage">0%</div>
+                    </div>
+                    
+                    <div class="install-status">
+                        <div class="status-icon">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="status-content">
+                            <h3 class="status-title" id="install-status-title">Initializing...</h3>
+                            <p class="status-message" id="install-status-message">Preparing installation environment</p>
+                        </div>
+                    </div>
+                    
+                    <div class="install-steps">
+                        <div class="install-step" data-step="env">
+                            <div class="install-step-icon">⏳</div>
+                            <div class="install-step-content">
+                                <h4 class="install-step-title">Creating environment configuration</h4>
+                                <p class="install-step-status">Pending</p>
+                            </div>
+                        </div>
+                        
+                        <div class="install-step" data-step="pull">
+                            <div class="install-step-icon">⏳</div>
+                            <div class="install-step-content">
+                                <h4 class="install-step-title">Pulling Docker images</h4>
+                                <p class="install-step-status">Pending</p>
+                            </div>
+                        </div>
+                        
+                        <div class="install-step" data-step="start">
+                            <div class="install-step-icon">⏳</div>
+                            <div class="install-step-content">
+                                <h4 class="install-step-title">Starting services</h4>
+                                <p class="install-step-status">Pending</p>
+                            </div>
+                        </div>
+                        
+                        <div class="install-step" data-step="health">
+                            <div class="install-step-icon">⏳</div>
+                            <div class="install-step-content">
+                                <h4 class="install-step-title">Running health checks</h4>
+                                <p class="install-step-status">Pending</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="install-logs">
+                        <div class="logs-header">
+                            <h4 class="logs-title">Installation Logs</h4>
+                            <button class="btn-secondary btn-small" onclick="toggleLogs()">
+                                <span id="logs-toggle-text">Show Details</span>
+                            </button>
+                        </div>
+                        <div class="logs-content" id="install-logs-content" style="display: none;">
+                            <pre class="logs-text" id="install-logs-text">Waiting for installation to start...</pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step-actions">
+                    <button class="btn-secondary" onclick="cancelInstallation()" id="cancel-install-btn">
+                        Cancel Installation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 7: Complete -->
+            <div class="wizard-step" id="step-complete">
+                <div class="step-header">
+                    <div class="completion-icon">
+                        <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                            <circle cx="40" cy="40" r="38" stroke="#7ED321" stroke-width="4"/>
+                            <path d="M25 40 L35 50 L55 30" stroke="#7ED321" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2 class="step-title">Installation Complete!</h2>
+                    <p class="step-description">
+                        Your Kaspa All-in-One system is up and running
+                    </p>
+                </div>
+                
+                <div class="completion-sections">
+                    <div class="completion-section">
+                        <h3 class="completion-section-title">Service Status</h3>
+                        <div class="service-status-list">
+                            <div class="service-status-item">
+                                <div class="service-status-icon success">✓</div>
+                                <div class="service-status-content">
+                                    <h4 class="service-status-name">Kaspa Node</h4>
+                                    <p class="service-status-info">Running on port 16110</p>
+                                </div>
+                                <a href="http://localhost:16111" target="_blank" class="btn-link">View</a>
+                            </div>
+                            
+                            <div class="service-status-item">
+                                <div class="service-status-icon success">✓</div>
+                                <div class="service-status-content">
+                                    <h4 class="service-status-name">Management Dashboard</h4>
+                                    <p class="service-status-info">Running on port 3000</p>
+                                </div>
+                                <a href="http://localhost:3000" target="_blank" class="btn-link">Open Dashboard</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="completion-section">
+                        <h3 class="completion-section-title">Next Steps</h3>
+                        <div class="next-steps-list">
+                            <div class="next-step-item">
+                                <div class="next-step-number">1</div>
+                                <div class="next-step-content">
+                                    <h4 class="next-step-title">Wait for Blockchain Sync</h4>
+                                    <p class="next-step-description">Your node will sync with the network. This may take several hours.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="next-step-item">
+                                <div class="next-step-number">2</div>
+                                <div class="next-step-content">
+                                    <h4 class="next-step-title">Monitor Your Services</h4>
+                                    <p class="next-step-description">Use the management dashboard to monitor service health and logs.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="next-step-item">
+                                <div class="next-step-number">3</div>
+                                <div class="next-step-content">
+                                    <h4 class="next-step-title">Explore Documentation</h4>
+                                    <p class="next-step-description">Learn more about managing and optimizing your Kaspa infrastructure.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="completion-section">
+                        <h3 class="completion-section-title">Useful Links</h3>
+                        <div class="useful-links">
+                            <a href="http://localhost:3000" target="_blank" class="link-card">
+                                <div class="link-card-icon">📊</div>
+                                <div class="link-card-content">
+                                    <h4 class="link-card-title">Management Dashboard</h4>
+                                    <p class="link-card-description">Monitor and control your services</p>
+                                </div>
+                            </a>
+                            
+                            <a href="https://kaspa.org/docs" target="_blank" class="link-card">
+                                <div class="link-card-icon">📚</div>
+                                <div class="link-card-content">
+                                    <h4 class="link-card-title">Documentation</h4>
+                                    <p class="link-card-description">Learn more about Kaspa</p>
+                                </div>
+                            </a>
+                            
+                            <a href="https://discord.gg/kaspa" target="_blank" class="link-card">
+                                <div class="link-card-icon">💬</div>
+                                <div class="link-card-content">
+                                    <h4 class="link-card-title">Community Support</h4>
+                                    <p class="link-card-description">Get help from the community</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step-actions">
+                    <button class="btn-primary btn-large" onclick="openDashboard()">
+                        Open Dashboard
+                        <span class="btn-icon">→</span>
+                    </button>
+                </div>
+            </div>
             
         </main>
 
@@ -268,6 +797,7 @@
     </div>
 
     <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
     <script src="/scripts/wizard.js"></script>
 </body>
 </html>

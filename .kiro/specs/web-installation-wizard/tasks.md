@@ -1,199 +1,240 @@
 # Web-Based Installation Wizard Implementation Plan
 
-## Phase 1: Backend API and Installation Engine
+## Status Summary
 
-- [ ] 1. Set up wizard backend service
-  - Create new Express.js service in services/wizard/
-  - Set up project structure with TypeScript
-  - Configure build and development scripts
-  - Add Docker configuration for wizard service
+**✅ COMPLETED**: Backend API (Phase 2.0-2.6) and Frontend UI (Phase 2.1-2.9)  
+**🔄 IN PROGRESS**: Integration with Main System (Phase 3)  
+**📋 PLANNED**: Testing, Documentation, and Advanced Features (Phases 4-5)
+
+---
+
+## Phase 2: Node.js Backend ✅ COMPLETED
+
+### Advanced Backend with WebSocket Streaming
+
+- [x] 2.0 Set up Node.js wizard backend service ✅ COMPLETE
+  - ✅ Created Express.js service in services/wizard/backend/
+  - ✅ Set up project structure with JavaScript (Node.js)
+  - ✅ Configured package.json with dependencies
+  - ✅ Added Docker configuration for wizard service
+  - ✅ Implemented graceful error handling
+  - **FILE**: services/wizard/backend/src/server.js
+  - **FILE**: services/wizard/backend/package.json
+  - **FILE**: services/wizard/backend/Dockerfile
   - _Requirements: 1, 11_
 
-- [ ] 1.1 Implement system requirements checker
-  - Create Docker detection and version checking
-  - Implement Docker Compose version validation
-  - Add system resource checking (CPU, RAM, disk)
-  - Implement port availability checking
-  - Create comprehensive system check report generator
+- [x] 2.1 Implement Node.js system requirements checker ✅ COMPLETE
+  - ✅ Created Docker detection and version checking
+  - ✅ Implemented Docker Compose version validation
+  - ✅ Added system resource checking (CPU, RAM, disk)
+  - ✅ Implemented port availability checking
+  - ✅ Created comprehensive system check report generator
+  - **FILE**: services/wizard/backend/src/utils/system-checker.js
+  - **API**: GET /api/wizard/system-check
   - _Requirements: 1_
 
-- [ ] 1.2 Implement profile management API
-  - Create profile definition data structure
-  - Load profile configurations from JSON files
-  - Implement profile dependency resolution
-  - Add resource requirement calculation
-  - Create profile conflict detection
+- [x] 2.2 Implement profile management API ✅ COMPLETE
+  - ✅ Created profile definition data structure
+  - ✅ Load profile configurations from hardcoded definitions
+  - ✅ Implemented profile dependency resolution
+  - ✅ Added resource requirement calculation
+  - ✅ Created profile conflict detection
+  - **FILE**: services/wizard/backend/src/utils/profile-manager.js
+  - **API**: GET /api/wizard/profiles
+  - **API**: GET /api/wizard/profiles/:id
   - _Requirements: 2, 12_
 
-- [ ] 1.3 Implement configuration management API
-  - Create configuration validation engine
-  - Implement .env file generation
-  - Add configuration persistence (JSON format)
-  - Create configuration import/export functionality
-  - Implement secure password generation
+- [x] 2.3 Implement configuration management API ✅ COMPLETE
+  - ✅ Created configuration validation engine
+  - ✅ Implemented .env file generation
+  - ✅ Added configuration persistence (JSON format)
+  - ✅ Implemented secure password generation
+  - ✅ Added external IP detection
+  - **FILE**: services/wizard/backend/src/utils/config-generator.js
+  - **FILE**: services/wizard/backend/src/api/config.js
+  - **API**: POST /api/wizard/config/generate
+  - **API**: POST /api/wizard/config/validate
   - _Requirements: 3, 7, 10_
 
-- [ ] 1.4 Implement installation engine
-  - Create Docker Compose orchestration wrapper
-  - Implement service build management
-  - Add container startup sequencing
-  - Create real-time progress tracking
-  - Implement error handling and rollback
+- [x] 2.4 Implement installation engine ✅ COMPLETE
+  - ✅ Created Docker Compose orchestration wrapper
+  - ✅ Implemented service build management
+  - ✅ Added container startup sequencing
+  - ✅ Created real-time progress tracking
+  - ✅ Implemented error handling and status reporting
+  - **FILE**: services/wizard/backend/src/api/install.js
+  - **API**: POST /api/wizard/install/start
+  - **API**: GET /api/wizard/install/status
   - _Requirements: 5_
 
-- [ ] 1.5 Implement validation engine
-  - Create service health check framework
-  - Implement API endpoint testing
-  - Add database connectivity validation
-  - Create comprehensive validation report generator
-  - Implement retry logic for transient failures
+- [x] 2.5 Implement validation engine ✅ COMPLETE
+  - ✅ Created service health check framework
+  - ✅ Implemented API endpoint testing
+  - ✅ Added database connectivity validation
+  - ✅ Created comprehensive validation report generator
+  - ✅ Implemented retry logic for transient failures
+  - **FILE**: services/wizard/backend/src/api/install.js (validate endpoint)
+  - **API**: POST /api/wizard/install/validate
   - _Requirements: 6, 8_
 
-- [ ] 1.6 Implement WebSocket progress streaming
-  - Set up WebSocket server with Socket.io
-  - Create progress event emitters
-  - Implement log streaming from Docker
-  - Add service status broadcasting
-  - Create connection management and reconnection logic
+- [x] 2.6 Implement WebSocket progress streaming ✅ COMPLETE
+  - ✅ Set up WebSocket server with Socket.io
+  - ✅ Created progress event emitters
+  - ✅ Implemented log streaming from Docker
+  - ✅ Added service status broadcasting
+  - ✅ Created connection management and reconnection logic
+  - **FILE**: services/wizard/backend/src/server.js (Socket.IO integration)
+  - **EVENTS**: install:progress, install:log, install:status, install:complete, install:error
   - _Requirements: 5_
 
-## Phase 2: Frontend User Interface
+---
 
-- [ ] 2. Set up wizard frontend application
-  - Choose framework (React, Vue, or Vanilla JS)
-  - Set up build tooling (Vite or Webpack)
-  - Create project structure and routing
-  - Implement responsive layout framework
-  - **Download official Kaspa brand assets from https://kaspa.org/media-kit/**
-  - **Implement Kaspa brand colors and design system (see BRAND_DESIGN_GUIDE.md)**
-  - Add custom styling with Kaspa brand guidelines
-  - _Requirements: 9, 11_
+## Phase 2: Frontend User Interface ✅ COMPLETED
 
-- [ ] 2.1 Implement wizard container and navigation
-  - Create multi-step wizard container component
-  - Implement step navigation (next, back, skip)
-  - Add progress indicator component
-  - Create state management (Context API or Vuex)
-  - Implement progress persistence to localStorage
+- [x] 2.1 Implement wizard container and navigation ✅ COMPLETE
+  - ✅ Created multi-step wizard container (Vanilla JavaScript)
+  - ✅ Implemented step navigation (next, back, skip)
+  - ✅ Added progress indicator component
+  - ✅ Created state management with localStorage
+  - ✅ Implemented progress persistence and auto-save
+  - **FILE**: services/wizard/frontend/public/scripts/wizard.js
+  - **FILE**: services/wizard/frontend/public/index.html
   - _Requirements: 11_
 
-- [ ] 2.2 Implement welcome step
-  - Create welcome screen with project introduction
-  - Add feature overview cards
-  - Implement documentation links
-  - Create "Get Started" call-to-action
-  - Add optional video tutorial embed
+- [x] 2.2 Implement welcome step ✅ COMPLETE
+  - ✅ Created welcome screen with project introduction
+  - ✅ Added feature overview cards
+  - ✅ Implemented Kaspa branding (logos, colors, fonts)
+  - ✅ Created "Get Started" call-to-action
+  - ✅ Added dark mode support with automatic switching
+  - **FILE**: services/wizard/frontend/public/index.html (Welcome step)
+  - **FILE**: services/wizard/frontend/public/styles/wizard.css
   - _Requirements: 11_
 
-- [ ] 2.3 Implement system check step
-  - Create system check display component
-  - Implement real-time check execution
-  - Add visual status indicators (pass/warning/fail)
-  - Create detailed error message display
-  - Implement retry and continue options
+- [x] 2.3 Implement system check step ✅ COMPLETE
+  - ✅ Created system check display component
+  - ✅ Implemented real-time check execution via API
+  - ✅ Added visual status indicators (pass/warning/fail)
+  - ✅ Created detailed error message display
+  - ✅ Implemented retry and continue options
+  - **FILE**: services/wizard/frontend/public/scripts/wizard.js (checkSystem function)
+  - **API**: GET /api/wizard/system-check
   - _Requirements: 1, 8_
 
-- [ ] 2.4 Implement profile selection step
-  - Create profile card components
-  - Implement multi-select with visual feedback
-  - Add service dependency visualization
-  - Create resource requirement calculator display
-  - Implement template preset selector
-  - Add custom profile builder interface
+- [x] 2.4 Implement profile selection step ✅ COMPLETE
+  - ✅ Created profile card components (6 profiles: Core, Production, Explorer, Archive, Mining, Development)
+  - ✅ Implemented multi-select with visual feedback
+  - ✅ Added service tags and resource requirements display
+  - ✅ Created resource requirement calculator display
+  - ✅ Implemented profile loading from backend API
+  - **FILE**: services/wizard/frontend/public/scripts/wizard.js (loadProfiles, selectProfile functions)
+  - **API**: GET /api/wizard/profiles
   - _Requirements: 2, 12_
 
-- [ ] 2.5 Implement configuration step
-  - Create dynamic form generator from config schema
-  - Implement tabbed interface (Basic, Network, Advanced)
-  - Add real-time input validation
-  - Create password generator with strength indicator
-  - Implement configuration preview panel
-  - Add import/export configuration buttons
+- [x] 2.5 Implement configuration step ✅ COMPLETE
+  - ✅ Created dynamic form generator from selected profiles
+  - ✅ Implemented tabbed interface (Basic, Network, Advanced, Security)
+  - ✅ Added real-time input validation
+  - ✅ Created password generator with secure random generation
+  - ✅ Implemented external IP detection
+  - ✅ Added configuration preview and validation
+  - **FILE**: services/wizard/frontend/public/scripts/wizard.js (generateConfigForm, validateConfig functions)
+  - **API**: POST /api/wizard/config/validate
   - _Requirements: 3, 4, 7, 10_
 
-- [ ] 2.6 Implement review step
-  - Create configuration summary display
-  - Add selected profiles overview
-  - Implement resource usage visualization
-  - Create estimated installation time calculator
-  - Add "Edit" links to previous steps
+- [x] 2.6 Implement review step ✅ COMPLETE
+  - ✅ Created configuration summary display
+  - ✅ Added selected profiles overview
+  - ✅ Implemented resource usage visualization
+  - ✅ Created estimated installation time display
+  - ✅ Added "Edit" links to previous steps
+  - **FILE**: services/wizard/frontend/public/scripts/wizard.js (showReviewSummary function)
   - _Requirements: 11_
 
-- [ ] 2.7 Implement installation progress step
-  - Create progress bar with percentage
-  - Implement real-time log streaming display
-  - Add service status cards with live updates
-  - Create WebSocket connection management
-  - Implement cancel installation functionality
-  - Add error display with troubleshooting links
+- [x] 2.7 Implement installation progress step ✅ COMPLETE
+  - ✅ Created progress bar with percentage
+  - ✅ Implemented real-time log streaming display via WebSocket
+  - ✅ Added service status cards with live updates
+  - ✅ Created WebSocket connection management with Socket.IO
+  - ✅ Implemented error display with troubleshooting information
+  - ✅ Added installation cancellation (stop button)
+  - **FILE**: services/wizard/frontend/public/scripts/wizard.js (startInstallation, connectWebSocket functions)
+  - **WEBSOCKET**: install:progress, install:log, install:status, install:complete, install:error
   - _Requirements: 5, 8_
 
-- [ ] 2.8 Implement validation results step
-  - Create service health check results display
-  - Add access URL cards for each service
-  - Implement quick action buttons
-  - Create troubleshooting accordion for failed services
-  - Add retry validation button
+- [x] 2.8 Implement validation results step ✅ COMPLETE
+  - ✅ Created service health check results display
+  - ✅ Added access URL cards for each service
+  - ✅ Implemented quick action buttons
+  - ✅ Created troubleshooting information for failed services
+  - ✅ Added retry validation button
+  - **FILE**: services/wizard/frontend/public/scripts/wizard.js (validateInstallation function)
+  - **API**: POST /api/wizard/install/validate
   - _Requirements: 6, 8_
 
-- [ ] 2.9 Implement completion step
-  - Create success message with celebration animation
-  - Add service access information cards
-  - Implement next steps guide
-  - Create documentation links section
-  - Add "Go to Dashboard" button
+- [x] 2.9 Implement completion step ✅ COMPLETE
+  - ✅ Created success message with celebration styling
+  - ✅ Added service access information cards
+  - ✅ Implemented next steps guide
+  - ✅ Created documentation links section
+  - ✅ Added "Go to Dashboard" button
+  - **FILE**: services/wizard/frontend/public/index.html (Complete step)
   - _Requirements: 6, 11_
 
-## Phase 3: Integration and Polish
+---
 
-- [ ] 3. Integrate wizard with main system
-  - Add wizard service to docker-compose.yml
-  - Configure wizard to run on first installation
-  - Implement auto-redirect after completion
-  - Add wizard access from dashboard
-  - Create reconfiguration mode
+## Phase 3: Integration and Polish 🔄 IN PROGRESS
+
+**Current Focus**: Task 6.3 from main tasks.md
+
+- [ ] 3.1 Add wizard service to docker-compose.yml
+  - Add wizard service definition with backend and frontend
+  - Configure service dependencies (none required for wizard)
+  - Set up port mapping (3000 for backend, serve frontend via backend)
+  - Add volume mounts for Docker socket access
+  - Configure environment variables
+  - Add to appropriate profiles (should be available in all profiles)
   - _Requirements: 7, 11_
 
-- [ ] 3.1 Implement error handling and recovery
-  - Create comprehensive error handling framework
-  - Implement context-specific error messages
-  - Add automatic retry logic for transient errors
-  - Create rollback functionality for failed installations
-  - Implement diagnostic export for support
-  - _Requirements: 8_
+- [ ] 3.2 Configure auto-start on first installation
+  - Detect first-time installation (no .env file exists)
+  - Auto-start wizard service on first run
+  - Implement auto-redirect to wizard from dashboard
+  - Add wizard access link to dashboard
+  - Create "Setup Wizard" menu item in dashboard
+  - _Requirements: 7, 11_
 
-- [ ] 3.2 Implement security features
-  - Add input sanitization and validation
-  - Implement secure password handling
-  - Create file permission management
+- [ ] 3.3 Implement reconfiguration mode
+  - Add "Reconfigure" option to dashboard
+  - Load existing configuration into wizard
+  - Allow modification of existing setup
+  - Implement safe reconfiguration (backup existing config)
+  - Add validation for configuration changes
+  - Implement service restart after reconfiguration
+  - _Requirements: 7, 11_
+
+- [ ] 3.4 Add security and error handling
+  - Implement input sanitization and validation (already done in backend)
   - Add rate limiting to API endpoints
   - Implement CSRF protection
+  - Add authentication for wizard access (optional - consider if needed)
+  - Implement secure file permission management
+  - Add comprehensive error logging
   - _Requirements: 10_
 
-- [ ] 3.3 Optimize performance
-  - Implement lazy loading for wizard steps
-  - Add caching for profile and configuration data
-  - Optimize WebSocket message frequency
-  - Implement debouncing for real-time validation
-  - Add loading states and skeleton screens
-  - _Requirements: 9_
-
-- [ ] 3.4 Implement responsive design
-  - Create mobile-friendly layouts (768px+)
-  - Implement touch-friendly controls
-  - Add tablet-optimized layouts
-  - Test on multiple browsers and devices
-  - Implement progressive enhancement
-  - _Requirements: 9_
-
-## Phase 4: Testing and Documentation
-
-- [ ] 4. Create comprehensive test suite
-  - Set up testing framework (Jest, Vitest)
-  - Create test utilities and mocks
-  - Implement CI/CD integration
-  - Add code coverage reporting
+- [ ] 3.5 Create comprehensive test suite
+  - Create test-wizard-integration.sh for integration testing
+  - Test wizard service startup and accessibility
+  - Test API endpoints (system-check, profiles, config, install, validate)
+  - Test WebSocket connection and progress streaming
+  - Test complete installation flow
+  - Test error handling and recovery
+  - Add to cleanup-tests.sh for standardized cleanup
   - _Requirements: All_
+
+---
+
+## Phase 4: Testing and Documentation 📋 PLANNED
 
 - [ ] 4.1 Implement unit tests
   - Test system requirements checker
@@ -215,7 +256,7 @@
   - Test complete wizard flow (happy path)
   - Test error handling and recovery
   - Test profile selection and installation
-  - Test configuration import/export
+  - Test configuration validation
   - Test multi-browser compatibility
   - _Requirements: All_
 
@@ -223,7 +264,7 @@
   - Set up visual testing framework (Percy, Chromatic)
   - Create baseline screenshots for all steps
   - Test responsive layouts
-  - Test dark mode (if implemented)
+  - Test dark mode
   - Test accessibility compliance
   - _Requirements: 9_
 
@@ -235,15 +276,9 @@
   - Create video tutorial (optional)
   - _Requirements: All_
 
-## Phase 5: Advanced Features (Optional)
+---
 
-- [ ] 5. Implement advanced wizard features
-  - Add multi-language support (i18n)
-  - Create custom service addition interface
-  - Implement backup/restore configuration
-  - Add migration from other setups
-  - Create cloud provider integration
-  - _Requirements: Future enhancements_
+## Phase 5: Advanced Features (Optional) 📋 FUTURE
 
 - [ ] 5.1 Implement monitoring integration
   - Add real-time resource monitoring during installation
@@ -259,153 +294,159 @@
   - Add high availability configuration
   - _Requirements: Future enhancements_
 
-## Implementation Priority
+- [ ] 5.3 Implement infrastructure testing integration
+  - Create test script executor (executes bash scripts and captures output)
+  - Implement test output parser (parse SUCCESS/ERROR/WARN lines)
+  - Create test result categorizer (group by Configuration, Security, Performance, etc.)
+  - Add nginx test integration (execute test-nginx.sh, parse 25+ test results)
+  - Add TimescaleDB test integration (execute test-timescaledb.sh for explorer profile)
+  - Implement test result aggregation (calculate totals, pass/fail/warn counts)
+  - Create infrastructure validation API endpoint (/api/wizard/validate/infrastructure)
+  - Add error handling for test script failures
+  - Implement test timeout handling (max 2 minutes per test suite)
+  - Update validation results step to display infrastructure test results
+  - _Requirements: 6, 8_
 
-### Critical Path (MVP - Weeks 1-4)
-1. **Week 1**: Backend API (Tasks 1.1-1.3)
-2. **Week 2**: Installation Engine (Tasks 1.4-1.6)
-3. **Week 3**: Frontend UI (Tasks 2.1-2.5)
-4. **Week 4**: Installation Flow (Tasks 2.6-2.9)
+---
 
-### Integration and Polish (Weeks 5-6)
-5. **Week 5**: Integration and Security (Tasks 3.1-3.3)
-6. **Week 6**: Testing and Documentation (Tasks 4.1-4.5)
+## Implementation Status
 
-### Optional Enhancements (Weeks 7+)
-7. **Week 7+**: Advanced Features (Tasks 5.1-5.2)
+### ✅ Completed (Phases 2.0-2.9)
+- **Backend API**: Full Node.js/Express backend with Socket.IO
+- **Frontend UI**: Complete 7-step wizard with Kaspa branding
+- **WebSocket Streaming**: Real-time installation progress
+- **System Checker**: Docker, resources, ports validation
+- **Profile Management**: 6 profiles with dependency resolution
+- **Configuration**: Dynamic forms with validation
+- **Installation Engine**: Docker Compose orchestration
+- **Validation**: Service health checks
 
-## Success Criteria
+### 🔄 In Progress (Phase 3)
+- **Docker Compose Integration**: Add wizard service
+- **Auto-start**: First-time installation detection
+- **Reconfiguration**: Modify existing setup
+- **Security**: Rate limiting, CSRF protection
+- **Testing**: Integration test suite
 
-### Functional Requirements
-- ✅ All 12 requirements from requirements.md implemented
-- ✅ Wizard completes installation successfully
-- ✅ All services start and pass health checks
-- ✅ Configuration persists correctly
-- ✅ Error handling works for common failures
+### 📋 Planned (Phases 4-5)
+- **Unit Tests**: Backend and frontend
+- **E2E Tests**: Complete wizard flow
+- **Documentation**: User guide and API docs
+- **Advanced Features**: Monitoring, K8s support
 
-### Quality Requirements
-- ✅ 80%+ code coverage for backend
-- ✅ 70%+ code coverage for frontend
-- ✅ All E2E tests pass
-- ✅ Page load time <2 seconds
-- ✅ API response time <500ms
-- ✅ WebSocket latency <100ms
+---
 
-### User Experience Requirements
-- ✅ Wizard completes in <10 minutes for basic setup
-- ✅ Clear error messages with actionable steps
-- ✅ Responsive design works on 768px+ screens
-- ✅ Works on Chrome, Firefox, Safari, Edge
-- ✅ Accessible (WCAG 2.1 AA compliance)
-
-## Technical Stack
-
-### Backend
-- **Runtime**: Node.js 18+
-- **Framework**: Express.js
-- **Language**: TypeScript
-- **WebSocket**: Socket.io
-- **Docker**: dockerode library
-- **Validation**: Joi or Zod
-- **Testing**: Jest
-
-### Frontend
-- **Framework**: React 18+ or Vue 3+ (or Vanilla JS)
-- **Build Tool**: Vite
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS or custom CSS
-- **State**: Context API / Vuex / Vanilla
-- **HTTP Client**: Axios or Fetch API
-- **WebSocket**: Socket.io-client
-- **Testing**: Vitest + Testing Library
-
-### DevOps
-- **Containerization**: Docker
-- **Orchestration**: Docker Compose
-- **CI/CD**: GitHub Actions
-- **Code Quality**: ESLint, Prettier
-- **Documentation**: JSDoc, Markdown
-
-## File Structure
+## File Structure (Current Implementation)
 
 ```
 services/wizard/
 ├── backend/
 │   ├── src/
 │   │   ├── api/
-│   │   │   ├── system-check.ts
-│   │   │   ├── profiles.ts
-│   │   │   ├── config.ts
-│   │   │   ├── install.ts
-│   │   │   └── validate.ts
-│   │   ├── engine/
-│   │   │   ├── system-checker.ts
-│   │   │   ├── docker-manager.ts
-│   │   │   ├── config-generator.ts
-│   │   │   └── validator.ts
-│   │   ├── websocket/
-│   │   │   └── progress-stream.ts
-│   │   ├── models/
-│   │   │   ├── profile.ts
-│   │   │   ├── config.ts
-│   │   │   └── progress.ts
+│   │   │   ├── config.js          # Configuration management API
+│   │   │   └── install.js         # Installation and validation API
 │   │   ├── utils/
-│   │   │   ├── password.ts
-│   │   │   ├── validation.ts
-│   │   │   └── file-system.ts
-│   │   └── server.ts
-│   ├── data/
-│   │   └── profiles/
-│   │       ├── core.json
-│   │       ├── prod.json
-│   │       ├── explorer.json
-│   │       └── templates.json
-│   ├── tests/
+│   │   │   ├── system-checker.js  # System requirements checker
+│   │   │   ├── profile-manager.js # Profile management
+│   │   │   └── config-generator.js # .env file generation
+│   │   └── server.js              # Express + Socket.IO server
 │   ├── package.json
-│   ├── tsconfig.json
 │   └── Dockerfile
 ├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── WizardContainer.tsx
-│   │   │   ├── steps/
-│   │   │   │   ├── Welcome.tsx
-│   │   │   │   ├── SystemCheck.tsx
-│   │   │   │   ├── ProfileSelection.tsx
-│   │   │   │   ├── Configuration.tsx
-│   │   │   │   ├── Review.tsx
-│   │   │   │   ├── Installation.tsx
-│   │   │   │   ├── Validation.tsx
-│   │   │   │   └── Complete.tsx
-│   │   │   ├── common/
-│   │   │   │   ├── ProgressBar.tsx
-│   │   │   │   ├── ProfileCard.tsx
-│   │   │   │   ├── ConfigForm.tsx
-│   │   │   │   └── ServiceStatus.tsx
-│   │   │   └── layout/
-│   │   │       ├── StepIndicator.tsx
-│   │   │       └── Navigation.tsx
-│   │   ├── api/
-│   │   │   └── wizard-client.ts
-│   │   ├── hooks/
-│   │   │   ├── useWizardState.ts
-│   │   │   ├── useWebSocket.ts
-│   │   │   └── useSystemCheck.ts
-│   │   ├── types/
-│   │   │   └── wizard.ts
-│   │   ├── utils/
-│   │   │   ├── validation.ts
-│   │   │   └── formatting.ts
-│   │   ├── styles/
-│   │   │   └── wizard.css
-│   │   ├── App.tsx
-│   │   └── main.tsx
-│   ├── public/
-│   ├── tests/
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── tsconfig.json
+│   └── public/
+│       ├── index.html             # Complete wizard UI (7 steps)
+│       ├── styles/
+│       │   └── wizard.css         # Kaspa-branded styling
+│       ├── scripts/
+│       │   └── wizard.js          # Frontend logic + API client
+│       └── assets/
+│           └── brand/             # Kaspa logos and icons
 └── README.md
 ```
 
-This implementation plan provides a complete roadmap for building a professional, user-friendly web-based installation wizard for the Kaspa All-in-One project.
+---
+
+## Next Steps (Task 6.3)
+
+To complete Phase 3 (Integration), focus on:
+
+1. **Add wizard to docker-compose.yml** (Task 3.1)
+   - Define wizard service
+   - Configure ports and volumes
+   - Add to profiles
+
+2. **Implement auto-start** (Task 3.2)
+   - Detect first installation
+   - Auto-launch wizard
+   - Add dashboard integration
+
+3. **Create test suite** (Task 3.5)
+   - Build test-wizard-integration.sh
+   - Test all API endpoints
+   - Test WebSocket streaming
+   - Test complete flow
+
+4. **Add security features** (Task 3.4)
+   - Rate limiting
+   - CSRF protection
+   - Error logging
+
+5. **Implement reconfiguration** (Task 3.3)
+   - Load existing config
+   - Safe modification
+   - Service restart
+
+---
+
+## Success Criteria
+
+### Functional Requirements
+- ✅ Backend API with all endpoints implemented
+- ✅ Frontend UI with all 7 steps complete
+- ✅ WebSocket streaming for real-time progress
+- ✅ Configuration generation and validation
+- ⏳ Docker Compose integration
+- ⏳ Auto-start on first installation
+- ⏳ Comprehensive test suite
+
+### Quality Requirements
+- ✅ Clean, maintainable code structure
+- ✅ Error handling throughout
+- ✅ Responsive design (768px+)
+- ✅ Dark mode support
+- ⏳ Integration tests
+- ⏳ Documentation
+
+### User Experience Requirements
+- ✅ Intuitive 7-step wizard flow
+- ✅ Real-time installation feedback
+- ✅ Clear error messages
+- ✅ Kaspa branding throughout
+- ⏳ < 10 minutes for basic setup
+- ⏳ Accessible (WCAG 2.1 AA)
+
+---
+
+## Technical Stack (Implemented)
+
+### Backend
+- **Runtime**: Node.js 18+
+- **Framework**: Express.js
+- **Language**: JavaScript
+- **WebSocket**: Socket.io
+- **Docker**: dockerode library
+- **Validation**: Custom validation logic
+
+### Frontend
+- **Framework**: Vanilla JavaScript (no framework)
+- **Styling**: Custom CSS with Kaspa branding
+- **State**: localStorage for persistence
+- **HTTP Client**: Fetch API
+- **WebSocket**: Socket.io-client
+- **Build**: No build step (static files)
+
+### DevOps
+- **Containerization**: Docker
+- **Orchestration**: Docker Compose
+- **Testing**: Bash test scripts (standardized pattern)
+

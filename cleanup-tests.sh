@@ -105,6 +105,8 @@ cleanup_test_containers() {
         "kasia-indexer-test" 
         "kaspa-node-test"
         "kaspa-dashboard-test"
+        "kaspa-nginx-test"
+        "timescaledb-test"
         "indexer-db-test"
         "k-social-test"
         "k-indexer-test"
@@ -112,6 +114,9 @@ cleanup_test_containers() {
         "archive-indexer-test"
         "portainer-test"
         "pgadmin-test"
+        "e2e-test"
+        "build-test"
+        "load-test"
     )
     
     local found_containers=()
@@ -133,6 +138,14 @@ cleanup_test_containers() {
     for container in "${found_containers[@]}"; do
         execute_or_show "docker stop $container && docker rm $container" "Removing container: $container"
     done
+    
+    # Clean up test artifacts
+    log_info "Cleaning up test artifacts..."
+    rm -f /tmp/build-*.log 2>/dev/null || true
+    rm -f /tmp/load-*.txt /tmp/load-*.txt.status 2>/dev/null || true
+    rm -f /tmp/spike-*.txt /tmp/spike-*.txt.status 2>/dev/null || true
+    rm -f /tmp/sustained-load.txt 2>/dev/null || true
+    rm -f /tmp/resource-stats.txt 2>/dev/null || true
     
     log_success "Test containers cleanup completed"
 }

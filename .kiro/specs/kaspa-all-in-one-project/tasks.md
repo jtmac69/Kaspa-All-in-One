@@ -1,4 +1,5 @@
-# Kaspa All-in-One Project Implementation Plan
+#
+ Kaspa All-in-One Project Implementation Plan
 
 ## Phase 1: Core Infrastructure ✅ COMPLETED
 
@@ -130,7 +131,7 @@
   - Test profile-aware UI features and service visibility
   - _Requirements: 3.2, 4.3_
 
-- [ ] 3.6 Create installation verification testing
+- [x] 3.6 Create installation verification testing
   - Implement automated install.sh testing
   - Test dependency checking (Docker, Docker Compose, system requirements)
   - Validate environment file creation and configuration
@@ -139,7 +140,7 @@
   - Create system verification script for port availability and resources
   - _Requirements: 3.1, 4.1_
 
-- [ ] 3.7 Create infrastructure component testing
+- [x] 3.7 Create infrastructure component testing
   - Implement nginx configuration testing (routing, SSL/TLS, security headers)
   - Test rate limiting and security policies
   - Create standalone TimescaleDB testing (initialization, migrations, backup/restore)
@@ -147,14 +148,21 @@
   - Test compression policies and continuous aggregates
   - _Requirements: 3.2, 5.1, 2.1_
 
-- [ ] 3.8 Create comprehensive integration testing
-  - Implement end-to-end system testing across all profiles
-  - Test full system deployment with all services
-  - Validate cross-service communication and dependency chains
-  - Test system performance under load
-  - Create build verification testing for all services
-  - Validate version compatibility and build-time integration
-  - Test image sizes and optimization
+- [x] 3.8 Create comprehensive integration testing ✅ COMPLETED
+  - ✅ Service-level integration tests complete (9 test scripts)
+  - ✅ Infrastructure tests complete (nginx, TimescaleDB)
+  - ✅ End-to-end system testing across all profiles (test-e2e.sh)
+  - ✅ Full system deployment testing with all services
+  - ✅ Cross-service communication and dependency chains validated
+  - ✅ System performance under load testing (test-load.sh)
+  - ✅ Build verification testing for all services (test-builds.sh)
+  - ✅ Version compatibility and build-time integration testing
+  - ✅ Image sizes and optimization testing
+  - ✅ Created test-e2e.sh for end-to-end testing across profiles
+  - ✅ Created test-builds.sh for build verification and version compatibility
+  - ✅ Created test-load.sh for performance and load testing
+  - ✅ Updated cleanup-tests.sh to include new test artifacts
+  - ✅ Enhanced docs/infrastructure-testing.md with comprehensive documentation
   - _Requirements: 3.1, 3.2, 3.3_
 
 ## Phase 4: Documentation and User Experience ✅ COMPLETED
@@ -181,7 +189,7 @@
   - Add maintenance schedules and update procedures
   - _Requirements: 4.3, 4.4_
 
-- [ ] 4.3 Enhance dashboard with advanced features
+- [x] 4.3 Enhance dashboard with advanced features
   - Add missing API endpoints for service management (restart, stop, logs streaming, configuration updates)
   - Implement real-time system resource monitoring (CPU, memory, disk usage)
   - Add profile-aware service management interface (start/stop services by profile)
@@ -234,14 +242,14 @@
 
 ## Phase 5: Service Repository Integration 🔄 CURRENT PRIORITY
 
-- [ ] 5. Clone and integrate external service repositories
+- [x] 5. Clone and integrate external service repositories
   - Set up automated repository cloning and integration process
   - Create standardized Dockerfile templates for different tech stacks
   - Implement service-specific configuration management
   - Add integration testing for all external services
   - _Requirements: 2.1, 2.3_
 
-- [ ] 5.1 Test and validate Kasia indexer integration
+- [x] 5.1 Test and validate Kasia indexer integration
   - Validate existing Kasia indexer Docker image integration (kkluster/kasia-indexer:main)
   - Run enhanced test-kasia-indexer.sh to verify WebSocket connection to Kaspa node
   - Test Swagger API endpoint (http://localhost:3002/swagger-ui/) accessibility
@@ -378,8 +386,17 @@
 ## Phase 6: Web-Based Installation Wizard 🔄 IN PROGRESS
 
 **See detailed spec**: `.kiro/specs/web-installation-wizard/`
+**Bootstrap strategy**: `.kiro/specs/web-installation-wizard/BOOTSTRAP_STRATEGY.md`
 
-- [ ] 6. Implement web-based installation wizard
+**NEW: Hybrid Multi-Runtime Approach** - The wizard now uses a zero-dependency foundation:
+- **Phase 0** (Week 1-2): Static HTML wizard - Works everywhere, zero dependencies
+- **Phase 1** (Week 3-4): Python backend - Optional automation for Linux/macOS
+- **Phase 2** (Week 5-6): Node.js backend - Optional full features
+- **Smart launcher** automatically detects and uses best available runtime
+
+**Detailed implementation tasks**: See `.kiro/specs/web-installation-wizard/tasks.md`
+
+- [-] 6. Implement web-based installation wizard
   - ✅ Created intuitive web UI foundation with Kaspa branding
   - ✅ Implemented visual profile selection interface (initial design)
   - ⏳ Add real-time installation progress tracking (backend needed)
@@ -387,25 +404,41 @@
   - **Full implementation plan**: See `.kiro/specs/web-installation-wizard/tasks.md`
   - _Requirements: User experience, ease of installation_
 
-- [ ] 6.1 Build wizard backend API
-  - ⏳ Implement system requirements checker API
-  - ⏳ Create profile management API
-  - ⏳ Build configuration management and validation
-  - ⏳ Implement installation engine with Docker integration
-  - ⏳ Add WebSocket progress streaming
+- [x] 6.1 Build wizard backend API ✅ COMPLETE
+  - ✅ Implement system requirements checker API
+  - ✅ Create profile management API
+  - ✅ Build configuration management and validation
+  - ✅ Implement installation engine with Docker integration
+  - ✅ Add WebSocket progress streaming
+  - **FILE**: services/wizard/backend/src/server.js (Express + Socket.IO server)
+  - **FILE**: services/wizard/backend/src/api/system-check.js (Docker, resources, ports)
+  - **FILE**: services/wizard/backend/src/api/profiles.js (Profile management and validation)
+  - **FILE**: services/wizard/backend/src/api/config.js (Configuration generation and validation)
+  - **FILE**: services/wizard/backend/src/api/install.js (Installation orchestration)
   - _Requirements: See web-installation-wizard/requirements.md (Req 1-7)_
 
-- [ ] 6.2 Build wizard frontend UI
-  - ✅ Created multi-step wizard interface (HTML structure complete)
-  - ✅ Implemented profile selection with visual feedback (initial cards)
-  - ✅ Added Kaspa brand colors and styling
-  - ⏳ Build dynamic configuration forms (Configure step)
-  - ⏳ Add real-time progress display (Installation step)
-  - ⏳ Create validation results interface (Complete step)
-  - ⏳ Implement form validation and error handling
+- [x] 6.2 Build wizard frontend UI ✅ COMPLETE (Fully Integrated with Backend)
+  - ✅ Created multi-step wizard interface (7 steps: Welcome, System Check, Profiles, Configure, Review, Install, Complete)
+  - ✅ Implemented Kaspa branding (logos in header/footer, brand colors #49D49D/#70C7BA, Montserrat/Open Sans fonts)
+  - ✅ Added dark mode support with automatic switching (prefers-color-scheme)
+  - ✅ Created responsive design foundation (mobile, tablet, desktop)
+  - ✅ Implemented all 6 profile selection cards (Core, Production, Explorer, Archive, Mining, Development)
+  - ✅ Built progress indicator with step navigation
+  - ✅ Added favicon and meta tags
+  - ✅ Built dynamic configuration forms (Configure step) with API integration
+  - ✅ Added real-time progress display (Installation step) with WebSocket streaming
+  - ✅ Created validation results interface (Complete step) with service status
+  - ✅ Implemented form validation and error handling with backend API
+  - ✅ WebSocket integration for real-time installation updates
+  - ✅ API client for all backend endpoints (system-check, profiles, config, install)
+  - ✅ External IP detection and secure password generation
+  - ✅ State persistence with localStorage auto-save
+  - **FILE**: services/wizard/frontend/public/index.html (complete HTML with Socket.IO)
+  - **FILE**: services/wizard/frontend/public/styles/wizard.css (complete styling for all steps)
+  - **FILE**: services/wizard/frontend/public/scripts/wizard.js (full backend integration)
   - _Requirements: See web-installation-wizard/requirements.md (Req 2-6, 9, 11)_
 
-- [ ] 6.2.1 Verify wizard frontend visually
+- [x] 6.2.1 Verify wizard frontend visually
   - Start local development server (cd services/wizard/frontend/public && python3 -m http.server 3000)
   - Open browser to http://localhost:3000 and verify wizard loads
   - Verify Kaspa branding displays correctly (logos in header and footer, brand colors, Montserrat/Open Sans fonts)

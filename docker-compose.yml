@@ -47,6 +47,9 @@ services:
     environment:
       - KASPA_NODE_URL=http://kaspa-node:16111
       - REMOTE_KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./.env:/app/.env:ro
     depends_on:
       - kaspa-node
     networks:

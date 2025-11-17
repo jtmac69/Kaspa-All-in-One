@@ -2,6 +2,9 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Install Docker CLI and other dependencies
+RUN apk add --no-cache docker-cli curl
+
 # Copy package files
 COPY package*.json ./
 

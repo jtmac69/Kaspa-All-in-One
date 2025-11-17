@@ -64,12 +64,38 @@ curl -fsSL https://raw.githubusercontent.com/your-repo/kaspa-aio/main/install.sh
 git clone https://github.com/your-repo/kaspa-aio.git
 cd kaspa-aio
 
+# Verify system requirements (recommended)
+./scripts/verify-system.sh
+
+# Run comprehensive installation tests
+./test-installation.sh
+
 # Run the interactive installer
 ./install.sh
 
 # Or start services manually
 docker compose up -d
 ```
+
+### Pre-Installation Verification
+Before installing, verify your system meets all requirements:
+
+```bash
+# Quick system check
+./scripts/verify-system.sh -q
+
+# Check specific profile ports
+./scripts/verify-system.sh -p core
+./scripts/verify-system.sh -p explorer
+
+# Generate detailed system report
+./scripts/verify-system.sh -r
+
+# Run full installation verification
+./test-installation.sh
+```
+
+See [Installation Testing Guide](docs/installation-testing.md) for detailed information.
 
 ## 🎛️ Management
 
@@ -250,6 +276,10 @@ REMOTE_KASPA_NODE_URL=http://192.168.1.100:16111
 - **Maintenance Guide**: [docs/maintenance.md](docs/maintenance.md) - Maintenance schedules and procedures
 - **FAQ**: [docs/faq.md](docs/faq.md) - Frequently asked questions and answers
 - **Test Cleanup**: [docs/test-cleanup.md](docs/test-cleanup.md) - Test environment cleanup procedures
+
+### Testing and Verification
+- **Installation Testing**: [docs/installation-testing.md](docs/installation-testing.md) - Pre-installation verification and system checks
+- **Dashboard Testing**: [docs/dashboard-testing.md](docs/dashboard-testing.md) - Dashboard API and UI testing guide
 
 ## 🛠️ Development
 
