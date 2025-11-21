@@ -1,0 +1,25 @@
+{
+  "checkpointId": "cp-1763763500046",
+  "timestamp": "2025-11-21T22:18:20.046Z",
+  "stage": "step-configure-entered",
+  "data": {
+    "currentStep": 5,
+    "configuration": {
+      "KASPA_NODE_MODE": "remote",
+      "REMOTE_KASPA_NODE_URL": "https://api.kaspa.org",
+      "REMOTE_KASPA_NODE_WBORSH_URL": "wss://api.kaspa.org",
+      "KASPA_NODE_WBORSH_URL": "wss://api.kaspa.org",
+      "DASHBOARD_PORT": "8080",
+      "KASPA_NODE_P2P_PORT": "16110",
+      "KASPA_NODE_RPC_PORT": "16111",
+      "POSTGRES_USER": "indexer",
+      "POSTGRES_PASSWORD": "secure_password",
+      "POSTGRES_DB": "kaspa_indexers"
+    },
+    "selectedProfiles": [
+      "prod",
+      "core"
+    ],
+    "timestamp": "2025-11-21T22:18:20.046Z"
+  }
+}

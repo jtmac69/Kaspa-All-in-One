@@ -1,0 +1,935 @@
+{
+  "entries": [
+    {
+      "versionId": "v-1763764262792",
+      "timestamp": "2025-11-21T22:31:02.792Z",
+      "backupFilename": ".env.v-1763764262792",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763764262792",
+      "profiles": [
+        "core",
+        "prod"
+      ],
+      "metadata": {
+        "action": "step-navigation",
+        "description": "Completed profiles step",
+        "timestamp": "2025-11-21T22:31:02.787Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763763503878",
+      "timestamp": "2025-11-21T22:18:23.878Z",
+      "backupFilename": ".env.v-1763763503878",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763763503878",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "step-navigation",
+        "description": "Completed configure step",
+        "timestamp": "2025-11-21T22:18:23.874Z",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763763500032",
+      "timestamp": "2025-11-21T22:18:20.031Z",
+      "backupFilename": ".env.v-1763763500032",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763763500032",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "step-navigation",
+        "description": "Completed profiles step",
+        "timestamp": "2025-11-21T22:18:20.025Z",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763763274326",
+      "timestamp": "2025-11-21T22:14:34.326Z",
+      "backupFilename": ".env.v-1763763274326",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763763274326",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763763270350",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763763270350",
+      "timestamp": "2025-11-21T22:14:30.350Z",
+      "backupFilename": ".env.v-1763763270350",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763763270350",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763763262687",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763763262687",
+      "timestamp": "2025-11-21T22:14:22.687Z",
+      "backupFilename": ".env.v-1763763262687",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763763262687",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763763249318",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763763249318",
+      "timestamp": "2025-11-21T22:14:09.318Z",
+      "backupFilename": ".env.v-1763763249318",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763763249318",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763763204950",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763763204950",
+      "timestamp": "2025-11-21T22:13:24.950Z",
+      "backupFilename": ".env.v-1763763204950",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763763204950",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "step-navigation",
+        "description": "Completed profiles step",
+        "timestamp": "2025-11-21T22:13:24.945Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763762740488",
+      "timestamp": "2025-11-21T22:05:40.488Z",
+      "backupFilename": ".env.v-1763762740488",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762740488",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Configuration updated",
+        "timestamp": "2025-11-21T22:05:40.485Z",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763762740479",
+      "timestamp": "2025-11-21T22:05:40.479Z",
+      "backupFilename": ".env.v-1763762740479",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762740479",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763762735735",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763762735735",
+      "timestamp": "2025-11-21T22:05:35.735Z",
+      "backupFilename": ".env.v-1763762735735",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762735735",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Configuration updated",
+        "timestamp": "2025-11-21T22:05:35.733Z",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763762735726",
+      "timestamp": "2025-11-21T22:05:35.726Z",
+      "backupFilename": ".env.v-1763762735726",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762735726",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763762727997",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763762727997",
+      "timestamp": "2025-11-21T22:05:27.997Z",
+      "backupFilename": ".env.v-1763762727997",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762727997",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Configuration updated",
+        "timestamp": "2025-11-21T22:05:27.994Z",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763762727989",
+      "timestamp": "2025-11-21T22:05:27.989Z",
+      "backupFilename": ".env.v-1763762727989",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762727989",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763762716082",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763762716082",
+      "timestamp": "2025-11-21T22:05:16.082Z",
+      "backupFilename": ".env.v-1763762716082",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762716082",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Configuration updated",
+        "timestamp": "2025-11-21T22:05:16.079Z",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763762716072",
+      "timestamp": "2025-11-21T22:05:16.072Z",
+      "backupFilename": ".env.v-1763762716072",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762716072",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763762702477",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763762702477",
+      "timestamp": "2025-11-21T22:05:02.477Z",
+      "backupFilename": ".env.v-1763762702477",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762702477",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Configuration updated",
+        "timestamp": "2025-11-21T22:05:02.475Z",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763762702471",
+      "timestamp": "2025-11-21T22:05:02.471Z",
+      "backupFilename": ".env.v-1763762702471",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762702471",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763762672728",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763762672728",
+      "timestamp": "2025-11-21T22:04:32.728Z",
+      "backupFilename": ".env.v-1763762672728",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762672728",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T22:04:32.721Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763762669901",
+      "timestamp": "2025-11-21T22:04:29.901Z",
+      "backupFilename": ".env.v-1763762669901",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762669901",
+      "profiles": [
+        "prod"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T22:04:29.896Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763762667646",
+      "timestamp": "2025-11-21T22:04:27.646Z",
+      "backupFilename": ".env.v-1763762667646",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762667646",
+      "profiles": [
+        "prod",
+        "development"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T22:04:27.642Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763762653827",
+      "timestamp": "2025-11-21T22:04:13.827Z",
+      "backupFilename": ".env.v-1763762653827",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762653827",
+      "profiles": [
+        "prod"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T22:04:13.820Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763762605165",
+      "timestamp": "2025-11-21T22:03:25.165Z",
+      "backupFilename": ".env.v-1763762605165",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763762605165",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T22:03:25.163Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763761374796",
+      "timestamp": "2025-11-21T21:42:54.796Z",
+      "backupFilename": ".env.v-1763761374796",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761374796",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T21:42:54.795Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763761374789",
+      "timestamp": "2025-11-21T21:42:54.789Z",
+      "backupFilename": ".env.v-1763761374789",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761374789",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763761369110",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763761369110",
+      "timestamp": "2025-11-21T21:42:49.110Z",
+      "backupFilename": ".env.v-1763761369110",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761369110",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T21:42:49.107Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763761369102",
+      "timestamp": "2025-11-21T21:42:49.102Z",
+      "backupFilename": ".env.v-1763761369102",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761369102",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763761356691",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763761356691",
+      "timestamp": "2025-11-21T21:42:36.691Z",
+      "backupFilename": ".env.v-1763761356691",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761356691",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T21:42:36.687Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763761356024",
+      "timestamp": "2025-11-21T21:42:36.024Z",
+      "backupFilename": ".env.v-1763761356024",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761356024",
+      "profiles": [
+        "prod"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T21:42:36.019Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763761297309",
+      "timestamp": "2025-11-21T21:41:37.309Z",
+      "backupFilename": ".env.v-1763761297309",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761297309",
+      "profiles": [
+        "prod",
+        "core",
+        "development"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T21:41:37.304Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763761297298",
+      "timestamp": "2025-11-21T21:41:37.298Z",
+      "backupFilename": ".env.v-1763761297298",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761297298",
+      "profiles": [
+        "prod",
+        "core",
+        "development"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763761282215",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763761282215",
+      "timestamp": "2025-11-21T21:41:22.215Z",
+      "backupFilename": ".env.v-1763761282215",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761282215",
+      "profiles": [
+        "prod",
+        "core",
+        "development"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T21:41:22.203Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763761176202",
+      "timestamp": "2025-11-21T21:39:36.202Z",
+      "backupFilename": ".env.v-1763761176202",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761176202",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T21:39:36.200Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763761176194",
+      "timestamp": "2025-11-21T21:39:36.194Z",
+      "backupFilename": ".env.v-1763761176194",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761176194",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763761123477",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763761123477",
+      "timestamp": "2025-11-21T21:38:43.477Z",
+      "backupFilename": ".env.v-1763761123477",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761123477",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T21:38:43.474Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763761123468",
+      "timestamp": "2025-11-21T21:38:43.468Z",
+      "backupFilename": ".env.v-1763761123468",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761123468",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763761107163",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763761107163",
+      "timestamp": "2025-11-21T21:38:27.163Z",
+      "backupFilename": ".env.v-1763761107163",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761107163",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T21:38:27.160Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763761107153",
+      "timestamp": "2025-11-21T21:38:27.153Z",
+      "backupFilename": ".env.v-1763761107153",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761107153",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763761089735",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763761089735",
+      "timestamp": "2025-11-21T21:38:09.735Z",
+      "backupFilename": ".env.v-1763761089735",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761089735",
+      "profiles": [
+        "prod",
+        "core"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T21:38:09.716Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763761075667",
+      "timestamp": "2025-11-21T21:37:55.667Z",
+      "backupFilename": ".env.v-1763761075667",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763761075667",
+      "profiles": [
+        "prod"
+      ],
+      "metadata": {
+        "action": "auto-save",
+        "description": "Profile selection changed",
+        "timestamp": "2025-11-21T21:37:55.663Z",
+        "configKeys": []
+      }
+    },
+    {
+      "versionId": "v-1763744861325",
+      "timestamp": "2025-11-21T17:07:41.325Z",
+      "backupFilename": ".env.v-1763744861325",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763744861325",
+      "profiles": [
+        "core",
+        "explorer"
+      ],
+      "metadata": {
+        "action": "pre-restore-backup",
+        "restoringFrom": "v-1763744860304",
+        "configKeys": [
+          "KASPA_NODE_MODE",
+          "REMOTE_KASPA_NODE_URL",
+          "REMOTE_KASPA_NODE_WBORSH_URL",
+          "KASPA_NODE_WBORSH_URL",
+          "DASHBOARD_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "KASPA_NODE_RPC_PORT",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD",
+          "POSTGRES_DB"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763744861308",
+      "timestamp": "2025-11-21T17:07:41.308Z",
+      "backupFilename": ".env.v-1763744861308",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763744861308",
+      "profiles": [
+        "core",
+        "prod"
+      ],
+      "metadata": {
+        "action": "test-save-2",
+        "description": "Second test configuration",
+        "configKeys": [
+          "KASPA_NODE_RPC_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "POSTGRES_PASSWORD",
+          "NEW_KEY"
+        ]
+      }
+    },
+    {
+      "versionId": "v-1763744860304",
+      "timestamp": "2025-11-21T17:07:40.299Z",
+      "backupFilename": ".env.v-1763744860304",
+      "backupPath": "/Users/jtmcgibbon/Documents/Development/Kaspa/All-in-One/.kaspa-backups/.env.v-1763744860304",
+      "profiles": [
+        "core",
+        "explorer"
+      ],
+      "metadata": {
+        "action": "test-save",
+        "description": "Test configuration save",
+        "configKeys": [
+          "KASPA_NODE_RPC_PORT",
+          "KASPA_NODE_P2P_PORT",
+          "POSTGRES_PASSWORD"
+        ]
+      }
+    }
+  ]
+}

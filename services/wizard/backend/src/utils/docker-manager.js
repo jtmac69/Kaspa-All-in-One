@@ -301,6 +301,26 @@ class DockerManager {
       return { success: false, error: error.message };
     }
   }
+
+  async removeAllContainers() {
+    try {
+      const cmd = `cd ${this.projectRoot} && docker compose down --remove-orphans`;
+      const { stdout, stderr } = await execAsync(cmd);
+      return { success: true, output: { stdout, stderr } };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  async removeAllVolumes() {
+    try {
+      const cmd = `cd ${this.projectRoot} && docker compose down -v`;
+      const { stdout, stderr } = await execAsync(cmd);
+      return { success: true, output: { stdout, stderr } };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 module.exports = DockerManager;

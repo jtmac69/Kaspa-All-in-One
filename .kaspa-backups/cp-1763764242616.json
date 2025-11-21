@@ -1,0 +1,11 @@
+{
+  "checkpointId": "cp-1763764242616",
+  "timestamp": "2025-11-21T22:30:42.616Z",
+  "stage": "step-profiles-entered",
+  "data": {
+    "currentStep": 4,
+    "configuration": {},
+    "selectedProfiles": [],
+    "timestamp": "2025-11-21T22:30:42.616Z"
+  }
+}

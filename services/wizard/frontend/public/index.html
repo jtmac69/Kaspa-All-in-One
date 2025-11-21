@@ -1135,13 +1135,6 @@
         </footer>
     </div>
 
-    <!-- Scripts -->
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/scripts/wizard.js"></script>
-</body>
-</html>
-
-
     <!-- Safety Confirmation Modal -->
     <div id="safety-confirmation-modal" class="modal" style="display: none;">
         <div class="modal-overlay" onclick="safety.handleConfirmationAction('cancel')"></div>
@@ -1319,8 +1312,205 @@
         </div>
     </div>
 
+    <!-- Floating Help/Glossary Button -->
+    <button class="floating-help-button" onclick="showGlossaryModal()" title="Open Glossary & Help">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+    </button>
+
+    <!-- Rollback UI Components -->
+    
+    <!-- Start Over Button -->
+    <button id="start-over-button" class="start-over-button" onclick="confirmStartOver()" title="Start over from beginning">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+        </svg>
+        Start Over
+    </button>
+
+    <!-- Version History Modal -->
+    <div id="version-history-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Configuration History</h2>
+                <button class="modal-close" onclick="closeVersionHistoryModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">
+                    View and restore previous configuration versions. Each time you make changes, 
+                    a version is automatically saved so you can roll back if needed.
+                </p>
+                <div id="version-history-list" class="version-history-list">
+                    <p class="loading">Loading version history...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeVersionHistoryModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start Over Confirmation Modal -->
+    <div id="start-over-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔄 Start Over?</h2>
+                <button class="modal-close" onclick="closeStartOverModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="warning-message">
+                    This will reset the wizard and clear your current progress.
+                </p>
+                <div class="warning-details">
+                    <h4>What will happen:</h4>
+                    <ul>
+                        <li>All wizard progress will be lost</li>
+                        <li>Configuration selections will be cleared</li>
+                        <li>You will return to the welcome screen</li>
+                    </ul>
+                    <h4>What won't be affected:</h4>
+                    <ul>
+                        <li>Running services will continue</li>
+                        <li>Existing data will be preserved</li>
+                        <li>Configuration backups will be kept</li>
+                    </ul>
+                </div>
+                <div class="start-over-options">
+                    <label>
+                        <input type="checkbox" id="delete-data-checkbox">
+                        Also remove all containers and volumes
+                    </label>
+                    <label>
+                        <input type="checkbox" id="delete-config-checkbox">
+                        Also delete configuration files
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeStartOverModal()">Cancel</button>
+                <button class="btn-danger" onclick="executeStartOver()">Start Over</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Recovery Dialog -->
+    <div id="error-recovery-dialog" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚠️ Installation Error</h2>
+                <button class="modal-close" onclick="closeErrorRecoveryDialog()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="error-details">
+                    <p><strong>Stage:</strong> <span class="error-stage"></span></p>
+                    <p><strong>Error:</strong> <span class="error-message"></span></p>
+                </div>
+                <h4>Recovery Options:</h4>
+                <div class="recovery-options">
+                    <button class="btn-primary" onclick="retryInstallation()">
+                        🔄 Retry Installation
+                    </button>
+                    <button class="btn-secondary" onclick="window.rollback.undoLastChange()">
+                        ↶ Undo Last Change
+                    </button>
+                    <button class="btn-secondary" onclick="window.rollback.showVersionHistoryModal()">
+                        📋 View Version History
+                    </button>
+                    <button class="btn-secondary" onclick="showDiagnosticExport()">
+                        📊 Export Diagnostic Report
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeErrorRecoveryDialog()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
     <!-- Scripts -->
-    <script src="/scripts/wizard.js"></script>
-    <script src="/scripts/safety-system.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script type="module" src="/scripts/wizard-refactored.js?v=4"></script>
+    <script src="/scripts/glossary.js?v=4"></script>
+    
+    <!-- Rollback UI Helper Functions -->
+    <script>
+        // Modal management functions
+        function closeVersionHistoryModal() {
+            document.getElementById('version-history-modal').style.display = 'none';
+        }
+        
+        function closeStartOverModal() {
+            document.getElementById('start-over-modal').style.display = 'none';
+        }
+        
+        function closeErrorRecoveryDialog() {
+            document.getElementById('error-recovery-dialog').style.display = 'none';
+        }
+        
+        // Start over confirmation
+        function confirmStartOver() {
+            document.getElementById('start-over-modal').style.display = 'block';
+        }
+        
+        // Execute start over
+        async function executeStartOver() {
+            const deleteData = document.getElementById('delete-data-checkbox').checked;
+            const deleteConfig = document.getElementById('delete-config-checkbox').checked;
+            
+            closeStartOverModal();
+            
+            if (window.rollback) {
+                await window.rollback.startOver({
+                    deleteData,
+                    deleteConfig,
+                    deleteBackups: false
+                });
+            }
+        }
+        
+        // Retry installation
+        function retryInstallation() {
+            closeErrorRecoveryDialog();
+            if (window.wizard) {
+                window.wizard.startInstallation();
+            }
+        }
+        
+        // Show diagnostic export
+        function showDiagnosticExport() {
+            closeErrorRecoveryDialog();
+            // This will be handled by diagnostic module
+            if (window.diagnostic) {
+                window.diagnostic.showExportDialog();
+            }
+        }
+        
+        // Undo button removed - users can use Back button to change configuration
+        // Rollback functionality preserved for post-installation use
+        
+        // Start Over - simple localStorage clear and reload
+        function confirmStartOver() {
+            const confirmed = confirm(
+                'This will reset the wizard and clear all your selections. ' +
+                'Are you sure you want to start over?'
+            );
+            
+            if (confirmed) {
+                // Clear all localStorage
+                localStorage.clear();
+                // Set wizard version to prevent re-clearing on reload
+                localStorage.setItem('wizardVersion', '3');
+                // Reload page
+                window.location.reload();
+            }
+        }
+    </script>
 </body>
 </html>

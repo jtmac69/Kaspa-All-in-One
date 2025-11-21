@@ -2876,3 +2876,281 @@ function addGetHelpButton() {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(addGetHelpButton, 1000);
 });
+
+
+/**
+ * Show glossary/help modal
+ */
+function showGlossaryModal() {
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'help-modal active';
+    modal.id = 'help-modal';
+    modal.innerHTML = `
+        <div class="help-modal-content">
+            <div class="help-modal-header">
+                <h2 class="help-modal-title">Help & Glossary</h2>
+                <button class="glossary-modal-close" onclick="document.getElementById('help-modal').remove()">×</button>
+            </div>
+            
+            <div class="help-modal-tabs">
+                <button class="help-tab active" onclick="switchHelpTab('glossary')">Glossary</button>
+                <button class="help-tab" onclick="switchHelpTab('concepts')">Learn Concepts</button>
+                <button class="help-tab" onclick="switchHelpTab('popular')">Popular Terms</button>
+            </div>
+            
+            <div class="help-modal-body">
+                <!-- Glossary Tab -->
+                <div class="help-tab-content active" id="help-tab-glossary">
+                    <div class="glossary-search-container">
+                        <input 
+                            type="text" 
+                            class="glossary-search-input" 
+                            placeholder="Search for a term..."
+                            id="help-glossary-search"
+                            onkeyup="searchHelpGlossary(this.value)"
+                        />
+                    </div>
+                    
+                    <div class="glossary-categories" id="help-glossary-categories"></div>
+                    
+                    <div class="glossary-grid" id="help-glossary-grid"></div>
+                </div>
+                
+                <!-- Concepts Tab -->
+                <div class="help-tab-content" id="help-tab-concepts">
+                    <h3 style="margin-bottom: 16px; color: var(--text-color);">Learn Key Concepts</h3>
+                    <div class="help-quick-links" id="help-concepts-grid"></div>
+                </div>
+                
+                <!-- Popular Terms Tab -->
+                <div class="help-tab-content" id="help-tab-popular">
+                    <h3 style="margin-bottom: 16px; color: var(--text-color);">Most Helpful Terms</h3>
+                    <div class="glossary-grid" id="help-popular-grid"></div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add to page
+    document.body.appendChild(modal);
+
+    // Close on background click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+
+    // Load initial content
+    loadHelpGlossary();
+    loadHelpConcepts();
+    loadHelpPopular();
+}
+
+/**
+ * Switch help tab
+ */
+function switchHelpTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.help-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    // Update tab content
+    document.querySelectorAll('.help-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`help-tab-${tabName}`).classList.add('active');
+}
+
+/**
+ * Load glossary terms
+ */
+async function loadHelpGlossary() {
+    try {
+        const response = await fetch('/api/glossary/terms');
+        const data = await response.json();
+
+        if (data.success) {
+            renderHelpGlossary(data.terms);
+            renderHelpCategories();
+        }
+    } catch (error) {
+        console.error('Error loading glossary:', error);
+    }
+}
+
+/**
+ * Render glossary categories
+ */
+async function renderHelpCategories() {
+    try {
+        const response = await fetch('/api/glossary/categories');
+        const data = await response.json();
+
+        if (!data.success) return;
+
+        const container = document.getElementById('help-glossary-categories');
+        if (!container) return;
+
+        const categoriesHTML = `
+            <button class="category-filter active" onclick="filterHelpGlossary('all')">
+                All Terms
+            </button>
+            ${Object.entries(data.categories).map(([id, cat]) => `
+                <button class="category-filter" onclick="filterHelpGlossary('${id}')">
+                    <span class="category-icon">${cat.icon}</span>
+                    ${cat.name}
+                </button>
+            `).join('')}
+        `;
+
+        container.innerHTML = categoriesHTML;
+    } catch (error) {
+        console.error('Error rendering categories:', error);
+    }
+}
+
+/**
+ * Render glossary terms
+ */
+function renderHelpGlossary(terms) {
+    const container = document.getElementById('help-glossary-grid');
+    if (!container) return;
+
+    const termsArray = Object.entries(terms);
+
+    if (termsArray.length === 0) {
+        container.innerHTML = `
+            <div class="glossary-empty">
+                <div class="glossary-empty-icon">🔍</div>
+                <h3 class="glossary-empty-title">No terms found</h3>
+                <p class="glossary-empty-message">Try a different search or category</p>
+            </div>
+        `;
+        return;
+    }
+
+    const termsHTML = termsArray.map(([id, term]) => `
+        <div class="glossary-card" onclick="glossarySystem.showTermModal('${id}')">
+            <div class="glossary-card-header">
+                <h3 class="glossary-card-term">${term.term}</h3>
+            </div>
+            <p class="glossary-card-definition">${term.shortDefinition}</p>
+        </div>
+    `).join('');
+
+    container.innerHTML = termsHTML;
+}
+
+/**
+ * Search glossary
+ */
+async function searchHelpGlossary(query) {
+    try {
+        const url = query ? `/api/glossary/terms?search=${encodeURIComponent(query)}` : '/api/glossary/terms';
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+            renderHelpGlossary(data.terms);
+        }
+    } catch (error) {
+        console.error('Error searching glossary:', error);
+    }
+}
+
+/**
+ * Filter glossary by category
+ */
+async function filterHelpGlossary(categoryId) {
+    // Update active button
+    document.querySelectorAll('#help-glossary-categories .category-filter').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    try {
+        const url = categoryId === 'all' ? '/api/glossary/terms' : `/api/glossary/terms?category=${categoryId}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+            renderHelpGlossary(data.terms);
+        }
+    } catch (error) {
+        console.error('Error filtering glossary:', error);
+    }
+}
+
+/**
+ * Load concepts
+ */
+async function loadHelpConcepts() {
+    try {
+        const response = await fetch('/api/glossary/concepts');
+        const data = await response.json();
+
+        if (data.success) {
+            renderHelpConcepts(data.concepts);
+        }
+    } catch (error) {
+        console.error('Error loading concepts:', error);
+    }
+}
+
+/**
+ * Render concepts
+ */
+function renderHelpConcepts(concepts) {
+    const container = document.getElementById('help-concepts-grid');
+    if (!container) return;
+
+    const conceptsArray = Object.entries(concepts);
+
+    const conceptsHTML = conceptsArray.map(([id, concept]) => `
+        <div class="help-quick-link" onclick="glossarySystem.showConceptModal('${id}')">
+            <div class="help-quick-link-title">${concept.title}</div>
+            <div class="help-quick-link-description">${concept.summary}</div>
+        </div>
+    `).join('');
+
+    container.innerHTML = conceptsHTML;
+}
+
+/**
+ * Load popular terms
+ */
+async function loadHelpPopular() {
+    try {
+        const response = await fetch('/api/glossary/popular?limit=12');
+        const data = await response.json();
+
+        if (data.success) {
+            renderHelpPopular(data.terms);
+        }
+    } catch (error) {
+        console.error('Error loading popular terms:', error);
+    }
+}
+
+/**
+ * Render popular terms
+ */
+function renderHelpPopular(terms) {
+    const container = document.getElementById('help-popular-grid');
+    if (!container) return;
+
+    const termsHTML = terms.map(term => `
+        <div class="glossary-card" onclick="glossarySystem.showTermModal('${term.id}')">
+            <div class="glossary-card-header">
+                <h3 class="glossary-card-term">${term.term}</h3>
+            </div>
+            <p class="glossary-card-definition">${term.shortDefinition}</p>
+        </div>
+    `).join('');
+
+    container.innerHTML = termsHTML;
+}
