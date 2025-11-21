@@ -678,7 +678,7 @@ The test suite covers:
 
 ## Related Documentation
 
-- [Safety System Guide](./SAFETY_SYSTEM_QUICK_REFERENCE.md)
+- [Safety System Guide](../../docs/quick-references/SAFETY_SYSTEM_QUICK_REFERENCE.md)
 - [Diagnostic Export Guide](./DIAGNOSTIC_HELP_QUICK_REFERENCE.md)
 - [Wizard Integration Guide](./INTEGRATION.md)
 - [Testing Guide](./TESTING.md)

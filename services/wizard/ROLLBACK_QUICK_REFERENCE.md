@@ -265,5 +265,5 @@ node services/wizard/backend/test-rollback.js
 ## Related Guides
 
 - [Full Documentation](./ROLLBACK_RECOVERY_GUIDE.md)
-- [Safety System](./SAFETY_SYSTEM_QUICK_REFERENCE.md)
+- [Safety System](../../docs/quick-references/SAFETY_SYSTEM_QUICK_REFERENCE.md)
 - [Diagnostic Export](./DIAGNOSTIC_HELP_QUICK_REFERENCE.md)

@@ -690,7 +690,7 @@ See [docs/maintenance.md](maintenance.md) for detailed procedures.
 - [README.md](../README.md) - Overview and quick start
 - [docs/troubleshooting.md](troubleshooting.md) - Common issues
 - [docs/maintenance.md](maintenance.md) - Maintenance procedures
-- [PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md) - Architecture details
+- [PROJECT_STRUCTURE.md](uncategorized/PROJECT_STRUCTURE.md) - Architecture details
 
 **Community:**
 - GitHub Issues - Bug reports and feature requests

@@ -484,14 +484,14 @@ REMOTE_KASPA_NODE_URL=http://192.168.1.100:16111
 - **Wizard Overview**: [services/wizard/README.md](services/wizard/README.md) - Complete wizard features and usage
 - **Resource Checker**: [services/wizard/RESOURCE_CHECKER_QUICK_REFERENCE.md](services/wizard/RESOURCE_CHECKER_QUICK_REFERENCE.md) - Hardware detection and recommendations
 - **Plain Language Guide**: [PLAIN_LANGUAGE_STYLE_GUIDE.md](PLAIN_LANGUAGE_STYLE_GUIDE.md) - Content writing standards
-- **Installation Guides**: [services/wizard/INSTALLATION_GUIDES_QUICK_REFERENCE.md](services/wizard/INSTALLATION_GUIDES_QUICK_REFERENCE.md) - OS-specific installation help
-- **Error Remediation**: [services/wizard/ERROR_REMEDIATION_QUICK_REFERENCE.md](services/wizard/ERROR_REMEDIATION_QUICK_REFERENCE.md) - Automatic error fixing
-- **Safety System**: [services/wizard/SAFETY_SYSTEM_QUICK_REFERENCE.md](services/wizard/SAFETY_SYSTEM_QUICK_REFERENCE.md) - Warnings and confirmations
+- **Installation Guides**: [services/wizard/INSTALLATION_GUIDES_QUICK_REFERENCE.md](docs/quick-references/INSTALLATION_GUIDES_QUICK_REFERENCE.md) - OS-specific installation help
+- **Error Remediation**: [services/wizard/ERROR_REMEDIATION_QUICK_REFERENCE.md](docs/quick-references/ERROR_REMEDIATION_QUICK_REFERENCE.md) - Automatic error fixing
+- **Safety System**: [services/wizard/SAFETY_SYSTEM_QUICK_REFERENCE.md](docs/quick-references/SAFETY_SYSTEM_QUICK_REFERENCE.md) - Warnings and confirmations
 - **Diagnostic Help**: [services/wizard/DIAGNOSTIC_HELP_QUICK_REFERENCE.md](services/wizard/DIAGNOSTIC_HELP_QUICK_REFERENCE.md) - Troubleshooting and diagnostics
-- **Post-Installation Tour**: [services/wizard/POST_INSTALLATION_TOUR_QUICK_REFERENCE.md](services/wizard/POST_INSTALLATION_TOUR_QUICK_REFERENCE.md) - Getting started guide
+- **Post-Installation Tour**: [services/wizard/POST_INSTALLATION_TOUR_QUICK_REFERENCE.md](docs/quick-references/POST_INSTALLATION_TOUR_QUICK_REFERENCE.md) - Getting started guide
 
 ### Architecture and Development
-- **Project Structure**: [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Architecture and file organization
+- **Project Structure**: [PROJECT_STRUCTURE.md](docs/uncategorized/PROJECT_STRUCTURE.md) - Architecture and file organization
 - **TimescaleDB Integration**: [docs/timescaledb-integration.md](docs/timescaledb-integration.md) - Time-series database optimization
 - **Service Dependencies**: [docs/service-dependencies.md](docs/service-dependencies.md) - Service relationships and startup order
 - **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines

@@ -265,7 +265,7 @@ These test scripts can be integrated into CI/CD pipelines:
 
 ## Related Documentation
 
-- [Testing Coverage Audit](../TESTING_COVERAGE_AUDIT.md) - Complete testing coverage analysis
+- [Testing Coverage Audit](implementation-summaries/testing/TESTING_COVERAGE_AUDIT.md) - Complete testing coverage analysis
 - [Test Cleanup](test-cleanup.md) - Standardized cleanup procedures
 - [Dashboard Testing](dashboard-testing.md) - Dashboard-specific testing
 - [Installation Testing](installation-testing.md) - Installation verification testing

@@ -140,7 +140,7 @@ This document tracks proposed enhancements for the Kaspa All-in-One project, pri
 
 **Files**:
 - `.env`, `.env.example`
-- `REMOTE_NODE_SETUP_COMPLETE.md`
+- `../implementation-summaries/infrastructure/REMOTE_NODE_SETUP_COMPLETE.md`
 
 ---
 

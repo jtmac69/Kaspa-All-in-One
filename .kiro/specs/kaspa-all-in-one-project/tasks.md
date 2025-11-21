@@ -401,7 +401,7 @@
   - ✅ Add real-time installation progress tracking (WebSocket streaming with Socket.IO)
   - ✅ Create post-installation validation and verification (validation API endpoint)
   - **Full implementation plan**: See `.kiro/specs/web-installation-wizard/tasks.md`
-  - **Summary**: See `WIZARD_IMPLEMENTATION_COMPLETE.md`
+  - **Summary**: See `../../../docs/implementation-summaries/wizard/WIZARD_IMPLEMENTATION_COMPLETE.md`
   - _Requirements: User experience, ease of installation_
 
 - [x] 6.1 Build wizard backend API ✅ COMPLETE
@@ -470,7 +470,7 @@
 
 ## Phase 6.5: Non-Technical User Support 🔄 IN PROGRESS
 
-**See detailed analysis**: `NON_TECHNICAL_USER_ANALYSIS.md`, `NON_TECHNICAL_USER_TASKS.md`, `NON_TECHNICAL_USER_SUMMARY.md`
+**See detailed analysis**: `../../../docs/uncategorized/NON_TECHNICAL_USER_ANALYSIS.md`, `../../../docs/uncategorized/NON_TECHNICAL_USER_TASKS.md`, `../../../docs/uncategorized/NON_TECHNICAL_USER_SUMMARY.md`
 
 **Goal**: Transform wizard from "technical users only" to "anyone can install" with 90% success rate
 

@@ -556,7 +556,7 @@ The recommendation algorithm considers:
 
 - [Resource Checker Feature Document](../../../docs/future-enhancements/resource-checker-feature.md)
 - [Web Installation Wizard Requirements](../../../.kiro/specs/web-installation-wizard/requirements.md)
-- [Non-Technical User Analysis](../../../NON_TECHNICAL_USER_ANALYSIS.md)
+- [Non-Technical User Analysis](../../../docs/uncategorized/NON_TECHNICAL_USER_ANALYSIS.md)
 
 ## Support
 

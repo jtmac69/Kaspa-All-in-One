@@ -241,7 +241,7 @@
 
 ## Phase 4: Non-Technical User Support � IAN PROGRESS
 
-**See detailed analysis**: Main project `NON_TECHNICAL_USER_ANALYSIS.md`, `NON_TECHNICAL_USER_TASKS.md`
+**See detailed analysis**: Main project `../../../docs/uncategorized/NON_TECHNICAL_USER_ANALYSIS.md`, `../../../docs/uncategorized/NON_TECHNICAL_USER_TASKS.md`
 
 **Goal**: Transform wizard from "technical users only" to "anyone can install" with 90% success rate
 

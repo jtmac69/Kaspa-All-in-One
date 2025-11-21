@@ -70,8 +70,8 @@ Should show:
 
 ## 📚 Documentation
 
-- `REMOTE_NODE_SETUP_COMPLETE.md` - Full setup guide
-- `KASPA_NODE_MEMORY_ISSUE.md` - Why we use remote node
+- `docs/implementation-summaries/infrastructure/REMOTE_NODE_SETUP_COMPLETE.md` - Full setup guide
+- `docs/uncategorized/KASPA_NODE_MEMORY_ISSUE.md` - Why we use remote node
 - `docs/dashboard-testing.md` - Testing documentation
 - `.env.example` - All configuration options
 

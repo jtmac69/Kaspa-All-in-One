@@ -97,17 +97,34 @@ docker compose restart indexer-db
 
 ## 📚 Documentation Index
 
+### Essential Documentation
 - **[README.md](../README.md)** - Overview and quick start
+- **[QUICK_START.md](../QUICK_START.md)** - Quick start guide
+- **[CONTRIBUTING.md](../CONTRIBUTING.md)** - Contribution guidelines
+- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Complete documentation index
+
+### Core Documentation
 - **[Troubleshooting Guide](troubleshooting.md)** - Problem diagnosis and solutions
 - **[Maintenance Guide](maintenance.md)** - Maintenance schedules and procedures
 - **[FAQ](faq.md)** - Frequently asked questions
 - **[Deployment Profiles](deployment-profiles.md)** - Profile-based deployment
 - **[Service Dependencies](service-dependencies.md)** - Service relationships
 - **[Public Node Setup](public-node-setup.md)** - Network configuration
-- **[Test Cleanup](test-cleanup.md)** - Test environment cleanup
-- **[Component Matrix](component-matrix.md)** - Component overview
-- **[Project Structure](../PROJECT_STRUCTURE.md)** - Architecture details
-- **[Contributing](../CONTRIBUTING.md)** - Contribution guidelines
+- **[Project Structure](uncategorized/PROJECT_STRUCTURE.md)** - Architecture details
+
+### Quick Reference Guides
+- **[Checklist Page](quick-references/CHECKLIST_PAGE_QUICK_REFERENCE.md)** - Checklist page features
+- **[Error Remediation](quick-references/ERROR_REMEDIATION_QUICK_REFERENCE.md)** - Error fixing guide
+- **[Installation Guides](quick-references/INSTALLATION_GUIDES_QUICK_REFERENCE.md)** - OS-specific installation
+- **[Post-Installation Tour](quick-references/POST_INSTALLATION_TOUR_QUICK_REFERENCE.md)** - Getting started
+- **[Rollback Quick Start](quick-references/ROLLBACK_QUICK_START.md)** - Rollback features
+- **[Rollback Recovery](quick-references/ROLLBACK_RECOVERY_QUICK_START.md)** - Recovery procedures
+- **[Safety System](quick-references/SAFETY_SYSTEM_QUICK_REFERENCE.md)** - Safety features
+- **[Testing Quick Reference](quick-references/TESTING_QUICK_REFERENCE.md)** - Testing guide
+- **[Testing Quick Start](quick-references/TESTING_QUICK_START.md)** - Testing quick start
+
+### Implementation Summaries
+See [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) for a complete categorized list of all implementation summaries, work logs, and other documentation.
 
 ## 🆘 Getting Help
 

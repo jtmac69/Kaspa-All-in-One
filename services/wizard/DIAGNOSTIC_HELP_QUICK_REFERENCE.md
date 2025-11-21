@@ -343,9 +343,9 @@ Potential improvements for future versions:
 
 ## Related Documentation
 
-- **Error Remediation**: `ERROR_REMEDIATION_QUICK_REFERENCE.md`
-- **Safety System**: `SAFETY_SYSTEM_QUICK_REFERENCE.md`
-- **Installation Guides**: `INSTALLATION_GUIDES_QUICK_REFERENCE.md`
+- **Error Remediation**: `../../docs/quick-references/ERROR_REMEDIATION_QUICK_REFERENCE.md`
+- **Safety System**: `../../docs/quick-references/SAFETY_SYSTEM_QUICK_REFERENCE.md`
+- **Installation Guides**: `../../docs/quick-references/INSTALLATION_GUIDES_QUICK_REFERENCE.md`
 - **Plain Language Content**: `PLAIN_LANGUAGE_STYLE_GUIDE.md`
 
 ## Support

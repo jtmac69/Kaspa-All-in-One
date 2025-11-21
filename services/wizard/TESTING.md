@@ -148,7 +148,7 @@ Expected files:
 
 ### Test Files
 - `test-wizard-frontend.sh` - Automated test script
-- `WIZARD_FRONTEND_VERIFICATION.md` - Detailed verification report
+- `../../docs/implementation-summaries/wizard/WIZARD_FRONTEND_VERIFICATION.md` - Detailed verification report
 
 ### Source Files
 - `services/wizard/frontend/public/index.html` - HTML structure

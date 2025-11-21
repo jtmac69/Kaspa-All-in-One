@@ -387,5 +387,5 @@ async function showResourceSummary() {
 ## Documentation
 
 - Full documentation: `RESOURCE_CHECKER_INTEGRATION.md`
-- Implementation summary: `RESOURCE_CHECKER_IMPLEMENTATION_SUMMARY.md`
+- Implementation summary: `../../../docs/uncategorized/RESOURCE_CHECKER_IMPLEMENTATION_SUMMARY.md`
 - Feature specification: `docs/future-enhancements/resource-checker-feature.md`
