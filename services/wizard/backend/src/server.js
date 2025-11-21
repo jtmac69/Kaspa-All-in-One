@@ -17,6 +17,7 @@ const reconfigureRouter = require('./api/reconfigure');
 const installationGuidesRouter = require('./api/installation-guides');
 const errorRemediationRouter = require('./api/error-remediation');
 const safetyRouter = require('./api/safety');
+const diagnosticRouter = require('./api/diagnostic');
 
 // Import utilities
 const DockerManager = require('./utils/docker-manager');
@@ -97,6 +98,7 @@ app.use('/api/reconfigure', reconfigureRouter);
 app.use('/api/installation-guides', installationGuidesRouter);
 app.use('/api/error-remediation', errorRemediationRouter);
 app.use('/api/safety', safetyRouter);
+app.use('/api/diagnostic', diagnosticRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

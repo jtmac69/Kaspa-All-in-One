@@ -1,6 +1,15 @@
-# Kaspa All-in-One Mini PC Package
+# Kaspa All-in-One
 
-A comprehensive Docker Compose setup for running a complete Kaspa ecosystem on a mini PC. This package provides everything needed to run a full Kaspa node with mining capabilities, messaging, and social features in a single, easy-to-deploy solution.
+A comprehensive Docker-based solution for running a complete Kaspa blockchain ecosystem. This package provides everything needed to run a full Kaspa node with mining capabilities, messaging, social features, and blockchain indexing - all with an intuitive web-based installation wizard.
+
+## ✨ What's New
+
+- **🎯 Web Installation Wizard** - Interactive guided setup with real-time progress tracking
+- **🔍 Smart Resource Detection** - Automatic hardware analysis and profile recommendations
+- **🛡️ Safety System** - Built-in warnings, confirmations, and automatic backups
+- **🚑 Auto-Remediation** - Automatic fixes for common installation issues
+- **📊 Diagnostic Tools** - Comprehensive system diagnostics and help system
+- **🌐 Multi-OS Support** - Ubuntu, Debian, CentOS, macOS, and Windows (WSL2)
 
 ## 🚀 Components Included
 
@@ -32,70 +41,147 @@ A comprehensive Docker Compose setup for running a complete Kaspa ecosystem on a
 
 ## 💻 Hardware Requirements
 
-### Recommended Configuration
-- **Mini PC**: Beelink SER7 7735HS (~$400-450)
-- **CPU**: AMD Ryzen 7 7735HS (8 cores, 16 threads)
-- **RAM**: 32GB DDR5
-- **Storage**: 1TB NVMe SSD
-- **Network**: Gigabit Ethernet + WiFi 6
+The installation wizard automatically detects your hardware and recommends the best profile for your system.
 
-### Minimum Requirements
-- **CPU**: AMD Ryzen 5 series or Intel equivalent
-- **RAM**: 16GB DDR4
-- **Storage**: 500GB SSD
-- **Network**: 100Mbps internet connection
+### Minimum Requirements (Core Profile)
+- **CPU**: 2+ cores
+- **RAM**: 4GB
+- **Storage**: 100GB available
+- **Network**: Stable internet connection
+- **Disk Type**: HDD acceptable (SSD recommended)
+
+**What you can run**: Kaspa node, management dashboard
+
+### Recommended Configuration (Production Profile)
+- **CPU**: 4+ cores
+- **RAM**: 8GB
+- **Storage**: 250GB available (SSD recommended)
+- **Network**: 100Mbps+ internet
+- **Disk Type**: SSD strongly recommended
+
+**What you can run**: Node, dashboard, Kasia app, K-Social app
+
+### Optimal Configuration (Explorer Profile)
+- **CPU**: 8+ cores
+- **RAM**: 16GB+
+- **Storage**: 500GB+ available (NVMe SSD recommended)
+- **Network**: Gigabit ethernet
+- **Disk Type**: NVMe SSD for best performance
+
+**What you can run**: Everything including blockchain indexers with TimescaleDB
+
+### High-End Configuration (Archive Profile)
+- **CPU**: 8+ cores (16+ threads)
+- **RAM**: 32GB+
+- **Storage**: 1TB+ available (NVMe SSD required)
+- **Network**: Gigabit ethernet
+- **Disk Type**: NVMe SSD required
+
+**What you can run**: Full archive node with long-term data retention
+
+### Example Hardware
+
+**Budget Option (~$300-400)**
+- Mini PC: Beelink SER5 5560U
+- CPU: AMD Ryzen 5 5560U (6 cores)
+- RAM: 16GB DDR4
+- Storage: 500GB NVMe SSD
+- **Best for**: Core or Production profiles
+
+**Recommended Option (~$400-500)**
+- Mini PC: Beelink SER7 7735HS
+- CPU: AMD Ryzen 7 7735HS (8 cores, 16 threads)
+- RAM: 32GB DDR5
+- Storage: 1TB NVMe SSD
+- **Best for**: Explorer or Archive profiles
+
+**Note**: The installation wizard will analyze your hardware and provide specific recommendations with compatibility ratings (Optimal, Recommended, Possible, Not Recommended).
 
 ## 🐧 Supported Operating Systems
 
-- **Ubuntu Desktop 22.04 LTS** (Recommended)
-- **Ubuntu Desktop 24.04 LTS**
-- Future support planned for Arch-based distributions
+### Primary Support
+- **Ubuntu 22.04 LTS / 24.04 LTS** (Recommended)
+- **Debian 12** (Bookworm)
+- **CentOS Stream 9**
+
+### Secondary Support
+- **macOS** (Intel and Apple Silicon)
+- **Windows 10/11** (via WSL2)
+- **Other Linux distributions** with Docker support
+
+The installation wizard automatically detects your OS and provides tailored installation guides.
 
 ## ⚡ Quick Start
 
-### One-Line Installation
-```bash
-curl -fsSL https://raw.githubusercontent.com/your-repo/kaspa-aio/main/install.sh | bash
-```
+### 🎯 Recommended: Web Installation Wizard
 
-### Manual Installation
+The easiest way to get started - an interactive web-based installer that guides you through the entire process:
+
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/kaspa-aio.git
-cd kaspa-aio
+git clone https://github.com/argonmining/KaspaAllInOne.git
+cd KaspaAllInOne
 
-# Verify system requirements (recommended)
-./scripts/verify-system.sh
+# Start the installation wizard
+docker compose --profile wizard up -d
 
-# Run comprehensive installation tests
-./test-installation.sh
-
-# Run the interactive installer
-./install.sh
-
-# Or start services manually
-docker compose up -d
+# Open your browser to http://localhost:3000
 ```
 
-### Pre-Installation Verification
-Before installing, verify your system meets all requirements:
+The wizard will:
+- ✅ Check your system requirements automatically
+- ✅ Recommend the best profile for your hardware
+- ✅ Guide you through configuration step-by-step
+- ✅ Show real-time installation progress
+- ✅ Verify everything works correctly
+- ✅ Provide troubleshooting help if needed
+
+**Perfect for:** First-time users, non-technical users, anyone who wants a guided experience
+
+### 🚀 Alternative: One-Line Installation
+
+For experienced users who prefer command-line installation:
 
 ```bash
-# Quick system check
-./scripts/verify-system.sh -q
-
-# Check specific profile ports
-./scripts/verify-system.sh -p core
-./scripts/verify-system.sh -p explorer
-
-# Generate detailed system report
-./scripts/verify-system.sh -r
-
-# Run full installation verification
-./test-installation.sh
+curl -fsSL https://raw.githubusercontent.com/argonmining/KaspaAllInOne/main/install.sh | bash
 ```
 
-See [Installation Testing Guide](docs/installation-testing.md) for detailed information.
+This will:
+- Check system requirements
+- Install Docker and Docker Compose if needed
+- Guide you through profile selection
+- Configure and start services
+
+### 🛠️ Advanced: Manual Installation
+
+For developers and advanced users:
+
+```bash
+# Clone the repository
+git clone https://github.com/argonmining/KaspaAllInOne.git
+cd KaspaAllInOne
+
+# Copy and edit configuration
+cp .env.example .env
+nano .env
+
+# Start services with desired profiles
+docker compose --profile core --profile prod up -d
+
+# Check status
+docker compose ps
+```
+
+### 📋 Pre-Installation Checklist
+
+Before installing, ensure you have:
+- ✅ **Docker 24.0+** and **Docker Compose 2.0+** installed
+- ✅ **4GB+ RAM** (8GB+ recommended)
+- ✅ **100GB+ free disk space** (500GB+ for full node)
+- ✅ **Stable internet connection**
+- ✅ **Open ports** (or ability to configure alternatives)
+
+The installation wizard will check all of these for you automatically!
 
 ## 🎛️ Management
 
@@ -134,15 +220,148 @@ Choose the components you need based on your hardware and requirements:
 ./scripts/manage.sh update                # Update all services
 ```
 
-### Web Dashboard
-Access the management dashboard at: `http://localhost:8080`
+### Web Interfaces
+
+#### Installation Wizard
+Access at: `http://localhost:3000` (when wizard profile is active)
 
 Features:
-- Real-time service monitoring across all profiles
-- Kaspa network statistics and node status
-- System resource usage and performance metrics
-- Profile-specific service controls and logs
-- Public node accessibility status
+- 🎯 Interactive guided installation
+- 📊 Real-time system requirements checking
+- 🔍 Smart profile recommendations
+- ⚙️ Visual configuration builder
+- 📈 Live installation progress tracking
+- ✅ Post-installation verification
+- 🆘 Built-in help and troubleshooting
+
+#### Management Dashboard
+Access at: `http://localhost:8080`
+
+Features:
+- 📊 Real-time service monitoring across all profiles
+- 🌐 Kaspa network statistics and node status
+- 💻 System resource usage and performance metrics
+- 🎛️ Profile-specific service controls and logs
+- 🔌 Public node accessibility status
+- 🔄 Service restart and reconfiguration
+
+## 🎯 Installation Wizard Features
+
+The web-based installation wizard makes setup easy for everyone, from beginners to experts.
+
+### Smart System Detection
+- **Automatic Hardware Analysis**: Detects CPU, RAM, disk space, and disk type
+- **OS Detection**: Identifies your operating system and provides tailored instructions
+- **Resource Recommendations**: Suggests optimal profiles based on your hardware
+- **Compatibility Ratings**: Shows which profiles will work best on your system
+
+### Guided Installation Process
+
+**Step 1: Pre-Installation Checklist**
+- System requirements verification
+- Docker installation status
+- Port availability checking
+- "Help Me Choose" quiz for profile selection
+
+**Step 2: System Check**
+- Docker and Docker Compose verification
+- Resource availability confirmation
+- Network connectivity testing
+- Automatic issue detection
+
+**Step 3: Profile Selection**
+- Visual profile cards with descriptions
+- Resource requirements for each profile
+- Compatibility indicators
+- Multiple profile selection support
+
+**Step 4: Configuration**
+- Smart defaults based on your system
+- Visual configuration forms
+- Real-time validation
+- External IP detection
+- Secure password generation
+
+**Step 5: Review**
+- Configuration summary
+- Profile overview
+- Estimated installation time
+- Final confirmation
+
+**Step 6: Installation**
+- Real-time progress tracking
+- Phase-by-phase updates
+- Detailed status messages
+- WebSocket-based live updates
+
+**Step 7: Completion**
+- Installation verification
+- Service health checks
+- Interactive post-installation tour
+- Quick start guide
+- Access to all services
+
+### Built-In Help System
+
+**Search Common Issues**
+- Searchable database of 10+ common problems
+- Step-by-step solutions
+- Category browsing (Docker, Network, Resources, Permissions)
+- Keyword-based search
+
+**Diagnostic Reports**
+- One-click system diagnostic generation
+- Automatic sensitive data redaction
+- Copy to clipboard or download
+- Include in support requests
+
+**Community Resources**
+- Direct links to Discord, GitHub, Forum
+- Pre-filled GitHub issue creation
+- Complete documentation access
+
+### Safety Features
+
+**Smart Warnings**
+- Resource warnings (4 risk levels)
+- Breaking change detection
+- Configuration validation
+- Port conflict detection
+
+**Automatic Backups**
+- Configuration backup before changes
+- One-click restore functionality
+- Backup history tracking
+
+**Error Recovery**
+- Automatic error detection
+- Auto-remediation for common issues
+- Retry with exponential backoff
+- Safe mode fallback
+
+**Confirmation Dialogs**
+- "Are you sure?" for critical actions
+- Progressive disclosure of risks
+- Required acknowledgment checkboxes
+- Color-coded warning levels
+
+### Installation Guides
+
+**OS-Specific Instructions**
+- macOS: Docker Desktop installation (4 steps)
+- Windows: WSL2 + Docker Desktop (6 steps)
+- Linux: Distribution-specific commands (Ubuntu, Debian, Fedora, CentOS)
+- One-click command copying
+- Troubleshooting for each OS
+
+### Accessibility Features
+
+- **Plain Language**: 8th grade reading level throughout
+- **Visual Indicators**: Icons, colors, and progress bars
+- **Responsive Design**: Works on mobile, tablet, and desktop
+- **Dark Mode**: Automatic theme switching
+- **Keyboard Navigation**: Full keyboard support
+- **Screen Reader Compatible**: Semantic HTML and ARIA labels
 
 ## 🔧 Configuration
 
@@ -256,9 +475,20 @@ REMOTE_KASPA_NODE_URL=http://192.168.1.100:16111
 
 ### Getting Started
 - **Quick Reference**: [docs/quick-reference.md](docs/quick-reference.md) - Essential commands and operations
+- **Installation Wizard Guide**: [services/wizard/README.md](services/wizard/README.md) - Complete wizard documentation
 - **Component Matrix**: [docs/component-matrix.md](docs/component-matrix.md) - Complete component overview and status
 - **Deployment Profiles**: [docs/deployment-profiles.md](docs/deployment-profiles.md) - Profile-based deployment guide
 - **Public Node Setup**: [docs/public-node-setup.md](docs/public-node-setup.md) - Network configuration guide
+
+### Installation Wizard
+- **Wizard Overview**: [services/wizard/README.md](services/wizard/README.md) - Complete wizard features and usage
+- **Resource Checker**: [services/wizard/RESOURCE_CHECKER_QUICK_REFERENCE.md](services/wizard/RESOURCE_CHECKER_QUICK_REFERENCE.md) - Hardware detection and recommendations
+- **Plain Language Guide**: [PLAIN_LANGUAGE_STYLE_GUIDE.md](PLAIN_LANGUAGE_STYLE_GUIDE.md) - Content writing standards
+- **Installation Guides**: [services/wizard/INSTALLATION_GUIDES_QUICK_REFERENCE.md](services/wizard/INSTALLATION_GUIDES_QUICK_REFERENCE.md) - OS-specific installation help
+- **Error Remediation**: [services/wizard/ERROR_REMEDIATION_QUICK_REFERENCE.md](services/wizard/ERROR_REMEDIATION_QUICK_REFERENCE.md) - Automatic error fixing
+- **Safety System**: [services/wizard/SAFETY_SYSTEM_QUICK_REFERENCE.md](services/wizard/SAFETY_SYSTEM_QUICK_REFERENCE.md) - Warnings and confirmations
+- **Diagnostic Help**: [services/wizard/DIAGNOSTIC_HELP_QUICK_REFERENCE.md](services/wizard/DIAGNOSTIC_HELP_QUICK_REFERENCE.md) - Troubleshooting and diagnostics
+- **Post-Installation Tour**: [services/wizard/POST_INSTALLATION_TOUR_QUICK_REFERENCE.md](services/wizard/POST_INSTALLATION_TOUR_QUICK_REFERENCE.md) - Getting started guide
 
 ### Architecture and Development
 - **Project Structure**: [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Architecture and file organization
@@ -280,6 +510,7 @@ REMOTE_KASPA_NODE_URL=http://192.168.1.100:16111
 ### Testing and Verification
 - **Installation Testing**: [docs/installation-testing.md](docs/installation-testing.md) - Pre-installation verification and system checks
 - **Dashboard Testing**: [docs/dashboard-testing.md](docs/dashboard-testing.md) - Dashboard API and UI testing guide
+- **Infrastructure Testing**: [docs/infrastructure-testing.md](docs/infrastructure-testing.md) - Nginx, TimescaleDB, and E2E testing
 
 ## 🛠️ Development
 
@@ -408,10 +639,40 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-repo/kaspa-aio/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/kaspa-aio/discussions)
-- **Discord**: [Kaspa Community Discord](https://discord.gg/kaspa)
+### Built-In Help System
+
+The installation wizard includes a comprehensive help system:
+- **Search Common Issues**: 10+ pre-configured solutions with step-by-step instructions
+- **Diagnostic Reports**: One-click system diagnostics with automatic data redaction
+- **Community Links**: Direct access to Discord, GitHub, Forum, and documentation
+
+Access the help system by clicking "Need Help?" on any wizard step.
+
+### Community Support
+
+- **Discord**: [Kaspa Community Discord](https://discord.gg/kaspa) - Real-time help and discussions
+- **GitHub Issues**: [GitHub Issues](https://github.com/argonmining/KaspaAllInOne/issues) - Bug reports and feature requests
+- **GitHub Discussions**: [GitHub Discussions](https://github.com/argonmining/KaspaAllInOne/discussions) - General questions and ideas
+- **Kaspa Forum**: [forum.kaspa.org](https://forum.kaspa.org) - Community Q&A
+
+### Reporting Issues
+
+When reporting issues, use the wizard's diagnostic export feature:
+1. Click "Need Help?" in the wizard
+2. Go to "Diagnostic Report" tab
+3. Click "Generate Report"
+4. Copy or download the report
+5. Include it in your GitHub issue or support request
+
+The diagnostic report includes system info, Docker status, service health, and recent errors - with all sensitive data automatically redacted.
 
 ---
 
-**⚡ Ready to join the Kaspa ecosystem? Get started with the one-line installer above!**
+**⚡ Ready to join the Kaspa ecosystem? Get started with the web installation wizard!**
+
+```bash
+git clone https://github.com/argonmining/KaspaAllInOne.git
+cd KaspaAllInOne
+docker compose --profile wizard up -d
+# Open http://localhost:3000
+```

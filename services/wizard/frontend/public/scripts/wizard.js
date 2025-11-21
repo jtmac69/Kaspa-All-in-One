@@ -2463,3 +2463,416 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+
+// ============================================================================
+// GET HELP SYSTEM
+// ============================================================================
+
+/**
+ * Get Help Dialog - Provides diagnostic export and issue search
+ */
+const helpSystem = {
+    isOpen: false,
+    currentTab: 'search',
+    diagnosticData: null,
+    searchResults: [],
+
+    /**
+     * Open the Get Help dialog
+     */
+    open() {
+        this.isOpen = true;
+        const dialog = document.getElementById('help-dialog');
+        if (dialog) {
+            dialog.classList.add('active');
+            this.switchTab('search');
+        } else {
+            this.createDialog();
+        }
+    },
+
+    /**
+     * Close the Get Help dialog
+     */
+    close() {
+        this.isOpen = false;
+        const dialog = document.getElementById('help-dialog');
+        if (dialog) {
+            dialog.classList.remove('active');
+        }
+    },
+
+    /**
+     * Create the Get Help dialog HTML
+     */
+    createDialog() {
+        const dialogHTML = `
+            <div id="help-dialog" class="modal-overlay active">
+                <div class="modal-content help-dialog">
+                    <div class="modal-header">
+                        <h2>Get Help</h2>
+                        <button class="close-btn" onclick="helpSystem.close()">×</button>
+                    </div>
+                    
+                    <div class="help-tabs">
+                        <button class="help-tab active" data-tab="search" onclick="helpSystem.switchTab('search')">
+                            Search Issues
+                        </button>
+                        <button class="help-tab" data-tab="diagnostic" onclick="helpSystem.switchTab('diagnostic')">
+                            Diagnostic Report
+                        </button>
+                        <button class="help-tab" data-tab="community" onclick="helpSystem.switchTab('community')">
+                            Community Help
+                        </button>
+                    </div>
+
+                    <div class="help-content">
+                        <!-- Search Issues Tab -->
+                        <div id="help-tab-search" class="help-tab-content active">
+                            <div class="search-section">
+                                <h3>Search Common Issues</h3>
+                                <p>Describe your problem or paste an error message:</p>
+                                <div class="search-input-group">
+                                    <input type="text" id="help-search-input" 
+                                           placeholder="e.g., 'Docker not running' or 'port already in use'"
+                                           onkeypress="if(event.key==='Enter') helpSystem.searchIssues()">
+                                    <button onclick="helpSystem.searchIssues()" class="btn btn-primary">
+                                        Search
+                                    </button>
+                                </div>
+                                
+                                <div id="help-search-results" class="search-results">
+                                    <!-- Results will be inserted here -->
+                                </div>
+
+                                <div class="common-categories">
+                                    <h4>Browse by Category</h4>
+                                    <div class="category-buttons">
+                                        <button onclick="helpSystem.searchByCategory('docker')" class="btn btn-secondary">
+                                            Docker Issues
+                                        </button>
+                                        <button onclick="helpSystem.searchByCategory('network')" class="btn btn-secondary">
+                                            Network Issues
+                                        </button>
+                                        <button onclick="helpSystem.searchByCategory('resources')" class="btn btn-secondary">
+                                            Resource Issues
+                                        </button>
+                                        <button onclick="helpSystem.searchByCategory('permissions')" class="btn btn-secondary">
+                                            Permission Issues
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Diagnostic Report Tab -->
+                        <div id="help-tab-diagnostic" class="help-tab-content">
+                            <div class="diagnostic-section">
+                                <h3>System Diagnostic Report</h3>
+                                <p>Generate a diagnostic report to share with support or the community.</p>
+                                
+                                <div class="diagnostic-actions">
+                                    <button onclick="helpSystem.generateDiagnostic()" class="btn btn-primary">
+                                        Generate Report
+                                    </button>
+                                    <button onclick="helpSystem.copyDiagnostic()" class="btn btn-secondary" 
+                                            id="copy-diagnostic-btn" disabled>
+                                        Copy to Clipboard
+                                    </button>
+                                    <button onclick="helpSystem.downloadDiagnostic()" class="btn btn-secondary"
+                                            id="download-diagnostic-btn" disabled>
+                                        Download Report
+                                    </button>
+                                </div>
+
+                                <div id="diagnostic-status" class="diagnostic-status">
+                                    <!-- Status messages will appear here -->
+                                </div>
+
+                                <div id="diagnostic-preview" class="diagnostic-preview">
+                                    <!-- Diagnostic report will be displayed here -->
+                                </div>
+
+                                <div class="diagnostic-info">
+                                    <p><strong>Note:</strong> Sensitive information (passwords, API keys, tokens) is automatically redacted from the report.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Community Help Tab -->
+                        <div id="help-tab-community" class="help-tab-content">
+                            <div class="community-section">
+                                <h3>Community Resources</h3>
+                                
+                                <div class="community-links">
+                                    <div class="community-card">
+                                        <h4>Discord Community</h4>
+                                        <p>Join the Kaspa Discord server for real-time help and discussions.</p>
+                                        <a href="https://discord.gg/kaspa" target="_blank" class="btn btn-primary">
+                                            Join Discord
+                                        </a>
+                                    </div>
+
+                                    <div class="community-card">
+                                        <h4>GitHub Issues</h4>
+                                        <p>Report bugs or request features on GitHub.</p>
+                                        <button onclick="helpSystem.createGitHubIssue()" class="btn btn-primary">
+                                            Create Issue
+                                        </button>
+                                    </div>
+
+                                    <div class="community-card">
+                                        <h4>Documentation</h4>
+                                        <p>Browse the complete documentation and guides.</p>
+                                        <a href="https://github.com/argonmining/KaspaAllInOne" target="_blank" class="btn btn-primary">
+                                            View Docs
+                                        </a>
+                                    </div>
+
+                                    <div class="community-card">
+                                        <h4>Kaspa Forum</h4>
+                                        <p>Ask questions and share experiences on the Kaspa forum.</p>
+                                        <a href="https://forum.kaspa.org" target="_blank" class="btn btn-primary">
+                                            Visit Forum
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+    },
+
+    /**
+     * Switch between tabs
+     */
+    switchTab(tabName) {
+        this.currentTab = tabName;
+
+        // Update tab buttons
+        document.querySelectorAll('.help-tab').forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.dataset.tab === tabName) {
+                tab.classList.add('active');
+            }
+        });
+
+        // Update tab content
+        document.querySelectorAll('.help-tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`help-tab-${tabName}`).classList.add('active');
+    },
+
+    /**
+     * Search for issues
+     */
+    async searchIssues() {
+        const query = document.getElementById('help-search-input').value.trim();
+        if (!query) {
+            return;
+        }
+
+        const resultsContainer = document.getElementById('help-search-results');
+        resultsContainer.innerHTML = '<div class="loading">Searching...</div>';
+
+        try {
+            const response = await api.post('/diagnostic/search', { query });
+            this.searchResults = response.data;
+            this.displaySearchResults();
+        } catch (error) {
+            resultsContainer.innerHTML = `<div class="error">Search failed: ${error.message}</div>`;
+        }
+    },
+
+    /**
+     * Search by category
+     */
+    async searchByCategory(category) {
+        const resultsContainer = document.getElementById('help-search-results');
+        resultsContainer.innerHTML = '<div class="loading">Loading...</div>';
+
+        try {
+            const response = await api.get(`/diagnostic/issues?category=${category}`);
+            this.searchResults = response.data;
+            this.displaySearchResults();
+        } catch (error) {
+            resultsContainer.innerHTML = `<div class="error">Failed to load issues: ${error.message}</div>`;
+        }
+    },
+
+    /**
+     * Display search results
+     */
+    displaySearchResults() {
+        const resultsContainer = document.getElementById('help-search-results');
+        
+        if (this.searchResults.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="no-results">
+                    <p>No matching issues found.</p>
+                    <p>Try different keywords or browse by category.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="results-list">';
+        for (const issue of this.searchResults) {
+            html += `
+                <div class="issue-card">
+                    <div class="issue-header">
+                        <h4>${issue.title}</h4>
+                        <span class="issue-category">${issue.category}</span>
+                    </div>
+                    <p class="issue-description">${issue.description}</p>
+                    <div class="issue-solution">
+                        <strong>Solution:</strong>
+                        <pre>${issue.solution}</pre>
+                    </div>
+                </div>
+            `;
+        }
+        html += '</div>';
+        
+        resultsContainer.innerHTML = html;
+    },
+
+    /**
+     * Generate diagnostic report
+     */
+    async generateDiagnostic() {
+        const statusDiv = document.getElementById('diagnostic-status');
+        const previewDiv = document.getElementById('diagnostic-preview');
+        
+        statusDiv.innerHTML = '<div class="loading">Collecting diagnostic information...</div>';
+        previewDiv.innerHTML = '';
+
+        try {
+            const response = await fetch(`${API_BASE}/diagnostic/report`);
+            if (!response.ok) {
+                throw new Error('Failed to generate report');
+            }
+            
+            this.diagnosticData = await response.text();
+            
+            statusDiv.innerHTML = '<div class="success">✓ Diagnostic report generated successfully</div>';
+            previewDiv.innerHTML = `<pre>${this.diagnosticData}</pre>`;
+            
+            // Enable copy and download buttons
+            document.getElementById('copy-diagnostic-btn').disabled = false;
+            document.getElementById('download-diagnostic-btn').disabled = false;
+            
+        } catch (error) {
+            statusDiv.innerHTML = `<div class="error">Failed to generate report: ${error.message}</div>`;
+        }
+    },
+
+    /**
+     * Copy diagnostic report to clipboard
+     */
+    async copyDiagnostic() {
+        if (!this.diagnosticData) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(this.diagnosticData);
+            
+            const btn = document.getElementById('copy-diagnostic-btn');
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Copied!';
+            setTimeout(() => {
+                btn.textContent = originalText;
+            }, 2000);
+        } catch (error) {
+            alert('Failed to copy to clipboard. Please select and copy manually.');
+        }
+    },
+
+    /**
+     * Download diagnostic report
+     */
+    downloadDiagnostic() {
+        if (!this.diagnosticData) {
+            return;
+        }
+
+        const blob = new Blob([this.diagnosticData], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kaspa-diagnostic-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+
+    /**
+     * Create GitHub issue with diagnostic info
+     */
+    async createGitHubIssue() {
+        // Generate diagnostic if not already done
+        if (!this.diagnosticData) {
+            await this.generateDiagnostic();
+        }
+
+        const issueBody = encodeURIComponent(`
+## Problem Description
+
+[Please describe your issue here]
+
+## Steps to Reproduce
+
+1. 
+2. 
+3. 
+
+## Expected Behavior
+
+[What you expected to happen]
+
+## Actual Behavior
+
+[What actually happened]
+
+## Diagnostic Information
+
+\`\`\`
+${this.diagnosticData || 'Diagnostic data not available'}
+\`\`\`
+        `);
+
+        const url = `https://github.com/argonmining/KaspaAllInOne/issues/new?body=${issueBody}`;
+        window.open(url, '_blank');
+    }
+};
+
+// Add Get Help button to all wizard steps
+function addGetHelpButton() {
+    const steps = document.querySelectorAll('.wizard-step');
+    steps.forEach(step => {
+        if (!step.querySelector('.get-help-btn')) {
+            const helpBtn = document.createElement('button');
+            helpBtn.className = 'btn btn-link get-help-btn';
+            helpBtn.textContent = 'Need Help?';
+            helpBtn.onclick = () => helpSystem.open();
+            
+            const footer = step.querySelector('.step-footer') || step.querySelector('.step-actions');
+            if (footer) {
+                footer.appendChild(helpBtn);
+            }
+        }
+    });
+}
+
+// Initialize Get Help button on page load
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(addGetHelpButton, 1000);
+});
