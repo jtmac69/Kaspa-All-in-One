@@ -55,6 +55,42 @@ services:
     networks:
       - kaspa-network
 
+  # Installation Wizard (Core component - auto-start on first run)
+  wizard:
+    build:
+      context: ./services/wizard
+      dockerfile: Dockerfile
+    container_name: kaspa-wizard
+    restart: "no"  # Only runs on-demand, not automatically
+    ports:
+      - "${WIZARD_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - WIZARD_MODE=${WIZARD_MODE:-install}  # install or reconfigure
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - PROJECT_ROOT=/workspace
+      - WIZARD_AUTO_START=${WIZARD_AUTO_START:-false}
+      - WIZARD_SECURITY_TOKEN=${WIZARD_SECURITY_TOKEN:-}
+      - WIZARD_SESSION_SECRET=${WIZARD_SESSION_SECRET:-}
+      - WIZARD_MAX_RETRIES=${WIZARD_MAX_RETRIES:-3}
+      - WIZARD_TIMEOUT=${WIZARD_TIMEOUT:-300}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/workspace
+      - ./.env:/workspace/.env
+      - ./docker-compose.yml:/workspace/docker-compose.yml:ro
+      - wizard-state:/app/state
+    networks:
+      - kaspa-network
+    profiles:
+      - wizard
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   # Reverse Proxy (Core component)
   nginx:
     image: nginx:alpine
@@ -430,6 +466,7 @@ volumes:
   archive-db-data:
   portainer-data:
   pgadmin-data:
+  wizard-state:
 
 networks:
   kaspa-network:

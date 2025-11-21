@@ -3,16 +3,26 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 // Import API routes
 const systemCheckRouter = require('./api/system-check');
+const resourceCheckRouter = require('./api/resource-check');
+const contentRouter = require('./api/content');
 const profilesRouter = require('./api/profiles');
 const configRouter = require('./api/config');
 const installRouter = require('./api/install');
+const reconfigureRouter = require('./api/reconfigure');
+const installationGuidesRouter = require('./api/installation-guides');
+const errorRemediationRouter = require('./api/error-remediation');
+const safetyRouter = require('./api/safety');
 
 // Import utilities
 const DockerManager = require('./utils/docker-manager');
 const ConfigGenerator = require('./utils/config-generator');
+const { secureErrorHandler, requestTimeout, validateInput } = require('./middleware/security');
+const { logError } = require('./utils/error-handler');
 
 const app = express();
 const server = http.createServer(app);
@@ -27,20 +37,66 @@ const PORT = process.env.WIZARD_PORT || 3000;
 const dockerManager = new DockerManager();
 const configGenerator = new ConfigGenerator();
 
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "cdn.socket.io"],
+      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
+      fontSrc: ["'self'", "fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "ws:", "wss:"]
+    }
+  }
+}));
+
+// Rate limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const installLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // Limit installation attempts
+  message: 'Too many installation attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Apply rate limiting to API routes
+app.use('/api/', apiLimiter);
+app.use('/api/install', installLimiter);
+
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' })); // Limit request body size
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(validateInput); // Validate input
+app.use(requestTimeout(60000)); // 60 second timeout for requests
 
 // Serve static files from frontend
-const frontendPath = path.join(__dirname, '../../frontend/public');
+// In Docker, frontend is at /app/public, in development it's at ../../frontend/public
+const frontendPath = process.env.NODE_ENV === 'production' 
+  ? path.join(__dirname, '../public')
+  : path.join(__dirname, '../../frontend/public');
 app.use(express.static(frontendPath));
 
 // API Routes
 app.use('/api/system-check', systemCheckRouter);
+app.use('/api/resource-check', resourceCheckRouter);
+app.use('/api/content', contentRouter);
 app.use('/api/profiles', profilesRouter);
 app.use('/api/config', configRouter);
 app.use('/api/install', installRouter);
+app.use('/api/reconfigure', reconfigureRouter);
+app.use('/api/installation-guides', installationGuidesRouter);
+app.use('/api/error-remediation', errorRemediationRouter);
+app.use('/api/safety', safetyRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -48,6 +104,18 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     version: '1.0.0'
+  });
+});
+
+// Wizard mode endpoint
+app.get('/api/wizard/mode', (req, res) => {
+  const mode = process.env.WIZARD_MODE || 'install';
+  const autoStart = process.env.WIZARD_AUTO_START === 'true';
+  
+  res.json({
+    mode,
+    autoStart,
+    isFirstRun: autoStart && mode === 'install'
   });
 });
 
@@ -259,13 +327,45 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
+// Security middleware
+app.use((req, res, next) => {
+  // Set security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // Prevent caching of sensitive data
+  if (req.path.startsWith('/api/')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  
+  next();
+});
+
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+  });
+  next();
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    error: 'Internal server error',
-    message: err.message
+  // Log error with context
+  logError(err, {
+    method: req.method,
+    path: req.path,
+    ip: req.ip
   });
+  
+  // Use secure error handler
+  secureErrorHandler(err, req, res, next);
 });
 
 // Start server

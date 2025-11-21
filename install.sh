@@ -316,11 +316,77 @@ main() {
     echo
     log "Installation completed successfully!"
     echo
+    
+    # Check if this is first run (no .env file exists)
+    if [[ ! -f ".env" ]]; then
+        # First run - automatically launch wizard
+        echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${BLUE}║          First-Time Setup Detected                          ║${NC}"
+        echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
+        echo
+        echo "The web-based installation wizard will help you:"
+        echo "  ✓ Check system requirements"
+        echo "  ✓ Select deployment profile (Core, Production, Explorer, etc.)"
+        echo "  ✓ Configure services"
+        echo "  ✓ Monitor installation progress"
+        echo
+        read -p "Launch installation wizard now? (Y/n): " LAUNCH_WIZARD
+        LAUNCH_WIZARD=${LAUNCH_WIZARD:-y}
+        
+        if [[ $LAUNCH_WIZARD =~ ^[Yy]$ ]]; then
+            log "Starting installation wizard..."
+            if [[ -x "./scripts/wizard.sh" ]]; then
+                ./scripts/wizard.sh start install
+                echo
+                echo -e "${GREEN}Wizard is now running!${NC}"
+                echo "Open your browser to: ${BLUE}http://localhost:3000${NC}"
+                echo
+                echo "After completing the wizard setup:"
+                echo "  - Services will start automatically"
+                echo "  - Access dashboard at: http://localhost:8080"
+                echo
+            else
+                warn "Wizard script not found. You can start it manually with: ./scripts/wizard.sh start"
+            fi
+        else
+            echo
+            echo -e "${YELLOW}Skipping wizard. You can launch it later with:${NC}"
+            echo "  ./scripts/wizard.sh start"
+            echo
+        fi
+    else
+        # Not first run - offer reconfiguration
+        echo -e "${BLUE}Would you like to reconfigure your installation?${NC}"
+        echo "The wizard can help you:"
+        echo "  - Change deployment profiles"
+        echo "  - Update service configuration"
+        echo "  - Add or remove services"
+        echo
+        read -p "Launch reconfiguration wizard? (y/N): " LAUNCH_WIZARD
+        LAUNCH_WIZARD=${LAUNCH_WIZARD:-n}
+        
+        if [[ $LAUNCH_WIZARD =~ ^[Yy]$ ]]; then
+            log "Starting reconfiguration wizard..."
+            if [[ -x "./scripts/wizard.sh" ]]; then
+                ./scripts/wizard.sh start reconfigure
+            else
+                warn "Wizard script not found. You can start it manually with: ./scripts/wizard.sh start reconfigure"
+            fi
+        fi
+    fi
+    
+    echo
     echo -e "${GREEN}Next steps:${NC}"
-    echo "1. Reboot your system to apply Docker group changes"
-    echo "2. Start services: sudo systemctl start kaspa-aio"
-    echo "3. Access dashboard: http://localhost:8080"
-    echo "4. Check status: docker compose ps"
+    echo "1. Complete wizard setup (if launched)"
+    echo "2. Access dashboard: http://localhost:8080"
+    echo "3. Check service status: docker compose ps"
+    echo "4. View logs: docker compose logs -f"
+    echo
+    echo -e "${BLUE}Useful commands:${NC}"
+    echo "  ./scripts/wizard.sh start       - Launch wizard"
+    echo "  ./scripts/wizard.sh status      - Check wizard status"
+    echo "  ./scripts/manage.sh status      - Check all services"
+    echo "  ./scripts/health-check.sh       - Run health checks"
     echo
     echo -e "${YELLOW}Note: You may need to log out and back in for Docker permissions to take effect${NC}"
 }

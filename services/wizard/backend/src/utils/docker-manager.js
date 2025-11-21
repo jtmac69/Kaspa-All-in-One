@@ -2,6 +2,7 @@ const Docker = require('dockerode');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const path = require('path');
+const { DockerError, retryOperation, withTimeout } = require('./error-handler');
 
 const execAsync = promisify(exec);
 
@@ -134,9 +135,31 @@ class DockerManager {
       const profilesArg = profiles.join(',');
       const cmd = `cd ${this.projectRoot} && COMPOSE_PROFILES=${profilesArg} docker compose up -d`;
       
-      const { stdout, stderr } = await execAsync(cmd, {
-        maxBuffer: 10 * 1024 * 1024
-      });
+      // Use retry with timeout
+      const result = await retryOperation(
+        async () => {
+          return await withTimeout(
+            execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 }),
+            120000, // 2 minute timeout
+            'Service startup timed out'
+          );
+        },
+        {
+          maxRetries: 2,
+          initialDelay: 2000,
+          onRetry: (attempt, maxRetries, error) => {
+            console.log(`Retry ${attempt}/${maxRetries} for starting services:`, error.message);
+            if (progressCallback) {
+              progressCallback({
+                stage: 'start',
+                message: `Retrying service startup (${attempt}/${maxRetries})...`
+              });
+            }
+          }
+        }
+      );
+
+      const { stdout, stderr } = result;
 
       if (progressCallback) {
         progressCallback({
@@ -151,10 +174,10 @@ class DockerManager {
         output: { stdout, stderr }
       };
     } catch (error) {
-      return {
-        success: false,
+      throw new DockerError('Failed to start services', {
+        profiles,
         error: error.message
-      };
+      });
     }
   }
 
@@ -230,6 +253,40 @@ class DockerManager {
       return { success: true, output: { stdout, stderr } };
     } catch (error) {
       return { success: false, error: error.message };
+    }
+  }
+
+  async stopAllServices() {
+    try {
+      const cmd = `cd ${this.projectRoot} && docker compose down`;
+      const { stdout, stderr } = await execAsync(cmd);
+      return { success: true, output: { stdout, stderr } };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  async getRunningServices() {
+    try {
+      const containers = await this.docker.listContainers({
+        all: false, // Only running containers
+        filters: {
+          label: ['com.docker.compose.project=all-in-one']
+        }
+      });
+
+      return containers.map(container => ({
+        id: container.Id,
+        name: container.Names[0].replace(/^\//, ''),
+        image: container.Image,
+        state: container.State,
+        status: container.Status,
+        ports: container.Ports,
+        labels: container.Labels
+      }));
+    } catch (error) {
+      console.error('Error getting running services:', error);
+      return [];
     }
   }
 

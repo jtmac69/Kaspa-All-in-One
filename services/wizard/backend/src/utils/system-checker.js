@@ -3,10 +3,14 @@ const { promisify } = require('util');
 const os = require('os');
 const fs = require('fs').promises;
 const net = require('net');
+const ResourceChecker = require('./resource-checker');
 
 const execAsync = promisify(exec);
 
 class SystemChecker {
+  constructor() {
+    this.resourceChecker = new ResourceChecker();
+  }
   async checkDocker() {
     try {
       const { stdout } = await execAsync('docker --version');
@@ -155,19 +159,25 @@ class SystemChecker {
   }
 
   async runFullCheck(requiredPorts = []) {
-    const [docker, dockerCompose, resources, ports] = await Promise.all([
+    const [docker, dockerCompose, resources, ports, detectedResources] = await Promise.all([
       this.checkDocker(),
       this.checkDockerCompose(),
       this.checkSystemResources(),
-      requiredPorts.length > 0 ? this.checkPortAvailability(requiredPorts) : Promise.resolve({})
+      requiredPorts.length > 0 ? this.checkPortAvailability(requiredPorts) : Promise.resolve({}),
+      this.resourceChecker.detectResources()
     ]);
 
     const allChecks = {
       docker,
       dockerCompose,
       resources,
-      ports
+      ports,
+      detectedResources
     };
+
+    // Get recommendations from resource checker
+    const recommendations = this.resourceChecker.generateRecommendations(detectedResources);
+    allChecks.recommendations = recommendations;
 
     // Determine overall status
     const criticalFailed = !docker.installed || !dockerCompose.installed;
@@ -184,7 +194,9 @@ class SystemChecker {
         : warningExists
         ? 'System meets minimum requirements but some warnings exist'
         : 'All system checks passed',
-      canProceed: !criticalFailed
+      canProceed: !criticalFailed,
+      recommendedProfile: recommendations.primary?.profile,
+      useRemoteNode: recommendations.primary?.useRemoteNode
     };
 
     return allChecks;
