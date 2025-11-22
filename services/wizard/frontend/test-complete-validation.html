@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Module - Validation Results Test</title>
+    <link rel="stylesheet" href="public/styles/wizard.css">
+    <style>
+        body {
+            padding: 20px;
+            background: var(--bg-primary);
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-header {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .test-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .test-section {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+        
+        .completion-section {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .completion-section-title {
+            margin: 0;
+            font-size: 20px;
+            color: var(--text-primary);
+        }
+        
+        .section-description {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>Complete Module - Validation Results Test</h1>
+            <p>Test the validation results display functionality</p>
+        </div>
+        
+        <div class="test-controls">
+            <button class="btn-primary" onclick="testAllRunning()">Test: All Running</button>
+            <button class="btn-primary" onclick="testSomeIssues()">Test: Some Issues</button>
+            <button class="btn-primary" onclick="testAllStopped()">Test: All Stopped</button>
+            <button class="btn-primary" onclick="testMixedStatus()">Test: Mixed Status</button>
+            <button class="btn-primary" onclick="testEmptyServices()">Test: Empty Services</button>
+            <button class="btn-secondary" onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test Scenarios</h3>
+            <ul>
+                <li><strong>All Running:</strong> All services are healthy and running</li>
+                <li><strong>Some Issues:</strong> Some services stopped or missing</li>
+                <li><strong>All Stopped:</strong> All services exist but are stopped</li>
+                <li><strong>Mixed Status:</strong> Complex scenario with various states</li>
+                <li><strong>Empty Services:</strong> No services to display</li>
+            </ul>
+        </div>
+        
+        <!-- Validation Results Display -->
+        <div class="completion-section" id="service-verification">
+            <div class="section-header">
+                <h3 class="completion-section-title">✓ Service Verification</h3>
+                <button class="btn-text" onclick="runServiceVerification()">
+                    <span class="btn-icon">🔄</span> Check Again
+                </button>
+            </div>
+            <p class="section-description">Let's verify all your services are healthy and running correctly</p>
+            
+            <div class="verification-status" id="verification-status">
+                <div class="verification-progress">
+                    <div class="spinner-small"></div>
+                    <span>Checking services...</span>
+                </div>
+            </div>
+            
+            <div class="service-status-list" id="service-status-list" style="display: none;">
+                <!-- Services will be populated dynamically -->
+            </div>
+            
+            <div class="verification-summary" id="verification-summary" style="display: none;">
+                <div class="summary-badge success">
+                    <span class="badge-icon">✓</span>
+                    <span class="badge-text">All services healthy</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        // Mock API for testing
+        let mockValidationData = null;
+        
+        // Mock fetch
+        const originalFetch = window.fetch;
+        window.fetch = async function(url, options) {
+            if (url.includes('/api/install/validate')) {
+                // Return mock data
+                return {
+                    ok: true,
+                    json: async () => mockValidationData
+                };
+            }
+            return originalFetch(url, options);
+        };
+        
+        // Import the complete module functions
+        import { displayValidationResults } from './public/scripts/modules/complete.js';
+        import { stateManager } from './public/scripts/modules/state-manager.js';
+        
+        // Set up test scenarios
+        window.testAllRunning = async function() {
+            console.log('Testing: All Running');
+            mockValidationData = {
+                services: {
+                    'kaspa-node': { exists: true, running: true, health: 'healthy' },
+                    'dashboard': { exists: true, running: true },
+                    'nginx': { exists: true, running: true }
+                },
+                allRunning: true,
+                anyFailed: false,
+                summary: {
+                    total: 3,
+                    running: 3,
+                    stopped: 0,
+                    missing: 0
+                }
+            };
+            stateManager.set('selectedProfiles', ['core']);
+            await displayValidationResults();
+        };
+        
+        window.testSomeIssues = async function() {
+            console.log('Testing: Some Issues');
+            mockValidationData = {
+                services: {
+                    'kaspa-node': { exists: true, running: true },
+                    'dashboard': { exists: true, running: false },
+                    'nginx': { exists: false, running: false },
+                    'timescaledb': { exists: true, running: true }
+                },
+                allRunning: false,
+                anyFailed: true,
+                summary: {
+                    total: 4,
+                    running: 2,
+                    stopped: 1,
+                    missing: 1
+                }
+            };
+            stateManager.set('selectedProfiles', ['core', 'explorer']);
+            await displayValidationResults();
+        };
+        
+        window.testAllStopped = async function() {
+            console.log('Testing: All Stopped');
+            mockValidationData = {
+                services: {
+                    'kaspa-node': { exists: true, running: false },
+                    'dashboard': { exists: true, running: false },
+                    'nginx': { exists: true, running: false }
+                },
+                allRunning: false,
+                anyFailed: true,
+                summary: {
+                    total: 3,
+                    running: 0,
+                    stopped: 3,
+                    missing: 0
+                }
+            };
+            stateManager.set('selectedProfiles', ['core']);
+            await displayValidationResults();
+        };
+        
+        window.testMixedStatus = async function() {
+            console.log('Testing: Mixed Status');
+            mockValidationData = {
+                services: {
+                    'kaspa-node': { exists: true, running: true, health: 'healthy' },
+                    'dashboard': { exists: true, running: true },
+                    'nginx': { exists: true, running: false },
+                    'timescaledb': { exists: false, running: false },
+                    'kasia': { exists: true, running: true },
+                    'k-social': { exists: true, running: false },
+                    'k-indexer': { exists: false, running: false }
+                },
+                allRunning: false,
+                anyFailed: true,
+                summary: {
+                    total: 7,
+                    running: 3,
+                    stopped: 2,
+                    missing: 2
+                }
+            };
+            stateManager.set('selectedProfiles', ['core', 'explorer', 'prod']);
+            await displayValidationResults();
+        };
+        
+        window.testEmptyServices = async function() {
+            console.log('Testing: Empty Services');
+            mockValidationData = {
+                services: {},
+                allRunning: true,
+                anyFailed: false,
+                summary: {
+                    total: 0,
+                    running: 0,
+                    stopped: 0,
+                    missing: 0
+                }
+            };
+            stateManager.set('selectedProfiles', []);
+            await displayValidationResults();
+        };
+        
+        window.clearResults = function() {
+            console.log('Clearing results');
+            document.getElementById('verification-status').style.display = 'block';
+            document.getElementById('verification-status').innerHTML = `
+                <div class="verification-progress">
+                    <div class="spinner-small"></div>
+                    <span>Checking services...</span>
+                </div>
+            `;
+            document.getElementById('service-status-list').style.display = 'none';
+            document.getElementById('service-status-list').innerHTML = '';
+            document.getElementById('verification-summary').style.display = 'none';
+            document.getElementById('verification-summary').innerHTML = '';
+        };
+        
+        window.runServiceVerification = async function() {
+            console.log('Re-running verification');
+            if (mockValidationData) {
+                await displayValidationResults();
+            } else {
+                alert('Please run a test scenario first');
+            }
+        };
+        
+        // Auto-run first test
+        setTimeout(() => {
+            testAllRunning();
+        }, 500);
+    </script>
+</body>
+</html>

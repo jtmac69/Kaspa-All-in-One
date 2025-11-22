@@ -14,19 +14,19 @@ class ConfigGenerator {
       KASPA_P2P_PORT: Joi.number().integer().min(1024).max(65535).default(16110),
       KASPA_RPC_PORT: Joi.number().integer().min(1024).max(65535).default(16111),
       DASHBOARD_PORT: Joi.number().integer().min(1024).max(65535).default(3001),
-      NGINX_HTTP_PORT: Joi.number().integer().min(1024).max(65535).default(80),
-      NGINX_HTTPS_PORT: Joi.number().integer().min(1024).max(65535).default(443),
+      NGINX_HTTP_PORT: Joi.number().integer().min(1).max(65535).default(80),
+      NGINX_HTTPS_PORT: Joi.number().integer().min(1).max(65535).default(443),
       
       // Database settings
       POSTGRES_USER: Joi.string().alphanum().min(3).max(30).default('kaspa'),
       POSTGRES_PASSWORD: Joi.string().min(16).required(),
-      POSTGRES_DB: Joi.string().alphanum().min(3).max(30).default('kaspa_explorer'),
+      POSTGRES_DB: Joi.string().pattern(/^[a-zA-Z0-9_]+$/).min(3).max(30).default('kaspa_explorer'),
       POSTGRES_PORT: Joi.number().integer().min(1024).max(65535).default(5432),
       
       // Archive database settings
-      ARCHIVE_POSTGRES_USER: Joi.string().alphanum().min(3).max(30).default('kaspa_archive'),
+      ARCHIVE_POSTGRES_USER: Joi.string().pattern(/^[a-zA-Z0-9_]+$/).min(3).max(30).default('kaspa_archive'),
       ARCHIVE_POSTGRES_PASSWORD: Joi.string().min(16).optional(),
-      ARCHIVE_POSTGRES_DB: Joi.string().alphanum().min(3).max(30).default('kaspa_archive'),
+      ARCHIVE_POSTGRES_DB: Joi.string().pattern(/^[a-zA-Z0-9_]+$/).min(3).max(30).default('kaspa_archive'),
       ARCHIVE_POSTGRES_PORT: Joi.number().integer().min(1024).max(65535).default(5433),
       
       // Monitoring settings

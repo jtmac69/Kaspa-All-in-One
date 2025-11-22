@@ -35,8 +35,39 @@ export function getStepNumber(stepId) {
 /**
  * Navigate to next step
  */
-export function nextStep() {
+export async function nextStep() {
     const currentStep = stateManager.get('currentStep');
+    const currentStepId = getStepId(currentStep);
+    
+    // Validate configuration before leaving configure step
+    if (currentStepId === 'configure') {
+        try {
+            const { validateConfiguration } = await import('./configure.js');
+            const isValid = await validateConfiguration();
+            if (!isValid) {
+                console.log('Configuration validation failed, staying on configure step');
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to validate configuration:', error);
+            return;
+        }
+    }
+    
+    // Validate before leaving review step
+    if (currentStepId === 'review') {
+        try {
+            const { validateBeforeInstallation } = await import('./review.js');
+            const isValid = validateBeforeInstallation();
+            if (!isValid) {
+                console.log('Review validation failed, staying on review step');
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to validate review:', error);
+            return;
+        }
+    }
     
     if (currentStep < TOTAL_STEPS) {
         goToStep(currentStep + 1);
@@ -142,6 +173,8 @@ function handleStepEntry(stepNumber) {
             // Profiles module will handle this
             break;
         case 'configure':
+            // Load configuration form from API
+            loadConfigurationFormHandler();
             // Set up configuration form listeners
             setupConfigurationListeners();
             break;
@@ -154,6 +187,19 @@ function handleStepEntry(stepNumber) {
         case 'complete':
             // Complete module will handle this
             break;
+    }
+}
+
+/**
+ * Load configuration form handler
+ */
+async function loadConfigurationFormHandler() {
+    try {
+        // Dynamically import configure module
+        const { loadConfigurationForm } = await import('./configure.js');
+        await loadConfigurationForm();
+    } catch (error) {
+        console.error('Failed to load configuration form:', error);
     }
 }
 

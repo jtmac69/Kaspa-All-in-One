@@ -8,6 +8,20 @@ import { api, WebSocketManager } from './modules/api-client.js';
 import { stateManager } from './modules/state-manager.js';
 import { initNavigation, nextStep, previousStep, goToStep } from './modules/navigation.js';
 import { showNotification } from './modules/utils.js';
+import { loadConfigurationForm, validateConfiguration, saveConfiguration } from './modules/configure.js';
+import { runSystemCheck, showDockerGuide, showComposeGuide, initializeQuiz } from './modules/checklist.js';
+import { runFullSystemCheck, retrySystemCheck } from './modules/system-check.js';
+import { displayConfigurationSummary, validateBeforeInstallation } from './modules/review.js';
+import { 
+    initializeWebSocket as initInstallWebSocket,
+    startInstallation as startInstall,
+    updateInstallationUI,
+    handleInstallationComplete,
+    handleInstallationError,
+    cancelInstallation as cancelInstall,
+    toggleInstallLogs
+} from './modules/install.js';
+import { displayValidationResults, runServiceVerification as runValidation } from './modules/complete.js';
 
 // Initialize WebSocket
 const wsManager = new WebSocketManager();
@@ -46,10 +60,13 @@ document.addEventListener('DOMContentLoaded', () => {
 function initWebSocket() {
     const socket = wsManager.connect();
     
+    // Initialize install module with WebSocket manager
+    initInstallWebSocket(wsManager);
+    
     // Installation progress
     wsManager.on('install:progress', (data) => {
         console.log('Installation progress:', data);
-        updateInstallationProgress(data);
+        updateInstallationUI(data);
     });
     
     // Installation complete
@@ -73,6 +90,60 @@ function setupEventListeners() {
     document.addEventListener('stepEntry', (e) => {
         const { stepNumber, stepId } = e.detail;
         console.log(`Entered step ${stepNumber}: ${stepId}`);
+        
+        // Run system check when entering checklist step
+        if (stepId === 'step-checklist') {
+            runSystemCheck().catch(error => {
+                console.error('Failed to run system check:', error);
+            });
+        }
+        
+        // Run full system check when entering system check step
+        if (stepId === 'step-system-check') {
+            runFullSystemCheck().catch(error => {
+                console.error('Failed to run full system check:', error);
+            });
+        }
+        
+        // Load configuration and setup validation when entering configure step
+        if (stepId === 'step-configure') {
+            loadConfigurationForm().catch(error => {
+                console.error('Failed to load configuration:', error);
+            });
+            // Setup form validation after a short delay to ensure DOM is ready
+            setTimeout(() => {
+                import('./modules/configure.js').then(module => {
+                    module.setupFormValidation();
+                });
+            }, 100);
+        }
+        
+        // Display configuration summary when entering review step
+        if (stepId === 'step-review') {
+            displayConfigurationSummary();
+        }
+        
+        // Start installation when entering install step
+        if (stepId === 'step-install') {
+            // Small delay to ensure UI is ready
+            setTimeout(() => {
+                startInstall().catch(error => {
+                    console.error('Failed to start installation:', error);
+                    showNotification('Failed to start installation', 'error');
+                });
+            }, 500);
+        }
+        
+        // Display validation results when entering complete step
+        if (stepId === 'step-complete') {
+            // Small delay to ensure UI is ready
+            setTimeout(() => {
+                displayValidationResults().catch(error => {
+                    console.error('Failed to display validation results:', error);
+                    showNotification('Failed to validate services', 'error');
+                });
+            }, 500);
+        }
         
         // Checkpoint creation removed - not needed during wizard flow
         // Rollback functionality preserved for post-installation use
@@ -104,135 +175,10 @@ function loadProgress() {
 }
 
 /**
- * Update installation progress
- */
-function updateInstallationProgress(data) {
-    const { stage, message, progress, details } = data;
-    
-    // Update progress bar
-    const progressBar = document.querySelector('.install-progress-bar');
-    if (progressBar) {
-        progressBar.style.width = `${progress}%`;
-    }
-    
-    // Update progress text
-    const progressText = document.querySelector('.install-progress-text');
-    if (progressText) {
-        progressText.textContent = message;
-    }
-    
-    // Update stage indicator
-    const stageIndicator = document.querySelector('.install-stage');
-    if (stageIndicator) {
-        stageIndicator.textContent = stage;
-    }
-    
-    // Store in state
-    stateManager.update('installationProgress', {
-        stage,
-        message,
-        progress,
-        details,
-        timestamp: new Date().toISOString()
-    });
-    
-    // Create checkpoint at major milestones
-    if (progress === 25 || progress === 50 || progress === 75) {
-        createCheckpoint(`install-${progress}pct`, {
-            stage,
-            progress,
-            message
-        });
-    }
-}
-
-/**
- * Handle installation complete
- */
-function handleInstallationComplete(data) {
-    showNotification('Installation completed successfully!', 'success');
-    
-    // Store completion data
-    stateManager.set('installationComplete', {
-        timestamp: new Date().toISOString(),
-        validation: data.validation
-    });
-    
-    // Move to complete step
-    goToStep(8);
-    
-    // Clear checkpoint (installation finished)
-    localStorage.removeItem('lastCheckpoint');
-}
-
-/**
- * Handle installation error
- */
-function handleInstallationError(data) {
-    const { stage, message, error } = data;
-    
-    showNotification(`Installation failed: ${message}`, 'error', 10000);
-    
-    // Store error data
-    stateManager.set('installationError', {
-        stage,
-        message,
-        error,
-        timestamp: new Date().toISOString()
-    });
-    
-    // Show error recovery options
-    showErrorRecoveryDialog(data);
-}
-
-/**
- * Show error recovery dialog
- */
-function showErrorRecoveryDialog(errorData) {
-    const dialog = document.getElementById('error-recovery-dialog');
-    if (!dialog) return;
-    
-    // Populate error details
-    const errorMessage = dialog.querySelector('.error-message');
-    if (errorMessage) {
-        errorMessage.textContent = errorData.message;
-    }
-    
-    const errorStage = dialog.querySelector('.error-stage');
-    if (errorStage) {
-        errorStage.textContent = errorData.stage;
-    }
-    
-    // Show dialog
-    dialog.style.display = 'block';
-}
-
-/**
- * Start installation
+ * Start installation (wrapper for install module)
  */
 export async function startInstallation() {
-    const config = stateManager.get('configuration');
-    const profiles = stateManager.get('selectedProfiles');
-    
-    if (!profiles || profiles.length === 0) {
-        showNotification('Please select at least one profile', 'error');
-        return;
-    }
-    
-    // Create pre-installation checkpoint
-    await createCheckpoint('pre-installation', {
-        config,
-        profiles
-    });
-    
-    // Start installation via WebSocket
-    wsManager.emit('install:start', {
-        config,
-        profiles
-    });
-    
-    // Move to install step
-    goToStep(7);
+    await startInstall();
 }
 
 // Export for global access (for inline onclick handlers)
@@ -243,6 +189,9 @@ if (typeof window !== 'undefined') {
         previousStep,
         goToStep,
         startInstallation,
+        loadConfigurationForm,
+        validateConfiguration,
+        saveConfiguration,
         api,
         stateManager
     };
@@ -253,7 +202,7 @@ if (typeof window !== 'undefined') {
     window.goToStep = goToStep;
     window.startInstallation = startInstallation;
     
-    // Placeholder functions for features not yet implemented
+    // Checklist functions
     window.toggleChecklistItem = (item) => {
         const element = document.querySelector(`.checklist-item[data-item="${item}"]`);
         if (element) {
@@ -261,17 +210,9 @@ if (typeof window !== 'undefined') {
         }
     };
     
-    window.showDockerGuide = () => {
-        showNotification('Docker installation guide coming soon', 'info');
-    };
-    
-    window.showComposeGuide = () => {
-        showNotification('Docker Compose installation guide coming soon', 'info');
-    };
-    
-    window.startQuiz = () => {
-        showNotification('Profile selection quiz coming soon', 'info');
-    };
+    window.showDockerGuide = showDockerGuide;
+    window.showComposeGuide = showComposeGuide;
+    window.startQuiz = initializeQuiz;
     
     window.detectExternalIP = async () => {
         try {
@@ -307,64 +248,59 @@ if (typeof window !== 'undefined') {
         }
     };
     
-    window.toggleLogs = () => {
-        const logs = document.getElementById('install-logs');
-        const toggleText = document.getElementById('logs-toggle-text');
-        if (logs && toggleText) {
-            const isHidden = logs.style.display === 'none';
-            logs.style.display = isHidden ? 'block' : 'none';
-            toggleText.textContent = isHidden ? 'Hide Details' : 'Show Details';
-        }
+    window.toggleLogs = toggleInstallLogs;
+    
+    window.cancelInstallation = cancelInstall;
+    
+    // Error recovery functions
+    window.retryInstallation = async () => {
+        const { retryInstallation } = await import('./modules/install.js');
+        retryInstallation();
     };
     
-    window.cancelInstallation = () => {
-        if (confirm('Are you sure you want to cancel the installation?')) {
-            wsManager.emit('install:cancel');
-            showNotification('Installation cancelled', 'info');
-            goToStep(1);
-        }
+    window.showInstallationLogs = async () => {
+        const { showInstallationLogs } = await import('./modules/install.js');
+        showInstallationLogs();
     };
     
-    window.skipTour = () => {
-        showNotification('Tour skipped', 'info');
+    window.exportDiagnostics = async () => {
+        const { exportDiagnostics } = await import('./modules/install.js');
+        exportDiagnostics();
     };
     
-    window.startTour = () => {
-        showNotification('Interactive tour coming soon', 'info');
+    window.goBackFromError = async () => {
+        const { goBackFromError } = await import('./modules/install.js');
+        goBackFromError();
     };
     
-    window.runServiceVerification = async () => {
-        showNotification('Running service verification...', 'info');
-        // This would call the validation API
+    window.startOverFromError = async () => {
+        const { startOverFromError } = await import('./modules/install.js');
+        startOverFromError();
     };
     
-    window.openDashboard = () => {
-        window.open('http://localhost:8080', '_blank');
-    };
+    window.runServiceVerification = runValidation;
     
-    window.startDashboardTour = () => {
-        showNotification('Dashboard tour coming soon', 'info');
-    };
+    // Tour and resource functions are now implemented in complete.js module
+    // window.skipTour - implemented in complete.js
+    // window.startTour - implemented in complete.js
+    // window.startDashboardTour - implemented in complete.js
+    // window.showResourcesModal - implemented in complete.js
     
-    window.showServiceManagementGuide = () => {
-        showNotification('Service management guide coming soon', 'info');
-    };
-    
-    window.showResourcesModal = () => {
-        showNotification('Resources modal coming soon', 'info');
-    };
-    
-    window.checkSyncStatus = async () => {
-        showNotification('Checking sync status...', 'info');
-    };
-    
-    window.viewLogs = () => {
-        showNotification('Log viewer coming soon', 'info');
-    };
+    // Service management functions are now in complete.js module
+    // window.showServiceManagementGuide - implemented in complete.js
+    // window.checkSyncStatus - implemented in complete.js
+    // window.viewLogs - implemented in complete.js
+    // window.openDashboard - implemented in complete.js
     
     window.showGlossaryModal = (term) => {
         // This would show a glossary modal with term definition
         showNotification(`Glossary: ${term} - Feature coming soon`, 'info');
+    };
+    
+    window.retrySystemCheck = () => {
+        retrySystemCheck().catch(error => {
+            console.error('Failed to retry system check:', error);
+        });
     };
     
     window.selectProfile = (profileId) => {

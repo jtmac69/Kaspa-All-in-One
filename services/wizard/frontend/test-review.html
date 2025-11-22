@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Module Test</title>
+    <link rel="stylesheet" href="/styles/wizard.css">
+    <style>
+        body {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-controls {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .test-controls h2 {
+            margin-top: 0;
+        }
+        .test-button {
+            margin: 5px;
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background: #45a049;
+        }
+        .test-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Review Module Test</h1>
+    
+    <div class="test-info">
+        <strong>Test Instructions:</strong>
+        <ol>
+            <li>Click the test scenario buttons below to populate state</li>
+            <li>Click "Display Review" to see the configuration summary</li>
+            <li>Verify that the displayed information matches the test scenario</li>
+        </ol>
+    </div>
+    
+    <div class="test-controls">
+        <h2>Test Scenarios</h2>
+        <button class="test-button" onclick="testScenario1()">Scenario 1: Core Profile</button>
+        <button class="test-button" onclick="testScenario2()">Scenario 2: Explorer Profile</button>
+        <button class="test-button" onclick="testScenario3()">Scenario 3: Multiple Profiles</button>
+        <button class="test-button" onclick="testScenario4()">Scenario 4: No Profiles (Error)</button>
+        <button class="test-button" onclick="clearState()">Clear State</button>
+        <br><br>
+        <button class="test-button" onclick="displayReview()" style="background: #2196F3;">Display Review</button>
+        <button class="test-button" onclick="validateReview()" style="background: #FF9800;">Validate</button>
+    </div>
+    
+    <!-- Review Step (from wizard) -->
+    <div class="wizard-step active" id="step-review">
+        <div class="step-header">
+            <h2 class="step-title">Review Your Configuration</h2>
+            <p class="step-description">
+                Verify your selections before installation
+            </p>
+        </div>
+        
+        <div class="review-sections">
+            <div class="review-section">
+                <h3 class="review-section-title">Selected Profiles</h3>
+                <div class="review-content">
+                    <div class="review-item">
+                        <span class="review-label">Profiles:</span>
+                        <span class="review-value" id="review-profiles">Not loaded</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Total Services:</span>
+                        <span class="review-value" id="review-service-count">Not loaded</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="review-section">
+                <h3 class="review-section-title">Resource Requirements</h3>
+                <div class="review-content">
+                    <div class="review-item">
+                        <span class="review-label">CPU:</span>
+                        <span class="review-value" id="review-cpu">Not loaded</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">RAM:</span>
+                        <span class="review-value" id="review-ram">Not loaded</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Disk:</span>
+                        <span class="review-value" id="review-disk">Not loaded</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="review-section">
+                <h3 class="review-section-title">Network Configuration</h3>
+                <div class="review-content">
+                    <div class="review-item">
+                        <span class="review-label">External IP:</span>
+                        <span class="review-value" id="review-external-ip">Not loaded</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Public Node:</span>
+                        <span class="review-value" id="review-public-node">Not loaded</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { stateManager } from '/scripts/modules/state-manager.js';
+        import { displayConfigurationSummary, validateBeforeInstallation } from '/scripts/modules/review.js';
+        
+        // Make functions available globally
+        window.stateManager = stateManager;
+        window.displayReview = displayConfigurationSummary;
+        window.validateReview = () => {
+            const isValid = validateBeforeInstallation();
+            alert(isValid ? 'Validation passed!' : 'Validation failed! No profiles selected.');
+        };
+        
+        // Test scenarios
+        window.testScenario1 = () => {
+            console.log('Test Scenario 1: Core Profile');
+            stateManager.set('selectedProfiles', ['core']);
+            stateManager.set('configuration', {
+                externalIp: '192.168.1.100',
+                publicNode: false
+            });
+            alert('Scenario 1 loaded: Core profile with private node');
+        };
+        
+        window.testScenario2 = () => {
+            console.log('Test Scenario 2: Explorer Profile');
+            stateManager.set('selectedProfiles', ['explorer']);
+            stateManager.set('configuration', {
+                externalIp: '',
+                publicNode: true
+            });
+            alert('Scenario 2 loaded: Explorer profile with public node');
+        };
+        
+        window.testScenario3 = () => {
+            console.log('Test Scenario 3: Multiple Profiles');
+            stateManager.set('selectedProfiles', ['core', 'explorer', 'mining']);
+            stateManager.set('configuration', {
+                externalIp: '10.0.0.50',
+                publicNode: true
+            });
+            alert('Scenario 3 loaded: Core + Explorer + Mining profiles');
+        };
+        
+        window.testScenario4 = () => {
+            console.log('Test Scenario 4: No Profiles (Error)');
+            stateManager.set('selectedProfiles', []);
+            stateManager.set('configuration', {
+                externalIp: '',
+                publicNode: false
+            });
+            alert('Scenario 4 loaded: No profiles selected (should show warning)');
+        };
+        
+        window.clearState = () => {
+            stateManager.reset();
+            alert('State cleared');
+        };
+        
+        console.log('Review module test page loaded');
+    </script>
+</body>
+</html>
+

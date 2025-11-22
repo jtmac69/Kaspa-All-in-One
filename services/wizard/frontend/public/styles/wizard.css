@@ -3,6 +3,10 @@
    Using official Kaspa brand colors from https://kaspa.org/media-kit/
    ============================================================================ */
 
+/* Component Imports */
+@import url('./components/install.css');
+@import url('./components/complete.css');
+
 /* ============================================================================
    CSS Variables - Kaspa Brand Colors
    ============================================================================ */
@@ -798,6 +802,33 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-code);
 }
 
+/* Form Validation Styles */
+.form-input.field-error,
+.form-textarea.field-error {
+  border-color: var(--error);
+  background-color: rgba(208, 2, 27, 0.05);
+}
+
+.form-input.field-error:focus,
+.form-textarea.field-error:focus {
+  border-color: var(--error);
+  box-shadow: 0 0 0 3px rgba(208, 2, 27, 0.1);
+}
+
+.field-error-message {
+  font-size: 13px;
+  color: var(--error);
+  margin-top: var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.field-error-message::before {
+  content: '⚠';
+  font-size: 14px;
+}
+
 .password-input-group {
   display: flex;
   gap: var(--space-2);
@@ -912,12 +943,39 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 18px;
   margin-bottom: var(--space-4);
   color: var(--text-primary);
+  display: inline-block;
+}
+
+.review-edit-btn {
+  float: right;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary);
+  background: transparent;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: -2px;
+}
+
+.review-edit-btn:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(70, 130, 180, 0.2);
+}
+
+.review-edit-btn:active {
+  transform: translateY(0);
 }
 
 .review-content {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  clear: both;
 }
 
 .review-item {
@@ -971,6 +1029,67 @@ h1, h2, h3, h4, h5, h6 {
   padding-left: var(--space-4);
   position: relative;
   margin-bottom: var(--space-2);
+}
+
+/* Profile Cards */
+.review-profile-card {
+  background: var(--background);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.review-profile-card:last-child {
+  margin-bottom: 0;
+}
+
+.review-profile-header {
+  margin-bottom: var(--space-2);
+}
+
+.review-profile-header strong {
+  font-size: 16px;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.review-profile-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+  line-height: 1.5;
+}
+
+.review-profile-services {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2);
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  font-family: 'Fira Code', monospace;
+}
+
+.review-profile-resources {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.review-profile-resources .resource-item {
+  font-size: 13px;
+  color: var(--text-primary);
+  padding: var(--space-1) var(--space-3);
+  background: rgba(70, 130, 180, 0.1);
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.review-profile-separator {
+  height: 1px;
+  background: var(--border-light);
+  margin: var(--space-3) 0;
 }
 
 .review-warning-list li::before {
@@ -5054,4 +5173,251 @@ button[onclick*="showGlossary"]:hover {
         min-width: auto;
         max-width: none;
     }
+}
+
+/* ============================================================================
+   Enhanced Installation Progress Styles
+   ============================================================================ */
+
+/* Pulse animation for progress percentage */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.pulse {
+  animation: pulse 0.5s ease-in-out;
+}
+
+/* Service Progress Container */
+.service-progress-container {
+  margin-top: var(--space-6);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+}
+
+.service-progress-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+  border-radius: 6px;
+  transition: all var(--transition-base);
+}
+
+.service-progress-item:last-child {
+  margin-bottom: 0;
+}
+
+.service-progress-item.active {
+  background: rgba(112, 199, 186, 0.05);
+}
+
+.service-progress-item.complete {
+  opacity: 0.7;
+}
+
+.service-progress-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.service-progress-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.service-progress-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.service-progress-status {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.service-progress-bar-mini {
+  width: 60px;
+  height: 4px;
+  background: var(--border-light);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.service-progress-fill {
+  height: 100%;
+  background: var(--kaspa-blue);
+  transition: width var(--transition-base);
+}
+
+/* Installation Statistics */
+.install-stats-container {
+  display: flex;
+  gap: var(--space-6);
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.install-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-family: var(--font-code);
+}
+
+/* Time Estimate Display */
+#install-time-estimate {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: rgba(112, 199, 186, 0.05);
+  border-left: 3px solid var(--kaspa-blue);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Enhanced Progress Bar Styling */
+.progress-bar-fill {
+  transition: width 0.5s ease-in-out, background-color 0.3s ease;
+}
+
+/* Spinner Variations */
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-light);
+  border-top-color: var(--kaspa-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-tiny {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border-light);
+  border-top-color: var(--kaspa-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Log Count Badge */
+#install-log-count {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 2px 8px;
+  background: var(--kaspa-blue);
+  color: white;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Enhanced Install Step Styling */
+.install-step {
+  transition: all var(--transition-base);
+  padding: var(--space-4);
+  border-radius: 8px;
+  margin-bottom: var(--space-3);
+}
+
+.install-step.active {
+  background: rgba(112, 199, 186, 0.05);
+  border-left: 3px solid var(--kaspa-blue);
+}
+
+.install-step.complete {
+  opacity: 0.8;
+}
+
+.install-step.pending {
+  opacity: 0.6;
+}
+
+.install-step-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.install-step-status {
+  font-size: 13px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Dark Mode Support for Enhanced Elements */
+@media (prefers-color-scheme: dark) {
+  .service-progress-container,
+  .install-stats-container {
+    background: var(--surface-dark);
+    border-color: var(--border-dark);
+  }
+  
+  .service-progress-item.active {
+    background: rgba(112, 199, 186, 0.1);
+  }
+  
+  .service-progress-name {
+    color: var(--text-primary-dark);
+  }
+  
+  .service-progress-status {
+    color: var(--text-secondary-dark);
+  }
+  
+  .stat-label {
+    color: var(--text-secondary-dark);
+  }
+  
+  .stat-value {
+    color: var(--text-primary-dark);
+  }
+  
+  #install-time-estimate {
+    background: rgba(112, 199, 186, 0.1);
+    color: var(--text-secondary-dark);
+  }
+  
+  .install-step.active {
+    background: rgba(112, 199, 186, 0.1);
+  }
 }
