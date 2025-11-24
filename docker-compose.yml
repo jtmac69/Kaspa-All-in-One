@@ -282,7 +282,7 @@ services:
     container_name: k-indexer
     restart: unless-stopped
     ports:
-      - "${KSOCIAL_INDEXER_PORT:-3004}:3000"
+      - "${KSOCIAL_INDEXER_PORT:-3004}:8080"
     environment:
       - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-indexer}:${POSTGRES_PASSWORD:-secure_password}@indexer-db:5432/ksocial
@@ -294,7 +294,7 @@ services:
     profiles:
       - explorer
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3

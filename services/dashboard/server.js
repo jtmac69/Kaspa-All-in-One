@@ -209,7 +209,7 @@ const SERVICE_DEFINITIONS = [
     { name: 'kasia-app', displayName: 'Kasia App', url: 'http://kasia-app:3000', type: 'http', profile: 'prod' },
     { name: 'kasia-indexer', displayName: 'Kasia Indexer', url: 'http://kasia-indexer:8080', type: 'http', profile: 'explorer' },
     { name: 'k-social', displayName: 'K Social', url: 'http://k-social:3000', type: 'http', profile: 'prod' },
-    { name: 'k-indexer', displayName: 'K Indexer', url: 'http://k-indexer:3000', type: 'http', profile: 'explorer' },
+    { name: 'k-indexer', displayName: 'K Indexer', url: 'http://k-indexer:8080', type: 'http', profile: 'explorer' },
     { name: 'simply-kaspa-indexer', displayName: 'Simply Kaspa Indexer', url: 'http://simply-kaspa-indexer:3000', type: 'http', profile: 'explorer' },
     { name: 'kaspa-stratum', displayName: 'Kaspa Stratum', url: 'http://kaspa-stratum:5555', type: 'tcp', profile: 'mining' },
     { name: 'indexer-db', displayName: 'Indexer DB', url: 'http://indexer-db:5432', type: 'postgres', profile: 'explorer' },

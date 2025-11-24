@@ -47,15 +47,15 @@ RUN mkdir -p /app/data /app/logs /app/metrics /app/config && \
 USER ksocial
 
 # Expose port
-EXPOSE 3000
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+  CMD curl -f http://localhost:8080/health || exit 1
 
 # Environment variables
 ENV RUST_LOG=info
-ENV PORT=3000
+ENV PORT=8080
 ENV KASPA_NODE_URL=http://kaspa-node:16111
 ENV DATABASE_URL=postgresql://indexer:secure_password@indexer-db:5432/ksocial
 ENV ENABLE_TIMESCALEDB=true
