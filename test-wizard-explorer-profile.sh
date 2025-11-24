@@ -153,7 +153,7 @@ test_api() {
 header "Explorer Profile End-to-End Test"
 info "Testing wizard installation with Explorer profile"
 info "Profile: $PROFILE"
-info "Services: timescaledb, simply-kaspa-indexer"
+info "Services: indexer-db, simply-kaspa-indexer"
 info "Dependencies: core profile (will be installed automatically)"
 echo ""
 
@@ -437,8 +437,8 @@ test_installation() {
         sleep 5
         elapsed=$((elapsed + 5))
         
-        # Check if timescaledb container is running
-        if sudo docker ps --format '{{.Names}}' | grep -q "timescaledb"; then
+        # Check if indexer-db container is running
+        if sudo docker ps --format '{{.Names}}' | grep -q "indexer-db"; then
             verbose "Installation status: running (${elapsed}s elapsed)"
             pass "Installation completed successfully"
             return 0
@@ -490,7 +490,7 @@ test_explorer_services() {
     
     log "Checking Explorer profile services..."
     
-    local explorer_services=("timescaledb" "simply-kaspa-indexer")
+    local explorer_services=("indexer-db" "simply-kaspa-indexer")
     local running=0
     local total=${#explorer_services[@]}
     
@@ -549,22 +549,22 @@ test_core_dependency() {
     fi
 }
 
-# Test 11: TimescaleDB accessibility
+# Test 11: IndexerDB (TimescaleDB) accessibility
 test_timescaledb_access() {
-    header "Test 11: TimescaleDB Accessibility"
+    header "Test 11: IndexerDB (TimescaleDB) Accessibility"
     TESTS_RUN=$((TESTS_RUN + 1))
     
-    log "Checking TimescaleDB accessibility..."
+    log "Checking IndexerDB (TimescaleDB) accessibility..."
     
     # Wait a bit for services to fully start
     sleep 10
     
-    # Check if TimescaleDB port is accessible
+    # Check if IndexerDB port is accessible
     if nc -z localhost 5432 2>/dev/null; then
-        pass "TimescaleDB is accessible on port 5432"
+        pass "IndexerDB (TimescaleDB) is accessible on port 5432"
         return 0
     else
-        warn "TimescaleDB port 5432 is not yet accessible (may still be starting)"
+        warn "IndexerDB port 5432 is not yet accessible (may still be starting)"
         return 0
     fi
 }
@@ -630,7 +630,7 @@ main() {
         echo ""
         echo -e "${BLUE}Next Steps:${NC}"
         echo "  1. Access dashboard: http://localhost:8080"
-        echo "  2. Connect to TimescaleDB: psql -h localhost -U kaspa -d simply_kaspa"
+        echo "  2. Connect to IndexerDB: psql -h localhost -U kaspa -d simply_kaspa"
         echo "  3. Check service logs: docker compose logs -f"
         echo "  4. Stop services: docker compose --profile explorer down"
         echo ""
@@ -646,7 +646,7 @@ main() {
         echo "  1. Check wizard logs: docker compose logs wizard"
         echo "  2. Check service logs: docker compose logs"
         echo "  3. Verify system requirements: ./scripts/verify-system.sh"
-        echo "  4. Check TimescaleDB: docker compose logs timescaledb"
+        echo "  4. Check IndexerDB: docker compose logs indexer-db"
         echo ""
         exit 1
     fi

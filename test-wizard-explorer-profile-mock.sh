@@ -169,7 +169,7 @@ test_explorer_profile_coverage() {
     
     log "Checking for Explorer profile service coverage..."
     
-    local explorer_services=("timescaledb" "simply-kaspa-indexer")
+    local explorer_services=("indexer-db" "simply-kaspa-indexer")
     local found=0
     local total=${#explorer_services[@]}
     
