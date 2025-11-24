@@ -6,10 +6,17 @@ class ProfileManager {
     this.profiles = {
       core: {
         id: 'core',
-        name: 'Core',
-        description: 'Essential services: Kaspa node, dashboard, and reverse proxy',
-        services: ['kaspa-node', 'dashboard', 'nginx'],
+        name: 'Core Profile',
+        description: 'Kaspa node (public/private) with optional wallet',
+        services: [
+          { name: 'kaspa-node', required: true, startupOrder: 1, description: 'Kaspa blockchain node' },
+          { name: 'wallet', required: false, startupOrder: 1, description: 'Kaspa wallet' },
+          { name: 'dashboard', required: true, startupOrder: 3, description: 'Management dashboard' },
+          { name: 'nginx', required: true, startupOrder: 3, description: 'Reverse proxy' }
+        ],
         dependencies: [],
+        prerequisites: [],
+        conflicts: [],
         resources: {
           minMemory: 4,
           minCpu: 2,
@@ -19,30 +26,61 @@ class ProfileManager {
           recommendedDisk: 500
         },
         ports: [16110, 16111, 3001, 80, 443],
-        required: true
-      },
-      prod: {
-        id: 'prod',
-        name: 'Production',
-        description: 'User-facing applications: Kasia messaging and K-Social platform',
-        services: ['kasia', 'kasia-indexer', 'k-social', 'k-indexer'],
-        dependencies: ['core', 'explorer'],
-        resources: {
-          minMemory: 8,
-          minCpu: 4,
-          minDisk: 200,
-          recommendedMemory: 16,
-          recommendedCpu: 8,
-          recommendedDisk: 1000
+        required: true,
+        configuration: {
+          required: ['KASPA_NODE_P2P_PORT', 'KASPA_NODE_RPC_PORT'],
+          optional: ['PUBLIC_NODE', 'WALLET_ENABLED'],
+          nodeUsage: 'local', // 'local', 'public', 'for-other-services'
+          fallbackToPublic: true
         },
-        ports: [3002, 3003, 3004, 3005]
+        category: 'essential'
       },
-      explorer: {
-        id: 'explorer',
-        name: 'Explorer',
-        description: 'Blockchain indexing with TimescaleDB for data analysis',
-        services: ['timescaledb', 'simply-kaspa-indexer'],
-        dependencies: ['core'],
+      'kaspa-user-applications': {
+        id: 'kaspa-user-applications',
+        name: 'Kaspa User Applications',
+        description: 'User-facing apps (Kasia, K-Social, Kaspa Explorer)',
+        services: [
+          { name: 'kasia-app', required: true, startupOrder: 3, description: 'Kasia messaging application' },
+          { name: 'k-social-app', required: true, startupOrder: 3, description: 'K-Social platform' },
+          { name: 'kaspa-explorer', required: true, startupOrder: 3, description: 'Kaspa blockchain explorer' }
+        ],
+        dependencies: [],
+        prerequisites: [],
+        conflicts: [],
+        resources: {
+          minMemory: 4,
+          minCpu: 2,
+          minDisk: 50,
+          recommendedMemory: 8,
+          recommendedCpu: 4,
+          recommendedDisk: 200
+        },
+        ports: [3002, 3003, 3008],
+        configuration: {
+          required: [],
+          optional: ['KASIA_APP_PORT', 'KSOCIAL_APP_PORT', 'EXPLORER_PORT'],
+          indexerChoice: 'public', // 'public' or 'local'
+          publicEndpoints: {
+            kasiaIndexer: 'https://api.kasia.io',
+            kIndexer: 'https://api.k-social.io',
+            simplyKaspaIndexer: 'https://api.simplykaspa.io'
+          }
+        },
+        category: 'optional'
+      },
+      'indexer-services': {
+        id: 'indexer-services',
+        name: 'Indexer Services',
+        description: 'Local indexers (Kasia, K-Indexer, Simply-Kaspa)',
+        services: [
+          { name: 'timescaledb', required: true, startupOrder: 2, description: 'Shared TimescaleDB database' },
+          { name: 'kasia-indexer', required: false, startupOrder: 2, description: 'Kasia blockchain indexer' },
+          { name: 'k-indexer', required: false, startupOrder: 2, description: 'K-Social blockchain indexer' },
+          { name: 'simply-kaspa-indexer', required: false, startupOrder: 2, description: 'Simply Kaspa indexer' }
+        ],
+        dependencies: [],
+        prerequisites: [],
+        conflicts: [],
         resources: {
           minMemory: 8,
           minCpu: 4,
@@ -51,46 +89,54 @@ class ProfileManager {
           recommendedCpu: 8,
           recommendedDisk: 2000
         },
-        ports: [5432, 3006]
+        ports: [5432, 3004, 3005, 3006],
+        configuration: {
+          required: ['POSTGRES_USER', 'POSTGRES_PASSWORD'],
+          optional: ['TIMESCALEDB_PORT'],
+          sharedDatabase: true,
+          databases: ['kasia_db', 'k_db', 'simply_kaspa_db'],
+          nodeUsage: 'fallback', // Can use local node or fallback to public
+          fallbackToPublic: true
+        },
+        category: 'optional'
       },
-      archive: {
-        id: 'archive',
-        name: 'Archive',
-        description: 'Long-term data retention with separate archive database',
-        services: ['archive-db', 'archive-indexer'],
-        dependencies: ['core', 'explorer'],
+      'archive-node': {
+        id: 'archive-node',
+        name: 'Archive Node Profile',
+        description: 'Non-pruning Kaspa node for complete blockchain history',
+        services: [
+          { name: 'kaspa-archive-node', required: true, startupOrder: 1, description: 'Archive Kaspa node' }
+        ],
+        dependencies: [],
+        prerequisites: [],
+        conflicts: ['core'],
         resources: {
           minMemory: 16,
           minCpu: 8,
-          minDisk: 2000,
+          minDisk: 1000,
           recommendedMemory: 32,
           recommendedCpu: 16,
           recommendedDisk: 5000
         },
-        ports: [5433, 3007]
-      },
-      development: {
-        id: 'development',
-        name: 'Development',
-        description: 'Development tools: Portainer and pgAdmin',
-        services: ['portainer', 'pgadmin'],
-        dependencies: ['core'],
-        resources: {
-          minMemory: 2,
-          minCpu: 1,
-          minDisk: 10,
-          recommendedMemory: 4,
-          recommendedCpu: 2,
-          recommendedDisk: 50
+        ports: [16110, 16111],
+        configuration: {
+          required: ['KASPA_NODE_P2P_PORT', 'KASPA_NODE_RPC_PORT'],
+          optional: ['PUBLIC_NODE'],
+          nodeUsage: 'local',
+          fallbackToPublic: false
         },
-        ports: [9000, 5050]
+        category: 'advanced'
       },
       mining: {
         id: 'mining',
-        name: 'Mining',
-        description: 'Mining stratum bridge for solo or pool mining',
-        services: ['kaspa-stratum'],
-        dependencies: ['core'],
+        name: 'Mining Profile',
+        description: 'Local mining stratum pointed to local Kaspa node',
+        services: [
+          { name: 'kaspa-stratum', required: true, startupOrder: 3, description: 'Mining stratum server' }
+        ],
+        dependencies: [],
+        prerequisites: ['core', 'archive-node'],
+        conflicts: [],
         resources: {
           minMemory: 2,
           minCpu: 2,
@@ -99,7 +145,12 @@ class ProfileManager {
           recommendedCpu: 4,
           recommendedDisk: 50
         },
-        ports: [5555]
+        ports: [5555],
+        configuration: {
+          required: ['STRATUM_PORT', 'MINING_ADDRESS'],
+          optional: ['POOL_MODE']
+        },
+        category: 'advanced'
       }
     };
 
@@ -117,36 +168,34 @@ class ProfileManager {
       'public-node': {
         id: 'public-node',
         name: 'Public Node',
-        description: 'Public-facing Kaspa node with explorer',
-        profiles: ['core', 'explorer'],
+        description: 'Public-facing Kaspa node with indexer services',
+        profiles: ['core', 'indexer-services'],
         config: {
           PUBLIC_NODE: 'true',
           ENABLE_MONITORING: 'true',
           ENABLE_SSL: 'true'
-        }
-      },
-      'developer': {
-        id: 'developer',
-        name: 'Developer Setup',
-        description: 'Full development environment with all tools',
-        profiles: ['core', 'explorer', 'development'],
-        config: {
-          PUBLIC_NODE: 'false',
-          ENABLE_MONITORING: 'true',
-          LOG_LEVEL: 'debug'
         }
       },
       'full-stack': {
         id: 'full-stack',
         name: 'Full Stack',
         description: 'Complete deployment with all services',
-        profiles: ['core', 'prod', 'explorer', 'development'],
+        profiles: ['core', 'kaspa-user-applications', 'indexer-services'],
         config: {
           PUBLIC_NODE: 'true',
           ENABLE_MONITORING: 'true',
           ENABLE_SSL: 'true'
         }
       }
+    };
+
+    // Developer Mode is now a cross-cutting feature, not a separate profile
+    this.developerModeFeatures = {
+      debugLogging: true,
+      exposedPorts: [9000, 5050], // Portainer, pgAdmin
+      inspectionTools: ['portainer', 'pgadmin'],
+      logAccess: true,
+      developmentUtilities: []
     };
   }
 
@@ -249,13 +298,34 @@ class ProfileManager {
     const errors = [];
     const warnings = [];
     
-    // Check if core profile is included
+    // Check if core profile or archive-node is included (one is required)
     const allProfiles = this.resolveProfileDependencies(profileIds);
-    if (!allProfiles.includes('core')) {
+    const hasNodeProfile = allProfiles.includes('core') || allProfiles.includes('archive-node');
+    if (!hasNodeProfile) {
       errors.push({
         type: 'missing_required',
-        message: 'Core profile is required for all deployments'
+        message: 'Either Core Profile or Archive Node Profile is required for all deployments'
       });
+    }
+    
+    // Check prerequisites for each profile
+    for (const profileId of profileIds) {
+      const profile = this.profiles[profileId];
+      if (!profile) continue;
+      
+      if (profile.prerequisites && profile.prerequisites.length > 0) {
+        const hasPrerequisite = profile.prerequisites.some(prereq => 
+          allProfiles.includes(prereq)
+        );
+        
+        if (!hasPrerequisite) {
+          errors.push({
+            type: 'missing_prerequisite',
+            profile: profileId,
+            message: `${profile.name} requires one of: ${profile.prerequisites.map(p => this.profiles[p]?.name || p).join(', ')}`
+          });
+        }
+      }
     }
     
     // Check for conflicts
@@ -265,6 +335,21 @@ class ProfileManager {
         type: 'conflict',
         message: c.message
       })));
+    }
+    
+    // Check for profile conflicts (e.g., core and archive-node)
+    for (const profileId of allProfiles) {
+      const profile = this.profiles[profileId];
+      if (!profile || !profile.conflicts) continue;
+      
+      for (const conflictId of profile.conflicts) {
+        if (allProfiles.includes(conflictId)) {
+          errors.push({
+            type: 'profile_conflict',
+            message: `${profile.name} conflicts with ${this.profiles[conflictId]?.name || conflictId}`
+          });
+        }
+      }
     }
     
     // Check resource requirements
@@ -283,6 +368,182 @@ class ProfileManager {
       resolvedProfiles: allProfiles,
       requirements
     };
+  }
+
+  /**
+   * Get startup order for services across all selected profiles
+   * @param {string[]} profileIds - Selected profile IDs
+   * @returns {Object[]} Services sorted by startup order
+   */
+  getStartupOrder(profileIds) {
+    const allProfiles = this.resolveProfileDependencies(profileIds);
+    const services = [];
+    
+    for (const profileId of allProfiles) {
+      const profile = this.profiles[profileId];
+      if (!profile) continue;
+      
+      for (const service of profile.services) {
+        services.push({
+          ...service,
+          profile: profileId,
+          profileName: profile.name
+        });
+      }
+    }
+    
+    // Sort by startup order, then by profile
+    return services.sort((a, b) => {
+      if (a.startupOrder !== b.startupOrder) {
+        return a.startupOrder - b.startupOrder;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  /**
+   * Apply developer mode features to configuration
+   * @param {Object} config - Base configuration
+   * @param {boolean} enabled - Whether developer mode is enabled
+   * @returns {Object} Configuration with developer mode applied
+   */
+  applyDeveloperMode(config, enabled = false) {
+    if (!enabled) {
+      return config;
+    }
+
+    const devConfig = { ...config };
+    
+    // Add debug logging
+    if (this.developerModeFeatures.debugLogging) {
+      devConfig.LOG_LEVEL = 'debug';
+    }
+    
+    // Add development tools
+    if (this.developerModeFeatures.inspectionTools) {
+      devConfig.ENABLE_PORTAINER = 'true';
+      devConfig.ENABLE_PGADMIN = 'true';
+    }
+    
+    // Enable log access
+    if (this.developerModeFeatures.logAccess) {
+      devConfig.ENABLE_LOG_ACCESS = 'true';
+    }
+    
+    return devConfig;
+  }
+
+  /**
+   * Get developer mode features
+   * @returns {Object} Developer mode features configuration
+   */
+  getDeveloperModeFeatures() {
+    return { ...this.developerModeFeatures };
+  }
+
+  /**
+   * Detect circular dependencies in profile selection
+   * @param {string[]} profileIds - Selected profile IDs
+   * @returns {string[][]} Array of circular dependency chains
+   */
+  detectCircularDependencies(profileIds) {
+    const cycles = [];
+    const visited = new Set();
+    const recursionStack = new Set();
+    
+    const dfs = (profileId, path = []) => {
+      if (recursionStack.has(profileId)) {
+        // Found a cycle
+        const cycleStart = path.indexOf(profileId);
+        cycles.push(path.slice(cycleStart).concat(profileId));
+        return;
+      }
+      
+      if (visited.has(profileId)) {
+        return;
+      }
+      
+      visited.add(profileId);
+      recursionStack.add(profileId);
+      path.push(profileId);
+      
+      const profile = this.profiles[profileId];
+      if (profile && profile.dependencies) {
+        for (const dep of profile.dependencies) {
+          dfs(dep, [...path]);
+        }
+      }
+      
+      recursionStack.delete(profileId);
+    };
+    
+    for (const profileId of profileIds) {
+      dfs(profileId);
+    }
+    
+    return cycles;
+  }
+
+  /**
+   * Calculate combined resource requirements with deduplication
+   * @param {string[]} profileIds - Selected profile IDs
+   * @returns {Object} Deduplicated resource requirements
+   */
+  calculateResourceRequirements(profileIds) {
+    const allProfiles = this.resolveProfileDependencies(profileIds);
+    
+    const requirements = {
+      minMemory: 0,
+      minCpu: 0,
+      minDisk: 0,
+      recommendedMemory: 0,
+      recommendedCpu: 0,
+      recommendedDisk: 0,
+      ports: new Set(),
+      sharedResources: []
+    };
+    
+    // Track shared resources to avoid double-counting
+    const sharedServices = new Set();
+    
+    for (const profileId of allProfiles) {
+      const profile = this.profiles[profileId];
+      if (!profile) continue;
+      
+      // Check for shared TimescaleDB
+      const hasTimescaleDB = profile.services.some(s => 
+        typeof s === 'object' ? s.name === 'timescaledb' : s === 'timescaledb'
+      );
+      
+      if (hasTimescaleDB) {
+        if (!sharedServices.has('timescaledb')) {
+          sharedServices.add('timescaledb');
+          requirements.sharedResources.push({
+            service: 'timescaledb',
+            sharedBy: [profileId]
+          });
+        } else {
+          // Already counted, just add to shared list
+          const shared = requirements.sharedResources.find(r => r.service === 'timescaledb');
+          if (shared) {
+            shared.sharedBy.push(profileId);
+          }
+        }
+      }
+      
+      requirements.minMemory += profile.resources.minMemory;
+      requirements.minCpu = Math.max(requirements.minCpu, profile.resources.minCpu);
+      requirements.minDisk += profile.resources.minDisk;
+      requirements.recommendedMemory += profile.resources.recommendedMemory;
+      requirements.recommendedCpu = Math.max(requirements.recommendedCpu, profile.resources.recommendedCpu);
+      requirements.recommendedDisk += profile.resources.recommendedDisk;
+      
+      profile.ports.forEach(port => requirements.ports.add(port));
+    }
+    
+    requirements.ports = Array.from(requirements.ports);
+    
+    return requirements;
   }
 }
 

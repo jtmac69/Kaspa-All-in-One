@@ -3,7 +3,8 @@
 ## Status Summary
 
 **✅ COMPLETED**: Backend API (Phase 2.0-2.6), Frontend UI (Phase 2.1-2.9), Integration (Phase 3), Non-Technical User Support (Phase 4)  
-**�  PLANNED**: Testing and Documentation (Phase 5), Advanced Features (Phase 6)
+**🚀 IN PROGRESS**: Profile Architecture Implementation (Phase 6.6) - 1/6 tasks completed  
+**📋 PLANNED**: Testing and Documentation (Phase 5), Node Synchronization (Phase 6.7), Wizard-Dashboard Integration (Phase 6.8)
 
 ---
 
@@ -588,16 +589,268 @@ services/wizard/
 
 ---
 
+## Phase 6.6: Profile Architecture Implementation 🚀 IN PROGRESS
+
+**Status:** 1/6 tasks completed  
+**Priority:** HIGH (Foundation for other features)  
+**Estimated Time:** 2-3 weeks
+
+- [x] **6.6.1 Update profile definitions with new architecture** ✅ COMPLETED
+  - ✅ Updated `services/wizard/backend/src/utils/profile-manager.js`
+  - ✅ Renamed "Production" → "Kaspa User Applications"
+  - ✅ Renamed "Explorer" → "Indexer Services"
+  - ✅ Added `startupOrder` field to each service (1=Node, 2=Indexers, 3=Apps)
+  - ✅ Added `prerequisites` field (e.g., Mining requires Core or Archive)
+  - ✅ Added `nodeUsage` options: 'local', 'public', 'for-other-services'
+  - ✅ Added `indexerChoice` options: 'local', 'public'
+  - ✅ Added `fallbackToPublic` configuration
+  - ✅ Removed "Development" as separate profile, converted to Developer Mode toggle
+  - **FILE**: services/wizard/backend/src/utils/profile-manager.js
+  - **FILE**: services/wizard/backend/src/api/profiles.js
+  - **TEST**: services/wizard/backend/test-profile-architecture.js
+  - **API**: Updated GET /api/profiles response
+  - **DOCS**: docs/implementation-summaries/wizard/PROFILE_ARCHITECTURE_UPDATE_IMPLEMENTATION.md
+  - _Requirements: 2, 8, 14_
+
+- [x] **6.6.2 Implement dependency resolution system**
+  - Create `services/wizard/backend/src/utils/dependency-validator.js`
+  - Implement circular dependency detection algorithm
+  - Add prerequisite validation (Mining requires Core OR Archive)
+  - Implement startup order calculation
+  - Create dependency graph builder
+  - Add conflict detection
+  - **FILE**: services/wizard/backend/src/utils/dependency-validator.js
+  - **API**: POST /api/profiles/validate-selection
+  - _Requirements: 2, 8, 14_
+
+- [ ] **6.6.3 Implement resource calculation with deduplication**
+  - Update `services/wizard/backend/src/utils/resource-checker.js`
+  - Calculate combined resources across selected profiles
+  - Deduplicate shared resources (TimescaleDB used by multiple indexers)
+  - Compare against available system resources
+  - Generate warnings when resources insufficient
+  - Create resource optimization recommendations
+  - **FILE**: services/wizard/backend/src/utils/resource-checker.js
+  - **API**: POST /api/resource-check/calculate-combined
+  - _Requirements: 1, 2_
+
+- [ ] **6.6.4 Implement fallback strategies**
+  - Create `services/wizard/backend/src/utils/fallback-manager.js`
+  - Implement node failure detection
+  - Create user choice dialog (Continue with public / Troubleshoot / Retry)
+  - Configure automatic fallback to public Kaspa network
+  - Implement indexer fallback to public endpoints
+  - Generate fallback configuration for docker-compose
+  - **FILE**: services/wizard/backend/src/utils/fallback-manager.js
+  - **API**: POST /api/config/configure-fallback
+  - _Requirements: 2, 6, 8, 14_
+
+- [ ] **6.6.5 Implement Developer Mode toggle**
+  - Update profile selection UI to add Developer Mode checkbox
+  - Apply developer features to selected profiles
+  - Configure debug logging (LOG_LEVEL=debug)
+  - Expose additional ports in docker-compose
+  - Add Portainer service when enabled
+  - Add pgAdmin service when enabled
+  - Generate docker-compose.override.yml for developer features
+  - **FILE**: services/wizard/frontend/public/scripts/modules/configure.js
+  - **FILE**: services/wizard/backend/src/utils/config-generator.js
+  - **UI**: Add Developer Mode toggle to Profile Selection step
+  - _Requirements: 2, 3_
+
+- [ ] **6.6.6 Update frontend profile selection UI**
+  - Update `services/wizard/frontend/public/index.html`
+  - Change profile card names (Production → Kaspa User Applications, etc.)
+  - Add Developer Mode toggle with explanation
+  - Display dependency warnings
+  - Show startup order visualization
+  - Display combined resource requirements
+  - Add prerequisite indicators (Mining requires Core/Archive)
+  - **FILE**: services/wizard/frontend/public/index.html
+  - **FILE**: services/wizard/frontend/public/scripts/modules/configure.js
+  - **FILE**: services/wizard/frontend/public/styles/wizard.css
+  - _Requirements: 2, 8_
+
+---
+
+## Phase 6.7: Node Synchronization Management 📋 PLANNED
+
+**Status:** Not started  
+**Priority:** HIGH (Critical UX issue)  
+**Estimated Time:** 2-3 weeks
+
+- [ ] **6.7.1 Build node sync monitoring system**
+  - Create `services/wizard/backend/src/utils/node-sync-manager.js`
+  - Implement Kaspa node RPC connection
+  - Query `getBlockDagInfo` for sync status
+  - Calculate sync progress (currentBlock / targetBlock * 100)
+  - Estimate time remaining based on sync rate
+  - Create sync status API endpoint
+  - **FILE**: services/wizard/backend/src/utils/node-sync-manager.js
+  - **API**: GET /api/node/sync-status
+  - _Requirements: 5, 6_
+
+- [ ] **6.7.2 Implement sync strategy options**
+  - Create user choice dialog with 3 options:
+    1. "Wait for sync" - Show progress, wizard waits
+    2. "Continue in background" - Services use public network, switch when synced
+    3. "Skip sync" - Use public network permanently
+  - Implement "Wait for sync" with real-time progress display
+  - Implement "Continue in background" with monitoring
+  - Implement "Skip sync" with fallback configuration
+  - Store user choice in wizard state
+  - **FILE**: services/wizard/backend/src/utils/node-sync-manager.js
+  - **FILE**: services/wizard/frontend/public/scripts/modules/install.js
+  - **UI**: Add sync strategy dialog to Installation step
+  - _Requirements: 5, 6, 8_
+
+- [ ] **6.7.3 Build wizard state persistence**
+  - Create `services/wizard/backend/src/utils/state-manager.js`
+  - Save wizard state to `.kaspa-aio/wizard-state.json`
+  - Track: currentStep, profiles, services, syncOperations, userDecisions
+  - Implement state save on every step change
+  - Implement state load on wizard start
+  - Add resumability flag
+  - **FILE**: services/wizard/backend/src/utils/state-manager.js
+  - **API**: POST /api/wizard/save-state
+  - **API**: GET /api/wizard/load-state
+  - _Requirements: 5, 7, 11_
+
+- [ ] **6.7.4 Implement background task management**
+  - Create `services/wizard/backend/src/utils/background-task-manager.js`
+  - Monitor node sync in background (check every 10 seconds)
+  - Track indexer sync operations
+  - Update wizard state periodically
+  - Emit WebSocket events for sync progress
+  - Notify when sync completes
+  - Automatically switch services to local node when synced
+  - **FILE**: services/wizard/backend/src/utils/background-task-manager.js
+  - **WEBSOCKET**: sync:progress, sync:complete
+  - _Requirements: 5, 6_
+
+- [ ] **6.7.5 Add resume installation UI**
+  - Detect resumable state on wizard start
+  - Display "Resume Installation" dialog
+  - Show: last step, background tasks, time since last activity
+  - Offer options: "Resume" or "Start Over"
+  - Load saved state and continue from last step
+  - Display background task status in UI
+  - Verify running containers on resume
+  - **FILE**: services/wizard/frontend/public/scripts/wizard-refactored.js
+  - **FILE**: services/wizard/frontend/public/index.html
+  - **UI**: Add resume dialog on wizard load
+  - _Requirements: 5, 7, 11_
+
+- [ ] **6.7.6 Update installation progress UI for sync**
+  - Add "Syncing" phase to progress indicator
+  - Display sync progress bar with percentage
+  - Show estimated time remaining for sync
+  - Add pause/resume buttons
+  - Display background task status
+  - Show "Node syncing in background" message
+  - **FILE**: services/wizard/frontend/public/scripts/modules/install.js
+  - **FILE**: services/wizard/frontend/public/styles/wizard.css
+  - _Requirements: 5, 6_
+
+---
+
+## Phase 6.8: Wizard-Dashboard Integration 📋 PLANNED
+
+**Status:** Not started  
+**Priority:** MEDIUM (Important for complete workflow)  
+**Estimated Time:** 1-2 weeks
+
+- [ ] **6.8.1 Implement wizard mode detection**
+  - Detect mode from URL parameter: `?mode=install|reconfigure|update`
+  - Check for existing `.env` and `installation-state.json`
+  - Set wizard mode: 'initial', 'reconfiguration', 'update'
+  - Load appropriate configuration for each mode
+  - Adjust wizard UI based on mode
+  - **FILE**: services/wizard/backend/src/server.js
+  - **FILE**: services/wizard/frontend/public/scripts/wizard-refactored.js
+  - _Requirements: 7, 13_
+
+- [ ] **6.8.2 Build reconfiguration mode**
+  - Load existing configuration from `.env` and `installation-state.json`
+  - Pre-populate wizard steps with current settings
+  - Allow modification of profiles and settings
+  - Backup configuration before changes (`.kaspa-backups/[timestamp]/`)
+  - Apply changes and restart affected services
+  - Show diff of configuration changes
+  - **FILE**: services/wizard/backend/src/api/reconfigure.js
+  - **API**: GET /api/wizard/current-config
+  - **API**: POST /api/wizard/reconfigure
+  - _Requirements: 7, 13_
+
+- [ ] **6.8.3 Implement update mode**
+  - Accept update list from URL parameter
+  - Display available service updates with version info
+  - Show changelogs for each update
+  - Allow selective update of services
+  - Backup before each update
+  - Handle update failures with rollback
+  - Display update results
+  - **FILE**: services/wizard/backend/src/api/update.js
+  - **API**: POST /api/wizard/apply-updates
+  - **UI**: Add update interface to wizard
+  - _Requirements: 7, 13_
+
+- [ ] **6.8.4 Create configuration backup system**
+  - Implement automatic backup before changes
+  - Create timestamped backup directories (`.kaspa-backups/[timestamp]/`)
+  - Backup files: `.env`, `docker-compose.yml`, `installation-state.json`
+  - Implement rollback capability
+  - Add backup management (list, restore, delete)
+  - **FILE**: services/wizard/backend/src/utils/backup-manager.js
+  - **API**: POST /api/wizard/backup
+  - **API**: POST /api/wizard/rollback
+  - **API**: GET /api/wizard/backups
+  - _Requirements: 7, 13_
+
+- [ ] **6.8.5 Build dashboard integration points**
+  - Create reconfiguration link endpoint for dashboard
+  - Generate security token for wizard access
+  - Implement update notification API
+  - Add service status synchronization
+  - Create wizard launcher endpoint
+  - **FILE**: services/wizard/backend/src/api/dashboard-integration.js
+  - **API**: GET /api/wizard/reconfigure-link
+  - **API**: GET /api/wizard/update-link
+  - **API**: POST /api/wizard/sync-status
+  - _Requirements: 9, 13_
+
+---
+
 ## Next Steps
 
-The wizard implementation is feature-complete for core functionality. Remaining work focuses on:
+### Immediate Priority (Phase 6.6 - Profile Architecture)
+1. **Task 6.6.2** - Implement dependency resolution system
+2. **Task 6.6.3** - Implement resource calculation with deduplication
+3. **Task 6.6.4** - Implement fallback strategies
+4. **Task 6.6.5** - Implement Developer Mode toggle in UI
+5. **Task 6.6.6** - Update frontend profile selection UI
 
+### High Priority (Phase 6.7 - Node Synchronization)
+1. **Task 6.7.1** - Build node sync monitoring system
+2. **Task 6.7.2** - Implement sync strategy options
+3. **Task 6.7.3** - Build wizard state persistence
+4. **Task 6.7.4** - Implement background task management
+5. **Task 6.7.5** - Add resume installation UI
+6. **Task 6.7.6** - Update installation progress UI for sync
+
+### Medium Priority (Phase 6.8 - Wizard-Dashboard Integration)
+1. **Task 6.8.1** - Implement wizard mode detection
+2. **Task 6.8.2** - Build reconfiguration mode
+3. **Task 6.8.3** - Implement update mode
+4. **Task 6.8.4** - Create configuration backup system
+5. **Task 6.8.5** - Build dashboard integration points
+
+### Ongoing Work
 1. **User Testing** (Task 4.13) - Validate with non-technical users
 2. **Unit Tests** (Task 5.1) - Add comprehensive unit test coverage
 3. **Integration Tests** (Task 5.2) - Expand integration test coverage
 4. **E2E Tests** (Task 5.3) - Add end-to-end test automation
 5. **Documentation** (Task 5.5) - Complete user and developer documentation
 6. **Video Production** (Task 4.10 follow-up) - Produce and host video tutorials
-7. **Advanced Features** (Phase 6) - Optional enhancements for future releases
 
-The wizard is ready for production use and can guide users through installation with comprehensive support for non-technical users.
+The wizard core functionality is complete. The new architecture updates (Phases 6.6-6.8) will enhance the wizard with better profile management, node synchronization handling, and dashboard integration.

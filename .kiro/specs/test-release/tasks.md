@@ -211,10 +211,10 @@ The Undo button was redundant and confusing. Rollback functionality is preserved
   - **✅ Prerequisites Installed**: Node.js v18.19.1, npm v9.2.0
   - [x] ✅ Run `test-wizard-core-profile.sh` - **PASSED** (10/10 tests, ~20s)
   - [x] ✅ Run `test-wizard-explorer-profile.sh` - **PASSED** (11/11 tests, ~2min)
-  - [ ] Run `test-wizard-prod-profile.sh` (Production profile E2E test)
+  - [x] ✅ Run `test-wizard-mining-profile.sh` - **PASSED** (11/11 tests, ~50s)
+  - [x] ✅ Run `test-wizard-development-profile.sh` - **PASSED** (11/11 tests, ~31s)
+  - [ ] ⚠️ Run `test-wizard-prod-profile.sh` - **TIMEOUT** (deployment takes >10min, needs investigation)
   - [ ] Run `test-wizard-archive-profile.sh` (Archive profile E2E test)
-  - [ ] Run `test-wizard-mining-profile.sh` (Mining profile E2E test)
-  - [ ] Run `test-wizard-development-profile.sh` (Development profile E2E test)
   - [ ] Run `test-wizard-errors.sh` (Error handling test)
   - [x] ✅ Fixed 6 critical bugs during testing (see Day 4 log below)
   - [x] ✅ Document failures and create summary
@@ -499,13 +499,13 @@ Please install missing prerequisites and try again.
 
 ### Task 2 Breakdown:
 - ✅ 2.1-2.7: All test scripts created and mock-validated (7/7)
-- 🔄 2.10: Docker testing in progress (2/7 profiles tested)
-  - ✅ Core profile: PASSED (10/10 tests)
-  - ✅ Explorer profile: PASSED (11/11 tests)
-  - ⏳ Production profile: Not yet tested
+- 🔄 2.10: Docker testing in progress (4/7 profiles tested, 1 timeout)
+  - ✅ Core profile: PASSED (10/10 tests, ~20s)
+  - ✅ Explorer profile: PASSED (11/11 tests, ~2min)
+  - ✅ Mining profile: PASSED (11/11 tests, ~50s)
+  - ✅ Development profile: PASSED (11/11 tests, ~31s)
+  - ⚠️ Production profile: TIMEOUT (deployment >10min, needs investigation)
   - ⏳ Archive profile: Not yet tested
-  - ⏳ Mining profile: Not yet tested
-  - ⏳ Development profile: Not yet tested
   - ⏳ Error scenarios: Not yet tested
 
 ### Estimated Completion

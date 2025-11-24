@@ -749,6 +749,173 @@
   - Add horizontal scaling and load balancing for high availability
   - _Requirements: 6.2, 6.3_
 
+## Phase 10: Profile Architecture Updates 📋 PLANNED
+
+**Status:** ⏳ NOT STARTED  
+**Priority:** HIGH (Foundation for wizard integration)  
+**Estimated Time:** 1-2 weeks
+
+- [ ] 10.1 Rename and restructure profiles in docker-compose.yml
+  - Update `docker-compose.yml` profile definitions
+  - Rename "prod" → "kaspa-user-applications"
+  - Rename "explorer" → "indexer-services"
+  - Keep "core", "archive", "mining" as-is
+  - Remove "development" profile (handled by docker-compose.override.yml)
+  - Update all service profile assignments
+  - **FILE**: docker-compose.yml
+  - _Requirements: 8_
+
+- [ ] 10.2 Implement TimescaleDB shared database architecture
+  - Update TimescaleDB service configuration
+  - Create `config/postgres/init/00-create-databases.sql`:
+    - CREATE DATABASE kasia_db, k_db, simply_kaspa_db
+    - Enable TimescaleDB extension in each database
+  - Update indexer services to use correct database
+  - Test database isolation between indexers
+  - **FILE**: config/postgres/init/00-create-databases.sql
+  - **FILE**: docker-compose.yml (update indexer environment variables)
+  - _Requirements: 2, 8_
+
+- [ ] 10.3 Configure service startup order with dependencies
+  - Add `depends_on` with health checks to docker-compose.yml
+  - Configure startup order: Node → TimescaleDB → Indexers → Apps → Mining
+  - Implement health check dependencies
+  - Configure restart policies with dependency awareness
+  - Test startup sequence
+  - **FILE**: docker-compose.yml
+  - _Requirements: 2, 8, 14_
+
+- [ ] 10.4 Implement fallback strategies in service configuration
+  - Configure indexers with public Kaspa network fallback
+  - Add environment variables: KASPA_NODE_URL, KASPA_FALLBACK_URLS
+  - Configure apps with public indexer fallback: INDEXER_URL, INDEXER_FALLBACK_URLS
+  - Add health check retry logic
+  - Test fallback scenarios
+  - **FILE**: docker-compose.yml
+  - **FILE**: .env.example
+  - _Requirements: 2, 8_
+
+- [ ] 10.5 Add Developer Mode support via docker-compose.dev.yml
+  - Create `docker-compose.dev.yml` template
+  - Add Portainer service (port 9000)
+  - Add pgAdmin service (port 5050)
+  - Configure debug logging for all services (LOG_LEVEL=debug)
+  - Expose additional ports for debugging
+  - **FILE**: docker-compose.dev.yml
+  - **FILE**: .env.example (add PGADMIN_PASSWORD)
+  - _Requirements: 8_
+
+- [ ] 10.6 Update documentation with new profile names
+  - Update README.md with new profile names
+  - Update docs/deployment-profiles.md
+  - Update docs/component-matrix.md
+  - Update QUICK_START.md
+  - Update all test scripts with new profile names
+  - **FILES**: README.md, docs/*.md, test-*.sh
+  - _Requirements: 8_
+
+## Phase 11: Update Management System 📋 PLANNED
+
+**Status:** ⏳ NOT STARTED  
+**Priority:** MEDIUM (Important for maintenance)  
+**Estimated Time:** 2-3 weeks
+
+- [ ] 11.1 Build GitHub API integration for release monitoring
+  - Create `services/dashboard/src/utils/github-api.js`
+  - Implement GitHub API client (no auth for public repos)
+  - Query releases for all external repositories:
+    - kaspanet/rusty-kaspad, K-Kluster/Kasia, K-Kluster/kasia-indexer
+    - thesheepcat/K, thesheepcat/K-indexer
+    - supertypo/simply-kaspa-indexer, aglov413/kaspa-stratum-bridge
+  - Parse release information (version, changelog, publishedAt)
+  - Cache release information (1 hour TTL)
+  - **FILE**: services/dashboard/src/utils/github-api.js
+  - **API**: GET /api/updates/check
+  - _Requirements: 7_
+
+- [ ] 11.2 Create update detection service
+  - Create `services/dashboard/src/utils/update-detector.js`
+  - Compare current versions with available versions
+  - Detect breaking changes (major version bumps)
+  - Generate update notifications
+  - Track update history in `.kaspa-aio/update-history.json`
+  - Implement scheduled checks (default: daily)
+  - **FILE**: services/dashboard/src/utils/update-detector.js
+  - **FILE**: .kaspa-aio/update-history.json
+  - **API**: GET /api/updates/available
+  - _Requirements: 7_
+
+- [ ] 11.3 Implement update application workflow
+  - Create `services/dashboard/src/utils/update-manager.js`
+  - Backup configuration before update
+  - Pull new Docker images
+  - Stop affected services, start with new versions
+  - Verify health checks
+  - Rollback on failure (restore backup, restart old version)
+  - Log update results
+  - **FILE**: services/dashboard/src/utils/update-manager.js
+  - **API**: POST /api/updates/apply
+  - **API**: POST /api/updates/rollback
+  - _Requirements: 7_
+
+- [ ] 11.4 Add update management to dashboard UI
+  - Display update notifications in dashboard header
+  - Show available updates with version info and changelogs
+  - Add "Apply Updates" button that launches wizard
+  - Show update history
+  - Display update status (checking, available, applying, complete)
+  - **FILE**: services/dashboard/public/index.html
+  - **FILE**: services/dashboard/public/js/dashboard.js
+  - **FILE**: services/dashboard/public/css/dashboard.css
+  - _Requirements: 7, 9_
+
+## Phase 12: Wizard-Dashboard Integration 📋 PLANNED
+
+**Status:** ⏳ NOT STARTED  
+**Priority:** MEDIUM (Completes workflow)  
+**Estimated Time:** 1-2 weeks
+
+- [ ] 12.1 Create installation state tracking
+  - Create `.kaspa-aio/installation-state.json` structure
+  - Track: version, installedAt, lastModified, profiles, services, history
+  - Save state after installation
+  - Update state on reconfiguration
+  - Track service versions and sync status
+  - **FILE**: .kaspa-aio/installation-state.json
+  - _Requirements: 9_
+
+- [ ] 12.2 Build reconfiguration support in dashboard
+  - Add "Reconfigure" button to dashboard
+  - Load existing configuration from files
+  - Generate wizard reconfiguration link with token
+  - Pass current configuration to wizard
+  - Handle configuration updates from wizard
+  - **FILE**: services/dashboard/src/api/reconfigure.js
+  - **API**: GET /api/dashboard/reconfigure-link
+  - **API**: POST /api/dashboard/apply-reconfiguration
+  - _Requirements: 9_
+
+- [ ] 12.3 Implement update workflow integration
+  - Detect available updates in dashboard
+  - Generate wizard update link with update list
+  - Launch wizard in update mode
+  - Handle update results from wizard
+  - Update installation state after updates
+  - **FILE**: services/dashboard/src/api/updates.js
+  - **API**: GET /api/dashboard/update-link
+  - **API**: POST /api/dashboard/update-complete
+  - _Requirements: 7, 9_
+
+- [ ] 12.4 Add dashboard integration UI
+  - Add "Reconfigure" button to dashboard header
+  - Display update notifications with badge
+  - Show service status in dependency order
+  - Add wizard launcher button
+  - Display installation state information
+  - **FILE**: services/dashboard/public/index.html
+  - **FILE**: services/dashboard/public/js/dashboard.js
+  - _Requirements: 9_
+
 ## Current Status Summary
 
 ### ✅ Completed (Phases 1-5)
@@ -761,70 +928,62 @@
 - **Service Integration**: All external services integrated (Kasia, K-Social, Simply Kaspa, Stratum)
 - **Performance Optimization**: 10-100x query performance improvements and 90%+ storage reduction achieved
 
-### 🔄 Current Priority (Phases 6-6.5-7)
-- **Installation Wizard**: Complete web-based installation wizard with backend API
-- **Non-Technical User Support**: Transform wizard for mainstream adoption (90% success rate)
-  - ✅ Task 6.5.1: Resource checker integration complete
-  - 📋 Task 6.5.2: Plain language content rewrite (NEXT)
+### 🔄 Current Priority (Phases 6-7)
+- **Installation Wizard**: Complete web-based installation wizard with backend API (see wizard spec)
 - **Dashboard Enhancement**: Add missing API endpoints and real-time monitoring
 - **Testing Coverage**: Complete infrastructure and integration testing (Tasks 3.5-3.8)
-- **User Experience**: Enhanced troubleshooting guides and interactive features
 
-### 📋 Next Steps (Phases 8-9)
-- **Documentation Completion**: Comprehensive troubleshooting and maintenance guides
-- **Production Features**: Backup systems, security hardening, cloud deployment
-- **Advanced Features**: Monitoring, alerting, and scaling capabilities
+### 📋 Next Steps (Phases 8-12)
+- **Documentation Completion**: Comprehensive troubleshooting and maintenance guides (Phase 8)
+- **Production Features**: Backup systems, security hardening, cloud deployment (Phase 9)
+- **Profile Architecture Updates**: Align with new architecture (Phase 10) - HIGH PRIORITY
+- **Update Management System**: GitHub integration, update detection, application (Phase 11)
+- **Wizard-Dashboard Integration**: Complete workflow integration (Phase 12)
 
-## Immediate Next Tasks **[UPDATED - FOCUS ON NON-TECHNICAL USER SUPPORT]**
+## Immediate Next Tasks **[UPDATED - ARCHITECTURE ALIGNMENT]**
 
-Based on completed service integration and TimescaleDB work:
+Based on completed service integration and approved architectural changes:
 
-### **Priority 1: Non-Technical User Support (Phase 6.5) - CRITICAL** 🔄 IN PROGRESS
-**Goal**: Enable 90% installation success rate for non-technical users
+### **Priority 1: Profile Architecture Updates (Phase 10) - HIGH PRIORITY** 📋 PLANNED
+**Goal**: Align infrastructure with new architecture for wizard integration
 
-1. **Phase 6.5.1 (Weeks 1-2)**: Foundation
-   - ✅ Integrate resource checker into wizard backend (COMPLETED)
-   - 📋 Rewrite all content in plain language (Task 6.5.2 - NEXT)
-   - 📋 Create pre-installation checklist (Task 6.5.3)
-   - 📋 Build dependency installation guides (Task 6.5.4)
-   - 📋 Implement auto-remediation for common errors (Task 6.5.5)
+1. **Task 10.1**: Rename profiles in docker-compose.yml (prod → kaspa-user-applications, explorer → indexer-services)
+2. **Task 10.2**: Implement TimescaleDB shared database (separate databases: kasia_db, k_db, simply_kaspa_db)
+3. **Task 10.3**: Configure service startup order with dependencies (Node → Indexers → Apps)
+4. **Task 10.4**: Implement fallback strategies (public network fallback for indexers and apps)
+5. **Task 10.5**: Add Developer Mode support (docker-compose.dev.yml with Portainer, pgAdmin)
+6. **Task 10.6**: Update documentation with new profile names
 
-2. **Phase 6.5.2 (Weeks 3-4)**: Guidance
-   - Enhanced progress transparency
-   - Post-installation tour and guidance
-   - Safety confirmations and warnings
+### **Priority 2: Testing Coverage Completion (Phase 3)** 📋 PLANNED
+7. **Task 3.5**: Create dashboard testing suite (API endpoints, WebSocket, service management)
+8. **Task 3.6**: Create installation verification testing (install.sh validation, system checks)
+9. **Task 3.7**: Create infrastructure component testing (nginx, TimescaleDB standalone tests)
+10. **Task 3.8**: Create comprehensive integration testing (E2E, build verification, load testing)
 
-3. **Phase 6.5.3 (Weeks 5-6)**: Support
-   - Diagnostic export and help system
-   - Video tutorials and visual guides
+### **Priority 3: Dashboard Enhancement (Phase 7)** 📋 PLANNED
+11. **Task 7**: Complete dashboard backend API (restart, logs streaming, configuration management)
+12. **Task 7.1**: Enhance dashboard frontend (interactive controls, real-time monitoring)
+13. **Task 7.2**: Implement advanced monitoring (Prometheus metrics, alerting, performance trends)
+14. **Task 7.3**: Integrate documentation and help system (embedded docs, contextual help)
+15. **Task 7.4**: Implement service restart and reconfiguration (restart controls, config editor)
+16. **Task 7.5**: Implement repository update monitoring (GitHub API, release notifications)
+17. **Task 7.6**: Implement one-click update system (update orchestration, backup, rollback)
 
-4. **Phase 6.5.4 (Weeks 7-8)**: Polish
-   - Interactive glossary and education
-   - Rollback and recovery functionality
+### **Priority 4: Update Management System (Phase 11)** 📋 PLANNED
+18. **Task 11.1**: Build GitHub API integration for release monitoring
+19. **Task 11.2**: Create update detection service
+20. **Task 11.3**: Implement update application workflow
+21. **Task 11.4**: Add update management to dashboard UI
 
-### **Priority 2: Installation Wizard Completion (Phase 6)**
-5. **Phase 6.1**: Build wizard backend API (system checker, profile management, installation engine)
-6. **Phase 6.2**: Complete wizard frontend UI (Configure, Review, Install, Complete steps)
-7. **Phase 6.3**: Integrate wizard with main system (Docker service, auto-start, testing)
+### **Priority 5: Wizard-Dashboard Integration (Phase 12)** 📋 PLANNED
+22. **Task 12.1**: Create installation state tracking
+23. **Task 12.2**: Build reconfiguration support in dashboard
+24. **Task 12.3**: Implement update workflow integration
+25. **Task 12.4**: Add dashboard integration UI
 
-### **Priority 3: Testing Coverage Completion (Phase 3)**
-8. **Task 3.5**: Create dashboard testing suite (API endpoints, WebSocket, service management)
-9. **Task 3.6**: Create installation verification testing (install.sh validation, system checks)
-10. **Task 3.7**: Create infrastructure component testing (nginx, TimescaleDB standalone tests)
-11. **Task 3.8**: Create comprehensive integration testing (E2E, build verification, load testing)
-
-### **Priority 4: Dashboard Enhancement (Phase 7)**
-12. **Task 7**: Complete dashboard backend API (restart, logs streaming, configuration management)
-13. **Task 7.1**: Enhance dashboard frontend (interactive controls, real-time monitoring)
-14. **Task 7.2**: Implement advanced monitoring (Prometheus metrics, alerting, performance trends)
-15. **Task 7.3**: Integrate documentation and help system (embedded docs, contextual help, troubleshooting wizard)
-16. **Task 7.4**: Implement service restart and reconfiguration (restart controls, config editor, profile switching)
-17. **Task 7.5**: Implement repository update monitoring (GitHub API, release notifications, changelog viewer)
-18. **Task 7.6**: Implement one-click update system (update orchestration, backup, rollback, scheduling)
-
-### **Priority 5: Documentation and User Experience (Phase 8)**
-15. **Task 8**: Complete troubleshooting and maintenance documentation
-16. **Task 8.1**: Implement user onboarding enhancements (guided tours, templates)
+### **Priority 6: Documentation and User Experience (Phase 8)** 📋 PLANNED
+26. **Task 8**: Complete troubleshooting and maintenance documentation
+27. **Task 8.1**: Implement user onboarding enhancements (guided tours, templates)
 
 ## Critical Dependencies to Validate
 

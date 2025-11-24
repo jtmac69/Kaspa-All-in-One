@@ -75,14 +75,27 @@ cleanup() {
     if [[ "$CLEANUP_ON_EXIT" == "true" ]]; then
         info "Cleaning up test environment..."
         
-        # Stop all services
+        # Stop wizard process if running
+        if [ -f /tmp/wizard.pid ]; then
+            WIZARD_PID=$(cat /tmp/wizard.pid)
+            if kill -0 $WIZARD_PID 2>/dev/null; then
+                kill $WIZARD_PID 2>/dev/null || true
+                sleep 1
+                kill -9 $WIZARD_PID 2>/dev/null || true
+            fi
+            rm -f /tmp/wizard.pid
+        fi
+        
+        # Stop all Docker services
         docker compose --profile prod down 2>/dev/null || true
+        docker compose --profile explorer down 2>/dev/null || true
         docker compose --profile core down 2>/dev/null || true
-        docker compose --profile wizard down 2>/dev/null || true
         
         # Remove test files
         rm -f .wizard-state-test 2>/dev/null || true
         rm -f .wizard-config-test.json 2>/dev/null || true
+        rm -f /tmp/wizard.log 2>/dev/null || true
+        rm -f /tmp/wizard-install.log 2>/dev/null || true
         
         info "Cleanup complete"
     fi
@@ -189,26 +202,55 @@ test_prerequisites() {
     return 0
 }
 
-# Test 2: Start wizard
+# Test 2: Start wizard (on host, not in container)
 test_start_wizard() {
     header "Test 2: Start Wizard Service"
     TESTS_RUN=$((TESTS_RUN + 1))
     
-    log "Starting wizard service..."
-    if docker compose --profile wizard up -d 2>&1 | tee /tmp/wizard-start.log; then
-        pass "Wizard service started"
-    else
-        fail "Failed to start wizard service"
-        cat /tmp/wizard-start.log
+    log "Starting wizard service on host..."
+    
+    # Check if Node.js is installed
+    if ! command -v node &> /dev/null; then
+        fail "Node.js is not installed (required to run wizard)"
         return 1
     fi
+    
+    # Check if wizard dependencies are installed
+    if [ ! -d "services/wizard/backend/node_modules" ]; then
+        log "Installing wizard dependencies..."
+        (cd services/wizard/backend && npm install --production) > /tmp/wizard-install.log 2>&1
+        if [ $? -ne 0 ]; then
+            fail "Failed to install wizard dependencies"
+            cat /tmp/wizard-install.log
+            return 1
+        fi
+    fi
+    
+    # Start wizard in background
+    log "Starting wizard backend..."
+    (cd services/wizard/backend && PORT=${WIZARD_PORT} node src/server.js) > /tmp/wizard.log 2>&1 &
+    WIZARD_PID=$!
+    echo $WIZARD_PID > /tmp/wizard.pid
+    
+    # Wait a moment for startup
+    sleep 3
+    
+    # Check if process is still running
+    if ! kill -0 $WIZARD_PID 2>/dev/null; then
+        fail "Wizard process died immediately"
+        cat /tmp/wizard.log
+        return 1
+    fi
+    
+    pass "Wizard service started (PID: $WIZARD_PID)"
     
     log "Waiting for wizard to be ready..."
     if wait_for_service "http://localhost:${WIZARD_PORT}" "Wizard" 60; then
         pass "Wizard is accessible"
     else
         fail "Wizard did not become accessible"
-        docker compose logs wizard | tail -20
+        cat /tmp/wizard.log | tail -20
+        kill $WIZARD_PID 2>/dev/null
         return 1
     fi
     

@@ -54,6 +54,247 @@ The Web-Based Installation Wizard is a modern, intuitive interface that guides u
 └─────────────────────────────────────────────────────────────┘
 ```
 
+## Profile Architecture and Dependencies
+
+### Profile System Overview
+
+The wizard implements a flexible profile system that allows users to select combinations of services while enforcing dependencies and preventing conflicts.
+
+#### Profile Types
+
+1. **Core Profile** - Kaspa blockchain node
+   - Can be public, private, or configured for other services
+   - Optional wallet integration
+   - Automatic fallback to public network if node fails
+
+2. **Kaspa User Applications** - User-facing applications
+   - Kasia, K-Social, Kaspa Explorer
+   - Choice of public or local indexers
+   - User-configurable public endpoints
+
+3. **Indexer Services** - Backend indexing services
+   - Shared TimescaleDB container
+   - Separate databases per indexer (kasia_db, k_db, simply_kaspa_db)
+   - Optional connection to local Core Profile node
+   - Automatic fallback to public Kaspa network
+
+4. **Archive Node Profile** - Non-pruning node
+   - Complete blockchain history
+   - Higher resource requirements
+   - Similar options to Core Profile
+
+5. **Mining Profile** - Mining infrastructure
+   - Requires Core or Archive Node Profile
+   - Local stratum server
+   - Wallet integration
+
+6. **Developer Mode** - Cross-cutting feature
+   - Not a separate profile
+   - Toggle/checkbox in any profile
+   - Adds: inspection tools, log access, exposed ports, development utilities
+
+### Dependency Resolution
+
+#### Startup Order
+Services start in dependency order:
+1. **Kaspa Node** (if local Core or Archive selected)
+2. **Indexer Services** (if local indexers selected)
+3. **Kaspa User Applications** (apps that depend on indexers)
+
+#### Dependency Rules
+```typescript
+interface DependencyRule {
+  profile: string;
+  requires?: string[]; // Optional dependencies
+  prerequisites?: string[]; // Must have one of these
+  conflicts?: string[]; // Cannot coexist with
+  fallback?: FallbackStrategy;
+}
+
+const DEPENDENCY_RULES: DependencyRule[] = [
+  {
+    profile: 'mining',
+    prerequisites: ['core', 'archive-node'], // Must select one
+    message: 'Mining requires a local Kaspa node (Core or Archive)'
+  },
+  {
+    profile: 'kaspa-user-applications',
+    requires: [], // No hard requirements
+    fallback: {
+      type: 'public-indexers',
+      message: 'Using public indexer endpoints'
+    }
+  },
+  {
+    profile: 'indexer-services',
+    requires: [], // No hard requirements
+    fallback: {
+      type: 'public-kaspa-network',
+      message: 'Indexers will connect to public Kaspa network'
+    }
+  }
+];
+```
+
+#### Circular Dependency Prevention
+```typescript
+class DependencyValidator {
+  validateSelection(profiles: string[]): ValidationResult {
+    // Check for circular dependencies
+    const graph = this.buildDependencyGraph(profiles);
+    const cycles = this.detectCycles(graph);
+    
+    if (cycles.length > 0) {
+      return {
+        valid: false,
+        error: 'Circular dependency detected',
+        cycles: cycles
+      };
+    }
+    
+    // Check prerequisites
+    for (const profile of profiles) {
+      const rule = DEPENDENCY_RULES.find(r => r.profile === profile);
+      if (rule?.prerequisites) {
+        const hasPrerequisite = rule.prerequisites.some(p => profiles.includes(p));
+        if (!hasPrerequisite) {
+          return {
+            valid: false,
+            error: `${profile} requires one of: ${rule.prerequisites.join(', ')}`
+          };
+        }
+      }
+    }
+    
+    return { valid: true };
+  }
+  
+  private detectCycles(graph: DependencyGraph): string[][] {
+    // Implement cycle detection algorithm
+    // Returns array of cycles found
+  }
+}
+```
+
+### Fallback Strategies
+
+#### Node Failure Handling
+When a local Kaspa node is configured for other services but fails health checks:
+
+```typescript
+interface NodeFailureStrategy {
+  onHealthCheckFail(node: string, dependentServices: string[]): UserChoice {
+    return {
+      options: [
+        {
+          id: 'continue-public',
+          label: 'Continue with public Kaspa network',
+          description: 'Services will use public nodes instead',
+          action: () => this.configurePublicFallback(dependentServices)
+        },
+        {
+          id: 'troubleshoot',
+          label: 'Troubleshoot local node',
+          description: 'View logs and diagnostic information',
+          action: () => this.showTroubleshooting(node)
+        },
+        {
+          id: 'retry',
+          label: 'Retry health check',
+          description: 'Wait and check again',
+          action: () => this.retryHealthCheck(node)
+        }
+      ],
+      defaultOption: 'continue-public'
+    };
+  }
+}
+```
+
+### Resource Calculation
+
+#### Combined Resource Requirements
+```typescript
+interface ResourceCalculator {
+  calculateTotalResources(profiles: string[]): ResourceRequirements {
+    let total = {
+      cpu: 0,
+      memory: 0,
+      disk: 0
+    };
+    
+    for (const profileId of profiles) {
+      const profile = PROFILES[profileId];
+      total.cpu += profile.resources.minCpu;
+      total.memory += profile.resources.minMemory;
+      total.disk += profile.resources.minDisk;
+    }
+    
+    // Check for shared resources (e.g., TimescaleDB used by multiple indexers)
+    total = this.deduplicateSharedResources(total, profiles);
+    
+    return {
+      minimum: total,
+      recommended: this.calculateRecommended(profiles),
+      available: this.getSystemResources(),
+      sufficient: this.checkSufficiency(total)
+    };
+  }
+  
+  checkSufficiency(required: Resources): boolean {
+    const available = this.getSystemResources();
+    return (
+      available.cpu >= required.cpu &&
+      available.memory >= required.memory &&
+      available.disk >= required.disk
+    );
+  }
+}
+```
+
+### Developer Mode Implementation
+
+Developer Mode is a cross-cutting feature that enhances any profile:
+
+```typescript
+interface DeveloperModeConfig {
+  enabled: boolean;
+  features: {
+    debugLogging: boolean;      // Enable verbose logging
+    exposedPorts: number[];     // Additional ports to expose
+    inspectionTools: string[];  // Tools to include (portainer, pgadmin, etc.)
+    logAccess: boolean;         // Direct log file access
+    developmentUtilities: string[]; // Additional dev tools
+  };
+}
+
+// Applied to docker-compose configuration
+function applyDeveloperMode(config: DockerComposeConfig, devMode: DeveloperModeConfig): DockerComposeConfig {
+  if (!devMode.enabled) return config;
+  
+  // Add debug logging
+  if (devMode.features.debugLogging) {
+    for (const service of config.services) {
+      service.environment.LOG_LEVEL = 'debug';
+    }
+  }
+  
+  // Expose additional ports
+  if (devMode.features.exposedPorts.length > 0) {
+    for (const service of config.services) {
+      service.ports.push(...devMode.features.exposedPorts);
+    }
+  }
+  
+  // Add inspection tools
+  if (devMode.features.inspectionTools.includes('portainer')) {
+    config.services.push(PORTAINER_SERVICE);
+  }
+  
+  return config;
+}
+```
+
 ## Components and Interfaces
 
 ### Frontend Components
@@ -129,6 +370,7 @@ interface Profile {
   };
   icon: string;
   category: 'essential' | 'optional' | 'advanced';
+  estimatedSyncTime?: number; // For profiles with sync requirements (e.g., Kaspa node)
 }
 
 interface ProfileSelection {
@@ -136,6 +378,7 @@ interface ProfileSelection {
   selectedProfiles: string[];
   conflicts: string[];
   totalResources: ResourceRequirements;
+  estimatedInstallTime: number; // Includes sync time for nodes
 }
 ```
 
@@ -169,7 +412,7 @@ interface InstallationConfig {
 **Interface**:
 ```typescript
 interface InstallationProgress {
-  phase: 'preparing' | 'building' | 'starting' | 'validating' | 'complete' | 'error';
+  phase: 'preparing' | 'building' | 'starting' | 'syncing' | 'validating' | 'complete' | 'error';
   currentStep: string;
   totalSteps: number;
   completedSteps: number;
@@ -177,13 +420,25 @@ interface InstallationProgress {
   logs: LogEntry[];
   services: ServiceStatus[];
   estimatedTimeRemaining: number;
+  pausable: boolean; // Can user pause and resume?
+  resumable: boolean; // Can installation be resumed later?
 }
 
 interface ServiceStatus {
   name: string;
-  status: 'pending' | 'building' | 'starting' | 'healthy' | 'unhealthy' | 'error';
+  status: 'pending' | 'building' | 'starting' | 'syncing' | 'healthy' | 'unhealthy' | 'error';
   message: string;
   url?: string;
+  syncProgress?: SyncProgress; // For services that require synchronization
+}
+
+interface SyncProgress {
+  type: 'blockchain' | 'database' | 'indexer';
+  currentBlock?: number;
+  targetBlock?: number;
+  percentage: number;
+  estimatedTimeRemaining: number;
+  canContinueInBackground: boolean; // Can sync continue after wizard closes?
 }
 ```
 
@@ -373,10 +628,12 @@ interface ProfileDefinition {
     name: string;
     required: boolean;
     description: string;
+    startupOrder: number; // 1=Kaspa Node, 2=Indexers, 3=Applications
   }[];
   
-  dependencies: string[];
-  conflicts: string[];
+  dependencies: string[]; // Required profiles
+  conflicts: string[]; // Incompatible profiles
+  prerequisites: string[]; // Must be selected (e.g., Mining requires Core or Archive)
   
   resources: {
     minCpu: number;
@@ -392,6 +649,13 @@ interface ProfileDefinition {
   configuration: {
     required: string[];
     optional: string[];
+    nodeUsage?: 'local' | 'public' | 'fallback'; // For profiles that can use local or public nodes
+    indexerChoice?: 'local' | 'public'; // For Kaspa User Applications
+  };
+  
+  developerMode?: {
+    enabled: boolean;
+    features: string[]; // ['debug-logging', 'exposed-ports', 'inspection-tools']
   };
   
   documentation: {
@@ -399,6 +663,86 @@ interface ProfileDefinition {
     troubleshooting: string;
   };
 }
+
+// Specific Profile Definitions
+const PROFILES = {
+  core: {
+    id: 'core',
+    name: 'Core Profile',
+    description: 'Kaspa node (public/private) with optional wallet',
+    services: [
+      { name: 'kaspa-node', required: true, startupOrder: 1 },
+      { name: 'wallet', required: false, startupOrder: 1 }
+    ],
+    configuration: {
+      nodeUsage: 'local', // Can be 'public', 'private', or 'for-other-services'
+      fallbackToPublic: true // If node fails, other services use public network
+    }
+  },
+  
+  kaspaUserApplications: {
+    id: 'kaspa-user-applications',
+    name: 'Kaspa User Applications',
+    description: 'User-facing apps (Kasia, K-Social, Kaspa Explorer)',
+    services: [
+      { name: 'kasia-app', required: true, startupOrder: 3 },
+      { name: 'k-social-app', required: true, startupOrder: 3 },
+      { name: 'kaspa-explorer', required: true, startupOrder: 3 }
+    ],
+    configuration: {
+      indexerChoice: 'public', // Can be 'public' or 'local'
+      publicEndpoints: {
+        kasiaIndexer: 'https://api.kasia.io',
+        kIndexer: 'https://api.k-social.io',
+        simplyKaspaIndexer: 'https://api.simplykaspa.io'
+      }
+    },
+    dependencies: [], // Optional: can add 'indexer-services' for local indexers
+    prerequisites: [] // No hard requirements
+  },
+  
+  indexerServices: {
+    id: 'indexer-services',
+    name: 'Indexer Services',
+    description: 'Local indexers (Kasia, K-Indexer, Simply-Kaspa)',
+    services: [
+      { name: 'timescaledb', required: true, startupOrder: 2 },
+      { name: 'kasia-indexer', required: false, startupOrder: 2 },
+      { name: 'k-indexer', required: false, startupOrder: 2 },
+      { name: 'simply-kaspa-indexer', required: false, startupOrder: 2 }
+    ],
+    configuration: {
+      sharedDatabase: true, // Single TimescaleDB with separate databases per indexer
+      databases: ['kasia_db', 'k_db', 'simply_kaspa_db']
+    },
+    dependencies: [], // Optional: can use 'core' for local node
+    fallbackToPublic: true // If no local node, use public Kaspa network
+  },
+  
+  archiveNode: {
+    id: 'archive-node',
+    name: 'Archive Node Profile',
+    description: 'Non-pruning Kaspa node for complete history',
+    services: [
+      { name: 'kaspa-archive-node', required: true, startupOrder: 1 }
+    ],
+    resources: {
+      minMemory: 16, // Higher requirements
+      minDisk: 1000
+    }
+  },
+  
+  mining: {
+    id: 'mining',
+    name: 'Mining Profile',
+    description: 'Local mining stratum pointed to local node',
+    services: [
+      { name: 'kaspa-stratum', required: true, startupOrder: 3 }
+    ],
+    prerequisites: ['core', 'archive-node'], // Requires one of these
+    dependencies: [] // Will be validated during selection
+  }
+};
 ```
 
 ## User Interface Design
@@ -877,6 +1221,629 @@ The validation step displays infrastructure test results in categorized sections
 - Secure random generation
 - File permission management
 - SSL/TLS certificate validation
+
+## Wizard-Dashboard Integration
+
+### Integration Architecture
+
+The wizard and dashboard work together to provide a complete lifecycle management experience:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    User Workflows                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Fresh Installation:                                         │
+│  User → Wizard → Configuration → Installation → Dashboard   │
+│                                                               │
+│  Reconfiguration:                                            │
+│  Dashboard → "Reconfigure" → Wizard (loads config) → Apply  │
+│                                                               │
+│  Updates:                                                    │
+│  Dashboard → "Updates Available" → Wizard → Apply Updates   │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Wizard Modes
+
+#### Initial Installation Mode
+- Fresh system, no existing configuration
+- Full wizard flow from system check to completion
+- Generates new configuration files
+- Creates initial docker-compose setup
+- Redirects to dashboard on completion
+
+#### Reconfiguration Mode
+- Launched from dashboard "Reconfigure" button
+- Loads existing configuration from `.env` and `installation-config.json`
+- Allows modification of profiles and settings
+- Backs up existing configuration before changes
+- Applies changes and restarts affected services
+
+#### Update Mode
+- Launched from dashboard "Apply Updates" button
+- Shows available service updates with version info
+- Allows selective update of individual services
+- Each service handles its own data migration
+- Provides rollback option if update fails
+
+### Node Synchronization Management
+
+#### Synchronization Strategy
+
+Kaspa nodes require blockchain synchronization which can take considerable time (hours to days depending on network and hardware). The wizard handles this gracefully:
+
+**Synchronization Phases:**
+1. **Initial Sync** - Node downloads and validates blockchain
+2. **Background Sync** - Continues while wizard allows progression
+3. **Dependent Service Wait** - Services requiring synced node wait for completion
+
+**User Experience:**
+```typescript
+interface NodeSyncStrategy {
+  // Option 1: Wait for full sync before proceeding
+  waitForFullSync: {
+    enabled: boolean;
+    showProgress: boolean;
+    allowPause: boolean;
+    estimatedTime: number;
+  };
+  
+  // Option 2: Continue in background, proceed with other services
+  backgroundSync: {
+    enabled: boolean;
+    notifyOnComplete: boolean;
+    dependentServicesWait: boolean; // Services needing synced node wait
+  };
+  
+  // Option 3: Skip node sync, use public network
+  skipSync: {
+    enabled: boolean;
+    fallbackToPublic: boolean;
+    message: string;
+  };
+}
+```
+
+**Implementation:**
+```typescript
+class NodeSyncManager {
+  async handleNodeSync(node: string): Promise<SyncDecision> {
+    // Start node
+    await this.startNode(node);
+    
+    // Check sync status
+    const syncStatus = await this.getSyncStatus(node);
+    
+    if (syncStatus.synced) {
+      return { action: 'proceed', message: 'Node already synced' };
+    }
+    
+    // Present options to user
+    const choice = await this.promptUser({
+      title: 'Kaspa Node Synchronization',
+      message: `The Kaspa node needs to sync with the blockchain. This may take several hours.`,
+      estimatedTime: syncStatus.estimatedTimeRemaining,
+      options: [
+        {
+          id: 'wait',
+          label: 'Wait for sync to complete',
+          description: 'Wizard will show progress and wait',
+          recommended: false
+        },
+        {
+          id: 'background',
+          label: 'Continue in background',
+          description: 'Node syncs while wizard proceeds. Services needing synced node will wait.',
+          recommended: true
+        },
+        {
+          id: 'skip',
+          label: 'Skip and use public network',
+          description: 'Other services will use public Kaspa nodes',
+          recommended: false
+        }
+      ]
+    });
+    
+    return this.executeChoice(choice, node);
+  }
+  
+  async monitorBackgroundSync(node: string): Promise<void> {
+    // Monitor sync in background
+    const interval = setInterval(async () => {
+      const status = await this.getSyncStatus(node);
+      
+      // Update wizard state
+      await this.updateWizardState({
+        nodeSyncProgress: status.percentage,
+        nodeSyncComplete: status.synced
+      });
+      
+      // Notify dependent services
+      if (status.synced) {
+        await this.notifyDependentServices(node);
+        clearInterval(interval);
+      }
+    }, 10000); // Check every 10 seconds
+  }
+  
+  async getSyncStatus(node: string): Promise<SyncStatus> {
+    // Query node RPC for sync status
+    const rpc = await this.connectToNode(node);
+    const info = await rpc.getBlockDagInfo();
+    
+    return {
+      synced: info.isSynced,
+      currentBlock: info.blockCount,
+      targetBlock: info.headerCount,
+      percentage: (info.blockCount / info.headerCount) * 100,
+      estimatedTimeRemaining: this.estimateSyncTime(info)
+    };
+  }
+}
+```
+
+### Wizard State Persistence
+
+The wizard maintains persistent state to allow pausing and resuming:
+
+```typescript
+interface WizardState {
+  // Installation metadata
+  installationId: string;
+  version: string;
+  startedAt: string;
+  lastActivity: string;
+  
+  // Current progress
+  currentStep: number;
+  completedSteps: string[];
+  phase: 'preparing' | 'building' | 'starting' | 'syncing' | 'validating' | 'complete';
+  
+  // Configuration
+  profiles: {
+    selected: string[];
+    configuration: Record<string, any>;
+  };
+  
+  // Service states
+  services: {
+    name: string;
+    status: 'pending' | 'building' | 'starting' | 'syncing' | 'running' | 'error';
+    containerId?: string;
+    syncProgress?: SyncProgress;
+    startedAt?: string;
+    logs: string[];
+  }[];
+  
+  // Synchronization tracking
+  syncOperations: {
+    service: string;
+    type: 'blockchain' | 'database' | 'indexer';
+    status: 'pending' | 'in-progress' | 'complete' | 'error';
+    progress: number;
+    startedAt: string;
+    estimatedCompletion?: string;
+    canContinueInBackground: boolean;
+  }[];
+  
+  // User choices
+  userDecisions: {
+    timestamp: string;
+    decision: string;
+    context: string;
+  }[];
+  
+  // Resumability
+  resumable: boolean;
+  resumePoint: string; // Step to resume from
+  backgroundTasks: string[]; // Tasks running in background
+}
+
+// Saved to: .kaspa-aio/wizard-state.json
+```
+
+**State Persistence:**
+```typescript
+class WizardStatePersistence {
+  private statePath = '.kaspa-aio/wizard-state.json';
+  
+  async saveState(state: WizardState): Promise<void> {
+    state.lastActivity = new Date().toISOString();
+    await fs.writeFile(this.statePath, JSON.stringify(state, null, 2));
+  }
+  
+  async loadState(): Promise<WizardState | null> {
+    try {
+      const data = await fs.readFile(this.statePath, 'utf-8');
+      return JSON.parse(data);
+    } catch (error) {
+      return null; // No saved state
+    }
+  }
+  
+  async canResume(): Promise<boolean> {
+    const state = await this.loadState();
+    if (!state) return false;
+    
+    // Check if state is recent (within 24 hours)
+    const lastActivity = new Date(state.lastActivity);
+    const now = new Date();
+    const hoursSinceActivity = (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60);
+    
+    return hoursSinceActivity < 24 && state.resumable;
+  }
+  
+  async resumeInstallation(): Promise<WizardState> {
+    const state = await this.loadState();
+    if (!state) throw new Error('No state to resume');
+    
+    // Verify services are still running
+    for (const service of state.services) {
+      if (service.containerId) {
+        const running = await this.isContainerRunning(service.containerId);
+        if (!running && service.status === 'running') {
+          service.status = 'error';
+          service.logs.push('Container stopped unexpectedly');
+        }
+      }
+    }
+    
+    // Resume background sync operations
+    for (const sync of state.syncOperations) {
+      if (sync.status === 'in-progress' && sync.canContinueInBackground) {
+        await this.resumeSyncMonitoring(sync.service);
+      }
+    }
+    
+    return state;
+  }
+}
+```
+
+**Resume UI:**
+```typescript
+// When wizard starts, check for resumable state
+async function initializeWizard(): Promise<void> {
+  const persistence = new WizardStatePersistence();
+  const canResume = await persistence.canResume();
+  
+  if (canResume) {
+    const choice = await promptUser({
+      title: 'Resume Installation',
+      message: 'An installation is in progress. Would you like to resume?',
+      options: [
+        {
+          id: 'resume',
+          label: 'Resume Installation',
+          description: 'Continue from where you left off',
+          recommended: true
+        },
+        {
+          id: 'restart',
+          label: 'Start Over',
+          description: 'Begin a new installation (will stop existing services)',
+          recommended: false
+        }
+      ]
+    });
+    
+    if (choice === 'resume') {
+      const state = await persistence.resumeInstallation();
+      await continueFromState(state);
+    } else {
+      await cleanupExistingInstallation();
+      await startNewInstallation();
+    }
+  } else {
+    await startNewInstallation();
+  }
+}
+```
+
+### Background Task Management
+
+**Services that can run in background:**
+- Kaspa node synchronization
+- Indexer initial sync
+- Database migrations
+- Image downloads
+
+**Implementation:**
+```typescript
+class BackgroundTaskManager {
+  private tasks: Map<string, BackgroundTask> = new Map();
+  
+  async startBackgroundTask(task: BackgroundTask): Promise<void> {
+    this.tasks.set(task.id, task);
+    
+    // Save to wizard state
+    await this.saveTaskToState(task);
+    
+    // Start monitoring
+    this.monitorTask(task);
+  }
+  
+  async monitorTask(task: BackgroundTask): Promise<void> {
+    const interval = setInterval(async () => {
+      const status = await task.checkStatus();
+      
+      // Update task progress
+      task.progress = status.progress;
+      task.status = status.status;
+      
+      // Save state
+      await this.saveTaskToState(task);
+      
+      // Notify if complete
+      if (status.complete) {
+        await this.notifyTaskComplete(task);
+        clearInterval(interval);
+        this.tasks.delete(task.id);
+      }
+    }, task.checkInterval || 10000);
+  }
+  
+  async getRunningTasks(): Promise<BackgroundTask[]> {
+    return Array.from(this.tasks.values());
+  }
+  
+  async waitForTask(taskId: string): Promise<void> {
+    const task = this.tasks.get(taskId);
+    if (!task) return;
+    
+    return new Promise((resolve) => {
+      const check = setInterval(async () => {
+        const status = await task.checkStatus();
+        if (status.complete) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 1000);
+    });
+  }
+}
+```
+
+### Configuration Persistence
+
+```typescript
+interface InstallationState {
+  version: string;
+  installedAt: string;
+  lastModified: string;
+  mode: 'initial' | 'reconfiguration' | 'update';
+  
+  profiles: {
+    selected: string[];
+    configuration: Record<string, any>;
+  };
+  
+  services: {
+    name: string;
+    version: string;
+    status: 'running' | 'stopped' | 'syncing' | 'error';
+    lastUpdated: string;
+    syncStatus?: {
+      synced: boolean;
+      progress: number;
+      estimatedCompletion?: string;
+    };
+  }[];
+  
+  history: {
+    timestamp: string;
+    action: 'install' | 'reconfigure' | 'update';
+    changes: string[];
+    user: string;
+  }[];
+}
+
+// Saved to: .kaspa-aio/installation-state.json
+```
+
+### Dashboard Integration Points
+
+#### 1. Reconfiguration Link
+```typescript
+// Dashboard provides link to wizard with current config
+interface ReconfigurationLink {
+  url: string; // http://localhost:3000/wizard?mode=reconfigure
+  token: string; // Security token for authentication
+  currentConfig: InstallationState;
+}
+
+// Wizard loads configuration
+async function loadReconfigurationState(token: string): Promise<InstallationState> {
+  const state = await fetch(`/api/wizard/state?token=${token}`);
+  return state.json();
+}
+```
+
+#### 2. Update Management
+```typescript
+interface UpdateNotification {
+  service: string;
+  currentVersion: string;
+  availableVersion: string;
+  changelog: string;
+  breaking: boolean;
+  releaseDate: string;
+}
+
+// Dashboard shows updates, wizard applies them
+async function applyUpdate(service: string, version: string): Promise<UpdateResult> {
+  // Backup configuration
+  await backupConfiguration();
+  
+  // Update docker-compose with new version
+  await updateServiceVersion(service, version);
+  
+  // Restart service
+  await restartService(service);
+  
+  // Verify health
+  const healthy = await checkServiceHealth(service);
+  
+  if (!healthy) {
+    // Offer rollback
+    return {
+      success: false,
+      rollbackAvailable: true
+    };
+  }
+  
+  return { success: true };
+}
+```
+
+#### 3. Service Status Sync
+```typescript
+// Dashboard monitors services, wizard configures them
+interface ServiceStatusSync {
+  // Dashboard → Wizard: Current service states
+  getServiceStates(): ServiceState[];
+  
+  // Wizard → Dashboard: Configuration changes
+  notifyConfigurationChange(changes: ConfigChange[]): void;
+  
+  // Bidirectional: Health check results
+  updateHealthStatus(service: string, status: HealthStatus): void;
+}
+```
+
+### Host-Based Execution
+
+The wizard runs on the host system (not in a container) for both initial installation and reconfiguration:
+
+**Rationale:**
+- Can install Docker if not present
+- Direct access to system resources for validation
+- Can modify docker-compose files
+- No chicken-and-egg problem with containers
+
+**Implementation:**
+```bash
+# Wizard startup script
+#!/bin/bash
+# start-wizard.sh
+
+# Detect mode
+if [ -f ".kaspa-aio/installation-state.json" ]; then
+    MODE="reconfigure"
+else
+    MODE="install"
+fi
+
+# Start wizard with appropriate mode
+./services/wizard/start-wizard.sh --mode=$MODE
+```
+
+### Configuration Backup Strategy
+
+```typescript
+interface BackupManager {
+  async createBackup(reason: string): Promise<Backup> {
+    const timestamp = new Date().toISOString();
+    const backupPath = `.kaspa-backups/${timestamp}`;
+    
+    // Backup configuration files
+    await this.copyFiles([
+      '.env',
+      'docker-compose.yml',
+      'docker-compose.override.yml',
+      '.kaspa-aio/installation-state.json'
+    ], backupPath);
+    
+    return {
+      id: timestamp,
+      path: backupPath,
+      reason: reason,
+      files: ['...'],
+      createdAt: timestamp
+    };
+  }
+  
+  async rollback(backupId: string): Promise<void> {
+    const backupPath = `.kaspa-backups/${backupId}`;
+    
+    // Stop services
+    await this.stopServices();
+    
+    // Restore configuration
+    await this.restoreFiles(backupPath);
+    
+    // Restart services
+    await this.startServices();
+  }
+}
+```
+
+### Update Workflow
+
+```typescript
+interface UpdateWorkflow {
+  // 1. Dashboard detects updates
+  async checkForUpdates(): Promise<UpdateNotification[]> {
+    const updates = await this.queryGitHubReleases();
+    return updates.filter(u => u.availableVersion > u.currentVersion);
+  }
+  
+  // 2. User clicks "Apply Updates" in dashboard
+  // 3. Dashboard launches wizard in update mode
+  launchWizardForUpdates(updates: UpdateNotification[]): void {
+    const url = `http://localhost:3000/wizard?mode=update&updates=${JSON.stringify(updates)}`;
+    window.open(url, '_blank');
+  }
+  
+  // 4. Wizard shows update interface
+  async showUpdateInterface(updates: UpdateNotification[]): Promise<void> {
+    // Display updates with checkboxes
+    // Show version info and changelogs
+    // Warn about breaking changes
+    // Allow selective updates
+  }
+  
+  // 5. User selects updates and confirms
+  async applySelectedUpdates(selected: string[]): Promise<UpdateResult[]> {
+    const results = [];
+    
+    for (const service of selected) {
+      // Backup before each update
+      await this.backupManager.createBackup(`Before updating ${service}`);
+      
+      try {
+        const result = await this.updateService(service);
+        results.push(result);
+      } catch (error) {
+        // Offer rollback on failure
+        results.push({
+          service,
+          success: false,
+          error: error.message,
+          rollbackAvailable: true
+        });
+      }
+    }
+    
+    return results;
+  }
+  
+  // 6. Wizard shows results and returns to dashboard
+  async completeUpdate(results: UpdateResult[]): Promise<void> {
+    // Log update history
+    await this.logUpdateHistory(results);
+    
+    // Notify dashboard of changes
+    await this.notifyDashboard(results);
+    
+    // Redirect back to dashboard
+    window.location.href = '/dashboard';
+  }
+}
+```
 
 ## Deployment
 

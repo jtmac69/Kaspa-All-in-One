@@ -6,11 +6,18 @@ This document defines the requirements for a web-based installation wizard that 
 
 ## Glossary
 
-- **Installation Wizard**: A web-based interface that guides users through system setup
-- **Profile**: A predefined set of services (core, prod, explorer, archive, mining, development)
+- **Installation_Wizard**: A host-based web interface that guides users through system setup
+- **Core_Profile**: Kaspa node deployment (public or private) with optional wallet
+- **Kaspa_User_Applications_Profile**: User-facing applications (Kasia, K-Social, Kaspa Explorer) with public or local indexer options
+- **Indexer_Services_Profile**: Optional local indexers (Kasia-indexer, K-Indexer, Simply-Kaspa Indexer) for application backends
+- **Archive_Node_Profile**: Non-pruning Kaspa node for complete blockchain history
+- **Mining_Profile**: Local mining stratum pointed to local Kaspa node/wallet
+- **Developer_Mode**: Cross-cutting feature adding inspection tools, exposed ports, and development utilities to any profile
 - **Service**: A Docker container component (kaspa-node, indexers, apps, etc.)
 - **Configuration**: Environment variables and settings for services
 - **Validation**: Automated checks to ensure system requirements are met
+- **TimescaleDB**: Shared PostgreSQL time-series database for indexer services
+- **Management_Dashboard**: Web-based interface for monitoring services and accessing wizard for reconfiguration
 
 ## Requirements
 
@@ -32,11 +39,14 @@ This document defines the requirements for a web-based installation wizard that 
 
 #### Acceptance Criteria
 
-1. THE Installation Wizard SHALL display all available profiles with descriptions
-2. THE Installation Wizard SHALL show service dependencies for each profile
-3. THE Installation Wizard SHALL display estimated resource requirements per profile
-4. WHEN a user selects a profile, THE Installation Wizard SHALL highlight dependent services
-5. THE Installation Wizard SHALL allow multiple profile selection with conflict detection
+1. THE Installation_Wizard SHALL display all available profiles (Core, Kaspa User Applications, Indexer Services, Archive Node, Mining) with descriptions
+2. THE Installation_Wizard SHALL show service dependencies for each profile with startup order visualization
+3. THE Installation_Wizard SHALL display estimated resource requirements per profile and warn about combined requirements when multiple profiles are selected
+4. WHEN a user selects a profile, THE Installation_Wizard SHALL highlight dependent services and required prerequisites
+5. THE Installation_Wizard SHALL allow multiple profile selection with conflict detection and circular dependency prevention
+6. WHEN a user selects Kaspa User Applications profile, THE Installation_Wizard SHALL prompt whether to use public indexers or local Indexer Services
+7. WHEN a user selects Mining profile, THE Installation_Wizard SHALL require Core Profile or Archive Node Profile as prerequisite
+8. THE Installation_Wizard SHALL provide a Developer Mode toggle that adds development features to any selected profile
 
 ### Requirement 3: Service Configuration
 
@@ -44,11 +54,14 @@ This document defines the requirements for a web-based installation wizard that 
 
 #### Acceptance Criteria
 
-1. THE Installation Wizard SHALL provide form fields for all configurable environment variables
-2. THE Installation Wizard SHALL display default values with explanatory tooltips
-3. THE Installation Wizard SHALL validate user input in real-time
-4. THE Installation Wizard SHALL generate secure random passwords for database services
-5. THE Installation Wizard SHALL allow advanced users to view and edit the generated .env file
+1. THE Installation_Wizard SHALL provide form fields for all configurable environment variables
+2. THE Installation_Wizard SHALL display default values with explanatory tooltips
+3. THE Installation_Wizard SHALL validate user input in real-time
+4. THE Installation_Wizard SHALL generate secure random passwords for database services
+5. THE Installation_Wizard SHALL allow advanced users to view and edit the generated .env file
+6. WHEN Indexer Services profile is selected, THE Installation_Wizard SHALL configure shared TimescaleDB instance with separate databases per indexer
+7. WHEN Core Profile is selected with "other services will use this node" option, THE Installation_Wizard SHALL configure fallback to public Kaspa network if local node fails health checks
+8. WHEN Developer Mode is enabled, THE Installation_Wizard SHALL configure debug logging, exposed ports, and development tool access
 
 ### Requirement 4: Network Configuration
 
@@ -80,11 +93,13 @@ This document defines the requirements for a web-based installation wizard that 
 
 #### Acceptance Criteria
 
-1. WHEN installation completes, THE Installation Wizard SHALL run health checks on all services
-2. THE Installation Wizard SHALL verify database connectivity and schema initialization
-3. THE Installation Wizard SHALL test API endpoints for all running services
-4. THE Installation Wizard SHALL display a summary of service URLs and access information
-5. THE Installation Wizard SHALL provide next steps and getting started documentation
+1. WHEN installation completes, THE Installation_Wizard SHALL run health checks on all services in dependency order (Kaspa Node, Indexers, Applications)
+2. THE Installation_Wizard SHALL verify database connectivity and schema initialization for TimescaleDB and indexer databases
+3. THE Installation_Wizard SHALL test API endpoints for all running services
+4. THE Installation_Wizard SHALL display a summary of service URLs and access information
+5. THE Installation_Wizard SHALL provide next steps and getting started documentation
+6. IF Core Profile node fails health checks and other services depend on it, THEN THE Installation_Wizard SHALL offer options to continue with public Kaspa network or troubleshoot the local node
+7. WHEN validation completes, THE Installation_Wizard SHALL provide a link to the Management Dashboard for ongoing monitoring
 
 ### Requirement 7: Configuration Persistence
 
@@ -152,8 +167,35 @@ This document defines the requirements for a web-based installation wizard that 
 
 #### Acceptance Criteria
 
-1. THE Installation Wizard SHALL provide preset templates (Home Node, Public Node, Developer Setup, Full Stack)
-2. THE Installation Wizard SHALL display template descriptions and included services
-3. THE Installation Wizard SHALL allow customization of template settings
-4. THE Installation Wizard SHALL show resource requirements for each template
-5. THE Installation Wizard SHALL allow saving custom configurations as new templates
+1. THE Installation_Wizard SHALL provide preset templates (Home Node, Public Node, Developer Setup, Full Stack)
+2. THE Installation_Wizard SHALL display template descriptions and included services
+3. THE Installation_Wizard SHALL allow customization of template settings
+4. THE Installation_Wizard SHALL show resource requirements for each template
+5. THE Installation_Wizard SHALL allow saving custom configurations as new templates
+
+### Requirement 13: Reconfiguration and Update Management
+
+**User Story:** As an existing user, I want to modify my installation or update services through the wizard, so that I can adapt my deployment without manual configuration changes.
+
+#### Acceptance Criteria
+
+1. WHEN accessed from the Management Dashboard, THE Installation_Wizard SHALL load the current installation configuration
+2. THE Installation_Wizard SHALL allow users to add or remove profiles from existing installations
+3. THE Installation_Wizard SHALL allow users to modify service settings and regenerate configuration
+4. WHEN configuration changes are applied, THE Installation_Wizard SHALL backup existing configuration before making changes
+5. THE Installation_Wizard SHALL handle service updates when underlying packages have new versions available
+6. WHEN a service update is available, THE Installation_Wizard SHALL display version information and allow selective updates
+7. THE Installation_Wizard SHALL assume each service handles its own data migration during updates
+8. IF a service update fails, THEN THE Installation_Wizard SHALL provide rollback options to restore previous configuration
+
+### Requirement 14: Service Startup Order and Dependencies
+
+**User Story:** As a system operator, I want services to start in the correct order based on dependencies, so that the system initializes properly.
+
+#### Acceptance Criteria
+
+1. WHEN multiple profiles are selected, THE Installation_Wizard SHALL configure startup order as: Kaspa Node (if local), Indexer Services (if local), then Kaspa User Applications
+2. THE Installation_Wizard SHALL prevent circular dependencies during profile selection
+3. WHEN services start, THE Installation_Wizard SHALL wait for dependency health checks before starting dependent services
+4. THE Installation_Wizard SHALL configure automatic restart policies with dependency awareness
+5. IF a dependency service fails during startup, THEN THE Installation_Wizard SHALL provide fallback configuration options where applicable

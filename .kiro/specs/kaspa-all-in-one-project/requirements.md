@@ -7,14 +7,20 @@ The Kaspa All-in-One project provides a comprehensive Docker-based solution for 
 ## Glossary
 
 - **Kaspa_Node**: The core Kaspa blockchain node (rusty-kaspad) that maintains the blockchain state
-- **Indexer_Service**: Services that process blockchain data and provide APIs (Kasia, K-Social, Simply-Kaspa)
-- **Management_Dashboard**: Web-based interface for monitoring and controlling services
+- **Core_Profile**: Kaspa node deployment (public or private) with optional wallet, optionally used by other services
+- **Kaspa_User_Applications_Profile**: User-facing applications (Kasia, K-Social, Kaspa Explorer) with public or local indexer options
+- **Indexer_Services_Profile**: Optional local indexers (Kasia-indexer, K-Indexer, Simply-Kaspa Indexer) for application backends
+- **Archive_Node_Profile**: Non-pruning Kaspa node for complete blockchain history
+- **Mining_Profile**: Local mining stratum pointed to local Kaspa node/wallet
+- **Developer_Mode**: Cross-cutting feature adding inspection tools, exposed ports, and development utilities
+- **Management_Dashboard**: Web-based interface for monitoring services and accessing Installation Wizard for reconfiguration
 - **Profile_System**: Docker Compose profile-based deployment configurations
-- **TimescaleDB**: Time-series database optimized for blockchain data storage
+- **TimescaleDB**: Shared PostgreSQL time-series database for indexer services with separate databases per indexer
 - **All_in_One_System**: The complete integrated solution including all components
 - **Update_Monitor**: System component that checks external repositories for new releases and notifies users
 - **Release_Version**: Semantic version identifier for software releases (e.g., v1.2.3)
 - **Rollback_Operation**: Process of reverting to a previous working version after a failed update
+- **Installation_Wizard**: Host-based web interface for initial setup and reconfiguration
 
 ## Requirements
 
@@ -36,11 +42,13 @@ The Kaspa All-in-One project provides a comprehensive Docker-based solution for 
 
 #### Acceptance Criteria
 
-1. WHEN indexer services start, THE All_in_One_System SHALL automatically connect them to the local Kaspa node
-2. WHEN TimescaleDB is deployed, THE All_in_One_System SHALL optimize it for blockchain data storage with hypertables and compression
-3. WHILE indexers are running, THE All_in_One_System SHALL maintain data consistency and handle connection failures gracefully
-4. WHERE multiple indexers are deployed, THE All_in_One_System SHALL share database resources efficiently
+1. WHEN Indexer Services are deployed with Core Profile, THE All_in_One_System SHALL automatically connect indexers to the local Kaspa node as default with fallback to public network
+2. WHEN TimescaleDB is deployed for Indexer Services, THE All_in_One_System SHALL create separate databases for each indexer service with optimized hypertables and compression
+3. WHILE indexers are running, THE All_in_One_System SHALL maintain data consistency and handle connection failures gracefully by falling back to public Kaspa network
+4. WHERE multiple indexers are deployed, THE All_in_One_System SHALL share a single TimescaleDB container with isolated databases per indexer
 5. IF database storage exceeds configured limits, THEN THE All_in_One_System SHALL implement retention policies automatically
+6. WHEN Kaspa User Applications are deployed without local Indexer Services, THE All_in_One_System SHALL configure applications to use public indexer endpoints with user-configurable alternatives
+7. WHEN services start, THE All_in_One_System SHALL enforce startup order: Kaspa Node (if local), Indexer Services (if local), then Kaspa User Applications
 
 ### Requirement 3: Testing and Quality Assurance
 
@@ -98,9 +106,39 @@ The Kaspa All-in-One project provides a comprehensive Docker-based solution for 
 
 1. WHEN new releases are available for any service, THE Management_Dashboard SHALL display update notifications with version information and changelog details
 2. WHEN the system checks for updates, THE All_in_One_System SHALL query GitHub APIs for all external repositories and compare current versions with available releases
-3. WHILE updates are available, THE Management_Dashboard SHALL provide one-click update functionality with automatic backup and rollback capabilities
+3. WHILE updates are available, THE Management_Dashboard SHALL provide access to Installation Wizard for applying individual service updates
 4. WHERE breaking changes are detected, THE All_in_One_System SHALL warn users and require explicit confirmation before proceeding with updates
-5. WHEN an update is applied, THE All_in_One_System SHALL create automatic backups of configuration and data before making changes
-6. IF an update fails, THEN THE All_in_One_System SHALL automatically rollback to the previous working version and restore backed-up configuration
+5. WHEN an update is applied, THE All_in_One_System SHALL create automatic backups of configuration before making changes
+6. IF an update fails, THEN THE All_in_One_System SHALL provide rollback options through the Installation Wizard to restore previous configuration
 7. WHEN updates complete successfully, THE All_in_One_System SHALL log the update history with timestamps, versions, and changes applied
 8. WHILE the system operates, THE All_in_One_System SHALL perform automatic update checks at configurable intervals with default daily checking
+9. THE All_in_One_System SHALL assume each service handles its own data migration and upgrade procedures during updates
+
+### Requirement 8: Profile Architecture and Dependencies
+
+**User Story:** As a user, I want to understand and control how different profiles interact and depend on each other, so that I can deploy the right combination for my needs.
+
+#### Acceptance Criteria
+
+1. WHEN Core Profile is selected, THE All_in_One_System SHALL allow configuration as public node, private node, or node for other services with automatic fallback to public network
+2. WHEN Kaspa User Applications profile is selected, THE All_in_One_System SHALL prompt for indexer choice: public endpoints or local Indexer Services profile
+3. WHEN Indexer Services profile is selected, THE All_in_One_System SHALL deploy shared TimescaleDB container with separate databases for each selected indexer
+4. WHEN Mining profile is selected, THE All_in_One_System SHALL require either Core Profile or Archive Node Profile as prerequisite
+5. WHEN Developer Mode is enabled, THE All_in_One_System SHALL add inspection tools, log access, exposed ports, and development utilities to selected profiles
+6. THE All_in_One_System SHALL prevent circular dependencies between profiles during configuration
+7. WHEN services start, THE All_in_One_System SHALL enforce dependency order and wait for health checks before starting dependent services
+8. IF a local Kaspa node is configured for other services but fails health checks, THEN THE All_in_One_System SHALL offer user choice to continue with public network or troubleshoot the node
+9. THE All_in_One_System SHALL display combined resource requirements when multiple profiles are selected and warn if system resources are insufficient
+
+### Requirement 9: Wizard-Dashboard Integration
+
+**User Story:** As a user, I want seamless integration between the Installation Wizard and Management Dashboard, so that I can easily reconfigure my system after initial installation.
+
+#### Acceptance Criteria
+
+1. WHEN initial installation completes, THE Installation_Wizard SHALL provide a link to access the Management Dashboard
+2. WHEN accessed from Management Dashboard, THE Installation_Wizard SHALL load current installation configuration for modification
+3. THE Management_Dashboard SHALL provide a reconfiguration option that launches the Installation Wizard with current settings
+4. THE Installation_Wizard SHALL run on the host system (not in a container) for both initial installation and reconfiguration
+5. WHEN configuration changes are made through the wizard, THE All_in_One_System SHALL apply changes and update the Management Dashboard accordingly
+6. THE Management_Dashboard SHALL focus on monitoring service health and status while delegating configuration changes to the Installation Wizard
