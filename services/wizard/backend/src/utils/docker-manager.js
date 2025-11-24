@@ -134,8 +134,8 @@ class DockerManager {
         });
       }
 
-      const profilesArg = profiles.join(',');
-      const cmd = `cd ${this.projectRoot} && COMPOSE_PROFILES=${profilesArg} docker compose up -d`;
+      const profileFlags = profiles.map(p => `--profile ${p}`).join(' ');
+      const cmd = `cd ${this.projectRoot} && docker compose ${profileFlags} up -d`;
       
       // Use retry with timeout
       const result = await retryOperation(
@@ -163,6 +163,25 @@ class DockerManager {
 
       const { stdout, stderr } = result;
 
+      // Verify that services actually started
+      // Wait a moment for containers to initialize
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      const validation = await this.validateServices(profiles);
+      
+      // Check if any expected services are missing or failed
+      if (validation.summary.missing > 0 || validation.anyFailed) {
+        const failedServices = Object.entries(validation.services)
+          .filter(([_, status]) => !status.running)
+          .map(([name, _]) => name);
+        
+        throw new DockerError('Some services failed to start', {
+          profiles,
+          failedServices,
+          summary: validation.summary
+        });
+      }
+
       if (progressCallback) {
         progressCallback({
           stage: 'start',
@@ -173,7 +192,8 @@ class DockerManager {
 
       return {
         success: true,
-        output: { stdout, stderr }
+        output: { stdout, stderr },
+        validation
       };
     } catch (error) {
       throw new DockerError('Failed to start services', {
@@ -213,7 +233,7 @@ class DockerManager {
   async validateServices(profiles) {
     const serviceMap = {
       core: ['kaspa-node', 'dashboard', 'nginx'],
-      explorer: ['timescaledb', 'simply-kaspa-indexer'],
+      explorer: ['indexer-db', 'simply-kaspa-indexer'],
       prod: ['kasia', 'kasia-indexer', 'k-social', 'k-indexer'],
       archive: ['archive-db', 'archive-indexer'],
       development: ['portainer', 'pgadmin'],
