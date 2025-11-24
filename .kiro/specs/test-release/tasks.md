@@ -393,6 +393,97 @@ Prepare the test release for distribution to testers using a simple git-based ap
 
 ---
 
+## Phase 6: Wizard Startup Script with Prerequisites 📋 FUTURE  
+**Priority**: MEDIUM  
+**Estimated Time**: 0.5 days
+
+### Overview
+
+Create a user-friendly wizard startup script that checks for required dependencies and provides platform-specific installation instructions if anything is missing.
+
+### Subtasks
+
+- [ ] 6.1 Create wizard startup script
+  - [ ] Create `start-wizard.sh` script in project root
+  - [ ] Check for Node.js (required version >= 18)
+  - [ ] Check for npm (required version >= 9)
+  - [ ] Check for Docker (required)
+  - [ ] Check for Docker Compose (required)
+  - [ ] Detect platform (Linux, macOS, Windows/WSL)
+  - [ ] Start wizard backend if all prerequisites met
+
+- [ ] 6.2 Add platform-specific installation guidance
+  - [ ] Linux (Ubuntu/Debian): apt install instructions
+  - [ ] Linux (RHEL/CentOS): yum/dnf install instructions
+  - [ ] macOS: Homebrew install instructions
+  - [ ] Windows/WSL: Installation guidance
+  - [ ] Provide links to official installation docs
+
+- [ ] 6.3 Add helpful error messages
+  - [ ] Clear message for each missing dependency
+  - [ ] Show current version vs required version
+  - [ ] Provide copy-paste installation commands
+  - [ ] Link to troubleshooting documentation
+
+- [ ] 6.4 Update documentation
+  - [ ] Update README with `./start-wizard.sh` instructions
+  - [ ] Document prerequisites in QUICK_START.md
+  - [ ] Add troubleshooting section for common issues
+  - [ ] Document manual wizard startup (for advanced users)
+
+### Example Output
+
+```bash
+$ ./start-wizard.sh
+
+Kaspa All-in-One - Installation Wizard
+=======================================
+
+Checking prerequisites...
+✓ Node.js v18.19.1 (required: >= 18.0.0)
+✓ npm v9.2.0 (required: >= 9.0.0)
+✓ Docker v27.3.1 (required: >= 20.10.0)
+✓ Docker Compose v2.31.0 (required: >= 2.0.0)
+
+All prerequisites met!
+
+Starting wizard...
+Wizard running at: http://localhost:3000
+Press Ctrl+C to stop
+```
+
+### Example Error Output
+
+```bash
+$ ./start-wizard.sh
+
+Kaspa All-in-One - Installation Wizard
+=======================================
+
+Checking prerequisites...
+✗ Node.js not found (required: >= 18.0.0)
+✓ Docker v27.3.1 (required: >= 20.10.0)
+✓ Docker Compose v2.31.0 (required: >= 2.0.0)
+
+Missing prerequisites detected!
+
+To install Node.js on Ubuntu/Debian:
+  curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+  sudo apt-get install -y nodejs
+
+For other platforms, visit: https://nodejs.org/
+
+Please install missing prerequisites and try again.
+```
+
+### Architecture Note
+
+- Wizard runs on HOST (not in container) to avoid Docker-in-Docker complexity
+- Dashboard handles monitoring of running services
+- Wizard is for installation/reconfiguration only
+
+---
+
 ## Progress Tracking
 
 ### Overall Progress: 40% (2/5 tasks complete)
