@@ -80,6 +80,9 @@ services:
       - ./.env:/workspace/.env
       - ./docker-compose.yml:/workspace/docker-compose.yml:ro
       - wizard-state:/app/state
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - kaspa-network
     profiles:

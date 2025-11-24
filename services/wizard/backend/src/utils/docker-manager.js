@@ -9,7 +9,9 @@ const execAsync = promisify(exec);
 class DockerManager {
   constructor() {
     this.docker = new Docker();
-    this.projectRoot = path.resolve(__dirname, '../../../..');
+    // Use PROJECT_ROOT env var if available (when running in container)
+    // Otherwise calculate relative path (for local development)
+    this.projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../..');
   }
 
   async pullImages(profiles, progressCallback) {

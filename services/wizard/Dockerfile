@@ -2,8 +2,8 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install Docker CLI for container management
-RUN apk add --no-cache docker-cli
+# Install Docker CLI and Docker Compose for container management
+RUN apk add --no-cache docker-cli docker-cli-compose
 
 # Copy backend dependencies
 COPY backend/package*.json ./

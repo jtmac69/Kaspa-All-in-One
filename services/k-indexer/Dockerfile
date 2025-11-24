@@ -65,4 +65,17 @@ ENV ENABLE_COMPRESSION=true
 ENV PERSONAL_INDEXER_MODE=false
 
 # Start the K-indexer webserver
-CMD ["sh", "-c", "./wait-for-db.sh && ./k-indexer"]
+# Extract database credentials from DATABASE_URL and pass as CLI arguments
+CMD ["sh", "-c", "\
+    ./wait-for-db.sh && \
+    DB_HOST=$(echo $DATABASE_URL | sed -n 's/.*@\\([^:]*\\):.*/\\1/p') && \
+    DB_PORT=$(echo $DATABASE_URL | sed -n 's/.*:\\([0-9]*\\)\\/.*/\\1/p') && \
+    DB_NAME=$(echo $DATABASE_URL | sed -n 's/.*\\/\\([^?]*\\).*/\\1/p') && \
+    DB_USER=$(echo $DATABASE_URL | sed -n 's/.*\\/\\/\\([^:]*\\):.*/\\1/p') && \
+    DB_PASS=$(echo $DATABASE_URL | sed -n 's/.*:\\/\\/[^:]*:\\([^@]*\\)@.*/\\1/p') && \
+    ./k-indexer \
+        --db-host ${DB_HOST:-indexer-db} \
+        --db-name ${DB_NAME:-ksocial} \
+        --db-user ${DB_USER:-indexer} \
+        --db-password ${DB_PASS:-secure_password} \
+"]
