@@ -187,3 +187,11 @@ Cargo.lock
 # Logs from services
 services/*/logs/
 services/*/*.log
+
+# 
+Wizard test artifacts and backups
+.env.backup.*
+services/.env.backup.*
+.kaspa-aio/
+.kaspa-backups/
+.wizard.pid
