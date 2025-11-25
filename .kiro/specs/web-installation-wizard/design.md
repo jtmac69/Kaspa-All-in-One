@@ -1920,22 +1920,40 @@ detect_and_launch
 
 ### Deployment Modes
 
-#### Standalone Mode (Pre-Installation)
+#### Host-Based Execution (All Modes)
+
+**IMPORTANT**: The wizard ALWAYS runs on the host system, never in a container.
+
+**Rationale**:
+- Can install Docker if not present (chicken-and-egg problem)
+- Direct access to system resources for validation
+- Can modify docker-compose files and .env
+- No container overhead or complexity
+- Simpler PROJECT_ROOT handling (always repository root)
+
+#### Initial Installation Mode
 - Wizard runs BEFORE Docker is installed
-- Accessible via file:// or http://localhost:3000
+- Accessible via http://localhost:3000
 - Guides through Docker installation
 - Generates configuration files
 - Validates system requirements
 - Automatically starts on first run
 - Redirects to dashboard after completion
 
-#### Integrated Mode (Post-Installation)
+#### Reconfiguration Mode
 - Wizard accessible from dashboard
-- Runs as Docker container (Node.js backend)
+- Runs on host (same as initial installation)
 - Can re-run for reconfiguration
 - Preserves existing configuration
 - Backup before changes
 - Full WebSocket streaming support
+
+#### Update Mode
+- Wizard accessible from dashboard
+- Runs on host (same as initial installation)
+- Displays available service updates
+- Applies updates with automatic backup
+- Handles rollback on failure
 
 ### Directory Structure
 

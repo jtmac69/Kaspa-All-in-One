@@ -98,16 +98,25 @@ start_wizard() {
         info "Starting wizard in $mode mode..."
     fi
     
-    # Start wizard container
-    log "Starting wizard container..."
-    docker compose --profile wizard up -d wizard
+    # Start wizard on host (not in container)
+    log "Starting wizard on host..."
     
-    # Wait for wizard to be healthy
+    # Export PROJECT_ROOT for the wizard
+    export PROJECT_ROOT="$PROJECT_ROOT"
+    
+    # Start wizard in background
+    cd "$PROJECT_ROOT/services/wizard/backend"
+    nohup ./start-local.sh > "$PROJECT_ROOT/logs/wizard.log" 2>&1 &
+    local wizard_pid=$!
+    echo $wizard_pid > "$PROJECT_ROOT/.wizard.pid"
+    cd "$PROJECT_ROOT"
+    
+    # Wait for wizard to be ready
     log "Waiting for wizard to be ready..."
     local max_wait=30
     local waited=0
     while [[ $waited -lt $max_wait ]]; do
-        if docker ps --format '{{.Names}}' --filter "name=kaspa-wizard" --filter "health=healthy" | grep -q "kaspa-wizard"; then
+        if curl -s http://localhost:$WIZARD_PORT/api/health > /dev/null 2>&1; then
             break
         fi
         sleep 1
@@ -116,7 +125,7 @@ start_wizard() {
     
     if [[ $waited -ge $max_wait ]]; then
         warn "Wizard took longer than expected to start"
-        warn "Check logs with: docker logs kaspa-wizard"
+        warn "Check logs with: tail -f $PROJECT_ROOT/logs/wizard.log"
     fi
     
     echo
@@ -134,8 +143,9 @@ start_wizard() {
     info "  ✓ Service configuration"
     info "  ✓ Real-time installation progress"
     echo
-    info "To view wizard logs: ${BLUE}docker logs -f kaspa-wizard${NC}"
+    info "To view wizard logs: ${BLUE}tail -f $PROJECT_ROOT/logs/wizard.log${NC}"
     info "To stop wizard: ${BLUE}./scripts/wizard.sh stop${NC}"
+    info "Wizard PID: $wizard_pid"
     echo
 }
 
@@ -143,13 +153,38 @@ start_wizard() {
 stop_wizard() {
     cd "$PROJECT_ROOT"
     
-    if ! docker ps --format '{{.Names}}' | grep -q "^kaspa-wizard$"; then
-        warn "Wizard is not running"
+    if [[ ! -f "$PROJECT_ROOT/.wizard.pid" ]]; then
+        warn "Wizard PID file not found"
+        # Try to find and kill by port
+        local pid=$(lsof -ti:$WIZARD_PORT 2>/dev/null)
+        if [[ -n "$pid" ]]; then
+            log "Found wizard process on port $WIZARD_PORT (PID: $pid)"
+            kill $pid 2>/dev/null && log "Wizard stopped" || warn "Failed to stop wizard"
+        else
+            warn "Wizard is not running"
+        fi
         return 0
     fi
     
-    log "Stopping wizard..."
-    docker compose --profile wizard down
+    local wizard_pid=$(cat "$PROJECT_ROOT/.wizard.pid")
+    
+    if ! ps -p $wizard_pid > /dev/null 2>&1; then
+        warn "Wizard process (PID: $wizard_pid) is not running"
+        rm "$PROJECT_ROOT/.wizard.pid"
+        return 0
+    fi
+    
+    log "Stopping wizard (PID: $wizard_pid)..."
+    kill $wizard_pid 2>/dev/null
+    sleep 2
+    
+    # Force kill if still running
+    if ps -p $wizard_pid > /dev/null 2>&1; then
+        warn "Wizard did not stop gracefully, forcing..."
+        kill -9 $wizard_pid 2>/dev/null
+    fi
+    
+    rm "$PROJECT_ROOT/.wizard.pid"
     log "Wizard stopped"
 }
 
@@ -172,11 +207,23 @@ status_wizard() {
     info "╚══════════════════════════════════════════════════════════════╝"
     echo
     
-    if docker ps --format '{{.Names}}' | grep -q "^kaspa-wizard$"; then
-        local health=$(docker inspect --format='{{.State.Health.Status}}' kaspa-wizard 2>/dev/null || echo "unknown")
-        info "Status: ${GREEN}Running${NC}"
-        info "Health: $health"
-        info "URL: http://localhost:$WIZARD_PORT"
+    if [[ -f "$PROJECT_ROOT/.wizard.pid" ]]; then
+        local wizard_pid=$(cat "$PROJECT_ROOT/.wizard.pid")
+        if ps -p $wizard_pid > /dev/null 2>&1; then
+            info "Status: ${GREEN}Running${NC}"
+            info "PID: $wizard_pid"
+            info "URL: http://localhost:$WIZARD_PORT"
+            
+            # Check if responding
+            if curl -s http://localhost:$WIZARD_PORT/api/health > /dev/null 2>&1; then
+                info "Health: ${GREEN}Healthy${NC}"
+            else
+                info "Health: ${YELLOW}Not Responding${NC}"
+            fi
+        else
+            info "Status: ${RED}Not Running${NC} (stale PID file)"
+            rm "$PROJECT_ROOT/.wizard.pid"
+        fi
         
         # Check if first run
         if is_first_run; then
@@ -207,11 +254,11 @@ status_wizard() {
 logs_wizard() {
     cd "$PROJECT_ROOT"
     
-    if ! docker ps --format '{{.Names}}' | grep -q "^kaspa-wizard$"; then
-        error "Wizard is not running"
+    if [[ ! -f "$PROJECT_ROOT/logs/wizard.log" ]]; then
+        error "Wizard log file not found"
     fi
     
-    docker logs -f kaspa-wizard
+    tail -f "$PROJECT_ROOT/logs/wizard.log"
 }
 
 # Reset wizard state (for testing)
@@ -227,7 +274,7 @@ reset_wizard() {
     fi
     
     # Stop wizard if running
-    if docker ps --format '{{.Names}}' | grep -q "^kaspa-wizard$"; then
+    if [[ -f "$PROJECT_ROOT/.wizard.pid" ]]; then
         stop_wizard
     fi
     

@@ -63,8 +63,14 @@ router.post('/save', async (req, res) => {
       });
     }
     
+    // Apply developer mode if enabled
+    let finalConfig = config;
+    if (config.DEVELOPER_MODE === true || config.DEVELOPER_MODE === 'true') {
+      finalConfig = configGenerator.applyDeveloperMode(config, true);
+    }
+    
     // Validate config first
-    const validation = await configGenerator.validateConfig(config);
+    const validation = await configGenerator.validateConfig(finalConfig);
     if (!validation.valid) {
       return res.status(400).json({
         error: 'Invalid configuration',
@@ -75,6 +81,20 @@ router.post('/save', async (req, res) => {
     const envContent = await configGenerator.generateEnvFile(validation.config, profiles);
     const targetPath = path || require('path').resolve(__dirname, '../../../../.env');
     const result = await configGenerator.saveEnvFile(envContent, targetPath);
+    
+    // Generate docker-compose.override.yml if developer mode is enabled
+    if (config.DEVELOPER_MODE === true || config.DEVELOPER_MODE === 'true') {
+      const overrideContent = await configGenerator.generateDockerComposeOverride(validation.config, profiles);
+      const overridePath = require('path').resolve(__dirname, '../../../../docker-compose.override.yml');
+      const overrideResult = await configGenerator.saveDockerComposeOverride(overrideContent, overridePath);
+      
+      result.override = overrideResult;
+    } else {
+      // Remove override file if developer mode is disabled
+      const overridePath = require('path').resolve(__dirname, '../../../../docker-compose.override.yml');
+      await configGenerator.saveDockerComposeOverride(null, overridePath);
+      result.override = { removed: true };
+    }
     
     res.json(result);
   } catch (error) {

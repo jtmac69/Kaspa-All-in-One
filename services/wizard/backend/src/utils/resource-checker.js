@@ -635,6 +635,362 @@ class ResourceChecker {
   getProfileRequirements() {
     return this.profileRequirements;
   }
+
+  /**
+   * Calculate combined resources across selected profiles with deduplication
+   * Handles shared resources like TimescaleDB used by multiple indexers
+   * @param {string[]} profileIds - Array of selected profile IDs
+   * @param {Object} systemResources - Detected system resources (optional)
+   * @returns {Object} Combined resource requirements with deduplication
+   */
+  async calculateCombinedResources(profileIds, systemResources = null) {
+    if (!profileIds || profileIds.length === 0) {
+      return {
+        success: false,
+        error: 'No profiles selected',
+        requirements: null
+      };
+    }
+
+    // Detect system resources if not provided
+    if (!systemResources) {
+      systemResources = await this.detectResources();
+    }
+
+    // Track which services are included and which profiles use them
+    const serviceUsage = new Map();
+    const sharedServices = new Set(['timescaledb', 'nginx', 'dashboard']);
+    
+    // Initialize combined requirements
+    const combined = {
+      minRAM: 0,
+      recommendedRAM: 0,
+      optimalRAM: 0,
+      minDisk: 0,
+      minCPU: 0,
+      services: [],
+      sharedResources: [],
+      profileBreakdown: []
+    };
+
+    // Process each profile
+    for (const profileId of profileIds) {
+      const profile = this.profileRequirements[profileId];
+      if (!profile) {
+        continue;
+      }
+
+      const profileResources = {
+        profileId,
+        profileName: profile.name,
+        minRAM: 0,
+        recommendedRAM: 0,
+        minDisk: 0,
+        minCPU: profile.minCPU,
+        components: []
+      };
+
+      // Process each component in the profile
+      for (const componentKey of profile.components) {
+        const component = this.componentRequirements[componentKey];
+        if (!component) {
+          continue;
+        }
+
+        // Check if this service is already counted
+        if (serviceUsage.has(componentKey)) {
+          // Service is shared - add to shared list
+          const usage = serviceUsage.get(componentKey);
+          usage.usedBy.push(profileId);
+          
+          if (!combined.sharedResources.find(s => s.service === componentKey)) {
+            combined.sharedResources.push({
+              service: componentKey,
+              name: component.name,
+              usedBy: usage.usedBy,
+              resources: {
+                minRAM: component.minRAM,
+                recommendedRAM: component.recommendedRAM,
+                optimalRAM: component.optimalRAM,
+                minDisk: component.minDisk,
+                minCPU: component.minCPU
+              },
+              note: `Shared by ${usage.usedBy.length} profiles`
+            });
+          }
+          
+          profileResources.components.push({
+            name: component.name,
+            shared: true,
+            note: 'Resources already counted in another profile'
+          });
+        } else {
+          // First time seeing this service - count its resources
+          serviceUsage.set(componentKey, {
+            component: component.name,
+            usedBy: [profileId]
+          });
+
+          combined.minRAM += component.minRAM;
+          combined.recommendedRAM += component.recommendedRAM;
+          combined.optimalRAM += component.optimalRAM;
+          combined.minDisk += component.minDisk;
+          combined.minCPU = Math.max(combined.minCPU, component.minCPU);
+
+          profileResources.minRAM += component.minRAM;
+          profileResources.recommendedRAM += component.recommendedRAM;
+          profileResources.minDisk += component.minDisk;
+
+          profileResources.components.push({
+            name: component.name,
+            shared: sharedServices.has(componentKey),
+            resources: {
+              minRAM: component.minRAM,
+              recommendedRAM: component.recommendedRAM,
+              minDisk: component.minDisk
+            }
+          });
+
+          combined.services.push({
+            service: componentKey,
+            name: component.name,
+            profile: profileId
+          });
+        }
+      }
+
+      combined.profileBreakdown.push(profileResources);
+    }
+
+    // Compare against available system resources
+    const availableRAM = parseFloat(systemResources.memory.availableGB);
+    const availableDisk = parseFloat(systemResources.disk.freeGB);
+    const availableCPU = systemResources.cpu.count;
+
+    // Check Docker limits
+    const effectiveRAM = systemResources.docker.hasLimit 
+      ? Math.min(availableRAM, parseFloat(systemResources.docker.memoryLimitGB))
+      : availableRAM;
+
+    const comparison = {
+      ram: {
+        required: combined.minRAM,
+        recommended: combined.recommendedRAM,
+        optimal: combined.optimalRAM,
+        available: effectiveRAM,
+        meetsMin: effectiveRAM >= combined.minRAM,
+        meetsRecommended: effectiveRAM >= combined.recommendedRAM,
+        meetsOptimal: effectiveRAM >= combined.optimalRAM,
+        shortfall: effectiveRAM < combined.minRAM ? combined.minRAM - effectiveRAM : 0
+      },
+      disk: {
+        required: combined.minDisk,
+        available: availableDisk,
+        meetsMin: availableDisk >= combined.minDisk,
+        shortfall: availableDisk < combined.minDisk ? combined.minDisk - availableDisk : 0
+      },
+      cpu: {
+        required: combined.minCPU,
+        available: availableCPU,
+        meetsMin: availableCPU >= combined.minCPU,
+        shortfall: availableCPU < combined.minCPU ? combined.minCPU - availableCPU : 0
+      }
+    };
+
+    // Generate warnings
+    const warnings = [];
+    if (!comparison.ram.meetsMin) {
+      warnings.push({
+        type: 'insufficient_ram',
+        severity: 'critical',
+        message: `Insufficient RAM: ${effectiveRAM.toFixed(1)}GB available, ${combined.minRAM.toFixed(1)}GB required`,
+        shortfall: comparison.ram.shortfall.toFixed(1) + 'GB',
+        recommendation: 'Reduce selected profiles or upgrade system RAM'
+      });
+    } else if (!comparison.ram.meetsRecommended) {
+      warnings.push({
+        type: 'below_recommended_ram',
+        severity: 'warning',
+        message: `RAM below recommended: ${effectiveRAM.toFixed(1)}GB available, ${combined.recommendedRAM.toFixed(1)}GB recommended`,
+        recommendation: 'System will work but may experience performance issues under load'
+      });
+    }
+
+    if (!comparison.disk.meetsMin) {
+      warnings.push({
+        type: 'insufficient_disk',
+        severity: 'critical',
+        message: `Insufficient disk space: ${availableDisk.toFixed(1)}GB available, ${combined.minDisk.toFixed(1)}GB required`,
+        shortfall: comparison.disk.shortfall.toFixed(1) + 'GB',
+        recommendation: 'Free up disk space or reduce selected profiles'
+      });
+    }
+
+    if (!comparison.cpu.meetsMin) {
+      warnings.push({
+        type: 'insufficient_cpu',
+        severity: 'warning',
+        message: `CPU cores below minimum: ${availableCPU} available, ${combined.minCPU} required`,
+        recommendation: 'System may experience slow performance'
+      });
+    }
+
+    // Check Docker limits specifically
+    if (systemResources.docker.hasLimit) {
+      const dockerLimit = parseFloat(systemResources.docker.memoryLimitGB);
+      if (dockerLimit < combined.minRAM) {
+        warnings.push({
+          type: 'docker_memory_limit',
+          severity: 'critical',
+          message: `Docker memory limit (${dockerLimit.toFixed(1)}GB) is below required RAM (${combined.minRAM.toFixed(1)}GB)`,
+          recommendation: 'Increase Docker memory limit in Docker Desktop settings'
+        });
+      }
+    }
+
+    // Generate optimization recommendations
+    const optimizations = this.generateOptimizationRecommendations(
+      combined,
+      comparison,
+      profileIds,
+      systemResources
+    );
+
+    return {
+      success: true,
+      profiles: profileIds,
+      requirements: {
+        minRAM: combined.minRAM,
+        recommendedRAM: combined.recommendedRAM,
+        optimalRAM: combined.optimalRAM,
+        minDisk: combined.minDisk,
+        minCPU: combined.minCPU
+      },
+      services: combined.services,
+      sharedResources: combined.sharedResources,
+      profileBreakdown: combined.profileBreakdown,
+      systemResources: {
+        ram: effectiveRAM,
+        disk: availableDisk,
+        cpu: availableCPU,
+        dockerLimit: systemResources.docker.hasLimit ? parseFloat(systemResources.docker.memoryLimitGB) : null
+      },
+      comparison,
+      warnings,
+      optimizations,
+      sufficient: comparison.ram.meetsMin && comparison.disk.meetsMin && comparison.cpu.meetsMin
+    };
+  }
+
+  /**
+   * Generate resource optimization recommendations
+   * @param {Object} combined - Combined resource requirements
+   * @param {Object} comparison - Resource comparison results
+   * @param {string[]} profileIds - Selected profile IDs
+   * @param {Object} systemResources - System resources
+   * @returns {Array} Array of optimization recommendations
+   */
+  generateOptimizationRecommendations(combined, comparison, profileIds, systemResources) {
+    const recommendations = [];
+
+    // If resources are insufficient, suggest profile reductions
+    if (!comparison.ram.meetsMin || !comparison.disk.meetsMin) {
+      // Suggest using remote node instead of local
+      if (profileIds.includes('core-local') || profileIds.includes('explorer')) {
+        recommendations.push({
+          type: 'use_remote_node',
+          priority: 'high',
+          title: 'Use Remote Kaspa Node',
+          description: 'Switch to remote node connection to save 8-12GB RAM',
+          savings: {
+            ram: '8-12GB',
+            disk: '50GB+'
+          },
+          action: 'Replace local node profiles with core-remote profile'
+        });
+      }
+
+      // Suggest using public indexers
+      if (profileIds.includes('explorer') || profileIds.includes('production')) {
+        recommendations.push({
+          type: 'use_public_indexers',
+          priority: 'high',
+          title: 'Use Public Indexers',
+          description: 'Connect to public indexer services instead of running local indexers',
+          savings: {
+            ram: '8-12GB',
+            disk: '100GB+'
+          },
+          action: 'Configure applications to use public indexer endpoints'
+        });
+      }
+
+      // Suggest removing optional profiles
+      const optionalProfiles = ['mining', 'archive'];
+      const selectedOptional = profileIds.filter(p => optionalProfiles.includes(p));
+      if (selectedOptional.length > 0) {
+        recommendations.push({
+          type: 'remove_optional',
+          priority: 'medium',
+          title: 'Remove Optional Profiles',
+          description: `Consider removing optional profiles: ${selectedOptional.join(', ')}`,
+          action: 'Deselect optional profiles to reduce resource requirements'
+        });
+      }
+    }
+
+    // If RAM is below recommended but above minimum
+    if (comparison.ram.meetsMin && !comparison.ram.meetsRecommended) {
+      recommendations.push({
+        type: 'upgrade_ram',
+        priority: 'medium',
+        title: 'Upgrade System RAM',
+        description: `System will work but ${(comparison.ram.recommended - comparison.ram.available).toFixed(1)}GB more RAM recommended for optimal performance`,
+        action: 'Consider upgrading system RAM when possible'
+      });
+    }
+
+    // Disk type optimization
+    if (systemResources.disk.type === 'HDD') {
+      recommendations.push({
+        type: 'upgrade_to_ssd',
+        priority: 'medium',
+        title: 'Upgrade to SSD',
+        description: 'HDD detected. SSD strongly recommended for indexer services and node sync',
+        benefit: '10-50x faster sync times and query performance',
+        action: 'Consider migrating to SSD storage'
+      });
+    }
+
+    // Docker limit optimization
+    if (systemResources.docker.hasLimit) {
+      const dockerLimit = parseFloat(systemResources.docker.memoryLimitGB);
+      const systemRAM = parseFloat(systemResources.memory.totalGB);
+      if (dockerLimit < systemRAM * 0.8) {
+        recommendations.push({
+          type: 'increase_docker_limit',
+          priority: 'high',
+          title: 'Increase Docker Memory Limit',
+          description: `Docker is limited to ${dockerLimit.toFixed(1)}GB but system has ${systemRAM.toFixed(1)}GB total`,
+          action: 'Increase Docker memory limit in Docker Desktop settings to at least 80% of system RAM'
+        });
+      }
+    }
+
+    // Shared resource optimization
+    if (combined.sharedResources.length > 0) {
+      recommendations.push({
+        type: 'shared_resources',
+        priority: 'info',
+        title: 'Shared Resources Detected',
+        description: `${combined.sharedResources.length} services are shared across profiles, saving resources`,
+        benefit: 'Resource deduplication already applied',
+        details: combined.sharedResources.map(s => `${s.name} shared by ${s.usedBy.length} profiles`)
+      });
+    }
+
+    return recommendations;
+  }
 }
 
 module.exports = ResourceChecker;

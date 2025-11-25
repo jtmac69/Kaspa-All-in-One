@@ -1,152 +1,185 @@
-# Kaspa Installation Wizard Backend
+# Kaspa Wizard Backend
 
 Backend API server for the Kaspa All-in-One Installation Wizard.
 
-## Features
+## Starting the Server
 
-- **System Requirements Checker**: Validates Docker, Docker Compose, system resources, and port availability
-- **Profile Management**: Manages deployment profiles and templates with dependency resolution
-- **Configuration Management**: Generates and validates .env files with secure password generation
-- **Installation Engine**: Orchestrates Docker image pulling, service building, and deployment
-- **WebSocket Progress Streaming**: Real-time installation progress updates
-- **Service Validation**: Health checks and status monitoring for deployed services
+### IMPORTANT: Host-Based Execution
+
+**The wizard ALWAYS runs on the host system, never in a container.**
+
+This design choice is intentional:
+- Can install Docker if not present (chicken-and-egg problem)
+- Direct access to system resources for validation
+- Can modify docker-compose files and .env directly
+- Simpler PROJECT_ROOT handling (always repository root)
+- No container overhead
+
+### Production & Development
+
+Use the `start-local.sh` script which automatically sets `PROJECT_ROOT` to the repository root:
+
+```bash
+# From repository root
+./services/wizard/backend/start-local.sh
+
+# Or using npm script
+cd services/wizard/backend
+npm run start:local
+```
+
+This script:
+- Detects the repository root automatically
+- Sets `PROJECT_ROOT` environment variable
+- Starts the server with correct paths
+
+**DO NOT** use `node src/server.js` or `npm start` directly for testing, as they won't set PROJECT_ROOT correctly!
+
+## Running Tests
+
+Tests should be run with the server started using `start-local.sh`:
+
+```bash
+# Terminal 1: Start server
+./services/wizard/backend/start-local.sh
+
+# Terminal 2: Run tests
+node services/wizard/backend/test-update-mode.js
+
+# Or using npm
+cd services/wizard/backend
+npm test
+```
+
+## PROJECT_ROOT Explained
+
+The wizard needs to know where the repository root is to access configuration files:
+
+- `.env` - Environment variables
+- `docker-compose.yml` - Service definitions  
+- `.kaspa-aio/installation-state.json` - Installation state
+- `.kaspa-backups/` - Configuration backups
+
+### How PROJECT_ROOT is Determined
+
+1. **Environment Variable** (if set): `process.env.PROJECT_ROOT`
+2. **Auto-Detection** (fallback): `path.resolve(__dirname, '../../../..')` (4 levels up from server.js)
+3. **start-local.sh** (recommended): Explicitly sets PROJECT_ROOT to repository root
+
+```
+PROJECT_ROOT=/home/user/kaspa-aio (auto-detected or set by start-local.sh)
+Repository at: /home/user/kaspa-aio
+```
+
+The wizard code now defaults to auto-detecting the repository root, so it works correctly whether started with `start-local.sh` or directly with `node src/server.js`.
+
+## Common Issues
+
+### Issue: Tests fail with "No installation state found"
+
+**Cause**: Server started without PROJECT_ROOT set correctly
+
+**Solution**: Use `start-local.sh` instead of `node src/server.js`
+
+```bash
+# ❌ Wrong
+node services/wizard/backend/src/server.js
+
+# ✅ Correct
+./services/wizard/backend/start-local.sh
+```
+
+### Issue: Server can't find configuration files
+
+**Cause**: PROJECT_ROOT pointing to wrong directory
+
+**Solution**: Check that start-local.sh is being used and PROJECT_ROOT is set:
+
+```bash
+# Check PROJECT_ROOT in server output
+./services/wizard/backend/start-local.sh
+# Should show: PROJECT_ROOT: /path/to/kaspa-aio
+```
+
+### Issue: Port 3000 already in use
+
+**Cause**: Another wizard instance is running
+
+**Solution**: Kill existing process
+
+```bash
+# Find and kill process on port 3000
+lsof -ti:3000 | xargs kill -9
+
+# Or stop wizard container
+./scripts/wizard.sh stop
+```
 
 ## API Endpoints
 
-### System Check
-- `GET /api/system-check` - Run full system check
-- `GET /api/system-check/docker` - Check Docker installation
-- `GET /api/system-check/docker-compose` - Check Docker Compose installation
-- `GET /api/system-check/resources` - Check system resources
-- `POST /api/system-check/ports` - Check port availability
+### Update Mode Endpoints
 
-### Profiles
-- `GET /api/profiles` - Get all profiles
-- `GET /api/profiles/:id` - Get specific profile
-- `GET /api/profiles/templates/all` - Get all templates
-- `GET /api/profiles/templates/:id` - Get specific template
-- `POST /api/profiles/validate` - Validate profile selection
-- `POST /api/profiles/requirements` - Calculate resource requirements
-- `POST /api/profiles/dependencies` - Resolve profile dependencies
+- `GET /api/wizard/updates/available` - Check for available updates
+- `POST /api/wizard/updates/apply` - Apply selected updates
+- `POST /api/wizard/updates/rollback` - Rollback failed updates
+- `GET /api/wizard/updates/changelog/:service/:version` - Get changelog
 
-### Configuration
-- `POST /api/config/validate` - Validate configuration
-- `POST /api/config/generate` - Generate .env file content
-- `POST /api/config/save` - Save configuration to .env file
-- `GET /api/config/load` - Load existing configuration
-- `POST /api/config/default` - Generate default configuration
-- `GET /api/config/password` - Generate secure password
+See [UPDATE_MODE_QUICK_REFERENCE.md](../../../docs/quick-references/UPDATE_MODE_QUICK_REFERENCE.md) for detailed API documentation.
 
-### Installation
-- `POST /api/install/start` - Start installation process
-- `POST /api/install/pull` - Pull Docker images
-- `POST /api/install/build` - Build services
-- `POST /api/install/deploy` - Start services
-- `POST /api/install/validate` - Validate installation
-- `GET /api/install/status/:service` - Get service status
-- `GET /api/install/logs/:service` - Get service logs
-- `POST /api/install/stop` - Stop all services
+## Development Workflow
 
-### Health
-- `GET /api/health` - Health check endpoint
+1. **Start server for development**
+   ```bash
+   ./services/wizard/backend/start-local.sh
+   ```
 
-## WebSocket Events
+2. **Make code changes**
+   - Edit files in `src/`
+   - Server needs manual restart (or use nodemon)
 
-### Client → Server
-- `install:start` - Start installation with config and profiles
-- `service:status` - Request service status
-- `logs:stream` - Request log streaming
+3. **Run tests**
+   ```bash
+   node services/wizard/backend/test-update-mode.js
+   ```
 
-### Server → Client
-- `install:progress` - Installation progress update
-- `install:error` - Installation error
-- `install:complete` - Installation completed
-- `service:status:response` - Service status response
-- `logs:data` - Log data
-- `logs:error` - Log streaming error
+4. **Test in browser**
+   ```bash
+   open http://localhost:3000
+   ```
 
-## Development
+5. **Stop server**
+   ```bash
+   # Ctrl+C in terminal, or:
+   lsof -ti:3000 | xargs kill
+   ```
 
-### Prerequisites
-- Node.js 18+
-- Docker and Docker Compose
-- Access to Docker socket
-
-### Installation
-
-```bash
-cd services/wizard/backend
-npm install
-```
-
-### Running
-
-```bash
-# Development mode with auto-reload
-npm run dev
-
-# Production mode
-npm start
-```
-
-The server will start on port 3000 by default. You can change this by setting the `WIZARD_PORT` environment variable.
-
-### Environment Variables
-
-- `WIZARD_PORT` - Server port (default: 3000)
-- `NODE_ENV` - Environment (development/production)
-
-## Docker
-
-Build and run with Docker:
-
-```bash
-docker build -t kaspa-wizard-backend .
-docker run -p 3000:3000 -v /var/run/docker.sock:/var/run/docker.sock kaspa-wizard-backend
-```
-
-## Architecture
+## File Structure
 
 ```
-backend/
+services/wizard/backend/
 ├── src/
 │   ├── api/              # API route handlers
-│   │   ├── system-check.js
-│   │   ├── profiles.js
-│   │   ├── config.js
-│   │   └── install.js
+│   │   ├── update.js     # Update mode endpoints
+│   │   ├── reconfigure.js
+│   │   └── ...
 │   ├── utils/            # Utility modules
-│   │   ├── system-checker.js
-│   │   ├── profile-manager.js
-│   │   ├── config-generator.js
-│   │   └── docker-manager.js
-│   └── server.js         # Main server with WebSocket
+│   ├── middleware/       # Express middleware
+│   └── server.js         # Main server file
+├── start-local.sh        # Local development start script
+├── test-update-mode.js   # Update mode tests
 ├── package.json
-├── Dockerfile
-└── README.md
+└── README.md             # This file
 ```
 
-## Security Considerations
+## Environment Variables
 
-- The backend requires access to the Docker socket for container management
-- Passwords are generated using cryptographically secure random bytes
-- Configuration files are backed up before overwriting
-- Input validation is performed using Joi schemas
-- CORS is enabled for development (should be restricted in production)
+- `PROJECT_ROOT` - Repository root path (auto-set by start-local.sh)
+- `WIZARD_PORT` - Server port (default: 3000)
+- `WIZARD_MODE` - Wizard mode: install, reconfigure, update
+- `NODE_ENV` - Environment: development, production
 
-## Testing
+## Related Documentation
 
-```bash
-# Run system check
-curl http://localhost:3000/api/system-check
-
-# Get all profiles
-curl http://localhost:3000/api/profiles
-
-# Generate password
-curl http://localhost:3000/api/config/password
-```
-
-## License
-
-Part of the Kaspa All-in-One project.
+- [Update Mode Implementation](../../../docs/implementation-summaries/wizard/UPDATE_MODE_IMPLEMENTATION.md)
+- [Update Mode Quick Reference](../../../docs/quick-references/UPDATE_MODE_QUICK_REFERENCE.md)
+- [Wizard Integration Guide](../../../docs/wizard-integration.md)

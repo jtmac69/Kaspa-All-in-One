@@ -1,11 +1,16 @@
 /**
  * Configure Module
  * Handles configuration form loading and management
+ * Updated for new profile architecture with dependency validation
  */
 
 import { api } from './api-client.js';
 import { stateManager } from './state-manager.js';
 import { showNotification } from './utils.js';
+
+// Profile selection state
+let selectedProfiles = [];
+let profileData = null;
 
 /**
  * Load configuration form from API
@@ -338,6 +343,12 @@ function gatherConfigurationFromForm() {
         config.POSTGRES_PASSWORD = dbPasswordInput.value;
     }
     
+    // Developer Mode
+    const developerModeToggle = document.getElementById('developer-mode-toggle');
+    if (developerModeToggle) {
+        config.DEVELOPER_MODE = developerModeToggle.checked;
+    }
+    
     // Custom environment variables
     const customEnvTextarea = document.getElementById('custom-env');
     if (customEnvTextarea && customEnvTextarea.value) {
@@ -384,3 +395,265 @@ export async function saveConfiguration() {
     }
 }
 
+
+/**
+ * Setup Developer Mode toggle
+ */
+export function setupDeveloperModeToggle() {
+    const toggle = document.getElementById('developer-mode-toggle');
+    const details = document.getElementById('developer-mode-details');
+    
+    if (!toggle || !details) return;
+    
+    // Handle toggle change
+    toggle.addEventListener('change', () => {
+        if (toggle.checked) {
+            details.style.display = 'block';
+            stateManager.set('developerMode', true);
+        } else {
+            details.style.display = 'none';
+            stateManager.set('developerMode', false);
+        }
+    });
+    
+    // Load saved state
+    const savedState = stateManager.get('developerMode');
+    if (savedState) {
+        toggle.checked = true;
+        details.style.display = 'block';
+    }
+}
+
+
+/**
+ * Initialize profile selection
+ */
+export async function initializeProfileSelection() {
+    try {
+        // Load profile data from API
+        const response = await api.get('/profiles');
+        profileData = response.profiles || response;
+        
+        // Load saved selection from state
+        selectedProfiles = stateManager.get('selectedProfiles') || [];
+        
+        // Setup profile card click handlers
+        setupProfileCardHandlers();
+        
+        // Restore selected state
+        updateProfileCardStates();
+        
+        // Update UI based on selection
+        await updateProfileSelectionUI();
+        
+    } catch (error) {
+        console.error('Failed to initialize profile selection:', error);
+        showNotification('Failed to load profiles', 'error');
+    }
+}
+
+/**
+ * Setup click handlers for profile cards
+ */
+function setupProfileCardHandlers() {
+    const profileCards = document.querySelectorAll('.profile-card');
+    
+    profileCards.forEach(card => {
+        card.addEventListener('click', async () => {
+            const profileId = card.dataset.profile;
+            
+            // Toggle selection
+            if (selectedProfiles.includes(profileId)) {
+                selectedProfiles = selectedProfiles.filter(id => id !== profileId);
+            } else {
+                selectedProfiles.push(profileId);
+            }
+            
+            // Save to state
+            stateManager.set('selectedProfiles', selectedProfiles);
+            
+            // Update UI
+            updateProfileCardStates();
+            await updateProfileSelectionUI();
+        });
+    });
+}
+
+/**
+ * Update visual state of profile cards
+ */
+function updateProfileCardStates() {
+    const profileCards = document.querySelectorAll('.profile-card');
+    
+    profileCards.forEach(card => {
+        const profileId = card.dataset.profile;
+        
+        if (selectedProfiles.includes(profileId)) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+    });
+}
+
+/**
+ * Update profile selection UI (warnings, resources, startup order)
+ */
+async function updateProfileSelectionUI() {
+    if (selectedProfiles.length === 0) {
+        // Hide all dynamic sections
+        hideElement('dependency-warning');
+        hideElement('resource-warning');
+        hideElement('combined-resources');
+        hideElement('startup-order');
+        return;
+    }
+    
+    try {
+        // Validate selection with backend
+        const validation = await api.post('/profiles/validate-selection', {
+            profiles: selectedProfiles
+        });
+        
+        // Show dependency warnings
+        if (validation.errors && validation.errors.length > 0) {
+            showDependencyWarning(validation.errors);
+        } else {
+            hideElement('dependency-warning');
+        }
+        
+        // Show resource warnings
+        if (validation.warnings && validation.warnings.length > 0) {
+            showResourceWarning(validation.warnings);
+        } else {
+            hideElement('resource-warning');
+        }
+        
+        // Show combined resources
+        if (validation.resources) {
+            showCombinedResources(validation.resources);
+        }
+        
+        // Show startup order
+        if (validation.startupOrder) {
+            showStartupOrder(validation.startupOrder);
+        }
+        
+    } catch (error) {
+        console.error('Failed to validate profile selection:', error);
+        showNotification('Failed to validate selection', 'error');
+    }
+}
+
+/**
+ * Show dependency warning
+ */
+function showDependencyWarning(errors) {
+    const warningEl = document.getElementById('dependency-warning');
+    const messageEl = document.getElementById('dependency-warning-message');
+    
+    if (!warningEl || !messageEl) return;
+    
+    const messages = errors.map(err => `• ${err.message || err}`).join('<br>');
+    messageEl.innerHTML = messages;
+    warningEl.style.display = 'flex';
+}
+
+/**
+ * Show resource warning
+ */
+function showResourceWarning(warnings) {
+    const warningEl = document.getElementById('resource-warning');
+    const messageEl = document.getElementById('resource-warning-message');
+    
+    if (!warningEl || !messageEl) return;
+    
+    const messages = warnings.map(warn => `• ${warn.message || warn}`).join('<br>');
+    messageEl.innerHTML = messages;
+    warningEl.style.display = 'flex';
+}
+
+/**
+ * Show combined resource requirements
+ */
+function showCombinedResources(resources) {
+    const containerEl = document.getElementById('combined-resources');
+    const cpuEl = document.getElementById('combined-cpu');
+    const ramEl = document.getElementById('combined-ram');
+    const diskEl = document.getElementById('combined-disk');
+    
+    if (!containerEl || !cpuEl || !ramEl || !diskEl) return;
+    
+    cpuEl.textContent = `${resources.minCpu} cores (${resources.recommendedCpu} recommended)`;
+    ramEl.textContent = `${resources.minMemory} GB (${resources.recommendedMemory} GB recommended)`;
+    diskEl.textContent = `${resources.minDisk} GB (${resources.recommendedDisk} GB recommended)`;
+    
+    containerEl.style.display = 'block';
+}
+
+/**
+ * Show startup order visualization
+ */
+function showStartupOrder(startupOrder) {
+    const containerEl = document.getElementById('startup-order');
+    
+    if (!containerEl) return;
+    
+    // Clear previous content
+    const phases = [1, 2, 3];
+    phases.forEach(phase => {
+        const phaseEl = document.getElementById(`phase-${phase}`);
+        const arrowEl = document.getElementById(`arrow-${phase}`);
+        const servicesEl = document.getElementById(`phase-${phase}-services`);
+        
+        if (phaseEl) phaseEl.style.display = 'none';
+        if (arrowEl) arrowEl.style.display = 'none';
+        if (servicesEl) servicesEl.innerHTML = '';
+    });
+    
+    // Populate phases
+    let hasContent = false;
+    
+    Object.keys(startupOrder).forEach(phase => {
+        const phaseNum = parseInt(phase);
+        const services = startupOrder[phase];
+        
+        if (services && services.length > 0) {
+            hasContent = true;
+            
+            const phaseEl = document.getElementById(`phase-${phaseNum}`);
+            const servicesEl = document.getElementById(`phase-${phaseNum}-services`);
+            
+            if (phaseEl && servicesEl) {
+                phaseEl.style.display = 'flex';
+                servicesEl.innerHTML = services.map(s => `<span class="service-tag">${s}</span>`).join(' ');
+                
+                // Show arrow if not last phase
+                if (phaseNum < 3) {
+                    const nextPhase = startupOrder[phaseNum + 1];
+                    if (nextPhase && nextPhase.length > 0) {
+                        const arrowEl = document.getElementById(`arrow-${phaseNum}`);
+                        if (arrowEl) arrowEl.style.display = 'block';
+                    }
+                }
+            }
+        }
+    });
+    
+    containerEl.style.display = hasContent ? 'block' : 'none';
+}
+
+/**
+ * Hide element
+ */
+function hideElement(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+}
+
+/**
+ * Get selected profiles
+ */
+export function getSelectedProfiles() {
+    return selectedProfiles;
+}

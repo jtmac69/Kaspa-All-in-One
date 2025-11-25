@@ -147,6 +147,7 @@ function getStageTitle(stage) {
         'pull': 'Downloading Docker Images',
         'build': 'Building Services',
         'deploy': 'Starting Services',
+        'syncing': 'Synchronizing Blockchain',
         'validate': 'Validating Installation'
     };
     return titles[stage] || 'Installing...';
@@ -162,6 +163,7 @@ function getStageColor(stage) {
         'pull': '#f39c12',
         'build': '#e67e22',
         'deploy': '#e74c3c',
+        'syncing': '#70C7BA',
         'validate': '#27ae60'
     };
     return colors[stage] || '#34495e';
@@ -241,6 +243,7 @@ function updateTimeEstimate(stage, progress) {
         'pull': 5,        // 5 minutes (varies by connection)
         'build': 3,       // 3 minutes
         'deploy': 2,      // 2 minutes
+        'syncing': 0,     // Variable - handled separately
         'validate': 1     // 1 minute
     };
     
@@ -251,7 +254,10 @@ function updateTimeEstimate(stage, progress) {
     // Update time estimate display if element exists
     const timeEstimate = document.getElementById('install-time-estimate');
     if (timeEstimate) {
-        if (remainingTime > 0) {
+        if (stage === 'syncing') {
+            // For syncing stage, time is shown in sync progress section
+            timeEstimate.style.display = 'none';
+        } else if (remainingTime > 0) {
             const minutes = Math.ceil(remainingTime);
             timeEstimate.textContent = `Estimated time remaining: ${minutes} minute${minutes !== 1 ? 's' : ''}`;
             timeEstimate.style.display = 'block';
@@ -271,6 +277,7 @@ function updateInstallSteps(stage, progress, details) {
         'pull': 'pull',
         'build': 'pull',
         'deploy': 'start',
+        'syncing': 'sync',
         'validate': 'health'
     };
     
@@ -287,7 +294,7 @@ function updateInstallSteps(stage, progress, details) {
         if (!icon || !status) return;
         
         // Determine step state
-        const stepOrder = ['env', 'pull', 'start', 'health'];
+        const stepOrder = ['env', 'pull', 'start', 'sync', 'health'];
         const currentIndex = stepOrder.indexOf(currentStep);
         const stepIndex = stepOrder.indexOf(stepName);
         
@@ -312,6 +319,8 @@ function updateInstallSteps(stage, progress, details) {
                     statusText = `Pulling ${details.current}/${details.total}`;
                 } else if (stepName === 'start' && details.service) {
                     statusText = `Starting ${details.service}`;
+                } else if (stepName === 'sync' && details.percentage !== undefined) {
+                    statusText = `${details.percentage.toFixed(1)}% synced`;
                 } else if (stepName === 'health' && details.service) {
                     statusText = `Checking ${details.service}`;
                 }
@@ -1105,3 +1114,858 @@ export function updateInstallationStats(stats) {
     statsContainer.innerHTML = statsHTML.join('');
     statsContainer.style.display = statsHTML.length > 0 ? 'flex' : 'none';
 }
+
+/**
+ * Show node sync strategy dialog
+ * Presents user with 3 options for handling node synchronization
+ * @param {Object} syncData - Sync status and options
+ * @returns {Promise<string>} User's choice: 'wait', 'background', or 'skip'
+ */
+export function showSyncStrategyDialog(syncData) {
+    return new Promise((resolve) => {
+        // Create modal overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'sync-strategy-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        `;
+
+        // Create dialog
+        const dialog = document.createElement('div');
+        dialog.className = 'sync-strategy-dialog';
+        dialog.style.cssText = `
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        `;
+
+        // Build dialog content
+        const { syncStatus, estimatedTime, options } = syncData;
+        
+        dialog.innerHTML = `
+            <div class="sync-strategy-header">
+                <div class="sync-strategy-icon">⏱️</div>
+                <h2 style="margin: 16px 0 8px 0; color: #2c3e50; font-size: 24px;">
+                    Node Synchronization Required
+                </h2>
+                <p style="color: #7f8c8d; margin: 0 0 24px 0; font-size: 14px;">
+                    Your Kaspa node needs to sync with the blockchain before it can be used.
+                </p>
+            </div>
+
+            <div class="sync-strategy-status" style="
+                background: #f8f9fa;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 24px;
+                border-left: 4px solid #70C7BA;
+            ">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: #7f8c8d; font-size: 13px;">Sync Progress</span>
+                    <span style="color: #2c3e50; font-weight: 600; font-size: 13px;">
+                        ${syncStatus.percentage.toFixed(1)}%
+                    </span>
+                </div>
+                <div style="background: #e0e0e0; height: 6px; border-radius: 3px; overflow: hidden;">
+                    <div style="
+                        background: linear-gradient(135deg, #70C7BA 0%, #49C8B5 100%);
+                        height: 100%;
+                        width: ${syncStatus.percentage}%;
+                        transition: width 0.3s ease;
+                    "></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: #95a5a6;">
+                    <span>Block ${syncStatus.currentBlock.toLocaleString()} of ${syncStatus.targetBlock.toLocaleString()}</span>
+                    <span>${estimatedTime || 'Calculating...'}</span>
+                </div>
+            </div>
+
+            <div class="sync-strategy-options" style="margin-bottom: 24px;">
+                <p style="color: #2c3e50; font-weight: 600; margin-bottom: 16px; font-size: 14px;">
+                    How would you like to proceed?
+                </p>
+                ${options.map(option => `
+                    <div class="sync-strategy-option ${option.recommended ? 'recommended' : ''}" 
+                         data-choice="${option.id}"
+                         style="
+                            border: 2px solid ${option.recommended ? '#70C7BA' : '#e0e0e0'};
+                            border-radius: 8px;
+                            padding: 16px;
+                            margin-bottom: 12px;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            position: relative;
+                            background: ${option.recommended ? 'rgba(112, 199, 186, 0.05)' : 'white'};
+                         "
+                         onmouseover="this.style.borderColor='#70C7BA'; this.style.transform='translateX(4px)';"
+                         onmouseout="this.style.borderColor='${option.recommended ? '#70C7BA' : '#e0e0e0'}'; this.style.transform='translateX(0)';">
+                        ${option.recommended ? `
+                            <div style="
+                                position: absolute;
+                                top: -10px;
+                                right: 16px;
+                                background: #70C7BA;
+                                color: white;
+                                padding: 4px 12px;
+                                border-radius: 12px;
+                                font-size: 11px;
+                                font-weight: 600;
+                                text-transform: uppercase;
+                                letter-spacing: 0.5px;
+                            ">Recommended</div>
+                        ` : ''}
+                        <div style="display: flex; align-items: start;">
+                            <div style="
+                                width: 24px;
+                                height: 24px;
+                                border: 2px solid ${option.recommended ? '#70C7BA' : '#bdc3c7'};
+                                border-radius: 50%;
+                                margin-right: 12px;
+                                flex-shrink: 0;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                background: white;
+                            ">
+                                <div class="option-radio" style="
+                                    width: 12px;
+                                    height: 12px;
+                                    border-radius: 50%;
+                                    background: ${option.recommended ? '#70C7BA' : 'transparent'};
+                                    transition: background 0.2s ease;
+                                "></div>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="
+                                    color: #2c3e50;
+                                    font-weight: 600;
+                                    margin-bottom: 4px;
+                                    font-size: 15px;
+                                ">${option.label}</div>
+                                <div style="
+                                    color: #7f8c8d;
+                                    font-size: 13px;
+                                    line-height: 1.5;
+                                ">${option.description}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div class="sync-strategy-actions" style="
+                display: flex;
+                gap: 12px;
+                justify-content: flex-end;
+            ">
+                <button id="sync-strategy-cancel" style="
+                    padding: 12px 24px;
+                    border: 2px solid #e0e0e0;
+                    background: white;
+                    color: #7f8c8d;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    font-size: 14px;
+                " onmouseover="this.style.borderColor='#bdc3c7';" 
+                   onmouseout="this.style.borderColor='#e0e0e0';">
+                    Cancel
+                </button>
+                <button id="sync-strategy-confirm" disabled style="
+                    padding: 12px 32px;
+                    border: none;
+                    background: linear-gradient(135deg, #70C7BA 0%, #49C8B5 100%);
+                    color: white;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    font-size: 14px;
+                    opacity: 0.5;
+                " onmouseover="if(!this.disabled) this.style.transform='translateY(-2px)';" 
+                   onmouseout="this.style.transform='translateY(0)';">
+                    Continue
+                </button>
+            </div>
+        `;
+
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideUp {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Handle option selection
+        let selectedChoice = null;
+        const optionElements = dialog.querySelectorAll('.sync-strategy-option');
+        const confirmBtn = dialog.querySelector('#sync-strategy-confirm');
+
+        optionElements.forEach(optionEl => {
+            optionEl.addEventListener('click', () => {
+                // Deselect all options
+                optionElements.forEach(el => {
+                    el.style.borderColor = el.classList.contains('recommended') ? '#70C7BA' : '#e0e0e0';
+                    el.style.background = el.classList.contains('recommended') ? 'rgba(112, 199, 186, 0.05)' : 'white';
+                    const radio = el.querySelector('.option-radio');
+                    if (radio) radio.style.background = 'transparent';
+                });
+
+                // Select clicked option
+                optionEl.style.borderColor = '#70C7BA';
+                optionEl.style.background = 'rgba(112, 199, 186, 0.1)';
+                const radio = optionEl.querySelector('.option-radio');
+                if (radio) radio.style.background = '#70C7BA';
+
+                selectedChoice = optionEl.dataset.choice;
+
+                // Enable confirm button
+                confirmBtn.disabled = false;
+                confirmBtn.style.opacity = '1';
+                confirmBtn.style.cursor = 'pointer';
+            });
+        });
+
+        // Handle confirm
+        confirmBtn.addEventListener('click', () => {
+            if (selectedChoice) {
+                document.body.removeChild(overlay);
+                document.head.removeChild(style);
+                resolve(selectedChoice);
+            }
+        });
+
+        // Handle cancel
+        const cancelBtn = dialog.querySelector('#sync-strategy-cancel');
+        cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            document.head.removeChild(style);
+            resolve(null); // User cancelled
+        });
+
+        // Pre-select recommended option
+        const recommendedOption = dialog.querySelector('.sync-strategy-option.recommended');
+        if (recommendedOption) {
+            recommendedOption.click();
+        }
+    });
+}
+
+/**
+ * Handle node sync event from backend
+ * Shows sync strategy dialog and sends user's choice back
+ * @param {Object} data - Sync event data
+ */
+export async function handleNodeSyncEvent(data) {
+    console.log('Node sync required:', data);
+
+    // Show sync strategy dialog
+    const choice = await showSyncStrategyDialog(data);
+
+    if (!choice) {
+        // User cancelled - show error
+        showNotification('Installation cancelled', 'info');
+        return;
+    }
+
+    // Store choice in state
+    stateManager.set('syncStrategy', {
+        choice,
+        timestamp: new Date().toISOString(),
+        nodeKey: data.nodeKey
+    });
+
+    // Send choice to backend via WebSocket
+    if (wsManager) {
+        wsManager.emit('sync:strategy-chosen', {
+            choice,
+            nodeKey: data.nodeKey
+        });
+    }
+
+    // Update UI based on choice
+    updateUIForSyncStrategy(choice, data);
+}
+
+/**
+ * Update UI based on selected sync strategy
+ * @param {string} strategy - Chosen strategy: 'wait', 'background', or 'skip'
+ * @param {Object} syncData - Sync status data
+ */
+function updateUIForSyncStrategy(strategy, syncData) {
+    const statusMessage = document.getElementById('install-status-message');
+    
+    if (strategy === 'wait') {
+        if (statusMessage) {
+            statusMessage.innerHTML = `
+                <strong>Waiting for node synchronization...</strong><br>
+                <small>This may take some time. You can see progress below.</small>
+            `;
+        }
+        showNotification('Waiting for node to sync', 'info');
+        
+        // Show sync progress section
+        showSyncProgressSection(syncData);
+    } else if (strategy === 'background') {
+        if (statusMessage) {
+            statusMessage.innerHTML = `
+                <strong>Node syncing in background</strong><br>
+                <small>Installation will continue. Services will use public network until sync completes.</small>
+            `;
+        }
+        showNotification('Node syncing in background', 'info');
+        
+        // Show background sync indicator
+        showBackgroundSyncIndicator(syncData);
+    } else if (strategy === 'skip') {
+        if (statusMessage) {
+            statusMessage.innerHTML = `
+                <strong>Using public Kaspa network</strong><br>
+                <small>Services will connect to public nodes.</small>
+            `;
+        }
+        showNotification('Using public network', 'info');
+    }
+}
+
+/**
+ * Show sync progress section for "wait" strategy
+ * @param {Object} syncData - Sync status data
+ */
+function showSyncProgressSection(syncData) {
+    let syncSection = document.getElementById('sync-progress-section');
+    
+    if (!syncSection) {
+        syncSection = document.createElement('div');
+        syncSection.id = 'sync-progress-section';
+        syncSection.className = 'sync-progress-section';
+        syncSection.style.cssText = `
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #70C7BA;
+        `;
+        
+        const installProgress = document.querySelector('.install-progress');
+        if (installProgress) {
+            const statusDiv = installProgress.querySelector('.install-status');
+            if (statusDiv) {
+                statusDiv.after(syncSection);
+            }
+        }
+    }
+    
+    syncSection.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; color: #2c3e50; font-size: 16px;">
+                🔄 Node Synchronization Progress
+            </h3>
+            <div id="sync-control-buttons" style="display: flex; gap: 8px;">
+                <button id="pause-sync-btn" onclick="window.pauseSync()" style="
+                    padding: 6px 12px;
+                    border: 1px solid #70C7BA;
+                    background: white;
+                    color: #70C7BA;
+                    border-radius: 6px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                " onmouseover="this.style.background='#70C7BA'; this.style.color='white';"
+                   onmouseout="this.style.background='white'; this.style.color='#70C7BA';">
+                    <span>⏸</span> Pause
+                </button>
+                <button id="resume-sync-btn" onclick="window.resumeSync()" style="
+                    padding: 6px 12px;
+                    border: 1px solid #70C7BA;
+                    background: white;
+                    color: #70C7BA;
+                    border-radius: 6px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: none;
+                    align-items: center;
+                    gap: 4px;
+                " onmouseover="this.style.background='#70C7BA'; this.style.color='white';"
+                   onmouseout="this.style.background='white'; this.style.color='#70C7BA';">
+                    <span>▶</span> Resume
+                </button>
+            </div>
+        </div>
+        <div id="sync-progress-details">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                <span style="color: #7f8c8d;">Progress</span>
+                <span id="sync-percentage" style="color: #2c3e50; font-weight: 600;">
+                    ${syncData.syncStatus.percentage.toFixed(1)}%
+                </span>
+            </div>
+            <div style="background: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 12px;">
+                <div id="sync-progress-bar" style="
+                    background: linear-gradient(135deg, #70C7BA 0%, #49C8B5 100%);
+                    height: 100%;
+                    width: ${syncData.syncStatus.percentage}%;
+                    transition: width 0.5s ease;
+                "></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 12px; margin-bottom: 12px;">
+                <div>
+                    <div style="color: #7f8c8d; margin-bottom: 4px;">Current Block</div>
+                    <div id="sync-current-block" style="color: #2c3e50; font-weight: 600;">
+                        ${syncData.syncStatus.currentBlock.toLocaleString()}
+                    </div>
+                </div>
+                <div>
+                    <div style="color: #7f8c8d; margin-bottom: 4px;">Target Block</div>
+                    <div id="sync-target-block" style="color: #2c3e50; font-weight: 600;">
+                        ${syncData.syncStatus.targetBlock.toLocaleString()}
+                    </div>
+                </div>
+                <div>
+                    <div style="color: #7f8c8d; margin-bottom: 4px;">Blocks Remaining</div>
+                    <div id="sync-blocks-remaining" style="color: #2c3e50; font-weight: 600;">
+                        ${syncData.syncStatus.blocksRemaining.toLocaleString()}
+                    </div>
+                </div>
+                <div>
+                    <div style="color: #7f8c8d; margin-bottom: 4px;">Time Remaining</div>
+                    <div id="sync-time-remaining" style="color: #2c3e50; font-weight: 600;">
+                        ${syncData.estimatedTime || 'Calculating...'}
+                    </div>
+                </div>
+            </div>
+            <div id="sync-status-message" style="
+                padding: 8px 12px;
+                background: rgba(112, 199, 186, 0.1);
+                border-radius: 6px;
+                font-size: 12px;
+                color: #2c3e50;
+                display: none;
+            "></div>
+        </div>
+    `;
+    
+    syncSection.style.display = 'block';
+}
+
+/**
+ * Show background sync indicator for "background" strategy
+ * @param {Object} syncData - Sync status data
+ */
+function showBackgroundSyncIndicator(syncData) {
+    let indicator = document.getElementById('background-sync-indicator');
+    
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'background-sync-indicator';
+        indicator.className = 'background-sync-indicator';
+        indicator.style.cssText = `
+            background: linear-gradient(135deg, rgba(112, 199, 186, 0.1) 0%, rgba(73, 200, 181, 0.1) 100%);
+            border: 1px solid #70C7BA;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 16px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+        `;
+        
+        const installProgress = document.querySelector('.install-progress');
+        if (installProgress) {
+            const statusDiv = installProgress.querySelector('.install-status');
+            if (statusDiv) {
+                statusDiv.after(indicator);
+            }
+        }
+    }
+    
+    indicator.innerHTML = `
+        <div id="background-sync-icon" style="
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        ">
+            <div class="spinner-small"></div>
+        </div>
+        <div style="flex: 1;">
+            <div id="background-sync-title" style="color: #2c3e50; font-weight: 600; margin-bottom: 2px;">
+                Node syncing in background
+            </div>
+            <div style="color: #7f8c8d; font-size: 12px;">
+                <span id="background-sync-percentage">${syncData.syncStatus.percentage.toFixed(1)}%</span> complete •
+                <span id="background-sync-time">${syncData.estimatedTime || 'Calculating...'}</span> remaining
+            </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button id="background-pause-btn" onclick="window.pauseBackgroundSync()" style="
+                padding: 6px 12px;
+                border: 1px solid #70C7BA;
+                background: white;
+                color: #70C7BA;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            " onmouseover="this.style.background='#70C7BA'; this.style.color='white';"
+               onmouseout="this.style.background='white'; this.style.color='#70C7BA';">
+                <span>⏸</span>
+            </button>
+            <button id="background-resume-btn" onclick="window.resumeBackgroundSync()" style="
+                padding: 6px 12px;
+                border: 1px solid #70C7BA;
+                background: white;
+                color: #70C7BA;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: none;
+                align-items: center;
+                gap: 4px;
+            " onmouseover="this.style.background='#70C7BA'; this.style.color='white';"
+               onmouseout="this.style.background='white'; this.style.color='#70C7BA';">
+                <span>▶</span>
+            </button>
+            <button onclick="window.showBackgroundSyncDetails()" style="
+                padding: 6px 12px;
+                border: 1px solid #70C7BA;
+                background: white;
+                color: #70C7BA;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            " onmouseover="this.style.background='#70C7BA'; this.style.color='white';"
+               onmouseout="this.style.background='white'; this.style.color='#70C7BA';">
+                Details
+            </button>
+        </div>
+    `;
+    
+    indicator.style.display = 'flex';
+}
+
+/**
+ * Pause background sync
+ */
+window.pauseBackgroundSync = function() {
+    console.log('Pausing background sync...');
+    
+    // Send pause command
+    if (wsManager) {
+        wsManager.emit('sync:pause');
+    }
+    
+    // Update UI
+    const pauseBtn = document.getElementById('background-pause-btn');
+    const resumeBtn = document.getElementById('background-resume-btn');
+    const icon = document.getElementById('background-sync-icon');
+    const title = document.getElementById('background-sync-title');
+    
+    if (pauseBtn) pauseBtn.style.display = 'none';
+    if (resumeBtn) resumeBtn.style.display = 'flex';
+    
+    if (icon) {
+        icon.innerHTML = '<span style="color: #f1c40f; font-size: 18px;">⏸</span>';
+    }
+    
+    if (title) {
+        title.textContent = 'Node sync paused';
+    }
+    
+    showNotification('Background sync paused', 'info');
+    stateManager.set('syncPaused', true);
+};
+
+/**
+ * Resume background sync
+ */
+window.resumeBackgroundSync = function() {
+    console.log('Resuming background sync...');
+    
+    // Send resume command
+    if (wsManager) {
+        wsManager.emit('sync:resume');
+    }
+    
+    // Update UI
+    const pauseBtn = document.getElementById('background-pause-btn');
+    const resumeBtn = document.getElementById('background-resume-btn');
+    const icon = document.getElementById('background-sync-icon');
+    const title = document.getElementById('background-sync-title');
+    
+    if (pauseBtn) pauseBtn.style.display = 'flex';
+    if (resumeBtn) resumeBtn.style.display = 'none';
+    
+    if (icon) {
+        icon.innerHTML = '<div class="spinner-small"></div>';
+    }
+    
+    if (title) {
+        title.textContent = 'Node syncing in background';
+    }
+    
+    showNotification('Background sync resumed', 'success');
+    stateManager.delete('syncPaused');
+};
+
+/**
+ * Update sync progress display
+ * Called periodically when sync progress updates are received
+ * @param {Object} syncStatus - Updated sync status
+ */
+export function updateSyncProgress(syncStatus) {
+    // Update sync progress section (for "wait" strategy)
+    const syncPercentage = document.getElementById('sync-percentage');
+    if (syncPercentage) {
+        syncPercentage.textContent = `${syncStatus.percentage.toFixed(1)}%`;
+    }
+    
+    const syncProgressBar = document.getElementById('sync-progress-bar');
+    if (syncProgressBar) {
+        syncProgressBar.style.width = `${syncStatus.percentage}%`;
+    }
+    
+    const syncCurrentBlock = document.getElementById('sync-current-block');
+    if (syncCurrentBlock) {
+        syncCurrentBlock.textContent = syncStatus.currentBlock.toLocaleString();
+    }
+    
+    const syncTargetBlock = document.getElementById('sync-target-block');
+    if (syncTargetBlock) {
+        syncTargetBlock.textContent = syncStatus.targetBlock.toLocaleString();
+    }
+    
+    const syncBlocksRemaining = document.getElementById('sync-blocks-remaining');
+    if (syncBlocksRemaining) {
+        syncBlocksRemaining.textContent = syncStatus.blocksRemaining.toLocaleString();
+    }
+    
+    const syncTimeRemaining = document.getElementById('sync-time-remaining');
+    if (syncTimeRemaining && syncStatus.estimatedTimeRemaining !== null) {
+        syncTimeRemaining.textContent = formatSyncTime(syncStatus.estimatedTimeRemaining);
+    }
+    
+    // Update background sync indicator (for "background" strategy)
+    const backgroundSyncPercentage = document.getElementById('background-sync-percentage');
+    if (backgroundSyncPercentage) {
+        backgroundSyncPercentage.textContent = `${syncStatus.percentage.toFixed(1)}%`;
+    }
+    
+    const backgroundSyncTime = document.getElementById('background-sync-time');
+    if (backgroundSyncTime && syncStatus.estimatedTimeRemaining !== null) {
+        backgroundSyncTime.textContent = `${formatSyncTime(syncStatus.estimatedTimeRemaining)} remaining`;
+    }
+}
+
+/**
+ * Format sync time in human-readable format
+ * @param {number} seconds - Time in seconds
+ * @returns {string} Formatted time string
+ */
+function formatSyncTime(seconds) {
+    if (seconds === null || seconds === undefined) {
+        return 'Calculating...';
+    }
+    
+    if (seconds === 0) {
+        return 'Complete';
+    }
+    
+    if (seconds < 60) {
+        return `${seconds} seconds`;
+    }
+    
+    if (seconds < 3600) {
+        const minutes = Math.floor(seconds / 60);
+        return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    }
+    
+    if (seconds < 86400) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return `${hours} hour${hours !== 1 ? 's' : ''}${minutes > 0 ? ` ${minutes} min` : ''}`;
+    }
+    
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    return `${days} day${days !== 1 ? 's' : ''}${hours > 0 ? ` ${hours} hr` : ''}`;
+}
+
+/**
+ * Handle sync complete event
+ * @param {Object} data - Sync completion data
+ */
+export function handleSyncComplete(data) {
+    console.log('Node sync complete:', data);
+    
+    showNotification('Node synchronization complete!', 'success');
+    
+    // Hide sync progress section
+    const syncSection = document.getElementById('sync-progress-section');
+    if (syncSection) {
+        syncSection.style.display = 'none';
+    }
+    
+    // Hide background sync indicator
+    const indicator = document.getElementById('background-sync-indicator');
+    if (indicator) {
+        indicator.style.display = 'none';
+    }
+    
+    // Update status message
+    const statusMessage = document.getElementById('install-status-message');
+    if (statusMessage) {
+        statusMessage.innerHTML = `
+            <strong>✓ Node synchronized successfully</strong><br>
+            <small>Services are now using the local node.</small>
+        `;
+    }
+    
+    // Add to logs
+    addToLogs('✓ Node synchronization complete');
+}
+
+/**
+ * Show background sync details dialog
+ */
+window.showBackgroundSyncDetails = function() {
+    const syncSection = document.getElementById('sync-progress-section');
+    if (syncSection) {
+        syncSection.style.display = 'block';
+        syncSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+        // Create and show sync details
+        const syncData = stateManager.get('syncStatus');
+        if (syncData) {
+            showSyncProgressSection(syncData);
+        }
+    }
+};
+
+/**
+ * Pause node synchronization
+ */
+window.pauseSync = function() {
+    console.log('Pausing node synchronization...');
+    
+    // Send pause command to backend
+    if (wsManager) {
+        wsManager.emit('sync:pause');
+    }
+    
+    // Update UI
+    const pauseBtn = document.getElementById('pause-sync-btn');
+    const resumeBtn = document.getElementById('resume-sync-btn');
+    
+    if (pauseBtn) {
+        pauseBtn.style.display = 'none';
+    }
+    if (resumeBtn) {
+        resumeBtn.style.display = 'flex';
+    }
+    
+    // Show status message
+    const statusMessage = document.getElementById('sync-status-message');
+    if (statusMessage) {
+        statusMessage.innerHTML = '<strong>⏸ Synchronization paused</strong> - Click Resume to continue';
+        statusMessage.style.display = 'block';
+        statusMessage.style.background = 'rgba(241, 196, 15, 0.1)';
+        statusMessage.style.borderLeft = '3px solid #f1c40f';
+    }
+    
+    // Update progress bar to paused state
+    const progressBar = document.getElementById('sync-progress-bar');
+    if (progressBar) {
+        progressBar.style.background = '#f1c40f';
+    }
+    
+    showNotification('Node synchronization paused', 'info');
+    addToLogs('⏸ Node synchronization paused');
+    
+    // Store paused state
+    stateManager.set('syncPaused', true);
+};
+
+/**
+ * Resume node synchronization
+ */
+window.resumeSync = function() {
+    console.log('Resuming node synchronization...');
+    
+    // Send resume command to backend
+    if (wsManager) {
+        wsManager.emit('sync:resume');
+    }
+    
+    // Update UI
+    const pauseBtn = document.getElementById('pause-sync-btn');
+    const resumeBtn = document.getElementById('resume-sync-btn');
+    
+    if (pauseBtn) {
+        pauseBtn.style.display = 'flex';
+    }
+    if (resumeBtn) {
+        resumeBtn.style.display = 'none';
+    }
+    
+    // Hide status message
+    const statusMessage = document.getElementById('sync-status-message');
+    if (statusMessage) {
+        statusMessage.style.display = 'none';
+    }
+    
+    // Restore progress bar color
+    const progressBar = document.getElementById('sync-progress-bar');
+    if (progressBar) {
+        progressBar.style.background = 'linear-gradient(135deg, #70C7BA 0%, #49C8B5 100%)';
+    }
+    
+    showNotification('Node synchronization resumed', 'success');
+    addToLogs('▶ Node synchronization resumed');
+    
+    // Clear paused state
+    stateManager.delete('syncPaused');
+};

@@ -14,16 +14,21 @@ const profilesRouter = require('./api/profiles');
 const configRouter = require('./api/config');
 const installRouter = require('./api/install');
 const reconfigureRouter = require('./api/reconfigure');
+const updateRouter = require('./api/update');
 const installationGuidesRouter = require('./api/installation-guides');
 const errorRemediationRouter = require('./api/error-remediation');
 const safetyRouter = require('./api/safety');
 const diagnosticRouter = require('./api/diagnostic');
 const glossaryRouter = require('./api/glossary');
 const rollbackRouter = require('./api/rollback');
+const fallbackRouter = require('./api/fallback');
+const nodeSyncRouter = require('./api/node-sync');
+const wizardStateRouter = require('./api/wizard-state');
 
 // Import utilities
 const DockerManager = require('./utils/docker-manager');
 const ConfigGenerator = require('./utils/config-generator');
+const BackgroundTaskManager = require('./utils/background-task-manager');
 const { secureErrorHandler, requestTimeout, validateInput } = require('./middleware/security');
 const { logError } = require('./utils/error-handler');
 
@@ -39,6 +44,7 @@ const io = socketIo(server, {
 const PORT = process.env.WIZARD_PORT || 3000;
 const dockerManager = new DockerManager();
 const configGenerator = new ConfigGenerator();
+const backgroundTaskManager = new BackgroundTaskManager(io);
 
 // Security middleware
 // NOTE: CSP temporarily disabled for testing - inline onclick handlers need to be converted to event listeners
@@ -88,13 +94,18 @@ app.use('/api/content', contentRouter);
 app.use('/api/profiles', profilesRouter);
 app.use('/api/config', configRouter);
 app.use('/api/install', installRouter);
-app.use('/api/reconfigure', reconfigureRouter);
+app.use('/api/reconfigure', reconfigureRouter); // Reconfigure routes under /api/reconfigure
+app.use('/api/wizard', reconfigureRouter); // Also mount under /api/wizard for current-config and reconfigure endpoints
+app.use('/api/wizard/updates', updateRouter); // Update routes under /api/wizard/updates
 app.use('/api/installation-guides', installationGuidesRouter);
 app.use('/api/error-remediation', errorRemediationRouter);
 app.use('/api/safety', safetyRouter);
 app.use('/api/diagnostic', diagnosticRouter);
 app.use('/api/glossary', glossaryRouter);
 app.use('/api/rollback', rollbackRouter);
+app.use('/api/config', fallbackRouter); // Fallback routes are under /api/config
+app.use('/api/node', nodeSyncRouter);
+app.use('/api/wizard', wizardStateRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -105,16 +116,143 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Wizard mode endpoint
-app.get('/api/wizard/mode', (req, res) => {
-  const mode = process.env.WIZARD_MODE || 'install';
-  const autoStart = process.env.WIZARD_AUTO_START === 'true';
-  
-  res.json({
-    mode,
-    autoStart,
-    isFirstRun: autoStart && mode === 'install'
-  });
+// Load existing configuration for reconfiguration mode
+app.get('/api/wizard/current-config', async (req, res) => {
+  try {
+    const fs = require('fs').promises;
+    const path = require('path');
+    const dotenv = require('dotenv');
+    
+    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../..');
+    const envPath = path.join(projectRoot, '.env');
+    const statePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+    
+    let config = {};
+    let installationState = null;
+    
+    // Load .env file
+    try {
+      const envContent = await fs.readFile(envPath, 'utf8');
+      config = dotenv.parse(envContent);
+    } catch (error) {
+      return res.status(404).json({
+        success: false,
+        error: 'No existing configuration found',
+        message: 'The .env file does not exist'
+      });
+    }
+    
+    // Load installation state
+    try {
+      const stateContent = await fs.readFile(statePath, 'utf8');
+      installationState = JSON.parse(stateContent);
+    } catch {
+      // State file doesn't exist, that's okay
+    }
+    
+    res.json({
+      success: true,
+      config,
+      installationState,
+      profiles: installationState?.profiles?.selected || [],
+      lastModified: installationState?.lastModified || null,
+      installedAt: installationState?.installedAt || null
+    });
+  } catch (error) {
+    console.error('Error loading current configuration:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load configuration',
+      message: error.message
+    });
+  }
+});
+
+// Wizard mode detection endpoint
+app.get('/api/wizard/mode', async (req, res) => {
+  try {
+    const fs = require('fs').promises;
+    const path = require('path');
+    
+    // Get mode from URL parameter (if provided)
+    const urlMode = req.query.mode;
+    
+    // Check for existing configuration files
+    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../..');
+    const envPath = path.join(projectRoot, '.env');
+    const statePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+    
+    let hasEnv = false;
+    let hasState = false;
+    let installationState = null;
+    
+    try {
+      await fs.access(envPath);
+      hasEnv = true;
+    } catch {
+      // .env doesn't exist
+    }
+    
+    try {
+      const stateContent = await fs.readFile(statePath, 'utf8');
+      installationState = JSON.parse(stateContent);
+      hasState = true;
+    } catch {
+      // installation-state.json doesn't exist
+    }
+    
+    // Determine wizard mode
+    let mode = 'initial'; // Default mode for fresh installation
+    let reason = 'No existing configuration found';
+    
+    if (urlMode) {
+      // URL parameter takes precedence
+      if (['install', 'initial', 'reconfigure', 'reconfiguration', 'update'].includes(urlMode)) {
+        mode = urlMode === 'install' ? 'initial' : urlMode === 'reconfiguration' ? 'reconfigure' : urlMode;
+        reason = `Mode set via URL parameter: ${urlMode}`;
+      }
+    } else if (hasState && installationState) {
+      // Check installation state
+      if (installationState.phase === 'complete') {
+        // Installation complete - allow reconfiguration
+        mode = 'reconfigure';
+        reason = hasEnv 
+          ? 'Installation complete, configuration exists'
+          : 'Installation complete (state file exists)';
+      } else if (installationState.phase !== 'complete') {
+        // Installation in progress or incomplete
+        mode = 'initial';
+        reason = 'Installation in progress or incomplete';
+      }
+    } else if (hasEnv) {
+      // Has .env but no state - likely manual installation
+      mode = 'reconfigure';
+      reason = 'Configuration exists but no installation state';
+    }
+    
+    // Get auto-start setting
+    const autoStart = process.env.WIZARD_AUTO_START === 'true';
+    
+    res.json({
+      mode,
+      reason,
+      autoStart,
+      isFirstRun: autoStart && mode === 'initial',
+      hasExistingConfig: hasEnv,
+      hasInstallationState: hasState,
+      installationPhase: installationState?.phase || null,
+      canReconfigure: hasEnv || hasState,
+      canUpdate: hasEnv && hasState && installationState?.phase === 'complete'
+    });
+  } catch (error) {
+    console.error('Error detecting wizard mode:', error);
+    res.status(500).json({
+      error: 'Failed to detect wizard mode',
+      message: error.message,
+      mode: 'initial', // Fallback to initial mode
+      reason: 'Error during detection'
+    });
+  }
 });
 
 // WebSocket connection handling
@@ -315,6 +453,98 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle background task registration
+  socket.on('task:register', async (data) => {
+    try {
+      const { type, service, config } = data;
+      
+      let result;
+      if (type === 'node-sync') {
+        result = await backgroundTaskManager.registerNodeSyncTask({
+          service,
+          ...config
+        });
+      } else if (type === 'indexer-sync') {
+        result = await backgroundTaskManager.registerIndexerSyncTask({
+          service,
+          ...config
+        });
+      } else {
+        result = await backgroundTaskManager.registerTask(data);
+      }
+
+      if (result.success) {
+        socket.emit('task:registered', {
+          taskId: result.taskId,
+          task: result.task
+        });
+        
+        // Auto-start monitoring
+        await backgroundTaskManager.startMonitoring(result.taskId);
+      } else {
+        socket.emit('task:error', {
+          error: result.error
+        });
+      }
+    } catch (error) {
+      socket.emit('task:error', {
+        error: error.message
+      });
+    }
+  });
+
+  // Handle background task status request
+  socket.on('task:status', async (data) => {
+    try {
+      const { taskId } = data;
+      const task = backgroundTaskManager.getTask(taskId);
+      
+      if (task) {
+        socket.emit('task:status:response', { task });
+      } else {
+        socket.emit('task:error', {
+          error: `Task ${taskId} not found`
+        });
+      }
+    } catch (error) {
+      socket.emit('task:error', {
+        error: error.message
+      });
+    }
+  });
+
+  // Handle get all tasks request
+  socket.on('tasks:list', async () => {
+    try {
+      const tasks = backgroundTaskManager.getAllTasks();
+      socket.emit('tasks:list:response', { tasks });
+    } catch (error) {
+      socket.emit('task:error', {
+        error: error.message
+      });
+    }
+  });
+
+  // Handle task cancellation
+  socket.on('task:cancel', async (data) => {
+    try {
+      const { taskId } = data;
+      const result = await backgroundTaskManager.cancelTask(taskId);
+      
+      if (result.success) {
+        socket.emit('task:cancelled', { taskId });
+      } else {
+        socket.emit('task:error', {
+          error: result.error
+        });
+      }
+    } catch (error) {
+      socket.emit('task:error', {
+        error: error.message
+      });
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
@@ -376,6 +606,7 @@ server.listen(PORT, () => {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully...');
+  backgroundTaskManager.shutdown();
   server.close(() => {
     console.log('Server closed');
     process.exit(0);
@@ -384,6 +615,7 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   console.log('SIGINT received, shutting down gracefully...');
+  backgroundTaskManager.shutdown();
   server.close(() => {
     console.log('Server closed');
     process.exit(0);

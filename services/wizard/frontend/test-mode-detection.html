@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wizard Mode Detection Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            border-left: 4px solid #70C7BA;
+        }
+        
+        .test-section h2 {
+            margin-top: 0;
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .test-result.pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .test-result.fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .test-result.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #70C7BA 0%, #49C8B5 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(112, 199, 186, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .url-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .mode-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .mode-info-item {
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .mode-info-item strong {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .mode-info-item span {
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #70C7BA;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Wizard Mode Detection Test</h1>
+        <p class="subtitle">Test the wizard mode detection functionality</p>
+        
+        <div class="test-section">
+            <h2>Test Mode Detection</h2>
+            <p>Test different URL parameters to see how the wizard detects its mode:</p>
+            
+            <input type="text" class="url-input" id="urlInput" placeholder="Enter URL parameters (e.g., ?mode=reconfigure)" value="">
+            
+            <button onclick="testModeDetection()">Test Mode Detection</button>
+            <button onclick="testModeDetection('?mode=install')">Test: Initial Mode</button>
+            <button onclick="testModeDetection('?mode=reconfigure')">Test: Reconfigure Mode</button>
+            <button onclick="testModeDetection('?mode=update')">Test: Update Mode</button>
+            
+            <div id="modeResults"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test Configuration Loading</h2>
+            <p>Test loading existing configuration (requires .env file to exist):</p>
+            
+            <button onclick="testConfigLoading()">Load Current Config</button>
+            
+            <div id="configResults"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test Full Mode Flow</h2>
+            <p>Simulate the full wizard initialization with mode detection:</p>
+            
+            <button onclick="testFullFlow()">Test Full Flow</button>
+            
+            <div id="flowResults"></div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        
+        async function testModeDetection(urlParams = '') {
+            const resultsDiv = document.getElementById('modeResults');
+            resultsDiv.innerHTML = '<div class="test-result info">Testing mode detection...<span class="loading"></span></div>';
+            
+            try {
+                // Use custom URL params if provided
+                const params = urlParams || document.getElementById('urlInput').value;
+                const url = `${API_BASE}/wizard/mode${params}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                let html = '<div class="test-result pass">✓ Mode detection successful</div>';
+                
+                // Display mode information
+                html += '<div class="mode-info">';
+                html += `<div class="mode-info-item"><strong>Mode</strong><span>${data.mode}</span></div>`;
+                html += `<div class="mode-info-item"><strong>Reason</strong><span>${data.reason}</span></div>`;
+                html += `<div class="mode-info-item"><strong>Has Config</strong><span>${data.hasExistingConfig ? 'Yes' : 'No'}</span></div>`;
+                html += `<div class="mode-info-item"><strong>Has State</strong><span>${data.hasInstallationState ? 'Yes' : 'No'}</span></div>`;
+                html += `<div class="mode-info-item"><strong>Can Reconfigure</strong><span>${data.canReconfigure ? 'Yes' : 'No'}</span></div>`;
+                html += `<div class="mode-info-item"><strong>Can Update</strong><span>${data.canUpdate ? 'Yes' : 'No'}</span></div>`;
+                html += '</div>';
+                
+                // Display raw response
+                html += '<div class="test-result info" style="margin-top: 15px;">';
+                html += '<strong>Raw Response:</strong><br>';
+                html += '<pre style="margin: 10px 0; overflow-x: auto;">' + JSON.stringify(data, null, 2) + '</pre>';
+                html += '</div>';
+                
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="test-result fail">✗ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testConfigLoading() {
+            const resultsDiv = document.getElementById('configResults');
+            resultsDiv.innerHTML = '<div class="test-result info">Loading configuration...<span class="loading"></span></div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/wizard/current-config`);
+                const data = await response.json();
+                
+                if (response.status === 404) {
+                    resultsDiv.innerHTML = '<div class="test-result info">ℹ No existing configuration found (this is expected for fresh installations)</div>';
+                    return;
+                }
+                
+                if (!data.success) {
+                    resultsDiv.innerHTML = `<div class="test-result fail">✗ Failed to load config: ${data.error}</div>`;
+                    return;
+                }
+                
+                let html = '<div class="test-result pass">✓ Configuration loaded successfully</div>';
+                
+                // Display config summary
+                html += '<div class="mode-info">';
+                html += `<div class="mode-info-item"><strong>Profiles</strong><span>${data.profiles.join(', ')}</span></div>`;
+                html += `<div class="mode-info-item"><strong>Installed At</strong><span>${data.installedAt || 'N/A'}</span></div>`;
+                html += `<div class="mode-info-item"><strong>Last Modified</strong><span>${data.lastModified || 'N/A'}</span></div>`;
+                html += '</div>';
+                
+                // Display sample config values
+                if (data.config) {
+                    html += '<div class="test-result info" style="margin-top: 15px;">';
+                    html += '<strong>Sample Configuration Values:</strong><br>';
+                    html += '<pre style="margin: 10px 0; overflow-x: auto;">';
+                    const sampleKeys = ['KASPA_NODE_RPC_PORT', 'POSTGRES_USER', 'PUBLIC_NODE', 'KASPA_NETWORK'];
+                    const sample = {};
+                    sampleKeys.forEach(key => {
+                        if (data.config[key]) sample[key] = data.config[key];
+                    });
+                    html += JSON.stringify(sample, null, 2);
+                    html += '</pre></div>';
+                }
+                
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="test-result fail">✗ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testFullFlow() {
+            const resultsDiv = document.getElementById('flowResults');
+            resultsDiv.innerHTML = '<div class="test-result info">Testing full flow...<span class="loading"></span></div>';
+            
+            try {
+                let html = '';
+                
+                // Step 1: Detect mode
+                html += '<div class="test-result info">Step 1: Detecting wizard mode...</div>';
+                const modeResponse = await fetch(`${API_BASE}/wizard/mode`);
+                const modeData = await modeResponse.json();
+                html += `<div class="test-result pass">✓ Mode detected: ${modeData.mode}</div>`;
+                
+                // Step 2: Handle mode
+                if (modeData.mode === 'reconfigure') {
+                    html += '<div class="test-result info">Step 2: Loading existing configuration...</div>';
+                    const configResponse = await fetch(`${API_BASE}/wizard/current-config`);
+                    
+                    if (configResponse.status === 200) {
+                        const configData = await configResponse.json();
+                        html += `<div class="test-result pass">✓ Configuration loaded (${configData.profiles.length} profiles)</div>`;
+                    } else {
+                        html += '<div class="test-result info">ℹ No configuration to load</div>';
+                    }
+                } else if (modeData.mode === 'initial') {
+                    html += '<div class="test-result info">Step 2: Starting fresh installation...</div>';
+                    html += '<div class="test-result pass">✓ Ready for initial installation</div>';
+                } else if (modeData.mode === 'update') {
+                    html += '<div class="test-result info">Step 2: Preparing update mode...</div>';
+                    html += '<div class="test-result pass">✓ Ready for updates</div>';
+                }
+                
+                // Step 3: Summary
+                html += '<div class="test-result pass" style="margin-top: 15px;"><strong>✓ Full flow test completed successfully</strong></div>';
+                html += '<div class="mode-info" style="margin-top: 15px;">';
+                html += `<div class="mode-info-item"><strong>Final Mode</strong><span>${modeData.mode}</span></div>`;
+                html += `<div class="mode-info-item"><strong>Can Proceed</strong><span>Yes</span></div>`;
+                html += '</div>';
+                
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="test-result fail">✗ Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-run mode detection on load
+        window.addEventListener('load', () => {
+            testModeDetection();
+        });
+    </script>
+</body>
+</html>

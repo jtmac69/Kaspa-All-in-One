@@ -194,4 +194,42 @@ router.post('/check-profile', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/resource-check/calculate-combined - Calculate combined resources with deduplication
+ * Body: { profiles, resources } (resources optional)
+ * Returns combined resource requirements across selected profiles with deduplication
+ * 
+ * This endpoint handles shared resources like TimescaleDB used by multiple indexers,
+ * ensuring resources are not double-counted. It also compares requirements against
+ * available system resources and generates warnings and optimization recommendations.
+ */
+router.post('/calculate-combined', async (req, res) => {
+  try {
+    const { profiles } = req.body;
+    
+    if (!profiles || !Array.isArray(profiles) || profiles.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Profiles array required',
+        message: 'Please provide an array of profile IDs in the request body'
+      });
+    }
+    
+    let resources = req.body.resources;
+    if (!resources) {
+      resources = await resourceChecker.detectResources();
+    }
+    
+    const result = await resourceChecker.calculateCombinedResources(profiles, resources);
+    
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to calculate combined resources',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;

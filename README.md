@@ -176,6 +176,11 @@ docker compose ps
 
 Before installing, ensure you have:
 - ✅ **Docker 24.0+** and **Docker Compose 2.0+** installed
+- ✅ **User added to docker group** (required for wizard and management)
+  ```bash
+  sudo usermod -aG docker $USER
+  # Log out and back in for changes to take effect
+  ```
 - ✅ **4GB+ RAM** (8GB+ recommended)
 - ✅ **100GB+ free disk space** (500GB+ for full node)
 - ✅ **Stable internet connection**
