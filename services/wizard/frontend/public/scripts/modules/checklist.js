@@ -15,11 +15,27 @@ export async function runSystemCheck() {
     console.log('Running system check...');
     
     try {
-        // Get required ports based on common profiles
-        const requiredPorts = [8080, 16110, 16111, 5432, 3000, 8081];
+        // Define ports with descriptions
+        const portDescriptions = {
+            8080: 'Dashboard (alternative)',
+            8081: 'Dashboard',
+            5432: 'PostgreSQL Database',
+            16110: 'Kaspa Node (P2P)',
+            16111: 'Kaspa Node (RPC)'
+        };
+        
+        // Get required ports (excluding 3000 since wizard uses it)
+        const requiredPorts = [8080, 16110, 16111, 5432, 8081];
         
         // Call backend API
         const results = await api.get(`/system-check?ports=${requiredPorts.join(',')}`);
+        
+        // Add descriptions to port results
+        if (results.ports) {
+            Object.keys(results.ports).forEach(port => {
+                results.ports[port].description = portDescriptions[port] || 'Unknown service';
+            });
+        }
         
         console.log('System check results:', results);
         
@@ -64,9 +80,10 @@ function updateChecklistItem(itemId, data) {
     
     switch (itemId) {
         case 'requirements':
-            status = getResourcesStatus(data);
-            icon = status.icon;
-            text = status.text;
+            const reqStatus = getResourcesStatus(data);
+            status = reqStatus.status;
+            icon = reqStatus.icon;
+            text = reqStatus.text;
             updateRequirementsDetails(data);
             break;
             
@@ -85,9 +102,10 @@ function updateChecklistItem(itemId, data) {
             break;
             
         case 'ports':
-            status = getPortsStatus(data);
-            icon = status.icon;
-            text = status.text;
+            const portStatus = getPortsStatus(data);
+            status = portStatus.status;
+            icon = portStatus.icon;
+            text = portStatus.text;
             updatePortsDetails(data);
             break;
     }
@@ -126,12 +144,17 @@ function getResourcesStatus(resources) {
  */
 function getPortsStatus(ports) {
     const allAvailable = Object.values(ports).every(p => p.available);
-    const someUnavailable = Object.values(ports).some(p => !p.available);
+    const unavailablePorts = Object.entries(ports).filter(([_, p]) => !p.available);
     
     if (allAvailable) {
         return { status: 'success', icon: '✅', text: 'All Ports Available' };
-    } else if (someUnavailable) {
-        return { status: 'warning', icon: '⚠️', text: 'Some Ports In Use' };
+    } else if (unavailablePorts.length > 0) {
+        const count = unavailablePorts.length;
+        return { 
+            status: 'warning', 
+            icon: '⚠️', 
+            text: `${count} Port${count > 1 ? 's' : ''} In Use (see details)` 
+        };
     } else {
         return { status: 'checking', icon: '⏳', text: 'Checking...' };
     }
@@ -242,10 +265,12 @@ function updatePortsDetails(ports) {
     const portsList = portEntries.map(([port, status]) => {
         const icon = status.available ? '✅' : '⚠️';
         const className = status.available ? 'port-available' : 'port-unavailable';
+        const description = status.description ? ` (${status.description})` : '';
+        
         return `
             <div class="port-item ${className}">
                 <span class="port-icon">${icon}</span>
-                <span class="port-number">Port ${port}</span>
+                <span class="port-number">Port ${port}${description}</span>
                 <span class="port-status">${status.message}</span>
             </div>
         `;

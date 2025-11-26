@@ -15,8 +15,8 @@ export async function runFullSystemCheck() {
     console.log('Running full system check...');
     
     try {
-        // Get required ports based on common profiles
-        const requiredPorts = [8080, 16110, 16111, 5432, 3000, 8081];
+        // Get required ports (excluding 3000 since wizard uses it)
+        const requiredPorts = [8080, 16110, 16111, 5432, 8081];
         
         // Call backend API
         const results = await api.get(`/system-check?ports=${requiredPorts.join(',')}`);
@@ -347,13 +347,23 @@ function getPortsDetails(ports) {
         return '<p class="detail-note">No ports to check</p>';
     }
     
+    // Port descriptions
+    const portDescriptions = {
+        8080: 'Dashboard (alternative)',
+        8081: 'Dashboard',
+        5432: 'PostgreSQL Database',
+        16110: 'Kaspa Node (P2P)',
+        16111: 'Kaspa Node (RPC)'
+    };
+    
     const items = portEntries.map(([port, status]) => {
         const icon = status.available ? '✅' : '⚠️';
         const className = status.available ? 'detail-item-success' : 'detail-item-warning';
+        const description = portDescriptions[port] ? ` (${portDescriptions[port]})` : '';
         return `
             <div class="detail-item ${className}">
                 <span class="detail-icon">${icon}</span>
-                <span class="detail-label">Port ${port}:</span>
+                <span class="detail-label">Port ${port}${description}:</span>
                 <span class="detail-value">${status.message}</span>
             </div>
         `;
