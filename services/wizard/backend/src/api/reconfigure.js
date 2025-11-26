@@ -5,10 +5,12 @@ const path = require('path');
 const ConfigGenerator = require('../utils/config-generator');
 const DockerManager = require('../utils/docker-manager');
 const StateManager = require('../utils/state-manager');
+const BackupManager = require('../utils/backup-manager');
 
 const configGenerator = new ConfigGenerator();
 const dockerManager = new DockerManager();
 const stateManager = new StateManager();
+const backupManager = new BackupManager();
 
 /**
  * GET /api/wizard/current-config
@@ -79,66 +81,29 @@ router.get('/current-config', async (req, res) => {
  * POST /api/wizard/reconfigure/backup
  * Create comprehensive backup of current configuration
  * Backs up to .kaspa-backups/[timestamp]/
+ * Uses BackupManager for consistent backup handling
  */
 router.post('/reconfigure/backup', async (req, res) => {
   try {
     const { reason = 'Manual backup before reconfiguration' } = req.body;
     
-    const projectRoot = process.env.PROJECT_ROOT || '/workspace';
-    const timestamp = Date.now();
-    const backupDir = path.join(projectRoot, '.kaspa-backups', timestamp.toString());
+    const result = await backupManager.createBackup(reason, { source: 'reconfigure-api' });
     
-    // Create backup directory
-    await fs.mkdir(backupDir, { recursive: true });
-    
-    const backedUpFiles = [];
-    const errors = [];
-    
-    // Files to backup
-    const filesToBackup = [
-      { src: '.env', dest: '.env' },
-      { src: 'docker-compose.yml', dest: 'docker-compose.yml' },
-      { src: 'docker-compose.override.yml', dest: 'docker-compose.override.yml', optional: true },
-      { src: '.kaspa-aio/installation-state.json', dest: 'installation-state.json', optional: true },
-      { src: '.kaspa-aio/wizard-state.json', dest: 'wizard-state.json', optional: true }
-    ];
-    
-    // Backup each file
-    for (const file of filesToBackup) {
-      const srcPath = path.join(projectRoot, file.src);
-      const destPath = path.join(backupDir, file.dest);
-      
-      try {
-        await fs.access(srcPath);
-        await fs.copyFile(srcPath, destPath);
-        backedUpFiles.push(file.src);
-      } catch (error) {
-        if (!file.optional) {
-          errors.push({ file: file.src, error: error.message });
-        }
-      }
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to create backup',
+        message: result.error
+      });
     }
-    
-    // Create backup metadata
-    const metadata = {
-      timestamp,
-      date: new Date(timestamp).toISOString(),
-      reason,
-      files: backedUpFiles,
-      errors: errors.length > 0 ? errors : undefined
-    };
-    
-    await fs.writeFile(
-      path.join(backupDir, 'backup-metadata.json'),
-      JSON.stringify(metadata, null, 2)
-    );
     
     res.json({
       success: true,
-      backupDir,
-      timestamp,
-      backedUpFiles,
-      errors: errors.length > 0 ? errors : undefined
+      backupDir: result.backupPath,
+      backupId: result.backupId,
+      timestamp: result.timestamp,
+      backedUpFiles: result.backedUpFiles.map(f => f.file),
+      errors: result.errors
     });
   } catch (error) {
     console.error('Error creating backup:', error);
@@ -179,77 +144,32 @@ router.post('/reconfigure', async (req, res) => {
       // No existing config
     }
     
-    // Create comprehensive backup if requested
+    // Create comprehensive backup if requested using BackupManager
     let backupInfo = null;
     if (createBackup) {
-      const timestamp = Date.now();
-      const backupDir = path.join(projectRoot, '.kaspa-backups', timestamp.toString());
-      
       try {
-        await fs.mkdir(backupDir, { recursive: true });
+        const previousProfiles = await determineActiveProfilesFromConfig(currentConfig);
         
-        const backedUpFiles = [];
-        
-        // Backup .env
-        try {
-          await fs.copyFile(envPath, path.join(backupDir, '.env'));
-          backedUpFiles.push('.env');
-        } catch (error) {
-          // File doesn't exist
-        }
-        
-        // Backup docker-compose files
-        try {
-          await fs.copyFile(
-            path.join(projectRoot, 'docker-compose.yml'),
-            path.join(backupDir, 'docker-compose.yml')
-          );
-          backedUpFiles.push('docker-compose.yml');
-        } catch (error) {
-          // File doesn't exist
-        }
-        
-        try {
-          await fs.copyFile(
-            path.join(projectRoot, 'docker-compose.override.yml'),
-            path.join(backupDir, 'docker-compose.override.yml')
-          );
-          backedUpFiles.push('docker-compose.override.yml');
-        } catch (error) {
-          // File doesn't exist
-        }
-        
-        // Backup installation state
-        try {
-          await fs.copyFile(
-            installationStatePath,
-            path.join(backupDir, 'installation-state.json')
-          );
-          backedUpFiles.push('installation-state.json');
-        } catch (error) {
-          // File doesn't exist
-        }
-        
-        // Create backup metadata
-        const metadata = {
-          timestamp,
-          date: new Date(timestamp).toISOString(),
-          reason: 'Reconfiguration',
-          files: backedUpFiles,
-          previousProfiles: await determineActiveProfilesFromConfig(currentConfig),
-          newProfiles: profiles
-        };
-        
-        await fs.writeFile(
-          path.join(backupDir, 'backup-metadata.json'),
-          JSON.stringify(metadata, null, 2)
+        const backupResult = await backupManager.createBackup(
+          'Reconfiguration',
+          {
+            source: 'reconfigure',
+            previousProfiles,
+            newProfiles: profiles
+          }
         );
         
-        backupInfo = {
-          timestamp,
-          backupDir,
-          files: backedUpFiles
-        };
+        if (backupResult.success) {
+          backupInfo = {
+            backupId: backupResult.backupId,
+            timestamp: backupResult.timestamp,
+            backupDir: backupResult.backupPath,
+            files: backupResult.backedUpFiles.map(f => f.file)
+          };
+        } else {
+          console.error('Error creating backup:', backupResult.error);
+          backupInfo = { error: backupResult.error };
+        }
       } catch (error) {
         console.error('Error creating backup:', error);
         // Continue anyway, but note the error

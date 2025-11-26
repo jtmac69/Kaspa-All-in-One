@@ -4,6 +4,7 @@
  */
 
 import { stateManager } from './state-manager.js';
+import { buildConfig, isFeatureEnabled } from './build-config.js';
 
 export const TOTAL_STEPS = 8;
 
@@ -159,15 +160,21 @@ function handleStepEntry(stepNumber) {
     switch (stepId) {
         case 'checklist':
             // Checklist module will handle this
-            // For testing: enable continue button
-            enableContinueButton('checklist-continue');
+            // Testing shortcut: auto-enable continue button (ONLY in test builds)
+            if (isFeatureEnabled('autoEnableContinueButtons')) {
+                console.warn('[TEST MODE] Auto-enabling continue button for checklist');
+                enableContinueButton('checklist-continue');
+            }
             break;
         case 'system-check':
             // System check module will handle this
-            // For testing: enable continue button after short delay
-            setTimeout(() => {
-                enableContinueButton('step-system-check');
-            }, 1000);
+            // Testing shortcut: auto-enable continue button (ONLY in test builds)
+            if (isFeatureEnabled('autoEnableContinueButtons')) {
+                console.warn('[TEST MODE] Auto-enabling continue button for system-check');
+                setTimeout(() => {
+                    enableContinueButton('step-system-check');
+                }, 1000);
+            }
             break;
         case 'profiles':
             // Profiles module will handle this

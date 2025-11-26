@@ -6,7 +6,11 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 
+// Import build configuration
+const buildConfig = require('./config/build-config');
+
 // Import API routes
+const buildInfoRouter = require('./api/build-info');
 const systemCheckRouter = require('./api/system-check');
 const resourceCheckRouter = require('./api/resource-check');
 const contentRouter = require('./api/content');
@@ -24,6 +28,8 @@ const rollbackRouter = require('./api/rollback');
 const fallbackRouter = require('./api/fallback');
 const nodeSyncRouter = require('./api/node-sync');
 const wizardStateRouter = require('./api/wizard-state');
+const backupRouter = require('./api/backup');
+const dashboardIntegrationRouter = require('./api/dashboard-integration');
 
 // Import utilities
 const DockerManager = require('./utils/docker-manager');
@@ -88,6 +94,7 @@ const frontendPath = process.env.NODE_ENV === 'production'
 app.use(express.static(frontendPath));
 
 // API Routes
+app.use('/api/build-info', buildInfoRouter); // Build information (test vs production)
 app.use('/api/system-check', systemCheckRouter);
 app.use('/api/resource-check', resourceCheckRouter);
 app.use('/api/content', contentRouter);
@@ -106,6 +113,10 @@ app.use('/api/rollback', rollbackRouter);
 app.use('/api/config', fallbackRouter); // Fallback routes are under /api/config
 app.use('/api/node', nodeSyncRouter);
 app.use('/api/wizard', wizardStateRouter);
+app.use('/api/wizard/backup', backupRouter); // Backup routes under /api/wizard/backup
+app.use('/api/wizard/backups', backupRouter); // Also mount under /api/wizard/backups for list endpoint
+app.use('/api/wizard/rollback', backupRouter); // Rollback endpoint under /api/wizard/rollback
+app.use('/api/wizard', dashboardIntegrationRouter); // Dashboard integration routes
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

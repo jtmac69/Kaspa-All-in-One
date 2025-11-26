@@ -799,7 +799,7 @@ services/wizard/
   - **UI**: Add update interface to wizard
   - _Requirements: 7, 13_
 
-- [ ] **6.8.4 Create configuration backup system**
+- [x] **6.8.4 Create configuration backup system**
   - Implement automatic backup before changes
   - Create timestamped backup directories (`.kaspa-backups/[timestamp]/`)
   - Backup files: `.env`, `docker-compose.yml`, `installation-state.json`
@@ -811,7 +811,7 @@ services/wizard/
   - **API**: GET /api/wizard/backups
   - _Requirements: 7, 13_
 
-- [ ] **6.8.5 Build dashboard integration points**
+- [x] **6.8.5 Build dashboard integration points**
   - Create reconfiguration link endpoint for dashboard
   - Generate security token for wizard access
   - Implement update notification API

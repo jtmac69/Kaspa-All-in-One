@@ -168,21 +168,21 @@ function setupEventListeners() {
         console.log(`Entered step ${stepNumber}: ${stepId}`);
         
         // Run system check when entering checklist step
-        if (stepId === 'step-checklist') {
+        if (stepId === 'checklist') {
             runSystemCheck().catch(error => {
                 console.error('Failed to run system check:', error);
             });
         }
         
         // Run full system check when entering system check step
-        if (stepId === 'step-system-check') {
+        if (stepId === 'system-check') {
             runFullSystemCheck().catch(error => {
                 console.error('Failed to run full system check:', error);
             });
         }
         
         // Setup profile selection and Developer Mode toggle when entering profiles step
-        if (stepId === 'step-profiles') {
+        if (stepId === 'profiles') {
             setTimeout(() => {
                 import('./modules/configure.js').then(module => {
                     module.initializeProfileSelection();
@@ -192,7 +192,7 @@ function setupEventListeners() {
         }
         
         // Load configuration and setup validation when entering configure step
-        if (stepId === 'step-configure') {
+        if (stepId === 'configure') {
             loadConfigurationForm().catch(error => {
                 console.error('Failed to load configuration:', error);
             });
@@ -205,12 +205,12 @@ function setupEventListeners() {
         }
         
         // Display configuration summary when entering review step
-        if (stepId === 'step-review') {
+        if (stepId === 'review') {
             displayConfigurationSummary();
         }
         
         // Start installation when entering install step
-        if (stepId === 'step-install') {
+        if (stepId === 'install') {
             // Small delay to ensure UI is ready
             setTimeout(() => {
                 startInstall().catch(error => {
@@ -221,7 +221,7 @@ function setupEventListeners() {
         }
         
         // Display validation results when entering complete step
-        if (stepId === 'step-complete') {
+        if (stepId === 'complete') {
             // Small delay to ensure UI is ready
             setTimeout(() => {
                 displayValidationResults().catch(error => {

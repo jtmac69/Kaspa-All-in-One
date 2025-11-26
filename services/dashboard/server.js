@@ -279,6 +279,27 @@ async function checkAllServices() {
     return results.map(result => result.status === 'fulfilled' ? result.value : result.reason);
 }
 
+// Start wizard if needed (called by dashboard frontend)
+app.post('/api/wizard/start', async (req, res) => {
+    try {
+        const scriptPath = path.join(__dirname, '../wizard/start-wizard-if-needed.sh');
+        const { stdout, stderr } = await execAsync(scriptPath);
+        
+        res.json({
+            success: true,
+            message: 'Wizard start initiated',
+            output: stdout,
+            errors: stderr
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to start wizard',
+            message: error.message
+        });
+    }
+});
+
 // Serve the dashboard HTML
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
