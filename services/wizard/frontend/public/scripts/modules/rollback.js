@@ -330,9 +330,9 @@ export async function startOver(options = {}) {
             const WIZARD_VERSION = '3';
             localStorage.setItem('wizardVersion', WIZARD_VERSION);
             
-            // Reload page to start fresh
+            // Reload page to start fresh with initial mode
             setTimeout(() => {
-                window.location.reload();
+                window.location.href = window.location.pathname + '?mode=initial';
             }, 2000);
             
             return true;

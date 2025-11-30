@@ -293,7 +293,7 @@ io.on('connection', (socket) => {
       }
 
       const envContent = await configGenerator.generateEnvFile(configValidation.config, profiles);
-      const envPath = path.resolve(__dirname, '../../../.env');
+      const envPath = path.resolve(__dirname, '../../../../.env');
       const saveResult = await configGenerator.saveEnvFile(envContent, envPath);
 
       if (!saveResult.success) {

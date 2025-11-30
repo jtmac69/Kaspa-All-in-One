@@ -907,11 +907,11 @@
                         <div class="review-content">
                             <div class="review-item">
                                 <span class="review-label">Profiles:</span>
-                                <span class="review-value" id="review-profiles">Core, Explorer</span>
+                                <span class="review-value" id="review-profiles"></span>
                             </div>
                             <div class="review-item">
                                 <span class="review-label">Total Services:</span>
-                                <span class="review-value" id="review-service-count">5 services</span>
+                                <span class="review-value" id="review-service-count"></span>
                             </div>
                         </div>
                     </div>
@@ -921,15 +921,15 @@
                         <div class="review-content">
                             <div class="review-item">
                                 <span class="review-label">CPU:</span>
-                                <span class="review-value" id="review-cpu">4 cores</span>
+                                <span class="review-value" id="review-cpu"></span>
                             </div>
                             <div class="review-item">
                                 <span class="review-label">RAM:</span>
-                                <span class="review-value" id="review-ram">8 GB</span>
+                                <span class="review-value" id="review-ram"></span>
                             </div>
                             <div class="review-item">
                                 <span class="review-label">Disk:</span>
-                                <span class="review-value" id="review-disk">200 GB</span>
+                                <span class="review-value" id="review-disk"></span>
                             </div>
                         </div>
                     </div>
@@ -939,11 +939,11 @@
                         <div class="review-content">
                             <div class="review-item">
                                 <span class="review-label">External IP:</span>
-                                <span class="review-value" id="review-external-ip">Auto-detect</span>
+                                <span class="review-value" id="review-external-ip"></span>
                             </div>
                             <div class="review-item">
                                 <span class="review-label">Public Node:</span>
-                                <span class="review-value" id="review-public-node">Disabled</span>
+                                <span class="review-value" id="review-public-node"></span>
                             </div>
                         </div>
                     </div>
@@ -1665,8 +1665,8 @@
                 localStorage.clear();
                 // Set wizard version to prevent re-clearing on reload
                 localStorage.setItem('wizardVersion', '3');
-                // Reload page
-                window.location.reload();
+                // Reload page with ?mode=initial to force initial installation mode
+                window.location.href = window.location.pathname + '?mode=initial';
             }
         }
     </script>

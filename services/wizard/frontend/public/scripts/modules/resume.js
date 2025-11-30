@@ -208,10 +208,19 @@ async function startOver() {
     // Clear frontend state
     stateManager.clear();
     
-    // Reset to step 1
-    goToStep(1);
+    // Clear wizard mode from state to force re-detection
+    stateManager.remove('wizardMode');
+    stateManager.remove('wizardModeInfo');
     
-    showNotification('Starting fresh installation', 'info');
+    // Reload the page with ?mode=initial to force initial installation mode
+    // This overrides the backend's detection of .env file existence
+    showNotification('Restarting wizard...', 'info');
+    
+    // Use a small delay to ensure the notification is visible
+    setTimeout(() => {
+      // Force initial mode via URL parameter
+      window.location.href = window.location.pathname + '?mode=initial';
+    }, 500);
   } catch (error) {
     console.error('Error starting over:', error);
     showNotification('Error clearing state', 'error');

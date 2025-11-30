@@ -1005,6 +1005,172 @@ const PROFILES = {
 }
 ```
 
+## Correctness Properties
+
+*A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+
+### System Check Properties
+
+**Property 1: Docker detection consistency**  
+*For any* system state, if Docker is installed and running, then the system check SHALL report Docker as available with a valid version number  
+**Validates: Requirements 1.1**
+
+**Property 2: Resource requirement validation**  
+*For any* set of selected profiles, the calculated minimum resource requirements SHALL be less than or equal to the sum of individual profile requirements (accounting for shared resources)  
+**Validates: Requirements 1.3**
+
+**Property 3: Port conflict detection**  
+*For any* configuration with custom port assignments, if two services are assigned the same port, then the system check SHALL report a port conflict error  
+**Validates: Requirements 1.4**
+
+### Profile Selection Properties
+
+**Property 4: Profile dependency completeness**  
+*For any* set of selected profiles, if a profile has dependencies, then all dependency profiles SHALL be included in the selection (either explicitly or implicitly resolved)  
+**Validates: Requirements 2.2**
+
+**Property 5: Prerequisite validation**  
+*For any* profile selection including Mining profile, at least one of Core Profile or Archive Node Profile SHALL be included in the selection  
+**Validates: Requirements 2.7**
+
+**Property 6: Circular dependency prevention**  
+*For any* set of selected profiles, there SHALL NOT exist a circular dependency chain where profile A depends on B, B depends on C, and C depends on A  
+**Validates: Requirements 2.5**
+
+**Property 7: Resource deduplication**  
+*For any* set of profiles that share a common service (e.g., TimescaleDB), the combined resource calculation SHALL count the shared service resources only once  
+**Validates: Requirements 2.3**
+
+**Property 8: Developer Mode application**  
+*For any* profile selection with Developer Mode enabled, the generated configuration SHALL include debug logging, exposed ports, and development tools for all selected profiles  
+**Validates: Requirements 2.8**
+
+### Configuration Properties
+
+**Property 9: Password generation security**  
+*For any* generated password, it SHALL have sufficient entropy (minimum 32 characters, cryptographically random) to be considered secure  
+**Validates: Requirements 3.4, 10.1**
+
+**Property 10: Configuration validation completeness**  
+*For any* configuration with required fields, if any required field is missing or invalid, then validation SHALL fail with a specific error message  
+**Validates: Requirements 3.3**
+
+**Property 11: TimescaleDB database separation**  
+*For any* configuration with Indexer Services profile selected, the generated configuration SHALL create separate databases (kasia_db, k_db, simply_kaspa_db) within the shared TimescaleDB instance  
+**Validates: Requirements 3.6**
+
+**Property 12: Fallback configuration**  
+*For any* configuration where Core Profile is selected with "for other services" option, if the local node fails health checks, then the configuration SHALL automatically fallback to public Kaspa network endpoints  
+**Validates: Requirements 3.7**
+
+### Network Configuration Properties
+
+**Property 13: Port uniqueness**  
+*For any* valid configuration, no two services SHALL be assigned the same port number  
+**Validates: Requirements 4.2**
+
+**Property 14: External IP detection**  
+*For any* system with network connectivity, the external IP detection SHALL return either a valid IPv4/IPv6 address or a clear error message  
+**Validates: Requirements 4.3**
+
+### Installation Progress Properties
+
+**Property 15: Progress monotonicity**  
+*For any* installation process, the progress percentage SHALL never decrease (monotonically increasing from 0% to 100%)  
+**Validates: Requirements 5.1**
+
+**Property 16: Service startup ordering**  
+*For any* installation with multiple profiles, services SHALL start in dependency order: Kaspa Node (order 1), Indexer Services (order 2), Applications (order 3)  
+**Validates: Requirements 14.1**
+
+**Property 17: Error message specificity**  
+*For any* installation error, the error message SHALL include the specific service name, error type, and at least one troubleshooting suggestion  
+**Validates: Requirements 5.5, 8.1, 8.2**
+
+### Validation Properties
+
+**Property 18: Health check dependency order**  
+*For any* post-installation validation, health checks SHALL be performed in dependency order (nodes before indexers before applications)  
+**Validates: Requirements 6.1**
+
+**Property 19: Database connectivity verification**  
+*For any* installation with TimescaleDB, validation SHALL verify that all configured databases (kasia_db, k_db, simply_kaspa_db) are accessible and initialized  
+**Validates: Requirements 6.2**
+
+**Property 20: API endpoint reachability**  
+*For any* running service with an API endpoint, validation SHALL successfully connect to the endpoint or report a specific connectivity error  
+**Validates: Requirements 6.3**
+
+**Property 21: Fallback option availability**  
+*For any* validation where Core Profile node fails health checks and dependent services exist, the wizard SHALL offer at least two options: continue with public network or troubleshoot  
+**Validates: Requirements 6.6**
+
+### Configuration Persistence Properties
+
+**Property 22: Configuration round-trip**  
+*For any* valid configuration, saving to .env and installation-config.json then loading SHALL produce an equivalent configuration  
+**Validates: Requirements 7.1, 7.2**
+
+**Property 23: Backup before modification**  
+*For any* reconfiguration operation, a timestamped backup SHALL be created in .kaspa-backups/ before any configuration files are modified  
+**Validates: Requirements 7.4, 13.4**
+
+**Property 24: Configuration loading idempotence**  
+*For any* saved configuration, loading it multiple times SHALL produce the same wizard state  
+**Validates: Requirements 7.3**
+
+### Wizard Flow Properties
+
+**Property 25: Step progression validation**  
+*For any* wizard step transition, if the current step validation fails, then progression to the next step SHALL be prevented  
+**Validates: Requirements 11.5**
+
+**Property 26: State persistence**  
+*For any* wizard state at any step, saving and then loading the state SHALL restore the wizard to the same step with the same selections  
+**Validates: Requirements 11.3**
+
+**Property 27: Navigation consistency**  
+*For any* wizard step, clicking "Back" then "Next" SHALL return to the same step without losing data  
+**Validates: Requirements 11.2**
+
+### Reconfiguration Properties
+
+**Property 28: Configuration loading in reconfigure mode**  
+*For any* existing installation, launching wizard in reconfigure mode SHALL pre-populate all form fields with current configuration values  
+**Validates: Requirements 13.1, 13.3**
+
+**Property 29: Rollback availability**  
+*For any* failed update or reconfiguration, a rollback option SHALL be available that restores the most recent backup  
+**Validates: Requirements 13.8**
+
+### Dependency Management Properties
+
+**Property 30: Startup order calculation**  
+*For any* set of selected profiles, the calculated startup order SHALL ensure that no service starts before its dependencies are healthy  
+**Validates: Requirements 14.3**
+
+**Property 31: Circular dependency detection**  
+*For any* profile selection, if a circular dependency exists, then profile validation SHALL fail with an error identifying the cycle  
+**Validates: Requirements 14.2**
+
+**Property 32: Fallback configuration generation**  
+*For any* dependency service failure during startup, if fallback is available, then the wizard SHALL generate a valid fallback configuration using public endpoints  
+**Validates: Requirements 14.5**
+
+### Security Properties
+
+**Property 33: Password masking**  
+*For any* password input field, the default display state SHALL mask the password characters  
+**Validates: Requirements 10.2**
+
+**Property 34: Sensitive data exclusion from logs**  
+*For any* log output (browser console or backend logs), passwords and API keys SHALL NOT appear in plain text  
+**Validates: Requirements 10.4**
+
+**Property 35: HTTPS preference**  
+*For any* backend communication, if HTTPS is available, then the wizard SHALL use HTTPS instead of HTTP  
+**Validates: Requirements 10.3**
+
 ## Error Handling
 
 ### Error Categories

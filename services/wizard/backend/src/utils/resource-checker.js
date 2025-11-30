@@ -169,8 +169,8 @@ class ResourceChecker {
         minCPU: 2,
         suitableFor: 'Systems with 8GB+ RAM'
       },
-      'explorer': {
-        name: 'Explorer',
+      'indexer-services': {
+        name: 'Indexer Services',
         description: 'Indexing services with TimescaleDB',
         components: ['dashboard', 'nginx', 'kaspa-node-sync', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer', 'timescaledb'],
         minRAM: 12,
@@ -179,8 +179,8 @@ class ResourceChecker {
         minCPU: 4,
         suitableFor: 'Systems with 16GB+ RAM'
       },
-      'production': {
-        name: 'Production',
+      'kaspa-user-applications': {
+        name: 'Kaspa User Applications',
         description: 'User-facing applications',
         components: ['dashboard', 'nginx', 'kaspa-node-sync', 'kasia-indexer', 'kasia-app', 'k-indexer', 'k-social-app'],
         minRAM: 16,
@@ -189,8 +189,8 @@ class ResourceChecker {
         minCPU: 4,
         suitableFor: 'Systems with 16GB+ RAM'
       },
-      'archive': {
-        name: 'Archive',
+      'archive-node': {
+        name: 'Archive Node',
         description: 'Long-term data retention',
         components: ['dashboard', 'nginx', 'kaspa-node-sync', 'simply-kaspa-indexer', 'archive-db'],
         minRAM: 24,
@@ -542,23 +542,23 @@ class ResourceChecker {
       });
     } else if (availableRAM < 24) {
       recommendations.primary = {
-        profile: 'explorer',
-        reason: 'Good RAM - Explorer profile recommended',
+        profile: 'indexer-services',
+        reason: 'Good RAM - Indexer Services profile recommended',
         useRemoteNode: false
       };
       recommendations.alternatives.push({
-        profile: 'production',
-        reason: 'Production profile also possible'
+        profile: 'kaspa-user-applications',
+        reason: 'Kaspa User Applications profile also possible'
       });
     } else {
       recommendations.primary = {
-        profile: 'archive',
-        reason: 'Excellent RAM - Full archive profile possible',
+        profile: 'archive-node',
+        reason: 'Excellent RAM - Full archive node profile possible',
         useRemoteNode: false
       };
       recommendations.alternatives.push({
-        profile: 'production',
-        reason: 'Production profile for user-facing applications'
+        profile: 'kaspa-user-applications',
+        reason: 'Kaspa User Applications profile for user-facing applications'
       });
     }
 
@@ -896,7 +896,7 @@ class ResourceChecker {
     // If resources are insufficient, suggest profile reductions
     if (!comparison.ram.meetsMin || !comparison.disk.meetsMin) {
       // Suggest using remote node instead of local
-      if (profileIds.includes('core-local') || profileIds.includes('explorer')) {
+      if (profileIds.includes('core') || profileIds.includes('indexer-services')) {
         recommendations.push({
           type: 'use_remote_node',
           priority: 'high',
@@ -911,7 +911,7 @@ class ResourceChecker {
       }
 
       // Suggest using public indexers
-      if (profileIds.includes('explorer') || profileIds.includes('production')) {
+      if (profileIds.includes('indexer-services') || profileIds.includes('kaspa-user-applications')) {
         recommendations.push({
           type: 'use_public_indexers',
           priority: 'high',
@@ -926,7 +926,7 @@ class ResourceChecker {
       }
 
       // Suggest removing optional profiles
-      const optionalProfiles = ['mining', 'archive'];
+      const optionalProfiles = ['mining', 'archive-node'];
       const selectedOptional = profileIds.filter(p => optionalProfiles.includes(p));
       if (selectedOptional.length > 0) {
         recommendations.push({

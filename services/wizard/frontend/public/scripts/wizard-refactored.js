@@ -181,11 +181,10 @@ function setupEventListeners() {
             });
         }
         
-        // Setup profile selection and Developer Mode toggle when entering profiles step
+        // Setup Developer Mode toggle when entering profiles step
         if (stepId === 'profiles') {
             setTimeout(() => {
                 import('./modules/configure.js').then(module => {
-                    module.initializeProfileSelection();
                     module.setupDeveloperModeToggle();
                 });
             }, 100);

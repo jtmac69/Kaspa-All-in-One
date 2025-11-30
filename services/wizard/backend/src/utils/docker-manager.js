@@ -17,8 +17,8 @@ class DockerManager {
   async pullImages(profiles, progressCallback) {
     const imageMap = {
       core: ['kaspanet/rusty-kaspad:latest', 'nginx:alpine'],
-      explorer: ['timescale/timescaledb:latest-pg16'],
-      prod: ['kkluster/kasia-indexer:main']
+      'indexer-services': ['timescale/timescaledb:latest-pg16'],
+      'kaspa-user-applications': ['kkluster/kasia-indexer:main']
     };
 
     const imagesToPull = new Set();
@@ -73,8 +73,8 @@ class DockerManager {
 
   async buildServices(profiles, progressCallback) {
     const servicesToBuild = {
-      prod: ['k-social', 'k-indexer', 'kasia'],
-      explorer: ['simply-kaspa-indexer'],
+      'kaspa-user-applications': ['k-social', 'k-indexer', 'kasia'],
+      'indexer-services': ['simply-kaspa-indexer'],
       mining: ['kaspa-stratum']
     };
 
@@ -233,10 +233,9 @@ class DockerManager {
   async validateServices(profiles) {
     const serviceMap = {
       core: ['kaspa-node', 'dashboard', 'nginx'],
-      explorer: ['indexer-db', 'simply-kaspa-indexer'],
-      prod: ['kasia', 'kasia-indexer', 'k-social', 'k-indexer'],
-      archive: ['archive-db', 'archive-indexer'],
-      development: ['portainer', 'pgadmin'],
+      'indexer-services': ['indexer-db', 'simply-kaspa-indexer'],
+      'kaspa-user-applications': ['kasia', 'kasia-indexer', 'k-social', 'k-indexer'],
+      'archive-node': ['archive-db', 'archive-indexer'],
       mining: ['kaspa-stratum']
     };
 

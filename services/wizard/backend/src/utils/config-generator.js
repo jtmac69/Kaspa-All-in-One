@@ -19,7 +19,7 @@ class ConfigGenerator {
       
       // Database settings
       POSTGRES_USER: Joi.string().alphanum().min(3).max(30).default('kaspa'),
-      POSTGRES_PASSWORD: Joi.string().min(16).required(),
+      POSTGRES_PASSWORD: Joi.string().min(16).optional().allow(''),
       POSTGRES_DB: Joi.string().pattern(/^[a-zA-Z0-9_]+$/).min(3).max(30).default('kaspa_explorer'),
       POSTGRES_PORT: Joi.number().integer().min(1024).max(65535).default(5432),
       
@@ -98,8 +98,8 @@ class ConfigGenerator {
       ''
     );
 
-    // Database settings (only if explorer or prod profiles are active)
-    if (profiles.includes('explorer') || profiles.includes('prod')) {
+    // Database settings (only if indexer-services or kaspa-user-applications profiles are active)
+    if (profiles.includes('indexer-services') || profiles.includes('kaspa-user-applications')) {
       lines.push(
         '# Database Settings',
         `POSTGRES_USER=${config.POSTGRES_USER || 'kaspa'}`,
@@ -110,8 +110,8 @@ class ConfigGenerator {
       );
     }
 
-    // Archive database settings (only if archive profile is active)
-    if (profiles.includes('archive')) {
+    // Archive database settings (only if archive-node profile is active)
+    if (profiles.includes('archive-node')) {
       lines.push(
         '# Archive Database Settings',
         `ARCHIVE_POSTGRES_USER=${config.ARCHIVE_POSTGRES_USER || 'kaspa_archive'}`,
@@ -156,8 +156,8 @@ class ConfigGenerator {
       );
     }
 
-    // Indexer settings (only if explorer profile is active)
-    if (profiles.includes('explorer')) {
+    // Indexer settings (only if indexer-services profile is active)
+    if (profiles.includes('indexer-services')) {
       lines.push(
         '# Indexer Settings',
         `INDEXER_MODE=${config.INDEXER_MODE || 'full'}`,
@@ -254,7 +254,7 @@ class ConfigGenerator {
     };
 
     // Add database passwords if needed
-    if (profiles.includes('explorer') || profiles.includes('prod')) {
+    if (profiles.includes('indexer-services') || profiles.includes('kaspa-user-applications')) {
       config.POSTGRES_USER = 'kaspa';
       config.POSTGRES_PASSWORD = this.generateSecurePassword();
       config.POSTGRES_DB = 'kaspa_explorer';
@@ -262,7 +262,7 @@ class ConfigGenerator {
     }
 
     // Add archive database settings if needed
-    if (profiles.includes('archive')) {
+    if (profiles.includes('archive-node')) {
       config.ARCHIVE_POSTGRES_USER = 'kaspa_archive';
       config.ARCHIVE_POSTGRES_PASSWORD = this.generateSecurePassword();
       config.ARCHIVE_POSTGRES_DB = 'kaspa_archive';
@@ -270,7 +270,7 @@ class ConfigGenerator {
     }
 
     // Add indexer settings if needed
-    if (profiles.includes('explorer')) {
+    if (profiles.includes('indexer-services')) {
       config.INDEXER_MODE = 'full';
     }
 
@@ -352,7 +352,7 @@ class ConfigGenerator {
     );
 
     // Add pgAdmin service if database profiles are selected
-    if (profiles.includes('explorer') || profiles.includes('prod') || profiles.includes('archive')) {
+    if (profiles.includes('indexer-services') || profiles.includes('kaspa-user-applications') || profiles.includes('archive-node')) {
       lines.push(
         '  pgadmin:',
         '    image: dpage/pgadmin4:latest',
@@ -381,10 +381,10 @@ class ConfigGenerator {
     if (profiles.includes('core')) {
       servicesToOverride.push('kaspa-node', 'dashboard');
     }
-    if (profiles.includes('explorer')) {
+    if (profiles.includes('indexer-services')) {
       servicesToOverride.push('k-indexer', 'simply-kaspa-indexer');
     }
-    if (profiles.includes('prod')) {
+    if (profiles.includes('kaspa-user-applications')) {
       servicesToOverride.push('kasia-app', 'kasia-indexer', 'k-social-app');
     }
 
@@ -404,7 +404,7 @@ class ConfigGenerator {
       '    driver: local'
     );
 
-    if (profiles.includes('explorer') || profiles.includes('prod') || profiles.includes('archive')) {
+    if (profiles.includes('indexer-services') || profiles.includes('kaspa-user-applications') || profiles.includes('archive-node')) {
       lines.push(
         '  pgadmin_data:',
         '    driver: local'

@@ -8,86 +8,57 @@ import { showNotification } from './utils.js';
 
 /**
  * Profile definitions with resource requirements
+ * These match the profile IDs in the HTML (data-profile attributes)
  */
 const PROFILE_DEFINITIONS = {
     'core': {
-        name: 'Core',
-        description: 'Essential services (Dashboard, Nginx)',
-        services: ['dashboard', 'nginx'],
-        resources: {
-            cpu: '1 core',
-            ram: '1 GB',
-            disk: '1 GB'
-        }
-    },
-    'core-remote': {
-        name: 'Core + Remote Node',
-        description: 'Dashboard with remote Kaspa node connection',
-        services: ['dashboard', 'nginx'],
-        resources: {
-            cpu: '1 core',
-            ram: '2 GB',
-            disk: '2 GB'
-        }
-    },
-    'core-local': {
-        name: 'Core + Local Node',
-        description: 'Dashboard with local Kaspa node',
-        services: ['dashboard', 'nginx', 'kaspa-node'],
+        name: 'Core Profile',
+        description: 'Kaspa node (public/private) with optional wallet',
+        services: ['kaspa-node', 'wallet', 'dashboard', 'nginx'],
         resources: {
             cpu: '2 cores',
-            ram: '12 GB',
-            disk: '60 GB'
+            ram: '4 GB',
+            disk: '100 GB'
         }
     },
-    'prod': {
-        name: 'Production',
-        description: 'User-facing applications',
-        services: ['dashboard', 'nginx', 'kaspa-node', 'kasia-indexer', 'kasia-app', 'k-indexer', 'k-social-app'],
+    'kaspa-user-applications': {
+        name: 'Kaspa User Applications',
+        description: 'User-facing apps (Kasia, K-Social, Kaspa Explorer)',
+        services: ['kasia-app', 'k-social-app', 'kaspa-explorer'],
         resources: {
-            cpu: '4 cores',
-            ram: '20 GB',
-            disk: '200 GB'
+            cpu: '2 cores',
+            ram: '4 GB',
+            disk: '50 GB'
         }
     },
-    'explorer': {
-        name: 'Explorer',
-        description: 'Indexing services with TimescaleDB',
-        services: ['dashboard', 'nginx', 'kaspa-node', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer', 'timescaledb'],
+    'indexer-services': {
+        name: 'Indexer Services',
+        description: 'Local indexers (Kasia, K-Indexer, Simply-Kaspa)',
+        services: ['timescaledb', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
         resources: {
             cpu: '4 cores',
-            ram: '16 GB',
-            disk: '150 GB'
-        }
-    },
-    'archive': {
-        name: 'Archive',
-        description: 'Long-term data retention',
-        services: ['dashboard', 'nginx', 'kaspa-node', 'simply-kaspa-indexer', 'archive-db'],
-        resources: {
-            cpu: '4 cores',
-            ram: '32 GB',
+            ram: '8 GB',
             disk: '500 GB'
         }
     },
-    'mining': {
-        name: 'Mining',
-        description: 'Mining-specific services',
-        services: ['dashboard', 'nginx', 'kaspa-node', 'kaspa-stratum'],
+    'archive-node': {
+        name: 'Archive Node Profile',
+        description: 'Non-pruning Kaspa node for complete blockchain history',
+        services: ['kaspa-archive-node'],
         resources: {
-            cpu: '2 cores',
-            ram: '12 GB',
-            disk: '60 GB'
+            cpu: '8 cores',
+            ram: '16 GB',
+            disk: '1000 GB'
         }
     },
-    'dev': {
-        name: 'Development',
-        description: 'Development environment',
-        services: ['dashboard', 'nginx', 'kaspa-node'],
+    'mining': {
+        name: 'Mining Profile',
+        description: 'Local mining stratum pointed to local Kaspa node',
+        services: ['kaspa-stratum'],
         resources: {
             cpu: '2 cores',
-            ram: '8 GB',
-            disk: '50 GB'
+            ram: '2 GB',
+            disk: '10 GB'
         }
     }
 };
@@ -97,12 +68,24 @@ const PROFILE_DEFINITIONS = {
  */
 export function displayConfigurationSummary() {
     console.log('Displaying configuration summary');
+    console.log('State manager:', stateManager);
     
     const selectedProfiles = stateManager.get('selectedProfiles') || [];
     const configuration = stateManager.get('configuration') || {};
     
+    console.log('Selected profiles from state:', selectedProfiles);
+    console.log('Configuration from state:', configuration);
+    
     if (selectedProfiles.length === 0) {
+        console.warn('No profiles selected');
         showNotification('No profiles selected. Please go back and select at least one profile.', 'warning');
+        
+        // Still try to display empty state
+        const profilesElement = document.getElementById('review-profiles');
+        const serviceCountElement = document.getElementById('review-service-count');
+        if (profilesElement) profilesElement.textContent = 'None selected';
+        if (serviceCountElement) serviceCountElement.textContent = '0 services';
+        
         return;
     }
     
@@ -268,6 +251,8 @@ function displayNetworkConfiguration(configuration) {
         console.error('Network configuration display elements not found');
         return;
     }
+    
+    console.log('Displaying network configuration:', configuration);
     
     // Display external IP
     const externalIp = configuration.externalIp || configuration.EXTERNAL_IP;

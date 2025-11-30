@@ -83,10 +83,10 @@ function populateConfigurationForm(config) {
  * Update form visibility based on selected profiles
  */
 function updateFormVisibility(profiles) {
-    // Database section - show if explorer or prod profiles are selected
+    // Database section - show if indexer-services or kaspa-user-applications profiles are selected
     const dbSection = document.querySelector('.config-section:has(#db-password)');
     if (dbSection) {
-        const needsDatabase = profiles.includes('explorer') || profiles.includes('prod');
+        const needsDatabase = profiles.includes('indexer-services') || profiles.includes('kaspa-user-applications');
         dbSection.style.display = needsDatabase ? 'block' : 'none';
     }
 }
@@ -103,7 +103,7 @@ const validationRules = {
     'db-password': {
         minLength: 16,
         message: 'Password must be at least 16 characters long',
-        required: true
+        required: false  // Conditionally required based on selected profiles
     },
     'custom-env': {
         validator: validateCustomEnvVars,
@@ -266,7 +266,7 @@ function validateAllFields() {
     
     // Check if database password is required based on selected profiles
     const selectedProfiles = stateManager.get('selectedProfiles') || [];
-    const needsDatabase = selectedProfiles.includes('explorer') || selectedProfiles.includes('prod');
+    const needsDatabase = selectedProfiles.includes('indexer-services') || selectedProfiles.includes('kaspa-user-applications');
     
     if (needsDatabase) {
         const dbPasswordField = document.getElementById('db-password');
@@ -285,35 +285,54 @@ function validateAllFields() {
  */
 export async function validateConfiguration() {
     try {
+        console.log('=== Starting configuration validation ===');
+        
         // First, validate client-side
         const clientValidation = validateAllFields();
+        console.log('Client-side validation result:', clientValidation);
+        
         if (!clientValidation.valid) {
+            console.error('Client-side validation failed:');
+            clientValidation.errors.forEach(error => {
+                console.error(`  - Field: ${error.field}, Message: ${error.message}`);
+            });
             showNotification('Please fix the validation errors before continuing', 'error');
             return false;
         }
         
         // Then validate server-side
         const config = gatherConfigurationFromForm();
+        console.log('Configuration to validate:', config);
+        
         const response = await api.post('/config/validate', config);
+        console.log('Server validation response:', response);
         
         if (!response.valid) {
-            // Show server-side validation errors
-            response.errors.forEach(error => {
-                const fieldId = error.field.replace(/\./g, '-').toLowerCase();
-                showFieldError(fieldId, error.message);
-            });
+            console.error('Server-side validation failed:', response.errors);
             
-            const errorMessages = response.errors.map(e => `${e.field}: ${e.message}`).join('\n');
-            showNotification(`Configuration validation failed:\n${errorMessages}`, 'error', 5000);
+            // Show server-side validation errors
+            if (response.errors && Array.isArray(response.errors)) {
+                response.errors.forEach(error => {
+                    const fieldId = error.field.replace(/\./g, '-').toLowerCase();
+                    showFieldError(fieldId, error.message);
+                });
+                
+                const errorMessages = response.errors.map(e => `${e.field}: ${e.message}`).join('\n');
+                showNotification(`Configuration validation failed:\n${errorMessages}`, 'error', 5000);
+            } else {
+                showNotification('Configuration validation failed', 'error');
+            }
             return false;
         }
         
         // Update state with validated config
+        console.log('Validation successful, updating state with:', response.config);
         stateManager.set('configuration', response.config);
         return true;
         
     } catch (error) {
-        console.error('Configuration validation failed:', error);
+        console.error('Configuration validation exception:', error);
+        console.error('Error stack:', error.stack);
         showNotification(`Validation error: ${error.message}`, 'error');
         return false;
     }
