@@ -86,6 +86,17 @@ export class StateManager {
     }
     
     /**
+     * Delete a specific state key
+     */
+    delete(key) {
+        if (key in this.state) {
+            delete this.state[key];
+            this.saveState();
+            this.notify(key, undefined);
+        }
+    }
+    
+    /**
      * Reset state
      */
     reset() {

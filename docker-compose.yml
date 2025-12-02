@@ -35,25 +35,11 @@ services:
     #   retries: 3
     #   start_period: 60s
 
-  # Management Dashboard (Core component)
-  dashboard:
-    build:
-      context: ./services/dashboard
-      dockerfile: Dockerfile
-    container_name: kaspa-dashboard
-    restart: unless-stopped
-    ports:
-      - "${DASHBOARD_PORT:-8080}:8080"
-    environment:
-      - KASPA_NODE_URL=http://kaspa-node:16111
-      - REMOTE_KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./.env:/app/.env:ro
-    depends_on:
-      - kaspa-node
-    networks:
-      - kaspa-network
+  # Management Dashboard - NOW HOST-BASED (not containerized)
+  # The dashboard runs directly on the host system for better Docker monitoring
+  # Start with: cd services/dashboard && npm start
+  # Or use systemd: sudo systemctl start kaspa-dashboard
+  # See .kiro/specs/management-dashboard/design.md for details
 
   # Installation Wizard (DEPRECATED - Runs on host, not in container)
   # NOTE: The wizard should be started using ./services/wizard/backend/start-local.sh
@@ -108,45 +94,14 @@ services:
       - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./config/ssl:/etc/nginx/ssl:ro
     depends_on:
-      - dashboard
-    networks:
-      - kaspa-network
-
-  # ============================================================================
-  # PRODUCTION PROFILE - User-facing applications
-  # ============================================================================
-
-  # Kaspa Mining Stratum
-  kaspa-stratum:
-    build:
-      context: ./services/kaspa-stratum
-      dockerfile: Dockerfile
-      args:
-        STRATUM_VERSION: ${STRATUM_VERSION:-master}
-    container_name: kaspa-stratum
-    restart: unless-stopped
-    ports:
-      - "${STRATUM_PORT:-5555}:5555"  # Stratum port
-    environment:
-      - KASPA_RPC_SERVER=${REMOTE_KASPA_NODE_URL:-kaspa-node:16111}
-      - STRATUM_PORT=5555
-      - LOG_LEVEL=${STRATUM_LOG_LEVEL:-info}
-      - MIN_SHARE_DIFF=${STRATUM_MIN_SHARE_DIFF:-4}
-      - EXTRA_NONCE_SIZE=${STRATUM_EXTRA_NONCE_SIZE:-0}
-    depends_on:
       kaspa-node:
         condition: service_started
     networks:
       - kaspa-network
-    profiles:
-      - prod
-      - mining
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "5555"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+
+  # ============================================================================
+  # KASPA-USER-APPLICATIONS PROFILE - User-facing applications
+  # ============================================================================
 
   # Kasia Messaging App
   kasia-app:
@@ -155,32 +110,42 @@ services:
       dockerfile: Dockerfile
       args:
         KASIA_VERSION: ${KASIA_VERSION:-master}
+        # Pass indexer URLs as build arguments for Vite build
+        VITE_INDEXER_MAINNET_URL: ${REMOTE_KASIA_INDEXER_URL:-https://api.kasia.io/}
+        VITE_INDEXER_TESTNET_URL: ${REMOTE_KASIA_INDEXER_URL:-https://api.kasia.io/}
+        VITE_DEFAULT_MAINNET_KASPA_NODE_URL: ${REMOTE_KASPA_NODE_WBORSH_URL:-wss://api.kasia.io/ws}
+        VITE_DEFAULT_TESTNET_KASPA_NODE_URL: ${REMOTE_KASPA_NODE_WBORSH_URL:-wss://api.kasia.io/ws}
+        VITE_DEFAULT_KASPA_NETWORK: ${KASPA_NETWORK:-mainnet}
+        VITE_DISABLE_INDEXER: "false"
     container_name: kasia-app
     restart: unless-stopped
     ports:
       - "${KASIA_APP_PORT:-3001}:3000"
     environment:
-      # Network configuration
+      # Runtime environment variables for the startup script
       - VITE_DEFAULT_KASPA_NETWORK=${KASPA_NETWORK:-mainnet}
       - VITE_ALLOWED_KASPA_NETWORKS=${KASPA_NETWORK:-mainnet}
       - VITE_DISABLE_PASSWORD_REQUIREMENTS=${KASIA_DISABLE_PASSWORD_REQUIREMENTS:-false}
-      # Logging
       - VITE_LOG_LEVEL=${KASIA_LOG_LEVEL:-info}
       - VITE_DEV_MODE=false
-      # Indexer configuration - point to local Kasia indexer
-      - VITE_INDEXER_MAINNET_URL=${REMOTE_KASIA_INDEXER_URL:-http://kasia-indexer:8080/}
-      - VITE_INDEXER_TESTNET_URL=${REMOTE_KASIA_INDEXER_URL:-http://kasia-indexer:8080/}
+      - VITE_INDEXER_MAINNET_URL=${REMOTE_KASIA_INDEXER_URL:-https://api.kasia.io/}
+      - VITE_INDEXER_TESTNET_URL=${REMOTE_KASIA_INDEXER_URL:-https://api.kasia.io/}
       - VITE_DISABLE_INDEXER=false
-      # Kaspa node configuration - point to local node WebSocket
-      - VITE_DEFAULT_MAINNET_KASPA_NODE_URL=${REMOTE_KASPA_NODE_WBORSH_URL:-ws://kaspa-node:17110}
-      - VITE_DEFAULT_TESTNET_KASPA_NODE_URL=${REMOTE_KASPA_NODE_WBORSH_URL:-ws://kaspa-node:17110}
+      - VITE_DEFAULT_MAINNET_KASPA_NODE_URL=${REMOTE_KASPA_NODE_WBORSH_URL:-wss://api.kasia.io/ws}
+      - VITE_DEFAULT_TESTNET_KASPA_NODE_URL=${REMOTE_KASPA_NODE_WBORSH_URL:-wss://api.kasia.io/ws}
     depends_on:
-      kasia-indexer:
-        condition: service_healthy
+      kaspa-node:
+        condition: service_started
     networks:
       - kaspa-network
     profiles:
-      - prod
+      - kaspa-user-applications
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # K Social App
   k-social:
@@ -193,17 +158,23 @@ services:
       - "${KSOCIAL_APP_PORT:-3003}:3000"
     environment:
       - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-http://kaspa-node:16111}
-      - KSOCIAL_INDEXER_URL=${REMOTE_KSOCIAL_INDEXER_URL:-http://k-indexer:3000}
+      - KSOCIAL_INDEXER_URL=${REMOTE_KSOCIAL_INDEXER_URL:-https://indexer.kaspatalk.net/}
     depends_on:
-      k-indexer:
-        condition: service_healthy
+      kaspa-node:
+        condition: service_started
     networks:
       - kaspa-network
     profiles:
-      - prod
+      - kaspa-user-applications
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # ============================================================================
-  # EXPLORER PROFILE - Indexing and data services
+  # INDEXER-SERVICES PROFILE - Local indexing and data services
   # ============================================================================
 
   # Shared TimescaleDB for Indexers (Enhanced for 10bps Kaspa rate)
@@ -240,7 +211,7 @@ services:
     networks:
       - kaspa-network
     profiles:
-      - explorer
+      - indexer-services
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-indexer} -d ${POSTGRES_DB:-kaspa_indexers}"]
       interval: 30s
@@ -268,7 +239,7 @@ services:
     networks:
       - kaspa-network
     profiles:
-      - explorer
+      - indexer-services
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -294,7 +265,7 @@ services:
     networks:
       - kaspa-network
     profiles:
-      - explorer
+      - indexer-services
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -343,7 +314,7 @@ services:
     networks:
       - kaspa-network
     profiles:
-      - explorer
+      - indexer-services
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
@@ -352,7 +323,42 @@ services:
       start_period: 60s
 
   # ============================================================================
-  # ARCHIVE PROFILE - Extended data retention and historical analysis
+  # MINING PROFILE - Mining stratum server
+  # ============================================================================
+
+  # Kaspa Mining Stratum
+  kaspa-stratum:
+    build:
+      context: ./services/kaspa-stratum
+      dockerfile: Dockerfile
+      args:
+        STRATUM_VERSION: ${STRATUM_VERSION:-master}
+    container_name: kaspa-stratum
+    restart: unless-stopped
+    ports:
+      - "${STRATUM_PORT:-5555}:5555"  # Stratum port
+    environment:
+      - KASPA_RPC_SERVER=${REMOTE_KASPA_NODE_URL:-kaspa-node:16111}
+      - STRATUM_PORT=5555
+      - LOG_LEVEL=${STRATUM_LOG_LEVEL:-info}
+      - MIN_SHARE_DIFF=${STRATUM_MIN_SHARE_DIFF:-4}
+      - EXTRA_NONCE_SIZE=${STRATUM_EXTRA_NONCE_SIZE:-0}
+    depends_on:
+      kaspa-node:
+        condition: service_started
+    networks:
+      - kaspa-network
+    profiles:
+      - mining
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "5555"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ============================================================================
+  # ARCHIVE-NODE PROFILE - Extended data retention and historical analysis
   # ============================================================================
 
   # Archive TimescaleDB (separate for long-term storage with maximum compression)
@@ -391,7 +397,7 @@ services:
     networks:
       - kaspa-network
     profiles:
-      - archive
+      - archive-node
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${ARCHIVE_POSTGRES_USER:-archiver} -d ${ARCHIVE_POSTGRES_DB:-kaspa_archive}"]
       interval: 30s
@@ -418,7 +424,7 @@ services:
     networks:
       - kaspa-network
     profiles:
-      - archive
+      - archive-node
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s

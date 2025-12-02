@@ -43,8 +43,8 @@ This task list implements the test release requirements and design. The goal is 
 
 ### 2.1 Create TESTING.md
 - [x] Write welcome section for testers
-- [ ] Document prerequisites clearly
-- [ ] Write quick start instructions
+- [x] Document prerequisites clearly
+- [x] Write quick start instructions
 - [ ] Create Scenario 1: Core Profile Installation (step-by-step)
 - [ ] Create Scenario 2: Kaspa User Applications (step-by-step)
 - [ ] Create Scenario 3: Indexer Services (step-by-step)

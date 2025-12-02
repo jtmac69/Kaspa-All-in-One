@@ -175,6 +175,35 @@ class ConfigGenerator {
       );
     }
 
+    // Indexer URL configuration for user applications
+    // If both kaspa-user-applications AND indexer-services are selected, use local indexers
+    // Otherwise, use public indexers
+    if (profiles.includes('kaspa-user-applications')) {
+      const useLocalIndexers = profiles.includes('indexer-services');
+      
+      lines.push('# Indexer URLs for User Applications');
+      
+      if (useLocalIndexers) {
+        lines.push(
+          '# Using local indexers (indexer-services profile is active)',
+          'REMOTE_KASIA_INDEXER_URL=http://kasia-indexer:8080/',
+          'REMOTE_KSOCIAL_INDEXER_URL=http://k-indexer:8080/',
+          '# Local Kaspa node WebSocket for apps',
+          'REMOTE_KASPA_NODE_WBORSH_URL=ws://kaspa-node:17110'
+        );
+      } else {
+        lines.push(
+          '# Using public indexers (indexer-services profile not active)',
+          'REMOTE_KASIA_INDEXER_URL=https://api.kasia.io/',
+          'REMOTE_KSOCIAL_INDEXER_URL=https://indexer.kaspatalk.net/',
+          '# Public Kaspa node WebSocket',
+          'REMOTE_KASPA_NODE_WBORSH_URL=wss://api.kasia.io/ws'
+        );
+      }
+      
+      lines.push('');
+    }
+
     return lines.join('\n');
   }
 

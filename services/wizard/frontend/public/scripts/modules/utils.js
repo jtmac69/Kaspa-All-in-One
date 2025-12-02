@@ -18,8 +18,14 @@ export function showNotification(message, type = 'info', duration = 5000) {
     notification.className = `notification notification-${type}`;
     notification.textContent = message;
     
-    // Add to page
-    document.body.appendChild(notification);
+    // Add to notification container
+    const container = document.getElementById('notification-container');
+    if (container) {
+        container.appendChild(notification);
+    } else {
+        // Fallback to body if container doesn't exist
+        document.body.appendChild(notification);
+    }
     
     // Trigger animation
     setTimeout(() => {

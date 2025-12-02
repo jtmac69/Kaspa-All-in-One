@@ -41,15 +41,11 @@ export async function displayValidationResults() {
         }
         
         // Call validation API
-        const response = await api.post('/install/validate', {
+        console.log('Calling validation API with profiles:', selectedProfiles);
+        const validationData = await api.post('/install/validate', {
             profiles: selectedProfiles
         });
-        
-        if (!response.ok) {
-            throw new Error('Validation request failed');
-        }
-        
-        const validationData = await response.json();
+        console.log('Received validation data:', validationData);
         
         // Store validation results in state
         stateManager.set('validationResults', validationData);
@@ -58,10 +54,16 @@ export async function displayValidationResults() {
         verificationStatus.style.display = 'none';
         
         // Display service status list
-        displayServiceStatusList(validationData.services);
-        serviceStatusList.style.display = 'block';
+        if (validationData && validationData.services) {
+            console.log('Displaying service status list');
+            displayServiceStatusList(validationData.services);
+            serviceStatusList.style.display = 'block';
+        } else {
+            console.warn('No services data in validation response');
+        }
         
         // Display summary
+        console.log('Displaying validation summary');
         displayValidationSummary(validationData);
         verificationSummary.style.display = 'block';
         
@@ -262,18 +264,27 @@ export async function runServiceVerification() {
  */
 export async function checkSyncStatus() {
     try {
+        console.log('Checking sync status...');
         showNotification('Checking sync status...', 'info');
         
         // Get kaspa-node status
-        const response = await api.get('/install/status/kaspa-node');
+        const status = await api.get('/install/status/kaspa-node');
+        console.log('Received status:', status);
         
-        if (!response.ok) {
-            throw new Error('Failed to get node status');
+        if (!status) {
+            console.warn('No status data received');
+            showNotification('Unable to get node status', 'warning');
+            return;
         }
         
-        const status = await response.json();
+        if (!status.exists) {
+            console.warn('Node does not exist');
+            showNotification('Kaspa node container not found', 'warning');
+            return;
+        }
         
-        if (!status.exists || !status.running) {
+        if (!status.running) {
+            console.warn('Node is not running');
             showNotification('Kaspa node is not running', 'warning');
             return;
         }
@@ -281,11 +292,13 @@ export async function checkSyncStatus() {
         // Try to get detailed sync info from the node
         // This would require additional API endpoints to query the node
         // For now, show basic status
-        showNotification(`Kaspa node is ${status.state}. Check dashboard for detailed sync progress.`, 'success');
+        const state = status.state || 'unknown';
+        console.log('Node state:', state);
+        showNotification(`Kaspa node is ${state}. Check dashboard for detailed sync progress.`, 'success');
         
     } catch (error) {
         console.error('Failed to check sync status:', error);
-        showNotification('Failed to check sync status. Please check the dashboard.', 'error');
+        showNotification(`Failed to check sync status: ${error.message}`, 'error');
     }
 }
 
@@ -321,13 +334,7 @@ export async function viewLogs(serviceName = null) {
         
         showNotification(`Loading logs for ${serviceName}...`, 'info');
         
-        const response = await api.get(`/install/logs/${serviceName}?lines=100`);
-        
-        if (!response.ok) {
-            throw new Error('Failed to get logs');
-        }
-        
-        const logData = await response.json();
+        const logData = await api.get(`/install/logs/${serviceName}?lines=100`);
         
         // Create and show logs modal
         showLogsModal(serviceName, logData.logs || []);
@@ -618,7 +625,8 @@ export function showServiceManagementGuide() {
  * Open dashboard in new tab
  */
 export function openDashboard() {
-    const dashboardUrl = 'http://localhost:8080';
+    // Dashboard is accessible through nginx on port 80
+    const dashboardUrl = 'http://localhost';
     window.open(dashboardUrl, '_blank');
     showNotification('Opening dashboard...', 'success');
 }

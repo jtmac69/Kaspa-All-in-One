@@ -11,8 +11,8 @@ class ProfileManager {
         services: [
           { name: 'kaspa-node', required: true, startupOrder: 1, description: 'Kaspa blockchain node' },
           { name: 'wallet', required: false, startupOrder: 1, description: 'Kaspa wallet' },
-          { name: 'dashboard', required: true, startupOrder: 3, description: 'Management dashboard' },
           { name: 'nginx', required: true, startupOrder: 3, description: 'Reverse proxy' }
+          // Note: dashboard is now host-based, not containerized
         ],
         dependencies: [],
         prerequisites: [],

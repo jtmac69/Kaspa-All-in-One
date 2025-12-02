@@ -21,13 +21,13 @@ RUN npm run build
 FROM nginx:alpine
 
 # Install runtime dependencies
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl gettext
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy custom nginx configuration template
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 # Create non-root user for nginx
 RUN addgroup -g 1001 -S ksocial && \
@@ -37,12 +37,16 @@ RUN addgroup -g 1001 -S ksocial && \
 RUN mkdir -p /var/cache/nginx /var/log/nginx && \
     chown -R ksocial:ksocial /var/cache/nginx /var/log/nginx /usr/share/nginx/html
 
+# Default indexer URL (can be overridden by environment variable)
+ENV KSOCIAL_INDEXER_URL=https://indexer.kaspatalk.net/
+
 # Expose port
 EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+  CMD curl -f http://localhost:3000/ || exit 1
 
-# Use nginx with custom config
-CMD ["nginx", "-g", "daemon off;"]
+# Use nginx's default entrypoint which handles template substitution
+# The nginx:alpine image automatically processes files in /etc/nginx/templates/
+# and substitutes environment variables

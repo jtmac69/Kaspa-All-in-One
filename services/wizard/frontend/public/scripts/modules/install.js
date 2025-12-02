@@ -385,6 +385,31 @@ function addToLogs(message) {
 }
 
 /**
+ * Mark all installation steps as complete
+ */
+function markAllStepsComplete() {
+    const stepElements = document.querySelectorAll('.install-step');
+    stepElements.forEach(stepEl => {
+        const icon = stepEl.querySelector('.install-step-icon');
+        const status = stepEl.querySelector('.install-step-status');
+        
+        if (icon) {
+            icon.innerHTML = '<span style="color: #27ae60; font-size: 24px;">✓</span>';
+        }
+        if (status) {
+            status.textContent = 'Complete';
+            status.style.color = '#27ae60';
+        }
+        
+        stepEl.classList.remove('active', 'pending', 'failed');
+        stepEl.classList.add('complete');
+        stepEl.style.opacity = '0.8';
+        stepEl.style.backgroundColor = 'transparent';
+        stepEl.style.borderLeft = 'none';
+    });
+}
+
+/**
  * Handle installation complete
  */
 export function handleInstallationComplete(data) {
@@ -399,6 +424,15 @@ export function handleInstallationComplete(data) {
         progress: 100
     });
     
+    // Mark all install steps as complete
+    markAllStepsComplete();
+    
+    // Replace spinner with checkmark in status icon
+    const statusIcon = document.querySelector('.install-status .status-icon');
+    if (statusIcon) {
+        statusIcon.innerHTML = '<span style="color: #27ae60; font-size: 48px;">✓</span>';
+    }
+    
     // Store completion data
     stateManager.set('installationComplete', {
         timestamp: new Date().toISOString(),
@@ -409,16 +443,10 @@ export function handleInstallationComplete(data) {
     addToLogs('Installation completed successfully!');
     
     // Enable navigation to next step
-    const continueBtn = document.querySelector('#step-install .btn-primary');
+    const continueBtn = document.getElementById('install-continue-btn');
     if (continueBtn) {
         continueBtn.disabled = false;
-        continueBtn.textContent = 'Continue to Complete';
-        continueBtn.onclick = () => {
-            // This will be handled by navigation
-            if (window.nextStep) {
-                window.nextStep();
-            }
-        };
+        continueBtn.innerHTML = 'Continue to Complete <span class="btn-icon">→</span>';
     }
     
     // Hide cancel button
@@ -734,7 +762,7 @@ function updateErrorButtons() {
     }
     
     // Disable continue button
-    const continueBtn = document.querySelector('#step-install .btn-primary');
+    const continueBtn = document.getElementById('install-continue-btn');
     if (continueBtn) {
         continueBtn.disabled = true;
         continueBtn.style.opacity = '0.5';
@@ -854,7 +882,7 @@ function resetInstallationUI() {
     }
     
     // Disable continue button
-    const continueBtn = document.querySelector('#step-install .btn-primary');
+    const continueBtn = document.getElementById('install-continue-btn');
     if (continueBtn) {
         continueBtn.disabled = true;
     }

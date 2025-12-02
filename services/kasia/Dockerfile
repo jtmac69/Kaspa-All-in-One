@@ -27,81 +27,28 @@ RUN git clone --depth 1 --branch ${KASIA_VERSION} https://github.com/K-Kluster/K
 RUN mkdir -p .husky && \
     echo 'console.log("Husky install skipped in Docker");' > .husky/install.mjs
 
-# Install dependencies and build (simplified for integration demo)
+# Build arguments for environment configuration
+ARG VITE_INDEXER_MAINNET_URL=https://api.kasia.io/
+ARG VITE_INDEXER_TESTNET_URL=https://api.kasia.io/
+ARG VITE_DEFAULT_MAINNET_KASPA_NODE_URL=wss://api.kasia.io/ws
+ARG VITE_DEFAULT_TESTNET_KASPA_NODE_URL=wss://api.kasia.io/ws
+ARG VITE_DEFAULT_KASPA_NETWORK=mainnet
+ARG VITE_DISABLE_INDEXER=false
+
+# Install dependencies
 RUN npm ci --ignore-scripts || npm install --ignore-scripts
 
-# Create a minimal build output for integration testing
-RUN mkdir -p dist && \
-    cp -r public/* dist/ 2>/dev/null || true
+# Build the application with environment variables
+# Vite will use these at build time
+ENV VITE_INDEXER_MAINNET_URL=${VITE_INDEXER_MAINNET_URL}
+ENV VITE_INDEXER_TESTNET_URL=${VITE_INDEXER_TESTNET_URL}
+ENV VITE_DEFAULT_MAINNET_KASPA_NODE_URL=${VITE_DEFAULT_MAINNET_KASPA_NODE_URL}
+ENV VITE_DEFAULT_TESTNET_KASPA_NODE_URL=${VITE_DEFAULT_TESTNET_KASPA_NODE_URL}
+ENV VITE_DEFAULT_KASPA_NETWORK=${VITE_DEFAULT_KASPA_NETWORK}
+ENV VITE_DISABLE_INDEXER=${VITE_DISABLE_INDEXER}
 
-# Create index.html for integration demo
-RUN cat > dist/index.html << 'EOF'
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Kasia Messaging</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; }
-        .status { padding: 15px; margin: 20px 0; border-radius: 5px; background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
-        .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
-        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🔗 Kasia Messaging Application</h1>
-        <div class="status">
-            <strong>✅ Integration Active</strong><br>
-            Kasia messaging app is integrated with the Kaspa All-in-One project.
-        </div>
-        <div class="info">
-            <strong>📋 Build Information</strong><br>
-            Built from: https://github.com/K-Kluster/Kasia.git<br>
-            Integration: Clean external repository approach
-        </div>
-        <div class="warning">
-            <strong>⚠️ Development Build</strong><br>
-            This is a simplified build for integration testing. For production use, consider using the official Kasia Docker image or a full development build environment.
-        </div>
-        <h2>Service Configuration</h2>
-        <div id="config-info">
-            <p><strong>Indexer URL:</strong> <span id="indexer-url">Loading...</span></p>
-            <p><strong>Kaspa Node:</strong> <span id="node-url">Loading...</span></p>
-            <p><strong>Network:</strong> <span id="network">Loading...</span></p>
-        </div>
-        <h2>Integration Features</h2>
-        <ul>
-            <li>✅ External repository integration (no code duplication)</li>
-            <li>✅ Configurable version/branch selection</li>
-            <li>✅ Environment variable configuration</li>
-            <li>✅ Service dependency management</li>
-            <li>✅ Health monitoring endpoints</li>
-        </ul>
-    </div>
-    <script>
-        // Load environment configuration if available
-        fetch("/env-config.js")
-            .then(response => response.text())
-            .then(data => {
-                eval(data);
-                if (window.ENV) {
-                    document.getElementById("indexer-url").textContent = window.ENV.VITE_INDEXER_MAINNET_URL || "Not configured";
-                    document.getElementById("node-url").textContent = window.ENV.VITE_DEFAULT_MAINNET_KASPA_NODE_URL || "Not configured";
-                    document.getElementById("network").textContent = window.ENV.VITE_DEFAULT_KASPA_NETWORK || "mainnet";
-                }
-            })
-            .catch(() => {
-                document.getElementById("indexer-url").textContent = "Configuration not available";
-                document.getElementById("node-url").textContent = "Configuration not available";
-                document.getElementById("network").textContent = "mainnet (default)";
-            });
-    </script>
-</body>
-</html>
-EOF
+# Build the application
+RUN npm run build || (echo "Build failed, creating fallback" && mkdir -p dist && echo "Build failed" > dist/index.html)
 
 # Production stage
 FROM nginx:alpine

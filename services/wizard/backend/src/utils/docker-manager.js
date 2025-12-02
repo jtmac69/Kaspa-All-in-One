@@ -12,13 +12,44 @@ class DockerManager {
     // Use PROJECT_ROOT env var if available (when running in container)
     // Otherwise calculate relative path (for local development)
     this.projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../..');
+    
+    // Map wizard profile names to docker-compose profile names
+    // Now docker-compose uses the same profile names as the wizard
+    this.profileMapping = {
+      'core': [],  // Core services have no profile (always run)
+      'kaspa-user-applications': ['kaspa-user-applications'],  // kasia-app, k-social
+      'indexer-services': ['indexer-services'],  // indexer-db, kasia-indexer, k-indexer, simply-kaspa-indexer
+      'archive-node': ['archive-node'],  // archive-db, archive-indexer
+      'mining': ['mining'],  // kaspa-stratum
+      'development': ['development']  // portainer, pgadmin
+    };
+  }
+
+  /**
+   * Convert wizard profiles to docker-compose profiles
+   * @param {string[]} wizardProfiles - Array of wizard profile names
+   * @returns {string[]} Array of docker-compose profile names
+   */
+  mapProfilesToDockerCompose(wizardProfiles) {
+    const dockerProfiles = new Set();
+    wizardProfiles.forEach(profile => {
+      const mapped = this.profileMapping[profile];
+      if (mapped) {
+        mapped.forEach(p => dockerProfiles.add(p));
+      }
+    });
+    return Array.from(dockerProfiles);
   }
 
   async pullImages(profiles, progressCallback) {
+    // Map wizard profiles to pre-built Docker images that need pulling
+    // Services with local Dockerfiles are built, not pulled
     const imageMap = {
       core: ['kaspanet/rusty-kaspad:latest', 'nginx:alpine'],
-      'indexer-services': ['timescale/timescaledb:latest-pg16'],
-      'kaspa-user-applications': ['kkluster/kasia-indexer:main']
+      'indexer-services': ['timescale/timescaledb:latest-pg16', 'kkluster/kasia-indexer:main'],
+      'kaspa-user-applications': [],  // These are built locally
+      'archive-node': ['timescale/timescaledb:latest-pg16'],
+      mining: []  // Built locally
     };
 
     const imagesToPull = new Set();
@@ -72,10 +103,16 @@ class DockerManager {
   }
 
   async buildServices(profiles, progressCallback) {
+    // Map wizard profiles to docker-compose services that need building
+    // Note: Services using pre-built images (kaspanet/rusty-kaspad, nginx:alpine, 
+    // timescale/timescaledb, kkluster/kasia-indexer) don't need building
+    // Note: dashboard is now host-based, not containerized
     const servicesToBuild = {
-      'kaspa-user-applications': ['k-social', 'k-indexer', 'kasia'],
-      'indexer-services': ['simply-kaspa-indexer'],
-      mining: ['kaspa-stratum']
+      core: [],  // Core uses pre-built images only (kaspad, nginx)
+      'kaspa-user-applications': ['kasia-app', 'k-social'],  // These have Dockerfiles
+      'indexer-services': ['k-indexer', 'simply-kaspa-indexer'],  // These have Dockerfiles
+      'archive-node': ['archive-indexer'],  // Uses simply-kaspa-indexer Dockerfile
+      mining: ['kaspa-stratum']  // Has a Dockerfile
     };
 
     const services = [];
@@ -134,8 +171,18 @@ class DockerManager {
         });
       }
 
-      const profileFlags = profiles.map(p => `--profile ${p}`).join(' ');
-      const cmd = `cd ${this.projectRoot} && docker compose ${profileFlags} up -d`;
+      // Map wizard profiles to docker-compose profiles
+      const dockerProfiles = this.mapProfilesToDockerCompose(profiles);
+      
+      // Build the command - if no profiles, just start core services
+      let cmd;
+      if (dockerProfiles.length > 0) {
+        const profileFlags = dockerProfiles.map(p => `--profile ${p}`).join(' ');
+        cmd = `cd ${this.projectRoot} && docker compose ${profileFlags} up -d`;
+      } else {
+        // Core profile - start services without profile flag (they have no profile assigned)
+        cmd = `cd ${this.projectRoot} && docker compose up -d`;
+      }
       
       // Use retry with timeout
       const result = await retryOperation(
@@ -231,10 +278,13 @@ class DockerManager {
   }
 
   async validateServices(profiles) {
+    // Map wizard profiles to container names for validation
+    // These names must match the container_name in docker-compose.yml
+    // Note: dashboard is now host-based, not containerized
     const serviceMap = {
-      core: ['kaspa-node', 'dashboard', 'nginx'],
-      'indexer-services': ['indexer-db', 'simply-kaspa-indexer'],
-      'kaspa-user-applications': ['kasia', 'kasia-indexer', 'k-social', 'k-indexer'],
+      core: ['kaspa-node', 'kaspa-nginx'],
+      'kaspa-user-applications': ['kasia-app', 'k-social'],
+      'indexer-services': ['indexer-db', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
       'archive-node': ['archive-db', 'archive-indexer'],
       mining: ['kaspa-stratum']
     };
