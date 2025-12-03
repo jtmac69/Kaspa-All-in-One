@@ -1,3 +1,97 @@
+# ⚠️ TEST RELEASE v0.9.0 ⚠️
+
+> **This is a pre-production test release for validation purposes.**  
+> We're looking for testers to help validate the installation wizard and overall system before the v1.0 release.
+> 
+> 📖 **Testing Instructions**: See [TESTING.md](TESTING.md)  
+> 🐛 **Report Issues**: [GitHub Issues](https://github.com/jtmac69/Kaspa-All-in-One/issues/new/choose)  
+> 📋 **Known Issues**: See [KNOWN_ISSUES.md](KNOWN_ISSUES.md)  
+> 💬 **Feedback**: [GitHub Discussions](https://github.com/jtmac69/Kaspa-All-in-One/discussions)
+
+## ⚠️ Pre-Production Disclaimer
+
+**IMPORTANT: This software is not yet ready for production use.**
+
+This test release (v0.9.0) is provided for testing and validation purposes only. By using this software, you acknowledge that:
+
+- ⚠️ **Not Production-Ready**: This is a pre-release version that may contain bugs, incomplete features, or unexpected behavior
+- 🔧 **Active Development**: Features and configurations may change significantly before the v1.0 release
+- 💾 **Data Safety**: While we implement backup systems, you should not rely on this software for critical data or production workloads
+- 🐛 **Known Issues**: See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for current limitations and problems
+- 🧪 **Testing Purpose**: This release is specifically for gathering feedback and identifying issues before production release
+- 📝 **No Warranties**: This software is provided "as is" without warranties of any kind, express or implied
+- 🤝 **Community Effort**: Your testing and feedback are essential to making this software production-ready
+
+**What This Means for You:**
+- ✅ Perfect for testing, learning, and providing feedback
+- ✅ Safe for development and experimental environments
+- ✅ Great for contributing to the project's improvement
+- ❌ Not recommended for production deployments
+- ❌ Not suitable for critical infrastructure
+- ❌ Should not be used for managing significant value or sensitive data
+
+**When Will It Be Production-Ready?**  
+We'll release v1.0 when we achieve:
+- ✅ 90% installation success rate across all platforms
+- ✅ Zero critical bugs
+- ✅ Comprehensive documentation validated by testers
+- ✅ Positive feedback from the testing community
+
+**Thank you for helping us get there!** Your participation in this test release is invaluable.
+
+## 🚀 Quick Start for Testers
+
+**New to testing?** Welcome! Here's how to get started in 5 simple steps:
+
+### Step 1: Check Prerequisites
+Before you begin, make sure you have:
+- **Docker 20.10+** and **Docker Compose 2.0+** installed ([Installation help](TESTING.md#prerequisites))
+- **4GB+ RAM** available (8GB+ recommended)
+- **100GB+ free disk space** (500GB+ for full testing)
+- **30 minutes to 2 hours** depending on which scenarios you test
+
+### Step 2: Get the Test Package
+```bash
+# Clone the repository
+git clone https://github.com/jtmac69/Kaspa-All-in-One.git
+cd KaspaAllInOne
+
+# Start the test
+./start-test.sh
+```
+
+The script will automatically:
+- ✅ Check your system requirements
+- ✅ Install wizard dependencies
+- ✅ Start the installation wizard
+- ✅ Open it in your browser
+
+### Step 3: Follow the Wizard
+The wizard will guide you through:
+1. **System Check** - Verifies your system is ready
+2. **Profile Selection** - Choose what to install (we recommend starting with "Core Profile")
+3. **Configuration** - Set up your preferences
+4. **Installation** - Watch real-time progress
+5. **Verification** - Confirm everything works
+
+### Step 4: Test Scenarios
+Pick one or more scenarios from [TESTING.md](TESTING.md):
+- **Scenario 1**: Core Profile (15 min) - Perfect for first-time testers
+- **Scenario 2**: Kaspa User Applications (20 min)
+- **Scenario 3**: Indexer Services (30 min)
+- **Scenario 4**: Error Handling (15 min)
+- **Scenario 5**: Reconfiguration (20 min)
+
+### Step 5: Share Your Feedback
+Tell us about your experience:
+- **Found a bug?** → [Report it](https://github.com/jtmac69/Kaspa-All-in-One/issues/new/choose)
+- **Have a suggestion?** → [Share it](https://github.com/jtmac69/Kaspa-All-in-One/discussions)
+- **Something unclear?** → [Ask us](https://github.com/jtmac69/Kaspa-All-in-One/discussions)
+
+**Thank you for testing!** Your feedback helps make Kaspa All-in-One better for everyone. 🙏
+
+---
+
 # Kaspa All-in-One
 
 A comprehensive Docker-based solution for running a complete Kaspa blockchain ecosystem. This package provides everything needed to run a full Kaspa node with mining capabilities, messaging, social features, and blockchain indexing - all with an intuitive web-based installation wizard.
@@ -119,7 +213,7 @@ The easiest way to get started - an interactive web-based installer that guides 
 
 ```bash
 # Clone the repository
-git clone https://github.com/argonmining/KaspaAllInOne.git
+git clone https://github.com/jtmac69/Kaspa-All-in-One.git
 cd KaspaAllInOne
 
 # Start the installation wizard
@@ -143,7 +237,7 @@ The wizard will:
 For experienced users who prefer command-line installation:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/argonmining/KaspaAllInOne/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/jtmac69/Kaspa-All-in-One/main/install.sh | bash
 ```
 
 This will:
@@ -158,7 +252,7 @@ For developers and advanced users:
 
 ```bash
 # Clone the repository
-git clone https://github.com/argonmining/KaspaAllInOne.git
+git clone https://github.com/jtmac69/Kaspa-All-in-One.git
 cd KaspaAllInOne
 
 # Copy and edit configuration
@@ -656,8 +750,8 @@ Access the help system by clicking "Need Help?" on any wizard step.
 ### Community Support
 
 - **Discord**: [Kaspa Community Discord](https://discord.gg/kaspa) - Real-time help and discussions
-- **GitHub Issues**: [GitHub Issues](https://github.com/argonmining/KaspaAllInOne/issues) - Bug reports and feature requests
-- **GitHub Discussions**: [GitHub Discussions](https://github.com/argonmining/KaspaAllInOne/discussions) - General questions and ideas
+- **GitHub Issues**: [GitHub Issues](https://github.com/jtmac69/Kaspa-All-in-One/issues) - Bug reports and feature requests
+- **GitHub Discussions**: [GitHub Discussions](https://github.com/jtmac69/Kaspa-All-in-One/discussions) - General questions and ideas
 - **Kaspa Forum**: [forum.kaspa.org](https://forum.kaspa.org) - Community Q&A
 
 ### Reporting Issues
@@ -676,7 +770,7 @@ The diagnostic report includes system info, Docker status, service health, and r
 **⚡ Ready to join the Kaspa ecosystem? Get started with the web installation wizard!**
 
 ```bash
-git clone https://github.com/argonmining/KaspaAllInOne.git
+git clone https://github.com/jtmac69/Kaspa-All-in-One.git
 cd KaspaAllInOne
 docker compose --profile wizard up -d
 # Open http://localhost:3000

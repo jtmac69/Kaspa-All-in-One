@@ -16,6 +16,9 @@ The primary goal is to validate that the installation wizard and overall system 
 - **Test_Documentation**: User-facing documentation specifically for testers
 - **Prerequisites**: Software and system requirements needed before installation
 - **Quick_Start_Script**: An automated script that starts the wizard with minimal user input
+- **Service_Management**: Scripts and tools for controlling services during testing (restart, stop, status)
+- **Fresh_Start**: Removing all containers to begin testing again with a clean slate
+- **Service_Status**: Information about which services are running and their health
 
 ## Requirements
 
@@ -234,6 +237,42 @@ The primary goal is to validate that the installation wizard and overall system 
 3. THE Test_Release SHALL track which issues are fixed in each iteration
 4. THE Test_Release SHALL communicate updates to testers
 5. THE Test_Release SHALL have clear criteria for moving to production release
+
+### Requirement 19: Service Management During Testing
+
+**User Story:** As a tester, I want to restart or stop services during testing, so that I can recover from errors or test multiple scenarios without full cleanup.
+
+#### Acceptance Criteria
+
+1. THE Test_Package SHALL include a script to restart all services
+2. THE Test_Package SHALL include a script to stop all services without removing data
+3. WHEN services are restarted, THE system SHALL preserve configuration and data
+4. WHEN services are stopped, THE system SHALL stop all Docker containers gracefully
+5. THE restart script SHALL verify services are healthy after restart
+
+### Requirement 20: Fresh Start Capability
+
+**User Story:** As a tester, I want to start fresh with a clean installation, so that I can test the same scenario multiple times without interference from previous attempts.
+
+#### Acceptance Criteria
+
+1. THE Test_Package SHALL include a script to remove all containers and start fresh
+2. WHEN starting fresh, THE system SHALL stop and remove all Docker containers
+3. WHEN starting fresh, THE system SHALL preserve the wizard state and configuration files
+4. WHEN starting fresh, THE system SHALL provide option to preserve or remove data volumes
+5. THE fresh start script SHALL confirm the action before proceeding
+
+### Requirement 21: Service Status Visibility
+
+**User Story:** As a tester, I want to check the status of all services, so that I can verify what's running and troubleshoot issues.
+
+#### Acceptance Criteria
+
+1. THE Test_Package SHALL include a script to display service status
+2. THE status script SHALL show which Docker containers are running
+3. THE status script SHALL show which ports are in use
+4. THE status script SHALL show resource usage (CPU, memory) for each service
+5. THE status script SHALL indicate if services are healthy or unhealthy
 
 ## Success Criteria
 

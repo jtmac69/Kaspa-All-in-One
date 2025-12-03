@@ -13,6 +13,10 @@ The design focuses on creating a frictionless testing experience: download → r
 ```
 kaspa-aio-v0.9.0-test/
 ├── start-test.sh              # Quick start script (main entry point)
+├── restart-services.sh        # Restart all services
+├── stop-services.sh           # Stop all services (preserve data)
+├── fresh-start.sh             # Remove containers, start fresh
+├── status.sh                  # Show service status
 ├── cleanup-test.sh            # Remove all test components
 ├── README.md                  # Updated with test release info
 ├── TESTING.md                 # Tester instructions and scenarios
@@ -190,7 +194,177 @@ echo "║   Need help? Check TESTING.md                              ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 ```
 
-### 2. Cleanup Script (`cleanup-test.sh`)
+### 2. Service Management Scripts
+
+#### 2.1 Restart Script (`restart-services.sh`)
+
+**Purpose**: Restart all services without losing data
+
+**Functionality**:
+```bash
+#!/bin/bash
+# Kaspa All-in-One Test Release - Restart Services
+
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║   Kaspa All-in-One - Restart Services                     ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+
+echo "Stopping services..."
+docker-compose down
+echo "✓ Services stopped"
+echo ""
+
+echo "Starting services..."
+docker-compose up -d
+echo "✓ Services started"
+echo ""
+
+echo "Waiting for services to be healthy..."
+sleep 5
+
+# Check service health
+echo "Checking service status..."
+docker-compose ps
+
+echo ""
+echo "✓ Restart complete!"
+echo ""
+echo "Access the dashboard at: http://localhost:8080"
+```
+
+#### 2.2 Stop Script (`stop-services.sh`)
+
+**Purpose**: Stop all services without removing data
+
+**Functionality**:
+```bash
+#!/bin/bash
+# Kaspa All-in-One Test Release - Stop Services
+
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║   Kaspa All-in-One - Stop Services                        ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+
+echo "Stopping all services..."
+docker-compose stop
+
+# Stop wizard if running
+if [ -f /tmp/kaspa-wizard.pid ]; then
+    WIZARD_PID=$(cat /tmp/kaspa-wizard.pid)
+    kill $WIZARD_PID 2>/dev/null
+    rm /tmp/kaspa-wizard.pid
+    echo "✓ Wizard stopped"
+fi
+
+echo "✓ All services stopped"
+echo ""
+echo "Data and configuration preserved."
+echo "Run ./start-test.sh to restart the wizard"
+echo "Run ./restart-services.sh to restart services"
+```
+
+#### 2.3 Fresh Start Script (`fresh-start.sh`)
+
+**Purpose**: Remove containers and start with clean slate
+
+**Functionality**:
+```bash
+#!/bin/bash
+# Kaspa All-in-One Test Release - Fresh Start
+
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║   Kaspa All-in-One - Fresh Start                          ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+
+echo "This will remove all containers and start fresh."
+echo "Configuration files and wizard state will be preserved."
+echo ""
+
+read -p "Remove data volumes? (y/N) " -n 1 -r
+echo
+REMOVE_VOLUMES=$REPLY
+
+read -p "Continue with fresh start? (y/N) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Fresh start cancelled"
+    exit 0
+fi
+
+echo "Stopping and removing containers..."
+if [[ $REMOVE_VOLUMES =~ ^[Yy]$ ]]; then
+    docker-compose down -v
+    echo "✓ Containers and volumes removed"
+else
+    docker-compose down
+    echo "✓ Containers removed (volumes preserved)"
+fi
+
+echo ""
+echo "✓ Fresh start complete!"
+echo ""
+echo "Run ./start-test.sh to begin testing again"
+```
+
+#### 2.4 Status Script (`status.sh`)
+
+**Purpose**: Display current status of all services
+
+**Functionality**:
+```bash
+#!/bin/bash
+# Kaspa All-in-One Test Release - Service Status
+
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║   Kaspa All-in-One - Service Status                       ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+
+# Check wizard status
+echo "=== Wizard Status ==="
+if [ -f /tmp/kaspa-wizard.pid ]; then
+    WIZARD_PID=$(cat /tmp/kaspa-wizard.pid)
+    if ps -p $WIZARD_PID > /dev/null 2>&1; then
+        echo "✓ Wizard running (PID: $WIZARD_PID)"
+        echo "  URL: http://localhost:3000"
+    else
+        echo "✗ Wizard not running (stale PID file)"
+        rm /tmp/kaspa-wizard.pid
+    fi
+else
+    echo "✗ Wizard not running"
+fi
+echo ""
+
+# Check Docker services
+echo "=== Docker Services ==="
+if docker-compose ps --quiet 2>/dev/null | grep -q .; then
+    docker-compose ps
+    echo ""
+    
+    # Show resource usage
+    echo "=== Resource Usage ==="
+    docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" $(docker-compose ps -q 2>/dev/null)
+else
+    echo "No services running"
+fi
+echo ""
+
+# Show ports in use
+echo "=== Ports in Use ==="
+if command -v netstat &> /dev/null; then
+    netstat -tuln | grep -E ':(3000|8080|16110|16111|18787)' || echo "No Kaspa ports in use"
+elif command -v ss &> /dev/null; then
+    ss -tuln | grep -E ':(3000|8080|16110|16111|18787)' || echo "No Kaspa ports in use"
+else
+    echo "Port checking not available (netstat/ss not found)"
+fi
+```
+
+### 3. Cleanup Script (`cleanup-test.sh`)
 
 **Purpose**: Remove all test components safely
 
@@ -369,6 +543,32 @@ Join the discussion: https://github.com/[repo]/discussions
 ## Known Issues
 
 See KNOWN_ISSUES.md for current limitations.
+
+## Service Management
+
+### Restart Services
+If something goes wrong or you need to restart:
+```bash
+./restart-services.sh
+```
+
+### Stop Services
+To pause testing without losing data:
+```bash
+./stop-services.sh
+```
+
+### Start Fresh
+To remove containers and start over:
+```bash
+./fresh-start.sh
+```
+
+### Check Status
+To see what's running:
+```bash
+./status.sh
+```
 
 ## Getting Help
 

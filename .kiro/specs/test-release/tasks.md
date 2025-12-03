@@ -37,6 +37,51 @@ This task list implements the test release requirements and design. The goal is 
 - **FILE**: `cleanup-test.sh`
 - _Requirements: 8, 15_
 
+### 1.3 Create restart-services.sh script
+- [x] Create `restart-services.sh` in project root
+- [x] Implement graceful service stop (`docker-compose down`)
+- [x] Implement service restart (`docker-compose up -d`)
+- [x] Add health check wait period
+- [x] Display service status after restart
+- [x] Add helpful output messages
+- [x] Test restart process
+- **FILE**: `restart-services.sh`
+- _Requirements: 19_
+
+### 1.4 Create stop-services.sh script
+- [x] Create `stop-services.sh` in project root
+- [x] Implement graceful service stop (`docker-compose stop`)
+- [x] Stop wizard process (using PID file)
+- [x] Preserve all data and configuration
+- [x] Display confirmation message
+- [x] Add instructions for restarting
+- [x] Test stop process
+- **FILE**: `stop-services.sh`
+- _Requirements: 19_
+
+### 1.5 Create fresh-start.sh script
+- [x] Create `fresh-start.sh` in project root
+- [x] Implement confirmation prompts
+- [x] Add option to preserve or remove volumes
+- [x] Stop and remove all containers
+- [x] Preserve wizard state and configuration files
+- [x] Display clear instructions for next steps
+- [x] Test fresh start process with both volume options
+- **FILE**: `fresh-start.sh`
+- _Requirements: 20_
+
+### 1.6 Create status.sh script
+- [x] Create `status.sh` in project root
+- [x] Check and display wizard status (PID check)
+- [x] Display Docker service status (`docker-compose ps`)
+- [x] Show resource usage (`docker stats`)
+- [x] Show ports in use (netstat/ss)
+- [x] Handle cases where services aren't running
+- [x] Format output clearly with sections
+- [x] Test status display in various states
+- **FILE**: `status.sh`
+- _Requirements: 21_
+
 ---
 
 ## Phase 2: Test Documentation ⭐ HIGH PRIORITY
@@ -45,39 +90,40 @@ This task list implements the test release requirements and design. The goal is 
 - [x] Write welcome section for testers
 - [x] Document prerequisites clearly
 - [x] Write quick start instructions
-- [ ] Create Scenario 1: Core Profile Installation (step-by-step)
-- [ ] Create Scenario 2: Kaspa User Applications (step-by-step)
-- [ ] Create Scenario 3: Indexer Services (step-by-step)
-- [ ] Create Scenario 4: Error Handling (step-by-step)
-- [ ] Create Scenario 5: Reconfiguration (step-by-step)
-- [ ] Document how to report bugs (with links)
-- [ ] Document how to suggest features (with links)
-- [ ] Add "Getting Help" section
-- [ ] Add glossary of terms
+- [x] Create Scenario 1: Core Profile Installation (step-by-step)
+- [x] Create Scenario 2: Kaspa User Applications (step-by-step)
+- [x] Create Scenario 3: Indexer Services (step-by-step)
+- [x] Create Scenario 4: Error Handling (step-by-step)
+- [x] Create Scenario 5: Reconfiguration (step-by-step)
+- [x] Add "Service Management" section with restart/stop/fresh-start/status instructions
+- [x] Document how to report bugs (with links)
+- [x] Document how to suggest features (with links)
+- [x] Add "Getting Help" section
+- [x] Add glossary of terms
 - [ ] Test instructions by following them yourself
 - **FILE**: `TESTING.md`
-- _Requirements: 4, 11, 16_
+- _Requirements: 4, 11, 16, 19, 20, 21_
 
 ### 2.2 Create KNOWN_ISSUES.md
-- [ ] Document node sync time (high priority)
-- [ ] Document Windows/WSL requirement (medium priority)
-- [ ] Document port conflict possibilities (low priority)
-- [ ] List all current limitations
-- [ ] Provide workarounds where available
-- [ ] Categorize by severity (Critical, High, Medium, Low)
-- [ ] Keep updated as issues are discovered
+- [x] Document node sync time (high priority)
+- [x] Document Windows/WSL requirement (medium priority)
+- [x] Document port conflict possibilities (low priority)
+- [x] List all current limitations
+- [x] Provide workarounds where available
+- [x] Categorize by severity (Critical, High, Medium, Low)
+- [x] Keep updated as issues are discovered
 - **FILE**: `KNOWN_ISSUES.md`
 - _Requirements: 12_
 
 ### 2.3 Update README.md for test release
-- [ ] Add "TEST RELEASE" banner at top
-- [ ] Add test release version number
-- [ ] Add quick start for testers section
-- [ ] Link to TESTING.md
-- [ ] Link to KNOWN_ISSUES.md
-- [ ] Add feedback links (issues, discussions)
-- [ ] Add disclaimer about pre-production status
-- [ ] Keep existing content but mark as test release
+- [x] Add "TEST RELEASE" banner at top
+- [x] Add test release version number
+- [x] Add quick start for testers section
+- [x] Link to TESTING.md
+- [x] Link to KNOWN_ISSUES.md
+- [x] Add feedback links (issues, discussions)
+- [x] Add disclaimer about pre-production status
+- [x] Keep existing content but mark as test release
 - **FILE**: `README.md`
 - _Requirements: 6, 16_
 
@@ -86,28 +132,28 @@ This task list implements the test release requirements and design. The goal is 
 ## Phase 3: Feedback Mechanisms ⭐ HIGH PRIORITY
 
 ### 3.1 Create bug report template
-- [ ] Create `.github/ISSUE_TEMPLATE/` directory
-- [ ] Create `bug_report.md` template
-- [ ] Include sections: Description, Steps to Reproduce, Expected/Actual Behavior
-- [ ] Request system information (OS, Docker version, Node.js version)
-- [ ] Request logs and screenshots
-- [ ] Add test-release label automatically
+- [x] Create `.github/ISSUE_TEMPLATE/` directory
+- [x] Create `bug_report.md` template
+- [x] Include sections: Description, Steps to Reproduce, Expected/Actual Behavior
+- [x] Request system information (OS, Docker version, Node.js version)
+- [x] Request logs and screenshots
+- [x] Add test-release label automatically
 - **FILE**: `.github/ISSUE_TEMPLATE/bug_report.md`
 - _Requirements: 5, 17_
 
 ### 3.2 Create feature request template
-- [ ] Create `feature_request.md` template
-- [ ] Include sections: Description, Use Case, Proposed Solution
-- [ ] Include "Alternatives Considered" section
-- [ ] Add enhancement label automatically
+- [x] Create `feature_request.md` template
+- [x] Include sections: Description, Use Case, Proposed Solution
+- [x] Include "Alternatives Considered" section
+- [x] Add enhancement label automatically
 - **FILE**: `.github/ISSUE_TEMPLATE/feature_request.md`
 - _Requirements: 5, 17_
 
 ### 3.3 Set up GitHub Discussions
-- [ ] Enable GitHub Discussions on repository
-- [ ] Create "Test Release Feedback" category
-- [ ] Create pinned welcome post with instructions
-- [ ] Link from TESTING.md
+- [x] Enable GitHub Discussions on repository
+- [x] Create "Test Release Feedback" category
+- [x] Create pinned welcome post with instructions
+- [x] Link from TESTING.md
 - _Requirements: 5_
 
 ---
@@ -373,6 +419,10 @@ This task list implements the test release requirements and design. The goal is 
 
 ### New Files
 - [ ] `start-test.sh`
+- [ ] `restart-services.sh`
+- [ ] `stop-services.sh`
+- [ ] `fresh-start.sh`
+- [ ] `status.sh`
 - [ ] `cleanup-test.sh`
 - [ ] `TESTING.md`
 - [ ] `KNOWN_ISSUES.md`
