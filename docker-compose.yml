@@ -82,7 +82,7 @@ services:
       retries: 3
       start_period: 10s
 
-  # Reverse Proxy (Core component)
+  # Reverse Proxy (Only needed for user-facing applications)
   nginx:
     image: nginx:alpine
     container_name: kaspa-nginx
@@ -98,6 +98,8 @@ services:
         condition: service_started
     networks:
       - kaspa-network
+    profiles:
+      - kaspa-user-applications
 
   # ============================================================================
   # KASPA-USER-APPLICATIONS PROFILE - User-facing applications
