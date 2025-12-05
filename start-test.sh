@@ -249,15 +249,19 @@ install_wizard_deps() {
   
   # Install dependencies
   echo "  Running npm install..."
-  if npm install --omit=dev --silent 2>&1 | grep -v "^npm WARN"; then
+  if npm install --omit=dev 2>&1 | tee /tmp/npm-install.log | grep -q "added\|up to date"; then
     cd ../../..
     echo -e "${GREEN}✓ Dependencies installed${NC}"
     echo ""
   else
     cd ../../..
     echo -e "${RED}✗ Failed to install dependencies${NC}"
-    echo -e "${YELLOW}  If you see permission errors, try running:${NC}"
-    echo -e "${YELLOW}    cd services/wizard/backend && npm install --omit=dev${NC}"
+    echo ""
+    echo -e "${YELLOW}Error details:${NC}"
+    tail -20 /tmp/npm-install.log
+    echo ""
+    echo -e "${YELLOW}To install manually, try:${NC}"
+    echo -e "${YELLOW}  cd services/wizard/backend && npm install --omit=dev${NC}"
     exit 1
   fi
 }
