@@ -291,10 +291,38 @@ check_wizard_running() {
   fi
 }
 
+# Check for existing state
+check_existing_state() {
+  if [ -d ".kaspa-aio" ] || [ -f ".env" ]; then
+    echo -e "${YELLOW}⚠ Found existing installation state${NC}"
+    if [ -d ".kaspa-aio" ]; then
+      echo -e "${YELLOW}  - .kaspa-aio/ directory exists${NC}"
+    fi
+    if [ -f ".env" ]; then
+      echo -e "${YELLOW}  - .env file exists${NC}"
+    fi
+    echo ""
+    echo -e "${YELLOW}This may cause the wizard to skip steps or show incorrect state.${NC}"
+    echo ""
+    read -p "Remove existing state and start fresh? (Y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+      echo -e "${BLUE}Removing existing state...${NC}"
+      rm -rf .kaspa-aio
+      rm -f .env
+      echo -e "${GREEN}✓ State cleared${NC}"
+      echo ""
+    fi
+  fi
+}
+
 # Start wizard
 start_wizard() {
   echo -e "${BLUE}Starting Installation Wizard...${NC}"
   echo ""
+  
+  # Check for existing state
+  check_existing_state
   
   # Check if wizard is already running
   check_wizard_running
