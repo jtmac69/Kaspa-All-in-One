@@ -247,6 +247,13 @@ remove_data_directories() {
     echo ""
     echo -e "${BLUE}Removing data directories...${NC}"
     
+    # Check if logs directory exists and needs sudo
+    NEEDS_SUDO=false
+    if [ -d "logs" ] && [ ! -w "logs" ]; then
+      NEEDS_SUDO=true
+      echo -e "${YELLOW}Note: Log files were created by Docker and require sudo to remove${NC}"
+    fi
+    
     if [ -d "$DATA_DIR" ]; then
       rm -rf "$DATA_DIR"
       echo -e "${GREEN}✓ Removed $DATA_DIR${NC}"
@@ -258,8 +265,19 @@ remove_data_directories() {
     fi
     
     if [ -d "logs" ]; then
-      rm -rf logs
-      echo -e "${GREEN}✓ Removed logs${NC}"
+      # Logs may be owned by Docker (root), so we need sudo
+      if [ "$NEEDS_SUDO" = true ]; then
+        echo -e "${BLUE}Removing logs (requires sudo)...${NC}"
+        if sudo rm -rf logs; then
+          echo -e "${GREEN}✓ Removed logs${NC}"
+        else
+          echo -e "${YELLOW}⚠ Could not remove logs${NC}"
+          echo -e "${YELLOW}  Run manually: sudo rm -rf logs${NC}"
+        fi
+      else
+        rm -rf logs
+        echo -e "${GREEN}✓ Removed logs${NC}"
+      fi
     fi
     
     echo -e "${GREEN}✓ All data directories removed${NC}"
