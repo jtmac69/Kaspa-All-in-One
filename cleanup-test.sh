@@ -152,6 +152,24 @@ stop_docker_containers() {
     echo -e "${GREEN}✓ Containers stopped (volumes preserved)${NC}"
   fi
   
+  # Also stop any kaspa containers by name (in case they're from another directory)
+  echo -e "${BLUE}Checking for any remaining Kaspa containers...${NC}"
+  local remaining_containers=$(docker ps -a --filter "name=kaspa-" --format "{{.Names}}" 2>/dev/null)
+  if [ -n "$remaining_containers" ]; then
+    echo -e "${YELLOW}Found containers from other installations:${NC}"
+    echo "$remaining_containers" | while read container; do
+      echo "  • $container"
+    done
+    echo ""
+    read -p "Stop and remove these containers too? (Y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+      echo "$remaining_containers" | xargs docker stop 2>/dev/null || true
+      echo "$remaining_containers" | xargs docker rm 2>/dev/null || true
+      echo -e "${GREEN}✓ Removed all Kaspa containers${NC}"
+    fi
+  fi
+  
   echo ""
 }
 
