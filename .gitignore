@@ -188,8 +188,7 @@ Cargo.lock
 services/*/logs/
 services/*/*.log
 
-# 
-Wizard test artifacts and backups
+# Wizard test artifacts and backups
 .env.backup.*
 services/.env.backup.*
 .kaspa-aio/

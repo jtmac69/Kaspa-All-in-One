@@ -63,17 +63,17 @@
   --font-body: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-code: 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
   
-  /* Spacing */
+  /* Spacing - Reduced for better fit */
   --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
-  --space-16: 64px;
+  --space-2: 6px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 14px;
+  --space-6: 16px;
+  --space-8: 20px;
+  --space-10: 24px;
+  --space-12: 28px;
+  --space-16: 32px;
   
   /* Transitions */
   --transition-fast: 150ms ease;
@@ -120,7 +120,7 @@ h1, h2, h3, h4, h5, h6 {
 .wizard-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--space-6);
+  padding: var(--space-4);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -132,9 +132,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .wizard-progress {
   background: var(--surface);
-  border-radius: 12px;
-  padding: var(--space-6);
-  margin-bottom: var(--space-8);
+  border-radius: 8px;
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
   box-shadow: var(--shadow-md);
 }
 
@@ -162,8 +162,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .step-number {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--border);
   color: var(--text-secondary);
@@ -171,7 +171,7 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 18px;
+  font-size: 14px;
   transition: all var(--transition-base);
 }
 
@@ -187,7 +187,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .step-label {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-secondary);
   text-align: center;
@@ -211,16 +211,142 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ============================================================================
+   Test Release Banner
+   ============================================================================ */
+
+.test-release-banner {
+  background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+  color: white;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(255, 165, 0, 0.3);
+  position: relative;
+  animation: slideDown 300ms ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.test-release-banner.dismissed {
+  display: none;
+}
+
+.test-release-banner .banner-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.test-release-banner .banner-content {
+  flex: 1;
+}
+
+.test-release-banner .banner-content strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+.test-release-banner .banner-content p {
+  margin: 0;
+  font-size: 11px;
+  opacity: 0.95;
+  line-height: 1.4;
+}
+
+.test-release-banner .banner-content a {
+  color: white;
+  text-decoration: underline;
+  transition: opacity var(--transition-base);
+}
+
+.test-release-banner .banner-content a:hover {
+  opacity: 0.8;
+}
+
+.test-release-banner .banner-dismiss {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 18px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
+}
+
+.test-release-banner .banner-dismiss:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.test-release-banner .banner-dismiss:active {
+  transform: scale(0.95);
+}
+
+/* Dark mode adjustments for test release banner */
+@media (prefers-color-scheme: dark) {
+  .test-release-banner {
+    box-shadow: 0 2px 8px rgba(255, 165, 0, 0.4);
+  }
+}
+
+/* Responsive adjustments for test release banner */
+@media (max-width: 768px) {
+  .test-release-banner {
+    padding: 10px 16px;
+    gap: 10px;
+  }
+  
+  .test-release-banner .banner-icon {
+    font-size: 20px;
+  }
+  
+  .test-release-banner .banner-content strong {
+    font-size: 14px;
+  }
+  
+  .test-release-banner .banner-content p {
+    font-size: 12px;
+  }
+  
+  .test-release-banner .banner-dismiss {
+    width: 28px;
+    height: 28px;
+    font-size: 20px;
+  }
+}
+
+/* ============================================================================
    Main Content
    ============================================================================ */
 
 .wizard-content {
   flex: 1;
   background: var(--surface);
-  border-radius: 12px;
-  padding: var(--space-8);
+  border-radius: 8px;
+  padding: var(--space-5);
   box-shadow: var(--shadow-lg);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-4);
 }
 
 .wizard-step {
@@ -408,18 +534,18 @@ h1, h2, h3, h4, h5, h6 {
    ============================================================================ */
 
 .step-header {
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-5);
   text-align: center;
 }
 
 .step-title {
-  font-size: 32px;
-  margin-bottom: var(--space-3);
+  font-size: 24px;
+  margin-bottom: var(--space-2);
   color: var(--text-primary);
 }
 
 .step-description {
-  font-size: 18px;
+  font-size: 14px;
   color: var(--text-secondary);
   max-width: 600px;
   margin: 0 auto;
@@ -836,9 +962,9 @@ h1, h2, h3, h4, h5, h6 {
 .step-actions {
   display: flex;
   justify-content: space-between;
-  gap: var(--space-4);
-  margin-top: var(--space-8);
-  padding-top: var(--space-6);
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
   border-top: 1px solid var(--border);
 }
 
@@ -891,6 +1017,58 @@ h1, h2, h3, h4, h5, h6 {
 
 .footer-links a:hover {
   color: var(--kaspa-blue);
+}
+
+.footer-actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.btn-footer {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.btn-footer:hover {
+  background: var(--kaspa-pale);
+  border-color: var(--kaspa-blue);
+  color: var(--kaspa-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(112, 199, 186, 0.2);
+}
+
+.btn-footer:active {
+  transform: translateY(0);
+}
+
+.btn-report-bug:hover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
+}
+
+.btn-suggest-feature:hover {
+  border-color: #ffd700;
+  color: #ffd700;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.2);
+}
+
+.btn-known-issues:hover {
+  border-color: #4a90e2;
+  color: #4a90e2;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2);
 }
 
 /* ============================================================================
@@ -1779,6 +1957,10 @@ h1, h2, h3, h4, h5, h6 {
     text-align: center;
   }
   
+  .footer-actions {
+    justify-content: center;
+  }
+  
   .footer-links {
     justify-content: center;
   }
@@ -1812,24 +1994,24 @@ h1, h2, h3, h4, h5, h6 {
 
 .checklist-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .summary-card {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-5);
+  gap: var(--space-3);
+  padding: var(--space-4);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: var(--shadow-sm);
 }
 
 .summary-icon {
-  font-size: 32px;
+  font-size: 24px;
   line-height: 1;
 }
 
@@ -1838,13 +2020,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .summary-title {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text-secondary);
   margin-bottom: var(--space-1);
 }
 
 .summary-value {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -1852,14 +2034,14 @@ h1, h2, h3, h4, h5, h6 {
 .checklist-container {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .checklist-item {
   background: var(--surface);
   border: 2px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
   transition: all var(--transition-base);
 }
@@ -1871,8 +2053,8 @@ h1, h2, h3, h4, h5, h6 {
 .checklist-header {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-5);
+  gap: var(--space-3);
+  padding: var(--space-4);
   cursor: pointer;
   transition: background var(--transition-fast);
 }
@@ -1886,16 +2068,16 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   align-items: center;
   gap: var(--space-1);
-  min-width: 80px;
+  min-width: 60px;
 }
 
 .status-icon {
-  font-size: 32px;
+  font-size: 24px;
   line-height: 1;
 }
 
 .status-text {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   color: var(--text-secondary);
@@ -1906,19 +2088,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .checklist-title h3 {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: var(--space-1);
 }
 
 .checklist-title p {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text-secondary);
 }
 
 .checklist-expand {
-  font-size: 20px;
+  font-size: 16px;
   color: var(--text-tertiary);
   transition: transform var(--transition-base);
 }
@@ -1929,7 +2111,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .checklist-content {
   display: none;
-  padding: 0 var(--space-5) var(--space-5) var(--space-5);
+  padding: 0 var(--space-4) var(--space-4) var(--space-4);
   border-top: 1px solid var(--border-light);
 }
 
@@ -1938,19 +2120,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .checklist-help {
-  margin-top: var(--space-4);
-  padding: var(--space-4);
+  margin-top: var(--space-3);
+  padding: var(--space-3);
   background: var(--kaspa-pale);
-  border-radius: 8px;
-  font-size: 14px;
-  line-height: 1.6;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
   color: var(--text-secondary);
 }
 
 .checklist-actions {
-  margin-top: var(--space-4);
+  margin-top: var(--space-3);
   display: flex;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 /* Requirement Checks */
@@ -7195,4 +7377,266 @@ input:checked + .toggle-slider:before {
     background: rgba(245, 166, 35, 0.1);
     border-radius: 4px;
     margin: 1rem 0;
+}
+
+/* ============================================================================
+   Responsive Height Adjustments
+   ============================================================================ */
+
+/* For smaller viewport heights, make everything more compact */
+@media (max-height: 900px) {
+  .wizard-container {
+    padding: var(--space-3);
+  }
+  
+  .wizard-progress {
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+  
+  .progress-step {
+    min-width: 60px;
+  }
+  
+  .step-number {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .step-label {
+    font-size: 10px;
+  }
+  
+  .wizard-content {
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
+  }
+  
+  .step-header {
+    margin-bottom: var(--space-4);
+  }
+  
+  .step-title {
+    font-size: 20px;
+    margin-bottom: var(--space-2);
+  }
+  
+  .step-description {
+    font-size: 13px;
+  }
+  
+  .checklist-summary {
+    margin-bottom: var(--space-3);
+  }
+  
+  .summary-card {
+    padding: var(--space-3);
+  }
+  
+  .summary-icon {
+    font-size: 20px;
+  }
+  
+  .summary-title {
+    font-size: 11px;
+  }
+  
+  .summary-value {
+    font-size: 14px;
+  }
+  
+  .checklist-container {
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+  
+  .checklist-header {
+    padding: var(--space-3);
+  }
+  
+  .checklist-title h3 {
+    font-size: 14px;
+  }
+  
+  .checklist-title p {
+    font-size: 11px;
+  }
+  
+  .status-icon {
+    font-size: 20px;
+  }
+  
+  .status-text {
+    font-size: 9px;
+  }
+  
+  .checklist-content {
+    padding: 0 var(--space-3) var(--space-3) var(--space-3);
+  }
+  
+  .checklist-help {
+    padding: var(--space-2);
+    font-size: 11px;
+  }
+  
+  .step-actions {
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+}
+
+/* For very small viewport heights */
+@media (max-height: 768px) {
+  .wizard-container {
+    padding: var(--space-2);
+  }
+  
+  .wizard-progress {
+    padding: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+  
+  .progress-steps {
+    padding: var(--space-1) 0;
+  }
+  
+  .progress-step {
+    min-width: 50px;
+    gap: var(--space-1);
+  }
+  
+  .step-number {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+  
+  .step-label {
+    font-size: 9px;
+  }
+  
+  .wizard-content {
+    padding: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+  
+  .step-header {
+    margin-bottom: var(--space-3);
+  }
+  
+  .step-title {
+    font-size: 18px;
+    margin-bottom: var(--space-1);
+  }
+  
+  .step-description {
+    font-size: 12px;
+  }
+  
+  .test-release-banner {
+    padding: 6px 10px;
+    margin-bottom: 8px;
+  }
+  
+  .test-release-banner .banner-icon {
+    font-size: 16px;
+  }
+  
+  .test-release-banner .banner-content strong {
+    font-size: 12px;
+  }
+  
+  .test-release-banner .banner-content p {
+    font-size: 10px;
+  }
+  
+  .test-release-banner .banner-dismiss {
+    width: 20px;
+    height: 20px;
+    font-size: 16px;
+  }
+  
+  .checklist-summary {
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+  
+  .summary-card {
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+  
+  .summary-icon {
+    font-size: 18px;
+  }
+  
+  .summary-title {
+    font-size: 10px;
+  }
+  
+  .summary-value {
+    font-size: 13px;
+  }
+  
+  .checklist-container {
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+  
+  .checklist-header {
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+  
+  .checklist-status {
+    min-width: 50px;
+  }
+  
+  .checklist-title h3 {
+    font-size: 13px;
+  }
+  
+  .checklist-title p {
+    font-size: 10px;
+  }
+  
+  .status-icon {
+    font-size: 18px;
+  }
+  
+  .status-text {
+    font-size: 8px;
+  }
+  
+  .checklist-expand {
+    font-size: 14px;
+  }
+  
+  .checklist-content {
+    padding: 0 var(--space-2) var(--space-2) var(--space-2);
+  }
+  
+  .checklist-help {
+    margin-top: var(--space-2);
+    padding: var(--space-2);
+    font-size: 10px;
+  }
+  
+  .step-actions {
+    margin-top: var(--space-3);
+    padding-top: var(--space-2);
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
 }

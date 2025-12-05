@@ -7,7 +7,7 @@
 import { api, WebSocketManager } from './modules/api-client.js';
 import { stateManager } from './modules/state-manager.js';
 import { initNavigation, nextStep, previousStep, goToStep } from './modules/navigation.js';
-import { showNotification } from './modules/utils.js';
+import { showNotification, dismissBanner } from './modules/utils.js';
 import { loadConfigurationForm, validateConfiguration, saveConfiguration, initializeProfileSelection, setupDeveloperModeToggle } from './modules/configure.js';
 import { runSystemCheck, showDockerGuide, showComposeGuide, initializeQuiz } from './modules/checklist.js';
 import { runFullSystemCheck, retrySystemCheck } from './modules/system-check.js';
@@ -66,6 +66,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Set up global event listeners
     setupEventListeners();
+    
+    // Check if test release banner was previously dismissed
+    const bannerDismissed = localStorage.getItem('testReleaseBannerDismissed');
+    if (bannerDismissed === 'true') {
+        const banner = document.getElementById('test-release-banner');
+        if (banner) {
+            banner.classList.add('dismissed');
+        }
+    }
     
     console.log('Wizard ready');
 });
@@ -829,6 +838,15 @@ if (typeof window !== 'undefined') {
     window.showGlossaryModal = (term) => {
         // This would show a glossary modal with term definition
         showNotification(`Glossary: ${term} - Feature coming soon`, 'info');
+    };
+    
+    window.dismissBanner = () => {
+        const banner = document.getElementById('test-release-banner');
+        if (banner) {
+            banner.classList.add('dismissed');
+            // Store dismissal in localStorage to persist across page reloads
+            localStorage.setItem('testReleaseBannerDismissed', 'true');
+        }
     };
     
     window.retrySystemCheck = () => {

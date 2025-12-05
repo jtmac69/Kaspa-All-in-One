@@ -161,23 +161,23 @@ This task list implements the test release requirements and design. The goal is 
 ## Phase 4: Wizard UI Updates 🟡 MEDIUM PRIORITY
 
 ### 4.1 Add test release banner to wizard
-- [ ] Create test release banner component
-- [ ] Add to wizard UI (top of page)
-- [ ] Include version number (v0.9.0-test)
-- [ ] Link to KNOWN_ISSUES.md
-- [ ] Link to bug report page
-- [ ] Style with warning colors (orange/yellow)
-- [ ] Make dismissible but persistent
+- [x] Create test release banner component
+- [x] Add to wizard UI (top of page)
+- [x] Include version number (v0.9.0-test)
+- [x] Link to KNOWN_ISSUES.md
+- [x] Link to bug report page
+- [x] Style with warning colors (orange/yellow)
+- [x] Make dismissible but persistent
 - **FILE**: `services/wizard/frontend/public/index.html`
 - **FILE**: `services/wizard/frontend/public/styles/wizard.css`
 - _Requirements: 6_
 
 ### 4.2 Add feedback links to wizard
-- [ ] Add "Report Bug" button to wizard footer
-- [ ] Add "Suggest Feature" button to wizard footer
-- [ ] Add "View Known Issues" link
-- [ ] Open links in new tab
-- [ ] Style consistently with wizard theme
+- [x] Add "Report Bug" button to wizard footer
+- [x] Add "Suggest Feature" button to wizard footer
+- [x] Add "View Known Issues" link
+- [x] Open links in new tab
+- [x] Style consistently with wizard theme
 - **FILE**: `services/wizard/frontend/public/index.html`
 - _Requirements: 5, 17_
 
@@ -186,31 +186,31 @@ This task list implements the test release requirements and design. The goal is 
 ## Phase 5: Package Preparation 🟡 MEDIUM PRIORITY
 
 ### 5.1 Create .gitignore for test release
-- [ ] Exclude `node_modules/`
-- [ ] Exclude `.env` files (keep `.env.example`)
-- [ ] Exclude build artifacts
-- [ ] Exclude test data
-- [ ] Exclude personal configuration
-- [ ] Keep all source code and documentation
+- [x] Exclude `node_modules/`
+- [x] Exclude `.env` files (keep `.env.example`)
+- [x] Exclude build artifacts
+- [x] Exclude test data
+- [x] Exclude personal configuration
+- [x] Keep all source code and documentation
 - **FILE**: `.gitignore` (verify/update)
 - _Requirements: 1_
 
 ### 5.2 Create release checklist
-- [ ] Document all files to include in package
-- [ ] Document all files to exclude
-- [ ] Create verification checklist
-- [ ] Document package creation process
-- [ ] Document upload process
+- [x] Document all files to include in package
+- [x] Document all files to exclude
+- [x] Create verification checklist
+- [x] Document package creation process
+- [x] Document upload process
 - **FILE**: `docs/RELEASE_CHECKLIST.md`
 - _Requirements: 1_
 
 ### 5.3 Test package creation
-- [ ] Create test package archive
-- [ ] Extract in clean directory
-- [ ] Verify all files present
-- [ ] Verify no sensitive data included
-- [ ] Test `start-test.sh` from package
-- [ ] Test `cleanup-test.sh` from package
+- [x] Create test package archive
+- [x] Extract in clean directory
+- [x] Verify all files present
+- [x] Verify no sensitive data included
+- **FILE**: `kaspa-aio-v0.9.0-test.tar.gz`, `kaspa-aio-v0.9.0-test.tar.gz.sha256`
+- **NOTE**: Functional testing of scripts is done in Phase 6.1 (Smoke Test)
 - _Requirements: 1, 10_
 
 ---
@@ -219,14 +219,15 @@ This task list implements the test release requirements and design. The goal is 
 
 ### 6.1 Smoke test (30 minutes)
 - [ ] Extract test package in clean directory
-- [ ] Run `./start-test.sh`
+- [ ] Run `./start-test.sh` (tests script from package)
 - [ ] Verify wizard opens in browser
 - [ ] Complete Core Profile installation
 - [ ] Verify services start correctly
 - [ ] Access dashboard
-- [ ] Run `./cleanup-test.sh`
+- [ ] Run `./cleanup-test.sh` (tests script from package)
 - [ ] Verify cleanup completes
 - [ ] Document any issues found
+- **NOTE**: This task validates the package created in 5.3 works correctly
 - _Requirements: 7, 14_
 
 ### 6.2 Full scenario testing (2-3 hours)
