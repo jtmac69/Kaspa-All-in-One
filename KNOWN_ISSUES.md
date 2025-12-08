@@ -60,46 +60,55 @@ None currently.
 
 ### Kasia App Build Failure
 
-**Issue**: ~~The Kasia application fails to build from source, resulting in a "Build failed" message when accessing http://localhost:3001~~ **FIXED**
+**Issue**: The Kasia application fails to build from source due to missing `kaspa-wasm` dependency
 
-**Severity**: ~~High~~ **RESOLVED**
+**Severity**: High
 
-**Status**: **FIXED** - Now building from stable release tag (v0.6.2)
+**Status**: **UPSTREAM ISSUE** - Cannot be fixed in this repository
 
-**Resolution**:
-- Switched from building from unstable `master` branch to stable release tag `v0.6.2`
-- Using a tested, stable release ensures reproducible builds
-- No more build failures or "Build failed" error pages
-- Kasia app now builds and works reliably
+**Root Cause**:
+The Kasia v0.6.2 release has TypeScript code that imports `kaspa-wasm` module, but this dependency is not included in the repository or properly configured in the build process. The build fails with errors like:
+```
+error TS2307: Cannot find module 'kaspa-wasm' or its corresponding type declarations.
+```
 
-**What Changed**:
-- `services/kasia/Dockerfile` now uses `KASIA_VERSION=v0.6.2` (stable release tag)
-- `services/wizard/backend/src/utils/config-generator.js` updated to build with version arg
-- Documentation updated to reflect the stable release approach
-- Build process now uses a known-working version instead of latest master
+**Technical Details**:
+- The cipher WASM module builds successfully
+- TypeScript compilation fails because `kaspa-wasm` is not available
+- This is an issue with the upstream Kasia repository at https://github.com/K-Kluster/Kasia
+- The v0.6.2 release tag has this dependency issue
+- No official Docker image exists (`kkluster/kasia:latest` doesn't exist)
 
-**Why This Works**:
-- Release v0.6.2 is a tested, stable version from https://github.com/K-Kluster/Kasia/releases/tag/v0.6.2
-- Release tags don't change, ensuring reproducible builds
-- Not affected by breaking changes in the master branch
-- Official Docker image (`kkluster/kasia:latest`) doesn't exist, so building from source is necessary
+**Previous Attempts**:
+- ✅ Switched from `master` branch to stable `v0.6.2` release tag
+- ✅ Fixed `wasm-pack` PATH issue by adding Cargo bin directory to PATH
+- ❌ Build still fails due to missing `kaspa-wasm` dependency (cannot be resolved without upstream fix)
 
-**Previous Issue** (for reference):
-- Building from `master` branch was failing due to upstream TypeScript/Vite compilation errors
-- The `npm run build` command would fail during Docker image creation
-- Master branch had unstable, untested code that broke builds
-
-**Testing Impact** (Now Fixed):
-- ✅ Kasia app (port 3001) - **Now works correctly**
+**Testing Impact**:
+- ❌ Kasia app (port 3001) - **Build fails, service unavailable**
 - ✅ K-Social app (port 3003) - Works correctly
 - ✅ Kaspa Explorer (port 3004) - Works correctly
-- ✅ Installation wizard - Completes successfully
-- ✅ Service verification - Shows all services running properly
+- ⚠️ Installation wizard - Completes but Kasia service fails to build
+- ⚠️ "Kaspa User Applications" profile - Partially functional (Kasia unavailable)
+
+**Workaround**:
+- **For testing**: Skip the Kasia app and test other services (K-Social, Kaspa Explorer)
+- **For users**: Use K-Social (port 3003) as an alternative messaging application
+- **Profile recommendation**: Choose profiles that don't include Kasia, or accept that Kasia will be unavailable
 
 **For Testers**:
-- Kasia app should now work without any issues
-- Access at http://localhost:3001 after installation
-- If you encounter any problems, please report them as new issues
+- Expect Kasia app build to fail during installation
+- This is a known limitation, not a bug in the test release
+- Focus testing on other services which work correctly
+- Report if you find any workarounds or solutions
+
+**Resolution Path**:
+This issue can only be fixed by:
+1. Upstream Kasia repository adding `kaspa-wasm` as a proper dependency
+2. Kasia team publishing an official Docker image
+3. Kasia team releasing a new version with fixed dependencies
+
+**Status**: Documented as known limitation - will be resolved when upstream fix is available
 
 ## Medium Priority Issues
 
