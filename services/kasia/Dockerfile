@@ -1,25 +1,25 @@
-# Kasia Messaging Application - Clean Integration
-# This Dockerfile uses the official Kasia Docker image or builds from external source
+# Kasia Messaging Application - Build from Release
+# This Dockerfile builds Kasia from a specific stable release
+# Using v0.6.2 release from https://github.com/K-Kluster/Kasia/releases/tag/v0.6.2
 
-# Option 1: Use official image (preferred when available)
-# FROM kkluster/kasia:latest
-
-# Option 2: Build from external source (current implementation)
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install build dependencies
+# Install build dependencies including Rust for WASM compilation
 RUN apk add --no-cache \
     git \
     python3 \
     make \
     g++ \
     curl \
-    bash
+    bash \
+    rust \
+    cargo
 
-# Clone Kasia repository at build time (not stored in our repo)
-ARG KASIA_VERSION=master
+# Clone specific release version (v0.6.2 - known stable release)
+# Using release tag instead of master branch for stability
+ARG KASIA_VERSION=v0.6.2
 RUN git clone --depth 1 --branch ${KASIA_VERSION} https://github.com/K-Kluster/Kasia.git . && \
     rm -rf .git
 
@@ -35,8 +35,15 @@ ARG VITE_DEFAULT_TESTNET_KASPA_NODE_URL=wss://api.kasia.io/ws
 ARG VITE_DEFAULT_KASPA_NETWORK=mainnet
 ARG VITE_DISABLE_INDEXER=false
 
-# Install dependencies
+# Install wasm-pack for WASM compilation
+RUN cargo install wasm-pack
+
+# Install Node.js dependencies
 RUN npm ci --ignore-scripts || npm install --ignore-scripts
+
+# Build WASM modules first (required for kaspa-wasm and cipher)
+# This compiles the Rust cipher code to WebAssembly
+RUN npm run wasm:build
 
 # Build the application with environment variables
 # Vite will use these at build time
@@ -48,7 +55,8 @@ ENV VITE_DEFAULT_KASPA_NETWORK=${VITE_DEFAULT_KASPA_NETWORK}
 ENV VITE_DISABLE_INDEXER=${VITE_DISABLE_INDEXER}
 
 # Build the application
-RUN npm run build || (echo "Build failed, creating fallback" && mkdir -p dist && echo "Build failed" > dist/index.html)
+# Using the stable v0.6.2 release with proper WASM dependencies
+RUN npm run build:production
 
 # Production stage
 FROM nginx:alpine

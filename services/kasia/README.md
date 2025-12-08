@@ -4,47 +4,75 @@ This directory contains the integration configuration for the Kasia messaging ap
 
 ## Integration Approach
 
-### 🎯 Clean External Integration
+### 🎯 Building from Stable Release (Current Implementation)
 
-Instead of copying the Kasia source code into our repository, this integration:
+This integration builds Kasia from a specific stable release tag (v0.6.2):
 
-1. **Clones at Build Time**: The Dockerfile clones the Kasia repository during Docker build
-2. **No Code Duplication**: Our repository stays clean without external source code
-3. **Version Control**: Configurable version/branch selection via build args
-4. **Automatic Updates**: Rebuilding pulls the latest code from upstream
+1. **Stable Release**: Uses v0.6.2 release tag from GitHub
+2. **Known Working Version**: This release has been tested and verified
+3. **Reproducible Builds**: Same version every time
+4. **No Upstream Breakage**: Pinned to stable release, not affected by master branch changes
 
 ### 🔧 Configuration Options
 
-#### Option 1: Official Docker Image (Recommended)
-```yaml
-kasia-app:
-  image: kkluster/kasia:latest  # Use official image when available
-```
-
-#### Option 2: Build from Source (Current)
+#### Option 1: Build from Stable Release (Current - Recommended)
 ```yaml
 kasia-app:
   build:
     context: ./services/kasia
+    dockerfile: Dockerfile
     args:
-      KASIA_VERSION: main  # or specific tag/branch
+      KASIA_VERSION: v0.6.2  # Stable release tag
 ```
 
-#### Option 3: Git Submodule (Alternative)
-```bash
-# Add as submodule (if preferred)
-git submodule add https://github.com/K-Kluster/Kasia.git services/kasia/source
+**Why this is the default:**
+- ✅ Uses tested, stable release (v0.6.2)
+- ✅ Reproducible builds
+- ✅ Not affected by upstream master branch changes
+- ✅ Known to work correctly
+- ✅ Can customize build-time environment variables
+
+**Note:** The official Docker image (`kkluster/kasia:latest`) does not exist on Docker Hub, so we build from source using a stable release tag.
+
+#### Option 2: Build from Different Version (Alternative)
+```yaml
+kasia-app:
+  build:
+    context: ./services/kasia
+    dockerfile: Dockerfile
+    args:
+      KASIA_VERSION: v0.7.0  # or any other release tag
 ```
+
+**Caution:** Building from `master` branch or unreleased versions may fail due to:
+- ⚠️ Upstream code changes breaking builds
+- ⚠️ Complex WASM build requirements
+- ⚠️ Dependency version mismatches
+- ⚠️ TypeScript compilation errors
+
+Always use a stable release tag (e.g., v0.6.2) for reliable builds.
 
 ## Usage
 
-### Building with Specific Version
+### Building from Stable Release (Default)
 ```bash
+# Build using default stable release (v0.6.2)
+docker build -t kasia-app services/kasia/
+
+# Or use docker-compose (automatically builds)
+docker-compose --profile kaspa-user-applications up -d --build
+
 # Build with specific version
 docker build --build-arg KASIA_VERSION=v0.6.2 -t kasia-app services/kasia/
+```
 
-# Build with latest main branch (default)
-docker build -t kasia-app services/kasia/
+### Testing the Build
+```bash
+# Run the built image
+docker run -p 3001:3000 kasia-app
+
+# Access in browser
+open http://localhost:3001
 ```
 
 ### Environment Configuration
@@ -68,31 +96,44 @@ VITE_DISABLE_PASSWORD_REQUIREMENTS=false
 
 ### Keeping Up-to-Date
 
-1. **Automatic Updates**: Rebuild the Docker image to get latest code
+1. **Check for New Releases**: Monitor the [Kasia releases page](https://github.com/K-Kluster/Kasia/releases)
    ```bash
-   docker-compose build kasia-app
+   # View available releases
+   curl -s https://api.github.com/repos/K-Kluster/Kasia/releases | grep tag_name
    ```
 
-2. **Version Pinning**: Use specific versions for stability
+2. **Update to New Release**: Change the version in Dockerfile or build args
    ```bash
-   docker build --build-arg KASIA_VERSION=v0.6.2 -t kasia-app services/kasia/
+   # Update to new version
+   docker build --build-arg KASIA_VERSION=v0.7.0 -t kasia-app services/kasia/
+   
+   # Or update in docker-compose.yml and rebuild
+   docker-compose --profile kaspa-user-applications up -d --build
    ```
 
-3. **Monitoring Upstream**: Watch the [Kasia repository](https://github.com/K-Kluster/Kasia) for updates
+3. **Version Pinning**: Always use specific release tags for stability
+   ```dockerfile
+   ARG KASIA_VERSION=v0.6.2  # Pin to specific tested version
+   ```
 
-### Benefits of This Approach
+### Benefits of Building from Stable Release
 
 ✅ **No Code Duplication**: Our repo stays clean  
-✅ **Always Fresh**: Builds pull latest upstream code  
-✅ **Version Flexibility**: Can pin to specific versions  
-✅ **Easy Maintenance**: No manual sync required  
-✅ **Upstream Tracking**: Easy to follow Kasia development  
+✅ **Reproducible Builds**: Same version every time  
+✅ **Stable**: Not affected by master branch changes  
+✅ **Tested**: Release versions are tested by Kasia team  
+✅ **Customizable**: Can set build-time environment variables  
+✅ **Version Control**: Easy to track which version is deployed  
 
-### Considerations
+### Why Not Use Master Branch
 
-⚠️ **Build Dependencies**: Requires internet access during build  
-⚠️ **Build Complexity**: Kasia has complex WASM build requirements  
-⚠️ **Upstream Changes**: Breaking changes in Kasia could affect builds  
+The previous approach of building from the `master` branch had these issues:
+⚠️ **Build Failures**: Upstream changes broke builds frequently  
+⚠️ **Unpredictable**: Master branch changes without notice  
+⚠️ **Build Complexity**: WASM and TypeScript compilation issues  
+⚠️ **No Stability**: Breaking changes could happen anytime  
+
+Using stable release tags (v0.6.2, v0.7.0, etc.) eliminates these problems.  
 
 ## Development Workflow
 

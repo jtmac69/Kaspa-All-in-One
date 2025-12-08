@@ -1,0 +1,62 @@
+# Test-only Docker Compose for individual service testing
+
+services:
+  # Kaspa Node - Official Docker image
+  kaspa-node:
+    image: kaspanet/rusty-kaspad:latest
+    container_name: kaspa-node-test
+    restart: unless-stopped
+    ports:
+      - "16110:16110"  # P2P port (public)
+      - "16111:16111"  # RPC port (local access)
+    volumes:
+      - kaspa-test-data:/app/data
+      - ./logs/kaspa-node:/app/logs
+    environment:
+      - PUBLIC_NODE=true
+      - LOG_LEVEL=info
+    command: "--utxoindex --rpcbind=0.0.0.0:16111 --rpclisten-borsh=0.0.0.0:17110 --rpclisten-json=0.0.0.0:18110 --loglevel=info --appdir=/app/data --logdir=/app/logs"
+    networks:
+      - kaspa-test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:16111", "-X", "POST", "-H", "Content-Type: application/json", "-d", '{"method":"ping","params":{}}']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Kasia Indexer for testing
+  kasia-indexer:
+    image: kkluster/kasia-indexer:main
+    container_name: kasia-indexer-test
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    ports:
+      - "3002:8080"
+    environment:
+      - KASPA_NODE_WBORSH_URL=ws://kaspa-node:17110
+      - RUST_LOG=info
+      - KASIA_INDEXER_DB_ROOT=/app/data
+      - NETWORK_TYPE=mainnet
+      - RUST_BACKTRACE=1
+    volumes:
+      - kasia-test-data:/app/data
+    depends_on:
+      - kaspa-node
+    networks:
+      - kaspa-test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  kaspa-test-data:
+  kasia-test-data:
+
+networks:
+  kaspa-test-network:
+    driver: bridge

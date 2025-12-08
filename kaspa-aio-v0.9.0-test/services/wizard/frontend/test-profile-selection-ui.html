@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Selection UI Test</title>
+    <link rel="stylesheet" href="/styles/wizard.css">
+    <style>
+        body {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-header {
+            background: var(--kaspa-pale);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        .test-header h1 {
+            margin: 0 0 10px 0;
+            color: var(--kaspa-dark);
+        }
+        .test-header p {
+            margin: 0;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>Profile Selection UI Test</h1>
+        <p>Testing the updated profile selection interface with new architecture</p>
+    </div>
+
+    <!-- Dependency Warning Container -->
+    <div id="dependency-warning" class="warning-banner" style="display: none;">
+        <div class="warning-icon">⚠️</div>
+        <div class="warning-content">
+            <div class="warning-title">Dependency Warning</div>
+            <div class="warning-message" id="dependency-warning-message"></div>
+        </div>
+    </div>
+
+    <!-- Resource Warning Container -->
+    <div id="resource-warning" class="warning-banner" style="display: none;">
+        <div class="warning-icon">💾</div>
+        <div class="warning-content">
+            <div class="warning-title">Resource Warning</div>
+            <div class="warning-message" id="resource-warning-message"></div>
+        </div>
+    </div>
+
+    <!-- Combined Resource Requirements -->
+    <div id="combined-resources" class="combined-resources-card" style="display: none;">
+        <h3 class="combined-resources-title">Combined Resource Requirements</h3>
+        <div class="combined-resources-grid">
+            <div class="combined-resource-item">
+                <div class="resource-icon">💻</div>
+                <div class="resource-info">
+                    <div class="resource-label">CPU Cores</div>
+                    <div class="resource-value" id="combined-cpu">-</div>
+                </div>
+            </div>
+            <div class="combined-resource-item">
+                <div class="resource-icon">🧠</div>
+                <div class="resource-info">
+                    <div class="resource-label">RAM Memory</div>
+                    <div class="resource-value" id="combined-ram">-</div>
+                </div>
+            </div>
+            <div class="combined-resource-item">
+                <div class="resource-icon">💾</div>
+                <div class="resource-info">
+                    <div class="resource-label">Disk Space</div>
+                    <div class="resource-value" id="combined-disk">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Startup Order Visualization -->
+    <div id="startup-order" class="startup-order-card" style="display: none;">
+        <h3 class="startup-order-title">Service Startup Order</h3>
+        <p class="startup-order-description">Services will start in this order based on dependencies:</p>
+        <div class="startup-order-timeline">
+            <div class="startup-phase" id="phase-1" style="display: none;">
+                <div class="phase-number">1</div>
+                <div class="phase-content">
+                    <div class="phase-title">Kaspa Node</div>
+                    <div class="phase-services" id="phase-1-services"></div>
+                </div>
+            </div>
+            <div class="startup-arrow" id="arrow-1" style="display: none;">→</div>
+            <div class="startup-phase" id="phase-2" style="display: none;">
+                <div class="phase-number">2</div>
+                <div class="phase-content">
+                    <div class="phase-title">Indexer Services</div>
+                    <div class="phase-services" id="phase-2-services"></div>
+                </div>
+            </div>
+            <div class="startup-arrow" id="arrow-2" style="display: none;">→</div>
+            <div class="startup-phase" id="phase-3" style="display: none;">
+                <div class="phase-number">3</div>
+                <div class="phase-content">
+                    <div class="phase-title">Applications</div>
+                    <div class="phase-services" id="phase-3-services"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Grid -->
+    <div class="profile-grid">
+        <!-- Core Profile -->
+        <div class="profile-card" data-profile="core">
+            <div class="profile-badge essential">Essential</div>
+            <div class="profile-icon">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                    <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="3"/>
+                    <circle cx="24" cy="24" r="8" fill="currentColor"/>
+                </svg>
+            </div>
+            <h3 class="profile-title">Core Profile</h3>
+            <p class="profile-description">
+                Kaspa node (public/private) with optional wallet
+            </p>
+            <div class="profile-startup-order">
+                <span class="startup-badge">Startup Order: 1</span>
+            </div>
+            <div class="profile-services">
+                <span class="service-tag">kaspa-node</span>
+                <span class="service-tag">wallet</span>
+                <span class="service-tag">dashboard</span>
+                <span class="service-tag">nginx</span>
+            </div>
+            <div class="profile-resources">
+                <div class="resource-item">
+                    <span class="resource-label">CPU:</span>
+                    <span class="resource-value">2 cores</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-label">RAM:</span>
+                    <span class="resource-value">4 GB</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-label">Disk:</span>
+                    <span class="resource-value">100 GB</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kaspa User Applications Profile -->
+        <div class="profile-card" data-profile="kaspa-user-applications">
+            <div class="profile-badge popular">Popular</div>
+            <div class="profile-icon">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                    <rect x="8" y="8" width="32" height="32" rx="4" stroke="currentColor" stroke-width="3"/>
+                    <path d="M16 24 L24 32 L32 16" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <h3 class="profile-title">Kaspa User Applications</h3>
+            <p class="profile-description">
+                User-facing apps (Kasia, K-Social, Kaspa Explorer)
+            </p>
+            <div class="profile-startup-order">
+                <span class="startup-badge">Startup Order: 3</span>
+            </div>
+            <div class="profile-services">
+                <span class="service-tag">kasia-app</span>
+                <span class="service-tag">k-social-app</span>
+                <span class="service-tag">kaspa-explorer</span>
+            </div>
+            <div class="profile-resources">
+                <div class="resource-item">
+                    <span class="resource-label">CPU:</span>
+                    <span class="resource-value">2 cores</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-label">RAM:</span>
+                    <span class="resource-value">4 GB</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-label">Disk:</span>
+                    <span class="resource-value">50 GB</span>
+                </div>
+            </div>
+            <div class="profile-note">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 4 L8 8 L11 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span>Can use public or local indexers</span>
+            </div>
+        </div>
+
+        <!-- Mining Profile -->
+        <div class="profile-card" data-profile="mining">
+            <div class="profile-badge mining">Mining</div>
+            <div class="profile-icon">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                    <path d="M24 8 L32 20 L24 24 L16 20 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+                    <path d="M24 24 L32 20 L32 32 L24 40 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+                    <path d="M24 24 L16 20 L16 32 L24 40 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <h3 class="profile-title">Mining Profile</h3>
+            <p class="profile-description">
+                Local mining stratum pointed to local Kaspa node
+            </p>
+            <div class="profile-startup-order">
+                <span class="startup-badge">Startup Order: 3</span>
+            </div>
+            <div class="profile-services">
+                <span class="service-tag">kaspa-stratum</span>
+            </div>
+            <div class="profile-resources">
+                <div class="resource-item">
+                    <span class="resource-label">CPU:</span>
+                    <span class="resource-value">2 cores</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-label">RAM:</span>
+                    <span class="resource-value">2 GB</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-label">Disk:</span>
+                    <span class="resource-value">10 GB</span>
+                </div>
+            </div>
+            <div class="profile-note prerequisite">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 3 L8 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="8" cy="12" r="1" fill="currentColor"/>
+                    <path d="M8 1 L15 14 L1 14 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+                <span>Requires Core or Archive Node Profile</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Developer Mode Section -->
+    <div class="developer-mode-section">
+        <div class="developer-mode-card">
+            <div class="developer-mode-header">
+                <div class="developer-mode-icon">
+                    <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+                        <path d="M16 16 L8 24 L16 32" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M32 16 L40 24 L32 32" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <line x1="28" y1="12" x2="20" y2="36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="developer-mode-title-section">
+                    <h3 class="developer-mode-title">Developer Mode</h3>
+                    <p class="developer-mode-subtitle">Add development tools to your selected profiles</p>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="developer-mode-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="developer-mode-content" id="developer-mode-details" style="display: none;">
+                <p class="developer-mode-description">
+                    Developer Mode adds inspection tools and debugging features to your installation:
+                </p>
+                <ul class="developer-mode-features">
+                    <li>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <span><strong>Debug Logging:</strong> Verbose logs for troubleshooting (LOG_LEVEL=debug)</span>
+                    </li>
+                    <li>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <span><strong>Portainer:</strong> Docker container management UI (port 9000)</span>
+                    </li>
+                    <li>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <span><strong>pgAdmin:</strong> PostgreSQL database management (port 5050)</span>
+                    </li>
+                </ul>
+                <div class="developer-mode-warning">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 6 L10 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="10" cy="14" r="1" fill="currentColor"/>
+                        <path d="M10 2 L18 16 L2 16 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Developer Mode increases resource usage and exposes additional ports. Only enable for development environments.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple test script
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Profile Selection UI Test loaded');
+            
+            // Setup profile card click handlers
+            const profileCards = document.querySelectorAll('.profile-card');
+            const selectedProfiles = [];
+            
+            profileCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const profileId = card.dataset.profile;
+                    
+                    if (card.classList.contains('selected')) {
+                        card.classList.remove('selected');
+                        const index = selectedProfiles.indexOf(profileId);
+                        if (index > -1) selectedProfiles.splice(index, 1);
+                    } else {
+                        card.classList.add('selected');
+                        selectedProfiles.push(profileId);
+                    }
+                    
+                    console.log('Selected profiles:', selectedProfiles);
+                    
+                    // Show mock data for testing
+                    if (selectedProfiles.length > 0) {
+                        showMockData(selectedProfiles);
+                    } else {
+                        hideAllSections();
+                    }
+                });
+            });
+            
+            // Setup developer mode toggle
+            const devModeToggle = document.getElementById('developer-mode-toggle');
+            const devModeDetails = document.getElementById('developer-mode-details');
+            
+            devModeToggle.addEventListener('change', () => {
+                devModeDetails.style.display = devModeToggle.checked ? 'block' : 'none';
+            });
+        });
+        
+        function showMockData(profiles) {
+            // Show combined resources
+            document.getElementById('combined-resources').style.display = 'block';
+            document.getElementById('combined-cpu').textContent = `${profiles.length * 2} cores (${profiles.length * 4} recommended)`;
+            document.getElementById('combined-ram').textContent = `${profiles.length * 4} GB (${profiles.length * 8} GB recommended)`;
+            document.getElementById('combined-disk').textContent = `${profiles.length * 100} GB (${profiles.length * 200} GB recommended)`;
+            
+            // Show startup order
+            document.getElementById('startup-order').style.display = 'block';
+            
+            if (profiles.includes('core')) {
+                document.getElementById('phase-1').style.display = 'flex';
+                document.getElementById('phase-1-services').innerHTML = '<span class="service-tag">kaspa-node</span>';
+                document.getElementById('arrow-1').style.display = 'block';
+            }
+            
+            if (profiles.includes('kaspa-user-applications')) {
+                document.getElementById('phase-3').style.display = 'flex';
+                document.getElementById('phase-3-services').innerHTML = '<span class="service-tag">kasia-app</span> <span class="service-tag">k-social-app</span>';
+                document.getElementById('arrow-2').style.display = 'block';
+            }
+            
+            // Show warning if mining without core
+            if (profiles.includes('mining') && !profiles.includes('core')) {
+                document.getElementById('dependency-warning').style.display = 'flex';
+                document.getElementById('dependency-warning-message').textContent = 'Mining Profile requires Core or Archive Node Profile';
+            } else {
+                document.getElementById('dependency-warning').style.display = 'none';
+            }
+        }
+        
+        function hideAllSections() {
+            document.getElementById('combined-resources').style.display = 'none';
+            document.getElementById('startup-order').style.display = 'none';
+            document.getElementById('dependency-warning').style.display = 'none';
+            document.getElementById('resource-warning').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

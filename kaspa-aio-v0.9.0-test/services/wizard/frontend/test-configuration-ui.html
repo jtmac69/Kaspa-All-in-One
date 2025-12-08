@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration UI Test - Kaspa Wizard</title>
+    <link rel="stylesheet" href="/styles/wizard.css">
+    <style>
+        body {
+            padding: 20px;
+            background: var(--background, #F8F9FA);
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .test-controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .test-controls h3 {
+            margin-top: 0;
+        }
+        .profile-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .profile-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>Configuration UI Components Test</h1>
+            <p>This page tests the new configuration UI components including:</p>
+            <ul>
+                <li>Kaspa Node Configuration section (network selector, port configuration)</li>
+                <li>Port Configuration modal with validation</li>
+                <li>Network Change Warning dialog</li>
+                <li>Advanced Options with data directory fields</li>
+                <li>Profile-specific field visibility</li>
+            </ul>
+        </div>
+
+        <div class="test-controls">
+            <h3>Test Controls</h3>
+            <p>Select profiles to test visibility:</p>
+            <div class="profile-selector">
+                <label class="profile-checkbox">
+                    <input type="checkbox" id="test-core" onchange="updateTestProfiles()">
+                    Core Profile
+                </label>
+                <label class="profile-checkbox">
+                    <input type="checkbox" id="test-archive" onchange="updateTestProfiles()">
+                    Archive Node
+                </label>
+                <label class="profile-checkbox">
+                    <input type="checkbox" id="test-indexer" onchange="updateTestProfiles()">
+                    Indexer Services
+                </label>
+            </div>
+        </div>
+
+        <!-- Configuration Sections -->
+        <div class="config-sections">
+            <div class="config-section">
+                <h3 class="config-section-title">Network Configuration</h3>
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="external-ip" class="form-label">
+                            External IP Address
+                            <span class="form-tooltip" title="Your public IP address for P2P connections">ⓘ</span>
+                        </label>
+                        <input type="text" id="external-ip" class="form-input" placeholder="Auto-detect" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="public-node" class="form-label">
+                            Public Node
+                            <span class="form-tooltip" title="Allow external connections to your node">ⓘ</span>
+                        </label>
+                        <div class="form-toggle">
+                            <input type="checkbox" id="public-node" class="toggle-input" />
+                            <label for="public-node" class="toggle-label">
+                                <span class="toggle-switch"></span>
+                                <span class="toggle-text">Enable public access</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kaspa Node Configuration (Core/Archive profiles only) -->
+            <div class="config-section" id="kaspa-node-config-section" style="display: none;">
+                <h3 class="config-section-title">Kaspa Node Configuration</h3>
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="kaspa-network" class="form-label">
+                            Network
+                            <span class="form-tooltip" title="Select mainnet or testnet. Changing networks requires fresh installation.">ⓘ</span>
+                        </label>
+                        <select id="kaspa-network" class="form-select">
+                            <option value="mainnet" selected>Mainnet</option>
+                            <option value="testnet">Testnet</option>
+                        </select>
+                        <p class="form-help-text">Current network: <span id="current-network-display">mainnet</span></p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            Port Configuration
+                            <span class="form-tooltip" title="Configure RPC and P2P ports for the Kaspa node">ⓘ</span>
+                        </label>
+                        <div class="port-config-display">
+                            <div class="port-display-item">
+                                <span class="port-label">RPC Port:</span>
+                                <span class="port-value" id="rpc-port-display">16110</span>
+                            </div>
+                            <div class="port-display-item">
+                                <span class="port-label">P2P Port:</span>
+                                <span class="port-value" id="p2p-port-display">16111</span>
+                            </div>
+                        </div>
+                        <button class="btn-secondary btn-small" onclick="openPortConfigModal()">
+                            Configure Ports
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <h3 class="config-section-title">Advanced Options</h3>
+                <div class="config-form">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="advanced-mode" onchange="toggleAdvancedOptions()">
+                            Show advanced configuration options
+                        </label>
+                    </div>
+                    
+                    <div id="advanced-options" class="advanced-options" style="display: none;">
+                        <!-- Data Directory Configuration (profile-specific) -->
+                        <div id="kaspa-data-dir-group" class="form-group" style="display: none;">
+                            <label for="kaspa-data-dir" class="form-label">
+                                Kaspa Node Data Directory
+                                <span class="form-tooltip" title="Container path for Kaspa node data (Docker volume)">ⓘ</span>
+                            </label>
+                            <input type="text" id="kaspa-data-dir" class="form-input" 
+                                   placeholder="/data/kaspa" value="/data/kaspa" />
+                            <p class="form-help-text">Default: /data/kaspa</p>
+                        </div>
+                        
+                        <div id="kaspa-archive-data-dir-group" class="form-group" style="display: none;">
+                            <label for="kaspa-archive-data-dir" class="form-label">
+                                Archive Node Data Directory
+                                <span class="form-tooltip" title="Container path for archive node data (requires significant disk space)">ⓘ</span>
+                            </label>
+                            <input type="text" id="kaspa-archive-data-dir" class="form-input" 
+                                   placeholder="/data/kaspa-archive" value="/data/kaspa-archive" />
+                            <p class="form-help-text">Default: /data/kaspa-archive (requires significant disk space)</p>
+                        </div>
+                        
+                        <div id="timescaledb-data-dir-group" class="form-group" style="display: none;">
+                            <label for="timescaledb-data-dir" class="form-label">
+                                TimescaleDB Data Directory
+                                <span class="form-tooltip" title="Container path for TimescaleDB data">ⓘ</span>
+                            </label>
+                            <input type="text" id="timescaledb-data-dir" class="form-input" 
+                                   placeholder="/data/timescaledb" value="/data/timescaledb" />
+                            <p class="form-help-text">Default: /data/timescaledb</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="custom-env" class="form-label">
+                                Custom Environment Variables
+                                <span class="form-tooltip" title="Additional environment variables in KEY=value format">ⓘ</span>
+                            </label>
+                            <textarea id="custom-env" class="form-textarea" rows="6" placeholder="KEY=value&#10;ANOTHER_KEY=another_value"></textarea>
+                            <p class="form-help-text">One variable per line in KEY=value format</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Port Configuration Modal -->
+    <div id="port-config-modal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closePortConfigModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Configure Kaspa Node Ports</h3>
+                <button class="modal-close" onclick="closePortConfigModal()" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">
+                    Configure the ports used by the Kaspa node for RPC and P2P connections.
+                </p>
+                
+                <div class="form-group">
+                    <label for="rpc-port-input" class="form-label">
+                        RPC Port
+                        <span class="form-tooltip" title="Port for RPC API connections">ⓘ</span>
+                    </label>
+                    <input type="number" id="rpc-port-input" class="form-input port-input" 
+                           value="16110" min="1024" max="65535" />
+                    <p class="form-help-text">Default: 16110</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="p2p-port-input" class="form-label">
+                        P2P Port
+                        <span class="form-tooltip" title="Port for peer-to-peer connections">ⓘ</span>
+                    </label>
+                    <input type="number" id="p2p-port-input" class="form-input port-input" 
+                           value="16111" min="1024" max="65535" />
+                    <p class="form-help-text">Default: 16111</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="resetPortsToDefaults()">
+                    Reset to Defaults
+                </button>
+                <div class="modal-footer-actions">
+                    <button class="btn-secondary" onclick="closePortConfigModal()">
+                        Cancel
+                    </button>
+                    <button class="btn-primary" onclick="savePortConfiguration()">
+                        Save Configuration
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Network Change Warning Modal -->
+    <div id="network-change-warning-modal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeNetworkChangeWarning()"></div>
+        <div class="modal-content modal-warning">
+            <div class="modal-header">
+                <div class="modal-warning-icon">⚠️</div>
+                <h3 class="modal-title">Network Change Warning</h3>
+                <button class="modal-close" onclick="closeNetworkChangeWarning()" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">
+                    You are about to change the Kaspa network to <strong id="new-network-name">testnet</strong>.
+                </p>
+                
+                <div class="warning-box">
+                    <h4>⚠️ Important Information</h4>
+                    <ul>
+                        <li><strong>Data Incompatibility:</strong> Mainnet and testnet data are not compatible</li>
+                        <li><strong>Fresh Installation Required:</strong> Changing networks requires a fresh installation</li>
+                        <li><strong>Existing Data:</strong> Any existing blockchain data will not work with the new network</li>
+                    </ul>
+                </div>
+                
+                <p class="modal-description">
+                    If you have an existing installation, you should perform a fresh installation after changing the network.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="cancelNetworkChange()">
+                    Cancel
+                </button>
+                <button class="btn-primary btn-warning" onclick="confirmNetworkChange()">
+                    Change Network
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Test functions
+        function updateTestProfiles() {
+            const profiles = [];
+            if (document.getElementById('test-core').checked) profiles.push('core');
+            if (document.getElementById('test-archive').checked) profiles.push('archive-node');
+            if (document.getElementById('test-indexer').checked) profiles.push('indexer-services');
+            
+            updateFormVisibility(profiles);
+        }
+
+        function updateFormVisibility(profiles) {
+            // Kaspa Node Configuration section
+            const kaspaNodeSection = document.getElementById('kaspa-node-config-section');
+            if (kaspaNodeSection) {
+                const needsKaspaNode = profiles.includes('core') || profiles.includes('archive-node');
+                kaspaNodeSection.style.display = needsKaspaNode ? 'block' : 'none';
+            }
+            
+            // Advanced options data directory fields
+            updateAdvancedOptionsVisibility(profiles);
+        }
+
+        function updateAdvancedOptionsVisibility(profiles) {
+            const kaspaDataDirGroup = document.getElementById('kaspa-data-dir-group');
+            if (kaspaDataDirGroup) {
+                kaspaDataDirGroup.style.display = profiles.includes('core') ? 'block' : 'none';
+            }
+            
+            const archiveDataDirGroup = document.getElementById('kaspa-archive-data-dir-group');
+            if (archiveDataDirGroup) {
+                archiveDataDirGroup.style.display = profiles.includes('archive-node') ? 'block' : 'none';
+            }
+            
+            const timescaledbDataDirGroup = document.getElementById('timescaledb-data-dir-group');
+            if (timescaledbDataDirGroup) {
+                timescaledbDataDirGroup.style.display = profiles.includes('indexer-services') ? 'block' : 'none';
+            }
+        }
+
+        function toggleAdvancedOptions() {
+            const checkbox = document.getElementById('advanced-mode');
+            const advancedOptions = document.getElementById('advanced-options');
+            
+            if (checkbox.checked) {
+                advancedOptions.style.display = 'block';
+                // Update visibility based on selected profiles
+                const profiles = [];
+                if (document.getElementById('test-core').checked) profiles.push('core');
+                if (document.getElementById('test-archive').checked) profiles.push('archive-node');
+                if (document.getElementById('test-indexer').checked) profiles.push('indexer-services');
+                updateAdvancedOptionsVisibility(profiles);
+            } else {
+                advancedOptions.style.display = 'none';
+            }
+        }
+
+        // Port Configuration Modal Functions
+        function openPortConfigModal() {
+            const modal = document.getElementById('port-config-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                const rpcPort = document.getElementById('rpc-port-display').textContent;
+                const p2pPort = document.getElementById('p2p-port-display').textContent;
+                document.getElementById('rpc-port-input').value = rpcPort;
+                document.getElementById('p2p-port-input').value = p2pPort;
+            }
+        }
+        
+        function closePortConfigModal() {
+            const modal = document.getElementById('port-config-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                clearPortValidationErrors();
+            }
+        }
+        
+        function clearPortValidationErrors() {
+            const errorElements = document.querySelectorAll('.port-error-message');
+            errorElements.forEach(el => el.remove());
+            
+            const inputs = document.querySelectorAll('.port-input');
+            inputs.forEach(input => input.classList.remove('input-error'));
+        }
+        
+        function resetPortsToDefaults() {
+            document.getElementById('rpc-port-input').value = '16110';
+            document.getElementById('p2p-port-input').value = '16111';
+            clearPortValidationErrors();
+        }
+        
+        function savePortConfiguration() {
+            const rpcPort = parseInt(document.getElementById('rpc-port-input').value);
+            const p2pPort = parseInt(document.getElementById('p2p-port-input').value);
+            
+            clearPortValidationErrors();
+            
+            let hasErrors = false;
+            
+            if (isNaN(rpcPort) || rpcPort < 1024 || rpcPort > 65535) {
+                showPortError('rpc-port-input', 'Port must be between 1024 and 65535');
+                hasErrors = true;
+            }
+            
+            if (isNaN(p2pPort) || p2pPort < 1024 || p2pPort > 65535) {
+                showPortError('p2p-port-input', 'Port must be between 1024 and 65535');
+                hasErrors = true;
+            }
+            
+            if (!hasErrors && rpcPort === p2pPort) {
+                showPortError('p2p-port-input', 'P2P port must be different from RPC port');
+                hasErrors = true;
+            }
+            
+            if (hasErrors) {
+                return;
+            }
+            
+            document.getElementById('rpc-port-display').textContent = rpcPort;
+            document.getElementById('p2p-port-display').textContent = p2pPort;
+            
+            closePortConfigModal();
+            alert('Port configuration saved successfully!');
+        }
+        
+        function showPortError(inputId, message) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            
+            input.classList.add('input-error');
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'port-error-message';
+            errorDiv.textContent = message;
+            input.parentElement.appendChild(errorDiv);
+        }
+        
+        // Network Change Warning Functions
+        function openNetworkChangeWarning(newNetwork) {
+            const modal = document.getElementById('network-change-warning-modal');
+            if (modal) {
+                document.getElementById('new-network-name').textContent = newNetwork;
+                modal.style.display = 'flex';
+            }
+        }
+        
+        function closeNetworkChangeWarning() {
+            const modal = document.getElementById('network-change-warning-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        function cancelNetworkChange() {
+            const currentNetwork = document.getElementById('current-network-display').textContent;
+            document.getElementById('kaspa-network').value = currentNetwork;
+            closeNetworkChangeWarning();
+        }
+        
+        function confirmNetworkChange() {
+            const newNetwork = document.getElementById('kaspa-network').value;
+            document.getElementById('current-network-display').textContent = newNetwork;
+            closeNetworkChangeWarning();
+            alert(`Network changed to ${newNetwork}. Fresh installation recommended.`);
+        }
+
+        // Setup network change detection
+        document.getElementById('kaspa-network').addEventListener('change', (e) => {
+            const newNetwork = e.target.value;
+            const currentNetwork = document.getElementById('current-network-display').textContent;
+            
+            if (newNetwork !== currentNetwork) {
+                openNetworkChangeWarning(newNetwork);
+            } else {
+                document.getElementById('current-network-display').textContent = newNetwork;
+            }
+        });
+    </script>
+</body>
+</html>

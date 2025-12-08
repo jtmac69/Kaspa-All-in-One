@@ -134,7 +134,7 @@ app.get('/api/wizard/current-config', async (req, res) => {
     const path = require('path');
     const dotenv = require('dotenv');
     
-    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../..');
+    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
     const envPath = path.join(projectRoot, '.env');
     const statePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
     
@@ -189,7 +189,7 @@ app.get('/api/wizard/mode', async (req, res) => {
     const urlMode = req.query.mode;
     
     // Check for existing configuration files
-    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../..');
+    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
     const envPath = path.join(projectRoot, '.env');
     const statePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
     
@@ -301,6 +301,20 @@ io.on('connection', (socket) => {
           stage: 'config',
           message: 'Failed to save configuration',
           error: saveResult.error
+        });
+        return;
+      }
+
+      // Generate and save docker-compose.yml
+      const composeContent = await configGenerator.generateDockerCompose(configValidation.config, profiles);
+      const composePath = path.resolve(__dirname, '../../../../docker-compose.yml');
+      const composeResult = await configGenerator.saveDockerCompose(composeContent, composePath);
+
+      if (!composeResult.success) {
+        socket.emit('install:error', {
+          stage: 'config',
+          message: 'Failed to save docker-compose.yml',
+          error: composeResult.error
         });
         return;
       }

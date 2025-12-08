@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Next Steps Functionality Test</title>
+    <style>
+        :root {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #0a0a0a;
+            --text-primary: #fff;
+            --text-secondary: #ccc;
+            --primary-color: #70c7ba;
+            --border-color: #333;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 40px;
+            margin: 0;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+        }
+        
+        .test-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .test-section h2 {
+            margin-top: 0;
+            color: var(--text-primary);
+            font-size: 20px;
+        }
+        
+        .test-section p {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--primary-color);
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(112, 199, 186, 0.3);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .status {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .status.success {
+            border-color: #7ED321;
+            color: #7ED321;
+        }
+        
+        .status.error {
+            border-color: #D0021B;
+            color: #D0021B;
+        }
+        
+        .status.info {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        /* Mock complete step sections */
+        #service-verification,
+        #getting-started {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .tour-prompt {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .tour-prompt-content {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .tour-prompt-icon {
+            font-size: 32px;
+        }
+        
+        .tour-prompt-actions {
+            display: flex;
+            gap: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Next Steps Functionality Test</h1>
+        <p class="description">
+            Interactive test page for the next steps functionality including tour, resources modal, and related features.
+        </p>
+        
+        <!-- Test Section 1: Resources Modal -->
+        <div class="test-section">
+            <h2>📚 Test 1: Resources Modal</h2>
+            <p>Test the resources and documentation modal display.</p>
+            <div class="test-buttons">
+                <button class="btn btn-primary" onclick="testResourcesModal()">
+                    Show Resources Modal
+                </button>
+            </div>
+            <div id="test1-status" class="status" style="display: none;"></div>
+        </div>
+        
+        <!-- Test Section 2: Interactive Tour -->
+        <div class="test-section">
+            <h2>🎯 Test 2: Interactive Tour</h2>
+            <p>Test the interactive tour functionality with step progression.</p>
+            
+            <!-- Mock tour prompt -->
+            <div class="tour-prompt" id="mock-tour-prompt">
+                <div class="tour-prompt-content">
+                    <div class="tour-prompt-icon">🎯</div>
+                    <div class="tour-prompt-text">
+                        <h3 style="margin: 0 0 4px 0;">Want a quick tour?</h3>
+                        <p style="margin: 0; color: var(--text-secondary);">We'll show you around</p>
+                    </div>
+                </div>
+                <div class="tour-prompt-actions">
+                    <button class="btn btn-secondary" onclick="testSkipTour()">Skip for now</button>
+                    <button class="btn btn-primary" onclick="testStartTour()">Start Tour</button>
+                </div>
+            </div>
+            
+            <!-- Mock sections for tour targets -->
+            <div id="service-verification">
+                <h3>✓ Service Verification</h3>
+                <p>This is the service verification section (tour target 1)</p>
+            </div>
+            
+            <div id="getting-started">
+                <h3>🚀 Getting Started</h3>
+                <p>This is the getting started section (tour target 2)</p>
+            </div>
+            
+            <div id="test2-status" class="status" style="display: none;"></div>
+        </div>
+        
+        <!-- Test Section 3: Dashboard Tour -->
+        <div class="test-section">
+            <h2>📊 Test 3: Dashboard Tour</h2>
+            <p>Test the dashboard-specific tour functionality.</p>
+            <div class="test-buttons">
+                <button class="btn btn-primary" onclick="testDashboardTour()">
+                    Start Dashboard Tour
+                </button>
+            </div>
+            <div id="test3-status" class="status" style="display: none;"></div>
+        </div>
+        
+        <!-- Test Section 4: State Management -->
+        <div class="test-section">
+            <h2>💾 Test 4: State Management</h2>
+            <p>Test that tour state is properly managed.</p>
+            <div class="test-buttons">
+                <button class="btn btn-primary" onclick="testStateManagement()">
+                    Check State Management
+                </button>
+                <button class="btn btn-secondary" onclick="clearTestState()">
+                    Clear State
+                </button>
+            </div>
+            <div id="test4-status" class="status" style="display: none;"></div>
+        </div>
+        
+        <!-- Test Section 5: Modal Interactions -->
+        <div class="test-section">
+            <h2>🖱️ Test 5: Modal Interactions</h2>
+            <p>Test modal close handlers and interactions.</p>
+            <div class="test-buttons">
+                <button class="btn btn-primary" onclick="testModalInteractions()">
+                    Test Modal Interactions
+                </button>
+            </div>
+            <div id="test5-status" class="status" style="display: none;"></div>
+        </div>
+        
+        <!-- Test Section 6: All Functions Available -->
+        <div class="test-section">
+            <h2>✅ Test 6: Function Availability</h2>
+            <p>Verify all next steps functions are available globally.</p>
+            <div class="test-buttons">
+                <button class="btn btn-primary" onclick="testFunctionAvailability()">
+                    Check Functions
+                </button>
+            </div>
+            <div id="test6-status" class="status" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <!-- Import modules -->
+    <script type="module">
+        import { stateManager } from './public/scripts/modules/state-manager.js';
+        import { showNotification } from './public/scripts/modules/utils.js';
+        import {
+            showResourcesModal,
+            startTour,
+            skipTour,
+            startDashboardTour
+        } from './public/scripts/modules/complete.js';
+        
+        // Make functions available globally for testing
+        window.stateManager = stateManager;
+        window.showNotification = showNotification;
+        window.showResourcesModal = showResourcesModal;
+        window.startTour = startTour;
+        window.skipTour = skipTour;
+        window.startDashboardTour = startDashboardTour;
+        
+        // Test functions
+        window.testResourcesModal = function() {
+            const status = document.getElementById('test1-status');
+            try {
+                showResourcesModal();
+                status.className = 'status success';
+                status.style.display = 'block';
+                status.textContent = '✅ Resources modal opened successfully! Check for documentation links and learning resources.';
+            } catch (error) {
+                status.className = 'status error';
+                status.style.display = 'block';
+                status.textContent = `❌ Error: ${error.message}`;
+            }
+        };
+        
+        window.testStartTour = function() {
+            const status = document.getElementById('test2-status');
+            try {
+                startTour();
+                status.className = 'status success';
+                status.style.display = 'block';
+                status.textContent = '✅ Tour started! Follow the tour steps and verify highlighting works.';
+            } catch (error) {
+                status.className = 'status error';
+                status.style.display = 'block';
+                status.textContent = `❌ Error: ${error.message}`;
+            }
+        };
+        
+        window.testSkipTour = function() {
+            const status = document.getElementById('test2-status');
+            try {
+                skipTour();
+                const tourSkipped = stateManager.get('tourSkipped');
+                status.className = 'status success';
+                status.style.display = 'block';
+                status.textContent = `✅ Tour skipped! State set: ${tourSkipped}`;
+            } catch (error) {
+                status.className = 'status error';
+                status.style.display = 'block';
+                status.textContent = `❌ Error: ${error.message}`;
+            }
+        };
+        
+        window.testDashboardTour = function() {
+            const status = document.getElementById('test3-status');
+            try {
+                startDashboardTour();
+                const tourRequested = stateManager.get('dashboardTourRequested');
+                status.className = 'status success';
+                status.style.display = 'block';
+                status.textContent = `✅ Dashboard tour requested! State set: ${tourRequested}. Dashboard should open.`;
+            } catch (error) {
+                status.className = 'status error';
+                status.style.display = 'block';
+                status.textContent = `❌ Error: ${error.message}`;
+            }
+        };
+        
+        window.testStateManagement = function() {
+            const status = document.getElementById('test4-status');
+            try {
+                const tourStarted = stateManager.get('tourStarted');
+                const tourSkipped = stateManager.get('tourSkipped');
+                const dashboardTourRequested = stateManager.get('dashboardTourRequested');
+                
+                status.className = 'status info';
+                status.style.display = 'block';
+                status.innerHTML = `
+                    <strong>Current State:</strong><br>
+                    • Tour Started: ${tourStarted || 'false'}<br>
+                    • Tour Skipped: ${tourSkipped || 'false'}<br>
+                    • Dashboard Tour Requested: ${dashboardTourRequested || 'false'}
+                `;
+            } catch (error) {
+                status.className = 'status error';
+                status.style.display = 'block';
+                status.textContent = `❌ Error: ${error.message}`;
+            }
+        };
+        
+        window.clearTestState = function() {
+            const status = document.getElementById('test4-status');
+            try {
+                stateManager.set('tourStarted', false);
+                stateManager.set('tourSkipped', false);
+                stateManager.set('dashboardTourRequested', false);
+                
+                status.className = 'status success';
+                status.style.display = 'block';
+                status.textContent = '✅ State cleared successfully!';
+            } catch (error) {
+                status.className = 'status error';
+                status.style.display = 'block';
+                status.textContent = `❌ Error: ${error.message}`;
+            }
+        };
+        
+        window.testModalInteractions = function() {
+            const status = document.getElementById('test5-status');
+            try {
+                // Open resources modal to test interactions
+                showResourcesModal();
+                
+                status.className = 'status info';
+                status.style.display = 'block';
+                status.innerHTML = `
+                    <strong>Test Modal Interactions:</strong><br>
+                    1. Click the X button to close<br>
+                    2. Click outside the modal to close<br>
+                    3. Hover over resource links to see effects<br>
+                    4. Click resource links to navigate
+                `;
+            } catch (error) {
+                status.className = 'status error';
+                status.style.display = 'block';
+                status.textContent = `❌ Error: ${error.message}`;
+            }
+        };
+        
+        window.testFunctionAvailability = function() {
+            const status = document.getElementById('test6-status');
+            try {
+                const functions = [
+                    'showResourcesModal',
+                    'startTour',
+                    'skipTour',
+                    'startDashboardTour',
+                    'openDashboard',
+                    'showServiceManagementGuide',
+                    'checkSyncStatus',
+                    'viewLogs'
+                ];
+                
+                const available = [];
+                const missing = [];
+                
+                functions.forEach(fn => {
+                    if (typeof window[fn] === 'function') {
+                        available.push(fn);
+                    } else {
+                        missing.push(fn);
+                    }
+                });
+                
+                if (missing.length === 0) {
+                    status.className = 'status success';
+                    status.style.display = 'block';
+                    status.innerHTML = `
+                        <strong>✅ All functions available!</strong><br>
+                        ${available.map(fn => `• ${fn}`).join('<br>')}
+                    `;
+                } else {
+                    status.className = 'status error';
+                    status.style.display = 'block';
+                    status.innerHTML = `
+                        <strong>❌ Missing functions:</strong><br>
+                        ${missing.map(fn => `• ${fn}`).join('<br>')}
+                    `;
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.style.display = 'block';
+                status.textContent = `❌ Error: ${error.message}`;
+            }
+        };
+        
+        console.log('✅ Test page loaded successfully');
+        console.log('Available test functions:', Object.keys(window).filter(k => k.startsWith('test')));
+    </script>
+</body>
+</html>

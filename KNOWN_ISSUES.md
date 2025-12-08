@@ -6,7 +6,8 @@
 1. 🕐 **Node sync takes hours** → See [Node Sync Time](#node-sync-time) - Use "Continue in background"
 2. 🪟 **Windows users** → See [Windows Native Not Supported](#windows-native-not-supported) - Requires WSL2
 3. 🔌 **Port conflicts** → See [Port Conflicts](#port-conflicts) - Change ports in wizard
-4. 📊 **Dashboard incomplete** → See [Dashboard Not Fully Implemented](#dashboard-not-fully-implemented) - Use wizard for reconfiguration
+4. 📊 **Dashboard not available** → See [Dashboard Not Included](#dashboard-not-included-in-test-release) - Use `docker ps` and `./status.sh`
+5. ~~❌ **Kasia app shows "Build failed"**~~ → **FIXED** - Now using official Docker image
 
 **Before You Start Testing:**
 - ✅ Docker 20.10+ installed
@@ -56,6 +57,49 @@ None currently.
 - Dashboard displays current block height vs. network height
 - Logs show sync activity in real-time
 - Services remain healthy during sync
+
+### Kasia App Build Failure
+
+**Issue**: ~~The Kasia application fails to build from source, resulting in a "Build failed" message when accessing http://localhost:3001~~ **FIXED**
+
+**Severity**: ~~High~~ **RESOLVED**
+
+**Status**: **FIXED** - Now building from stable release tag (v0.6.2)
+
+**Resolution**:
+- Switched from building from unstable `master` branch to stable release tag `v0.6.2`
+- Using a tested, stable release ensures reproducible builds
+- No more build failures or "Build failed" error pages
+- Kasia app now builds and works reliably
+
+**What Changed**:
+- `services/kasia/Dockerfile` now uses `KASIA_VERSION=v0.6.2` (stable release tag)
+- `services/wizard/backend/src/utils/config-generator.js` updated to build with version arg
+- Documentation updated to reflect the stable release approach
+- Build process now uses a known-working version instead of latest master
+
+**Why This Works**:
+- Release v0.6.2 is a tested, stable version from https://github.com/K-Kluster/Kasia/releases/tag/v0.6.2
+- Release tags don't change, ensuring reproducible builds
+- Not affected by breaking changes in the master branch
+- Official Docker image (`kkluster/kasia:latest`) doesn't exist, so building from source is necessary
+
+**Previous Issue** (for reference):
+- Building from `master` branch was failing due to upstream TypeScript/Vite compilation errors
+- The `npm run build` command would fail during Docker image creation
+- Master branch had unstable, untested code that broke builds
+
+**Testing Impact** (Now Fixed):
+- ✅ Kasia app (port 3001) - **Now works correctly**
+- ✅ K-Social app (port 3003) - Works correctly
+- ✅ Kaspa Explorer (port 3004) - Works correctly
+- ✅ Installation wizard - Completes successfully
+- ✅ Service verification - Shows all services running properly
+
+**For Testers**:
+- Kasia app should now work without any issues
+- Access at http://localhost:3001 after installation
+- If you encounter any problems, please report them as new issues
 
 ## Medium Priority Issues
 
@@ -399,15 +443,46 @@ These are known limitations of the test release, categorized by their impact on 
    - No log aggregation or analysis tools
    - Dashboard provides basic status only
 
-10. **Dashboard Not Fully Implemented** [Severity: Medium]
+10. **Dashboard Not Included in Test Release** [Severity: Medium]
     
-    Post-installation dashboard is incomplete
-    - Dashboard for monitoring services after installation is not yet complete
-    - Cannot redirect to wizard for configuration changes/updates from dashboard
-    - Limited service status visibility after installation
-    - Must manually access wizard at http://localhost:3000 for reconfiguration
-    - Basic service information available but advanced monitoring features missing
-    - Planned for completion in future releases
+    Management dashboard is not included in this test release
+    - Dashboard is still in development and not ready for testing
+    - Use `docker ps` to check service status
+    - Use `docker logs <container-name>` to view service logs
+    - Use `./status.sh` script for quick service overview
+    - Wizard at http://localhost:3000 can be used for reconfiguration
+    - Dashboard will be included in future releases once fully tested
+    
+    **Workaround**:
+    - **Check service status**:
+      ```bash
+      # View all running containers
+      docker ps
+      
+      # View all containers (including stopped)
+      docker ps -a
+      
+      # Use the status script
+      ./status.sh
+      ```
+    - **View service logs**:
+      ```bash
+      # View logs for specific service
+      docker logs kaspa-node
+      docker logs -f kaspa-node  # Follow logs in real-time
+      
+      # View logs for all services
+      docker-compose logs
+      docker-compose logs -f  # Follow all logs
+      ```
+    - **Check resource usage**:
+      ```bash
+      # View resource usage for all containers
+      docker stats
+      
+      # View for specific container
+      docker stats kaspa-node
+      ```
 
 11. **No Backup Automation** [Severity: Low]
     

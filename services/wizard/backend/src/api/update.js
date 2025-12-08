@@ -16,7 +16,7 @@ const stateManager = new StateManager();
  */
 router.get('/available', async (req, res) => {
   try {
-    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../..');
+    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
     const installationStatePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
     
     // Load installation state to get current versions
@@ -70,7 +70,7 @@ router.post('/apply', async (req, res) => {
       });
     }
     
-    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../..');
+    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
     const installationStatePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
     
     // Load installation state
@@ -194,7 +194,7 @@ router.post('/rollback', async (req, res) => {
       });
     }
     
-    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../..');
+    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
     const backupDir = path.join(projectRoot, '.kaspa-backups', backupTimestamp.toString());
     
     // Verify backup exists

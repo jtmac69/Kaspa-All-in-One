@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation Stages Test</title>
+    <link rel="stylesheet" href="/styles/wizard.css">
+    <style>
+        body {
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .test-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .test-btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .test-btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .test-btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .test-btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .test-info {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .test-info h3 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        
+        .test-info p {
+            margin: 5px 0;
+            color: #34495e;
+        }
+        
+        .wizard-step {
+            display: block !important;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .stage-legend {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stage-legend h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+        }
+        
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .legend-label {
+            font-size: 14px;
+            color: #34495e;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>Installation Stages Test</h1>
+            <p>Interactive test for installation stage display and transitions</p>
+        </div>
+        
+        <div class="test-info">
+            <h3>📋 Test Instructions</h3>
+            <p><strong>What this tests:</strong> Installation stage progression, visual feedback, and step indicators</p>
+            <p><strong>How to test:</strong> Click the stage buttons below to simulate different installation stages</p>
+            <p><strong>What to verify:</strong></p>
+            <ul>
+                <li>Progress bar updates smoothly with correct colors</li>
+                <li>Stage title and message update correctly</li>
+                <li>Step indicators show correct state (pending, active, complete)</li>
+                <li>Active step shows detailed status information</li>
+                <li>Visual feedback (colors, icons, opacity) is appropriate</li>
+                <li>Smooth transitions between stages</li>
+            </ul>
+        </div>
+        
+        <div class="test-controls">
+            <button class="test-btn test-btn-primary" onclick="testStage('init', 5)">
+                1. Init Stage (5%)
+            </button>
+            <button class="test-btn test-btn-primary" onclick="testStage('config', 15)">
+                2. Config Stage (15%)
+            </button>
+            <button class="test-btn test-btn-primary" onclick="testStage('pull', 35)">
+                3. Pull Stage (35%)
+            </button>
+            <button class="test-btn test-btn-primary" onclick="testStage('build', 65)">
+                4. Build Stage (65%)
+            </button>
+            <button class="test-btn test-btn-primary" onclick="testStage('deploy', 85)">
+                5. Deploy Stage (85%)
+            </button>
+            <button class="test-btn test-btn-primary" onclick="testStage('validate', 98)">
+                6. Validate Stage (98%)
+            </button>
+            <button class="test-btn test-btn-secondary" onclick="runFullSimulation()">
+                ▶ Run Full Simulation
+            </button>
+            <button class="test-btn test-btn-secondary" onclick="resetStages()">
+                🔄 Reset
+            </button>
+        </div>
+        
+        <!-- Installation Step Display -->
+        <div class="wizard-step" id="step-install">
+            <div class="step-header">
+                <h2 class="step-title">Installing Kaspa All-in-One</h2>
+                <p class="step-description">
+                    Please wait while we set up your services
+                </p>
+            </div>
+            
+            <div class="install-progress">
+                <div class="progress-bar-container">
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" id="install-progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-percentage" id="install-progress-percentage">0%</div>
+                </div>
+                
+                <div class="install-status">
+                    <div class="status-icon">
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="status-content">
+                        <h3 class="status-title" id="install-status-title">Initializing...</h3>
+                        <p class="status-message" id="install-status-message">Preparing installation environment</p>
+                    </div>
+                </div>
+                
+                <div class="install-steps">
+                    <div class="install-step" data-step="env">
+                        <div class="install-step-icon">⏳</div>
+                        <div class="install-step-content">
+                            <h4 class="install-step-title">Creating environment configuration</h4>
+                            <p class="install-step-status">Pending</p>
+                        </div>
+                    </div>
+                    
+                    <div class="install-step" data-step="pull">
+                        <div class="install-step-icon">⏳</div>
+                        <div class="install-step-content">
+                            <h4 class="install-step-title">Pulling Docker images</h4>
+                            <p class="install-step-status">Pending</p>
+                        </div>
+                    </div>
+                    
+                    <div class="install-step" data-step="start">
+                        <div class="install-step-icon">⏳</div>
+                        <div class="install-step-content">
+                            <h4 class="install-step-title">Starting services</h4>
+                            <p class="install-step-status">Pending</p>
+                        </div>
+                    </div>
+                    
+                    <div class="install-step" data-step="health">
+                        <div class="install-step-icon">⏳</div>
+                        <div class="install-step-content">
+                            <h4 class="install-step-title">Running health checks</h4>
+                            <p class="install-step-status">Pending</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="install-logs">
+                    <div class="logs-header">
+                        <h4 class="logs-title">Installation Logs</h4>
+                        <button class="btn-secondary btn-small" onclick="toggleLogs()">
+                            <span id="logs-toggle-text">Show Details</span>
+                        </button>
+                    </div>
+                    <div class="logs-content" id="install-logs-content" style="display: none;">
+                        <pre class="logs-text" id="install-logs-text">Waiting for installation to start...</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stage Legend -->
+        <div class="stage-legend">
+            <h3>Stage Color Legend</h3>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3498db;"></div>
+                    <span class="legend-label">Init (Blue)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9b59b6;"></div>
+                    <span class="legend-label">Config (Purple)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f39c12;"></div>
+                    <span class="legend-label">Pull (Orange)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e67e22;"></div>
+                    <span class="legend-label">Build (Dark Orange)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span class="legend-label">Deploy (Red)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #27ae60;"></div>
+                    <span class="legend-label">Validate (Green)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { updateInstallationUI } from '/scripts/modules/install.js';
+        
+        // Test stage data
+        const stageData = {
+            'init': {
+                stage: 'init',
+                message: 'Initializing installation environment',
+                progress: 5
+            },
+            'config': {
+                stage: 'config',
+                message: 'Creating environment configuration',
+                progress: 15,
+                details: { service: 'kaspad' }
+            },
+            'pull': {
+                stage: 'pull',
+                message: 'Downloading Docker images',
+                progress: 35,
+                details: { image: 'kaspanet/kaspad:latest', current: 2, total: 5 }
+            },
+            'build': {
+                stage: 'build',
+                message: 'Building custom services',
+                progress: 65,
+                details: { service: 'dashboard' }
+            },
+            'deploy': {
+                stage: 'deploy',
+                message: 'Starting services',
+                progress: 85,
+                details: { service: 'kaspad' }
+            },
+            'validate': {
+                stage: 'validate',
+                message: 'Running health checks',
+                progress: 98,
+                details: { service: 'kaspad' }
+            }
+        };
+        
+        // Test a specific stage
+        window.testStage = function(stage, progress) {
+            const data = stageData[stage];
+            if (data) {
+                updateInstallationUI(data);
+                console.log(`Testing stage: ${stage} (${progress}%)`);
+            }
+        };
+        
+        // Reset to initial state
+        window.resetStages = function() {
+            updateInstallationUI({
+                stage: 'init',
+                message: 'Preparing installation environment',
+                progress: 0
+            });
+            
+            // Reset logs
+            const logsText = document.getElementById('install-logs-text');
+            if (logsText) {
+                logsText.textContent = 'Waiting for installation to start...';
+            }
+            
+            console.log('Reset to initial state');
+        };
+        
+        // Run full simulation
+        window.runFullSimulation = async function() {
+            const stages = ['init', 'config', 'pull', 'build', 'deploy', 'validate'];
+            
+            console.log('Starting full installation simulation...');
+            
+            for (const stage of stages) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                testStage(stage, stageData[stage].progress);
+            }
+            
+            // Complete
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            updateInstallationUI({
+                stage: 'validate',
+                message: 'Installation complete!',
+                progress: 100
+            });
+            
+            console.log('Simulation complete!');
+        };
+        
+        // Toggle logs
+        window.toggleLogs = function() {
+            const logsContent = document.getElementById('install-logs-content');
+            const toggleText = document.getElementById('logs-toggle-text');
+            
+            if (!logsContent || !toggleText) return;
+            
+            const isHidden = logsContent.style.display === 'none';
+            logsContent.style.display = isHidden ? 'block' : 'none';
+            toggleText.textContent = isHidden ? 'Hide Details' : 'Show Details';
+        };
+        
+        console.log('Installation Stages Test loaded');
+        console.log('Available test functions:');
+        console.log('- testStage(stage, progress): Test a specific stage');
+        console.log('- resetStages(): Reset to initial state');
+        console.log('- runFullSimulation(): Run full installation simulation');
+    </script>
+</body>
+</html>

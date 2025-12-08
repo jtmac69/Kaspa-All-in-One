@@ -212,7 +212,7 @@ Official guide: https://nodejs.org/en/download/package-manager/
   
 - **Ports**: The following ports should be available:
   - `3000`: Installation wizard
-  - `8080`: Management dashboard
+  - ~~`8080`: Management dashboard~~ (not included in test release)
   - `16110`: Kaspa node RPC
   - `16111`: Kaspa node P2P
   - Additional ports for optional services (wizard will check)
@@ -424,7 +424,9 @@ The wizard will guide you through:
 
 Once installation completes:
 
-1. **Verify services are running**: Check the dashboard at `http://localhost:8080`
+**Note**: The management dashboard is not included in this test release. Use `docker ps` to check service status and `docker logs <container-name>` to view logs.
+
+1. **Verify services are running**: Check with `docker ps`
 2. **Test the scenarios** described in the [Test Scenarios](#test-scenarios) section below
 3. **Report your findings**:
    - 🐛 **Found a bug?** [Report it here](https://github.com/jtmac69/Kaspa-All-in-One/issues/new?template=bug_report.md)
@@ -538,8 +540,8 @@ This section provides detailed step-by-step instructions for testing different a
 - Installation wizard flow
 - System requirements checking
 - Basic Kaspa node deployment
-- Service health verification
-- Dashboard access
+- Service health verification with Docker commands
+- Log monitoring and troubleshooting
 
 **Prerequisites**:
 - All prerequisites installed (Docker, Docker Compose, Node.js)
@@ -643,37 +645,153 @@ You should now see the profile selection screen.
 
 #### Step 4: Configuration (2 minutes)
 
-The configuration screen allows you to customize settings.
+The configuration screen allows you to customize settings for your selected profile.
 
-1. **Review default configuration**:
-   - ✓ Should show configuration options for Kaspa node
-   - ✓ Should show default values pre-filled
-   - ✓ Common options might include:
-     - Node RPC port (default: 16110)
-     - Node P2P port (default: 16111)
-     - Network selection (mainnet/testnet)
-     - Data directory location
+> **📌 Note**: Archive Node Profile has the same configuration options as Core Profile (network selection, ports, data directory). The only differences are the section label ("Archive Node Settings" instead of "Kaspa Node Settings") and the default data directory path (`/data/kaspa-archive` instead of `/data/kaspa`).
 
-2. **For this test, use default values**:
-   - Don't change any settings
+1. **Review basic configuration options**:
+   - ✓ Should show "Network Configuration" section with:
+     - External IP Address field (with "Auto-Detect" button)
+     - Public Node toggle
+   - ✓ Should show "Kaspa Node Settings" section (since Core Profile is selected):
+     - Network selection dropdown (mainnet/testnet) - default: mainnet
+     - "Configure Ports" button to customize RPC/P2P ports
+   - ✓ Should show "Database Configuration" section:
+     - Database Password field (with "Generate" button)
+
+2. **Test network selection**:
+   - ✓ Network dropdown should show "mainnet" selected by default
+   - ✓ Dropdown should also offer "testnet" option
+   - **For this test, keep "mainnet" selected**
+
+3. **Optional: Test port configuration**:
+   - Click "Configure Ports" button
+   - ✓ Should open a modal/dialog showing:
+     - RPC Port field (default: 16110)
+     - P2P Port field (default: 16111)
+     - "Reset to Defaults" button
+   - ✓ Port fields should validate range (1024-65535)
+   - **For this test, keep default ports** (16110, 16111)
+   - Close the modal without changing values
+
+4. **Check for Advanced Options**:
+   - ✓ Should see "Advanced Options" section (may be collapsed)
+   - ✓ If expanded, should show:
+     - Data directory configuration options
+     - Custom environment variables textarea
+   - **For this test, don't modify advanced options**
+
+5. **For this test, use default values**:
+   - Keep network as "mainnet"
+   - Keep default ports (16110, 16111)
+   - Don't modify data directories
    - This tests the "happy path" with defaults
 
-3. **Review the configuration summary** (if shown):
-   - ✓ Should clearly show what will be installed
-   - ✓ Should show which ports will be used
-
-4. **Click "Continue" or "Next"**
+6. **Click "Continue" or "Next"**
 
 **📝 Document**:
-- Were the default values clearly shown?
-- Were the configuration options understandable?
+- Were the configuration sections clearly organized?
+- Was the network selection dropdown easy to understand?
+- Did the "Configure Ports" button work as expected?
+- Were default values clearly shown?
 - Did you feel confident proceeding with defaults?
 - Were there any confusing options?
 
 **🔍 Optional Exploration**:
 - Try hovering over configuration options (are there tooltips?)
 - Try clicking on help icons (if present)
+- Try changing network to "testnet" - does it show a warning?
+- Try entering invalid port numbers - does validation work?
+- Expand "Advanced Options" - what additional settings are available?
 - Note any options that need better explanation
+
+**🧪 Test Cases for Port Validation** (Optional but Recommended):
+
+If you have time, test the port configuration validation:
+
+1. **Test valid port range**:
+   - Click "Configure Ports" button
+   - Try entering port 16210 for RPC port
+   - ✓ Should accept the value (1024-65535 is valid range)
+   - Try entering port 16211 for P2P port
+   - ✓ Should accept the value
+   - Click "Save" or "Apply"
+   - ✓ Should save successfully
+
+2. **Test invalid port - too low**:
+   - Click "Configure Ports" button
+   - Try entering port 1000 for RPC port (below minimum 1024)
+   - ✓ Should show error message: "Port must be between 1024 and 65535"
+   - ✓ Should prevent saving until corrected
+
+3. **Test invalid port - too high**:
+   - Try entering port 70000 for RPC port (above maximum 65535)
+   - ✓ Should show error message: "Port must be between 1024 and 65535"
+   - ✓ Should prevent saving until corrected
+
+4. **Test port conflict detection**:
+   - Try entering the same port for both RPC and P2P (e.g., 16110 for both)
+   - ✓ Should show error message: "RPC and P2P ports must be different"
+   - ✓ Should prevent saving until corrected
+
+5. **Test Reset to Defaults**:
+   - After changing ports, click "Reset to Defaults" button
+   - ✓ Should restore RPC port to 16110
+   - ✓ Should restore P2P port to 16111
+
+**📝 Document Port Validation Testing**:
+- Did port validation work correctly? (Yes/No)
+- Were error messages clear and helpful? (Yes/No)
+- Was it easy to correct validation errors? (Yes/No)
+- Did the "Reset to Defaults" button work? (Yes/No)
+
+**🧪 Test Cases for Network Change Warning** (Optional but Recommended):
+
+If you have time, test the network change warning:
+
+1. **Test changing from mainnet to testnet**:
+   - In the Network dropdown, select "testnet"
+   - ✓ Should immediately show a warning dialog/modal
+   - ✓ Warning should explain:
+     - "Mainnet and testnet data are incompatible"
+     - "Changing networks requires a fresh installation"
+     - "Existing blockchain data will not work with the new network"
+   - ✓ Should provide two options:
+     - "Cancel" - keeps mainnet selected
+     - "Change Network" or "Proceed" - confirms the change
+
+2. **Test canceling network change**:
+   - Click "Cancel" in the warning dialog
+   - ✓ Network dropdown should revert to "mainnet"
+   - ✓ No changes should be applied
+
+3. **Test confirming network change**:
+   - Select "testnet" again
+   - Click "Change Network" or "Proceed" in the warning dialog
+   - ✓ Network dropdown should now show "testnet" selected
+   - ✓ Warning dialog should close
+   - ✓ Configuration should reflect testnet selection
+
+4. **Test changing back to mainnet**:
+   - In the Network dropdown, select "mainnet"
+   - ✓ Should show the same warning dialog (testnet → mainnet also requires fresh install)
+   - ✓ Warning should be consistent with previous warning
+
+**📝 Document Network Change Warning Testing**:
+- Did the warning appear when changing networks? (Yes/No)
+- Was the warning message clear and informative? (Yes/No)
+- Were the consequences of changing networks explained? (Yes/No)
+- Did the "Cancel" option work correctly? (Yes/No)
+- Did the "Proceed" option work correctly? (Yes/No)
+- Would you have understood the implications without the warning? (Yes/No)
+
+**💡 Suggestions**:
+- Is the organization of configuration options intuitive?
+- Should any options be more prominent or hidden?
+- Are the tooltips helpful?
+- Would you prefer all options visible or the current progressive disclosure?
+- Are the validation error messages helpful?
+- Is the network change warning sufficiently clear?
 
 #### Step 5: Review and Confirm (1 minute)
 
@@ -681,14 +799,19 @@ The review screen shows a summary before installation begins.
 
 1. **Review the installation summary**:
    - ✓ Should show selected profile: "Core Profile"
-   - ✓ Should show configuration details
+   - ✓ Should show configuration details including:
+     - Network: mainnet
+     - RPC Port: 16110
+     - P2P Port: 16111
+     - Public Node: [your selection]
    - ✓ Should show list of services to be installed
    - ✓ Should show estimated disk space usage
    - ✓ Should show estimated installation time
 
 2. **Verify the information is correct**:
    - Profile: Core Profile
-   - Services: Kaspa node (kaspad)
+   - Network: mainnet
+   - Services: Kaspa node (kaspad), Dashboard, Nginx
    - Ports: 16110 (RPC), 16111 (P2P)
 
 3. **Look for any warnings or notices**:
@@ -696,6 +819,11 @@ The review screen shows a summary before installation begins.
    - ✓ May show notice about disk space requirements
 
 4. **Click "Install" or "Start Installation"**
+
+**📝 Document**:
+- Was the configuration summary clear and complete?
+- Were all your selections accurately reflected?
+- Did you feel confident starting the installation?
 
 **📝 Document**:
 - Was the review screen comprehensive?
@@ -754,8 +882,8 @@ When installation finishes, you should see a completion screen.
    - ✓ Should show summary of what was installed
    - ✓ Should show list of running services
 
-2. **Check for access links**:
-   - ✓ Should show link to Dashboard: `http://localhost:8080`
+2. **Check for access information**:
+   - ~~Dashboard link~~ (dashboard not included in test release)
    - ✓ Should show Kaspa node RPC endpoint: `localhost:16110`
    - ✓ May show additional information or next steps
 
@@ -763,49 +891,56 @@ When installation finishes, you should see a completion screen.
    - ✓ May show notice: "Kaspa node is syncing blockchain (this may take several hours)"
    - ✓ May show notice: "Node will be fully functional after sync completes"
 
-4. **Click on the Dashboard link** or manually navigate to `http://localhost:8080`
+4. **Verify services are running**:
+   ```bash
+   docker ps
+   ```
+   - ✓ Should show `kaspa-node` container with status "Up"
+   - ✓ Container should be running for a few seconds/minutes
 
 **📝 Document**:
 - Was the completion message clear and celebratory?
-- Were the access links easy to find and click?
+- Was the access information easy to find?
 - Were you informed about next steps?
 - Did you understand that blockchain sync would continue in background?
 
-#### Step 8: Verify Dashboard Access (2 minutes)
+#### Step 8: Verify Service Status (2 minutes)
 
-Now let's verify the management dashboard is working.
+Now let's verify the Kaspa node is running correctly.
 
-1. **Open the dashboard** at `http://localhost:8080`:
-   - ✓ Dashboard should load without errors
-   - ✓ Should show Kaspa All-in-One branding/title
+1. **Check running containers**:
+   ```bash
+   docker ps
+   ```
+   - ✓ Should show `kaspa-node` container
+   - ✓ Status should show "Up" with uptime
+   - ✓ Ports should show `16110-16111->16110-16111/tcp`
 
-2. **Check the service status section**:
-   - ✓ Should show "Kaspa Node" or "kaspad"
-   - ✓ Status should be "Running" or "Healthy" (green indicator)
-   - ✓ May show additional details (uptime, resource usage)
+2. **Check service logs**:
+   ```bash
+   docker logs kaspa-node --tail 50
+   ```
+   - ✓ Should show kaspad startup messages
+   - ✓ Should show "Starting sync" or similar messages
+   - ✓ Should show block processing messages
+   - ✓ No error messages should be present
 
-3. **Check for blockchain sync information**:
-   - ✓ Should show current sync status
-   - ✓ Should show current block height
-   - ✓ Should show sync percentage (likely 0-5% at this point)
-   - ✓ May show estimated time to complete sync
-
-4. **Explore the dashboard** (briefly):
-   - Look at navigation menu (if present)
-   - Check for logs or monitoring sections
-   - Note any features that seem useful or confusing
+3. **Check sync progress** (optional):
+   ```bash
+   docker logs kaspa-node | grep -i "sync\|block"
+   ```
+   - ✓ Should show sync progress messages
+   - ✓ Should show current block height increasing
 
 **📝 Document**:
-- Did the dashboard load successfully? (Yes/No)
-- Was the service status clearly displayed?
-- Was the sync progress information helpful?
-- Was the dashboard interface intuitive?
-- What features did you find most useful?
-- What features were missing or confusing?
+- Did `docker ps` show the kaspa-node running? (Yes/No)
+- Were the logs showing normal operation? (Yes/No)
+- Was the sync progress visible in logs? (Yes/No)
+- Were there any error messages? (Yes/No - describe if yes)
 
 **🐛 If Something Goes Wrong**:
-- Dashboard doesn't load: Check if port 8080 is accessible, try `docker ps` to see if containers are running
-- Service shows as "Stopped" or "Unhealthy": Check logs in dashboard or run `docker logs kaspa-node`
+- Container not running: Check `docker ps -a` to see if it exited, then check logs with `docker logs kaspa-node`
+- Error messages in logs: Copy the error and report it as a bug
 - No sync information: May take a minute to appear, try refreshing
 
 #### Step 9: Verify Kaspa Node (2 minutes)
@@ -843,7 +978,7 @@ Let's verify the Kaspa node is actually running and accessible.
    ```
    - ✓ Should show CPU and memory usage
    - ✓ CPU usage may be high during sync (50-100%)
-   - ✓ Memory usage should be under 2GB
+   - ✓ Memory usage should be around 2GB
 
 **📝 Document**:
 - Was the Kaspa node container running? (Yes/No)
@@ -915,7 +1050,7 @@ Congratulations! You've completed Scenario 1: Core Profile Installation. 🎉
 - ✅ Prerequisite checking
 - ✅ Installation wizard flow (system check → profile selection → configuration → review → installation)
 - ✅ Progress tracking during installation
-- ✅ Dashboard access and service monitoring
+- ✅ Service monitoring with Docker commands (`docker ps`, `docker logs`)
 - ✅ Kaspa node deployment and verification
 - ✅ Cleanup process
 
@@ -931,7 +1066,7 @@ Please rate your experience (1-5 stars):
 - **Ease of installation**: ⭐⭐⭐⭐⭐
 - **Clarity of instructions**: ⭐⭐⭐⭐⭐
 - **Quality of error messages**: ⭐⭐⭐⭐⭐
-- **Dashboard usefulness**: ⭐⭐⭐⭐⭐
+- **Service monitoring tools**: ⭐⭐⭐⭐⭐
 - **Overall satisfaction**: ⭐⭐⭐⭐⭐
 
 #### Provide Detailed Feedback
@@ -977,12 +1112,12 @@ Your feedback from this scenario is invaluable. Every detail you report helps ma
 
 ### Scenario 2: Kaspa User Applications 🟡 (20-30 minutes)
 
-**Goal**: Install and verify user-facing Kaspa applications (Kasia, K-Social)
+**Goal**: Install and verify user-facing Kaspa applications (Kasia, K-Social, Kaspa Explorer)
 
 **What You'll Test**:
 - Kaspa User Applications profile installation
 - Public indexer configuration
-- Multiple application deployment
+- Multiple application deployment (3 applications)
 - Application accessibility and functionality
 - Service integration
 
@@ -992,7 +1127,7 @@ Your feedback from this scenario is invaluable. Every detail you report helps ma
 - Stable internet connection
 - 20-30 minutes of time (includes build time for applications)
 
-**Note**: This scenario installs applications that use public indexers, so you don't need to run your own indexer infrastructure. This makes it faster and less resource-intensive than running local indexers.
+**Note**: This scenario installs applications that connect to public indexer endpoints hosted by the community. You don't need to run your own indexer infrastructure, which makes installation faster and less resource-intensive. The applications will use the Kaspa network for blockchain data via these public indexers.
 
 #### Step 1: Start Fresh (2 minutes)
 
@@ -1056,7 +1191,7 @@ Now you'll select the Kaspa User Applications profile.
    - ✓ Look for "Kaspa User Applications" profile
 
 2. **Read the Kaspa User Applications description**:
-   - ✓ Should mention: Kasia, K-Social, Kaspa Explorer (or similar apps)
+   - ✓ Should mention: Kasia (messaging), K-Social (social platform), Kaspa Explorer (blockchain explorer)
    - ✓ Should show estimated resources (higher than Core Profile)
    - ✓ Should show estimated installation time
 
@@ -1073,84 +1208,77 @@ Now you'll select the Kaspa User Applications profile.
 - Did you understand the difference from Core Profile?
 
 **💡 What's Different from Core Profile?**:
-- Core Profile: Just the Kaspa node
-- Kaspa User Applications: Node + user-facing apps (Kasia, K-Social)
-- More services = more resources needed
+- Core Profile: Runs a local Kaspa node for blockchain access
+- Kaspa User Applications: Runs three user-facing apps (Kasia, K-Social, Kaspa Explorer) that connect to public indexers and the Kaspa network
+- This profile doesn't include a local Kaspa node - apps use remote services
+- More services = more resources needed, but less than running local indexers
 
-#### Step 4: Indexer Configuration (2 minutes)
+#### Step 4: Indexer Endpoint Configuration (2 minutes)
 
-This is a key step unique to the Kaspa User Applications profile.
+This step configures the indexer endpoints that the Kaspa User Applications will use.
 
-1. **Review indexer options**:
-   - ✓ Should see choice between "Use public indexers" and "Use local indexers"
-   - ✓ Each option should have a description
+1. **Review the Indexer Endpoints section**:
+   - ✓ Should see "Indexer Endpoints" configuration section
+   - ✓ Should show three URL fields with default values
 
-2. **Read the descriptions**:
-   - **Public indexers**: Use existing indexer services hosted by the community
-     - Pros: Faster setup, less resource usage, no sync time
-     - Cons: Depends on external services
-   - **Local indexers**: Run your own indexer infrastructure
-     - Pros: Full control, privacy, no external dependencies
-     - Cons: More resources, longer setup, requires indexer sync
+2. **Check the default indexer URLs**:
+   - **Kasia Indexer URL**: `https://api.kasia.io/`
+     - This is the public indexer endpoint for the Kasia application
+   - **K-Social Indexer URL**: `https://indexer.kaspatalk.net/`
+     - This is the public indexer endpoint for the K-Social application
+   - **Kaspa Node WebSocket URL**: `wss://api.kasia.io/ws`
+     - This is the WebSocket endpoint for real-time Kaspa node connections
 
-3. **For this test, select "Use public indexers"**:
-   - This is the recommended option for most users
-   - Click the "Use public indexers" option
-   - ✓ Should show as selected
+3. **For this test, use the default public indexer URLs**:
+   - Don't change any of the URLs
+   - These defaults point to community-hosted public indexers
+   - This is the recommended configuration for most users
 
-4. **Review public indexer endpoints** (if shown):
-   - ✓ May show URLs like `https://api.kasia.io/`
-   - ✓ May show URLs like `https://indexer.kaspatalk.net/`
+4. **Understand what these URLs do**:
+   - The applications will connect to these public indexers to query blockchain data
+   - You don't need to run your own indexer infrastructure
+   - This makes installation faster and less resource-intensive
 
 5. **Click "Continue" or "Next"**
 
 **📝 Document**:
-- Was the indexer choice clearly explained?
-- Did you understand the difference between public and local indexers?
-- Was it obvious which option to choose for testing?
-- Were the public indexer URLs shown?
+- Were the indexer endpoint fields clearly labeled?
+- Were the default URLs pre-filled and visible?
+- Did you understand what each URL is for?
+- Was it clear that these are public indexers (not local)?
+- Were there helpful tooltips or explanations?
 
-**🔍 Understanding Indexers**:
-- Indexers process blockchain data and make it queryable
+**🔍 Understanding Indexer Endpoints**:
+- Indexers process blockchain data and make it queryable via APIs
 - Applications like Kasia and K-Social need indexers to function
 - Public indexers are hosted by the community (free to use)
-- Local indexers give you full control but require more resources
+- The default URLs point to reliable public indexer services
+- Advanced users can change these URLs to point to their own local indexers if they're also running the indexer-services profile
 
-#### Step 5: Application Configuration (2 minutes)
+#### Step 5: Advanced Options (Optional - 1 minute)
 
-Configure the applications that will be installed.
+Review any advanced configuration options if needed.
 
-1. **Review application settings**:
-   - ✓ Should show configuration for Kasia app
-   - ✓ Should show configuration for K-Social app
-   - ✓ May show configuration for Kaspa Explorer (if included)
+1. **Check for Advanced Options section**:
+   - ✓ May see "Advanced Options" section (possibly collapsed/expandable)
+   - ✓ Should show "Custom Environment Variables" field
 
-2. **Check default ports**:
-   - Kasia app: Default port 3001
-   - K-Social app: Default port 3003
-   - Kaspa Explorer: Default port 3002 (if included)
+2. **For this test, skip advanced options**:
+   - Don't expand or modify advanced options
+   - The default configuration is sufficient for testing
+   - Advanced options are for experienced users who need custom settings
 
-3. **For this test, use default values**:
-   - Don't change any settings
-   - This tests the "happy path" with defaults
-
-4. **Review network selection** (if shown):
-   - ✓ Should show mainnet/testnet choice
-   - ✓ Default should be mainnet
-   - ✓ Keep default (mainnet)
-
-5. **Click "Continue" or "Next"**
+3. **Click "Continue" or "Next"**
 
 **📝 Document**:
-- Were the application settings clearly presented?
-- Were the default ports shown?
-- Was it clear what each application does?
-- Were there any confusing options?
+- Was it clear that advanced options are optional?
+- Was the advanced section easy to skip?
+- Did the interface guide you to proceed with defaults?
 
-**💡 Port Information**:
-- Each application needs its own port
-- Default ports are chosen to avoid conflicts
-- You can change ports if needed (but not for this test)
+**💡 About Advanced Options**:
+- Custom environment variables allow advanced users to override any Docker Compose settings
+- Most users don't need to modify these
+- The applications will use sensible defaults for ports and other settings
 
 #### Step 6: Review and Confirm (2 minutes)
 
@@ -1159,19 +1287,20 @@ Review the installation summary before proceeding.
 1. **Review the installation summary**:
    - ✓ Should show selected profile: "Kaspa User Applications"
    - ✓ Should show list of services to be installed:
-     - Kaspa node (kaspad)
-     - Kasia app
-     - K-Social app
-     - (Possibly Kaspa Explorer)
-   - ✓ Should show indexer configuration: "Using public indexers"
+     - Kasia app (port 3001)
+     - K-Social app (port 3003)
+     - Kaspa Explorer (port 3004)
+   - ✓ Should show indexer endpoint URLs configured:
+     - Kasia Indexer: `https://api.kasia.io/`
+     - K-Social Indexer: `https://indexer.kaspatalk.net/`
+     - Kaspa Node WebSocket: `wss://api.kasia.io/ws`
    - ✓ Should show estimated disk space usage
    - ✓ Should show estimated installation time
 
 2. **Verify the information**:
    - Profile: Kaspa User Applications
-   - Indexers: Public (not local)
-   - Services: Multiple applications listed
-   - Ports: 3001 (Kasia), 3003 (K-Social), etc.
+   - Indexer endpoints: Public URLs (community-hosted)
+   - Services: Kasia, K-Social, Kaspa Explorer
 
 3. **Look for important notices**:
    - ✓ May show notice about build time (applications need to be built)
@@ -1202,12 +1331,11 @@ The installation process will now begin. This takes longer than Core Profile due
 
 2. **Watch for these stages** (order may vary):
    - "Pulling Docker images..." (3-5 minutes)
-     - Kaspa node image
-     - Nginx image
      - Base images for applications
    - "Building applications..." (5-10 minutes) ⏰ **This is the longest step**
      - Building Kasia app
      - Building K-Social app
+     - Building Kaspa Explorer
      - May show build logs or progress
    - "Creating Docker containers..."
    - "Starting services..."
@@ -1240,7 +1368,7 @@ The installation process will now begin. This takes longer than Core Profile due
 - The Kaspa node is starting and beginning blockchain sync
 
 **🔍 Why Does Building Take So Long?**:
-- Kasia and K-Social are full web applications
+- Kasia, K-Social, and Kaspa Explorer are full web applications
 - They need to be compiled (JavaScript, CSS, assets)
 - Dependencies need to be installed
 - This is normal and only happens once
@@ -1250,70 +1378,69 @@ The installation process will now begin. This takes longer than Core Profile due
 When installation finishes, you should see a completion screen.
 
 1. **Verify the completion message**:
-   - ✓ Should show "Installation Complete!" or similar success message
-   - ✓ Should show summary of what was installed
-   - ✓ Should show list of running services
+   - ✓ Should show "🎉 Installation Complete!" with celebration animation
+   - ✓ Should show "Service Verification" section checking service health
+   - ✓ Should show list of services with their status (Running/Stopped)
 
-2. **Check for access links**:
-   - ✓ Should show link to Dashboard: `http://localhost:8080`
-   - ✓ Should show link to Kasia app: `http://localhost:3001`
-   - ✓ Should show link to K-Social app: `http://localhost:3003`
-   - ✓ May show link to Kaspa Explorer (if included)
-   - ✓ Should show Kaspa node RPC endpoint: `localhost:16110`
+2. **Check the service verification section**:
+   - ✓ Should automatically check all installed services
+   - ✓ Should show each service with a status indicator (✓ Running, ⏸️ Stopped, ⚠️ Not Found)
+   - ✓ Should show summary: "All services healthy" or "Some services need attention"
+   - ✓ Services shown: Kasia App, K Social, Kaspa Explorer
 
-3. **Look for any warnings or notices**:
-   - ✓ May show notice: "Kaspa node is syncing blockchain"
-   - ✓ May show notice: "Applications are using public indexers"
-   - ✓ May show notice: "Services may take a minute to fully initialize"
+3. **Review the "Getting Started" section**:
+   - ✓ Should show guide cards for: Monitor Your System, Wait for Sync, Manage Services, Learn More
+   - ✓ Should have "Open Dashboard" button (note: dashboard not included in test release)
+   - ✓ Should have "Quick Actions" section with buttons for common tasks
 
-4. **Click on the Dashboard link** or manually navigate to `http://localhost:8080`
+4. **Note the service ports** for manual testing:
+   - Kasia app: `http://localhost:3001`
+   - K-Social app: `http://localhost:3003`
+   - Kaspa Explorer: `http://localhost:3004`
 
 **📝 Document**:
 - Was the completion message clear and celebratory?
-- Were all access links easy to find?
-- Were you informed about how to access each application?
-- Did you understand that services might need a moment to initialize?
+- Did the service verification work correctly?
+- Were the service statuses accurate?
+- Was the "Getting Started" guidance helpful?
+- Did you understand what to do next?
 
-#### Step 9: Verify Dashboard Access (2 minutes)
+**Note**: The completion page shows service status but doesn't include direct access links to the applications. You'll need to manually navigate to the ports listed above. The management dashboard (which will provide direct links) is not included in this test release.
 
-Let's verify the management dashboard shows all services.
+#### Step 9: Verify Services with Docker (2 minutes)
 
-1. **Open the dashboard** at `http://localhost:8080`:
-   - ✓ Dashboard should load without errors
-   - ✓ Should show Kaspa All-in-One branding/title
+Let's verify the services are running using Docker commands.
 
-2. **Check the service status section**:
-   - ✓ Should show "Kaspa Node" or "kaspad" - Status: Running
-   - ✓ Should show "Kasia App" or "kasia-app" - Status: Running
-   - ✓ Should show "K-Social" or "k-social" - Status: Running
-   - ✓ May show additional services
-   - ✓ All services should show "Running" or "Healthy" (green indicators)
+1. **Check running containers**:
+   ```bash
+   docker ps
+   ```
+   - ✓ Should show `kasia-app` container with status "Up"
+   - ✓ Should show `k-social` container with status "Up"
+   - ✓ Should show `kaspa-explorer` container with status "Up"
+   - ✓ All containers should be running for at least a few seconds
 
-3. **Check for application links**:
-   - ✓ Should show clickable links to each application
-   - ✓ Links should open in new tab
+2. **Check container health** (if health checks are configured):
+   ```bash
+   docker ps --format "table {{.Names}}\t{{.Status}}"
+   ```
+   - ✓ Containers should show "Up" status
+   - ✓ May show "(healthy)" indicator if health checks are passing
 
-4. **Check for blockchain sync information**:
-   - ✓ Should show current sync status for Kaspa node
-   - ✓ Should show current block height
-   - ✓ Should show sync percentage
-
-5. **Explore the dashboard** (briefly):
-   - Look for logs or monitoring sections
-   - Check resource usage (if shown)
-   - Note any features that seem useful or confusing
+3. **Check for any stopped or restarting containers**:
+   - If any container shows "Restarting" or "Exited", note it for bug report
+   - Check logs: `docker logs <container-name>`
 
 **📝 Document**:
-- Did the dashboard load successfully? (Yes/No)
-- Were all services shown? (Yes/No)
-- Were the service statuses clearly displayed?
-- Were the application links easy to find and use?
-- Was the dashboard interface intuitive?
+- Were all expected containers running? (Yes/No)
+- Were there any containers in error states? (Yes/No)
+- Was it easy to verify service status with Docker commands?
+- Would you have preferred a dashboard for this? (Yes/No)
 
 **🐛 If Something Goes Wrong**:
-- Dashboard doesn't load: Check if port 8080 is accessible
-- Service shows as "Stopped": Check logs with `docker logs <container-name>`
-- Service shows as "Unhealthy": May need a minute to initialize, try refreshing
+- Container not running: Check logs with `docker logs <container-name>`
+- Container restarting: Check logs for error messages
+- Port conflicts: Check if ports 3001, 3003 are already in use
 
 #### Step 10: Verify Kasia App (3 minutes)
 
@@ -1409,7 +1536,59 @@ Now let's test the K-Social application.
 - It requires an indexer to query blockchain data
 - In this setup, it's using public indexers
 
-#### Step 12: Verify Docker Containers (2 minutes)
+#### Step 12: Verify Kaspa Explorer (3 minutes)
+
+Now let's test the Kaspa Explorer application.
+
+1. **Open Kaspa Explorer** at `http://localhost:3004`:
+   - ✓ Application should load without errors
+   - ✓ Should show Kaspa Explorer interface (blockchain explorer)
+
+2. **Check the initial screen**:
+   - ✓ Should show blockchain statistics (blocks, transactions, etc.)
+   - ✓ Should show search functionality (search by address, transaction, block)
+   - ✓ Should not show connection errors
+   - ✓ Should not show indexer errors
+
+3. **Test basic functionality** (optional, brief):
+   - Try viewing recent blocks
+   - Try viewing recent transactions
+   - Try using the search feature (if you have a Kaspa address to search)
+   - Check if the app is responsive
+
+4. **Check for error messages**:
+   - ✓ Should NOT show "Cannot connect to indexer"
+   - ✓ Should NOT show "Cannot connect to API"
+   - ✓ Should NOT show "Service unavailable"
+
+5. **Check browser console** (F12 → Console tab):
+   - ✓ Should not show repeated error messages
+   - ✓ May show some warnings (normal)
+   - ✓ Should not show network errors
+
+**📝 Document**:
+- Did Kaspa Explorer load successfully? (Yes/No)
+- Was the interface responsive? (Yes/No)
+- Were there any error messages? (Yes/No - if yes, what?)
+- Did the app appear to be functioning correctly? (Yes/No)
+- Was blockchain data displaying correctly? (Yes/No)
+- Was it clear what the app does?
+
+**🐛 If Something Goes Wrong**:
+- App doesn't load: Check if container is running with `docker ps`
+- Connection errors: Check if public indexer is accessible
+- Blank page: Check browser console for JavaScript errors
+- Slow loading: May be normal on first access (caching)
+- No data showing: May indicate indexer connectivity issues
+
+**💡 What is Kaspa Explorer?**:
+- Kaspa Explorer is a blockchain explorer for the Kaspa network
+- It allows users to view blocks, transactions, and addresses
+- It requires an indexer to query blockchain data
+- In this setup, it's using public indexers
+- Similar to block explorers for other cryptocurrencies (like Etherscan for Ethereum)
+
+#### Step 13: Verify Docker Containers (2 minutes)
 
 Let's verify all containers are running correctly.
 
@@ -1417,17 +1596,19 @@ Let's verify all containers are running correctly.
    ```bash
    docker ps
    ```
-   - ✓ Should see multiple containers:
-     - `kaspa-node` - Status: Up
+   - ✓ Should see three containers:
      - `kasia-app` - Status: Up
      - `k-social` - Status: Up
-     - `kaspa-nginx` - Status: Up (reverse proxy)
+     - `kaspa-explorer` - Status: Up
    - ✓ All should show "Up" status (not "Restarting" or "Exited")
+   
+   **Note**: Kaspa node is NOT included in this profile - apps use remote indexers
 
 2. **Check container logs** (sample a few):
    ```bash
    docker logs kasia-app --tail 20
    docker logs k-social --tail 20
+   docker logs kaspa-explorer --tail 20
    ```
    - ✓ Should see normal application logs
    - ✓ Should NOT see repeated error messages
@@ -1438,7 +1619,6 @@ Let's verify all containers are running correctly.
    docker stats --no-stream
    ```
    - ✓ Should show CPU and memory usage for all containers
-   - ✓ Kaspa node may use high CPU during sync
    - ✓ Applications should use moderate resources
 
 **📝 Document**:
@@ -1448,48 +1628,53 @@ Let's verify all containers are running correctly.
 - Were any containers using unexpectedly high resources?
 
 **💡 Expected Resource Usage**:
-- Kaspa node: 50-100% CPU during sync, 1-2GB RAM
 - Kasia app: 5-10% CPU, 200-500MB RAM
 - K-Social app: 5-10% CPU, 200-500MB RAM
-- Nginx: <5% CPU, <100MB RAM
+- Kaspa Explorer: 5-10% CPU, 200-500MB RAM
 
-#### Step 13: Test Service Integration (3 minutes)
+**Note**: Kaspa node is NOT included in this profile - apps use remote indexers
 
-Let's verify that services are properly integrated.
+#### Step 14: Test Service Integration (3 minutes)
+
+Let's verify that services are properly integrated and can access blockchain data.
 
 1. **Test application → indexer connection**:
    - In Kasia app, try to view blockchain data (if feature available)
    - In K-Social app, try to view content (if feature available)
+   - In Kaspa Explorer, try to view recent blocks and transactions
    - ✓ Should work without errors
    - ✓ Should show data from blockchain
 
-2. **Test application → node connection** (if applicable):
-   - Some features may connect directly to the Kaspa node
-   - ✓ Should work without errors
+2. **Test Kaspa Explorer blockchain queries**:
+   - View the latest blocks
+   - View recent transactions
+   - Try searching for a block number (e.g., block 1)
+   - ✓ All queries should return data
+   - ✓ Data should be current and accurate
 
-3. **Check dashboard integration**:
-   - Go back to dashboard at `http://localhost:8080`
-   - ✓ Should show all services as healthy
-   - ✓ Should show resource usage
-   - ✓ Links to applications should work
-
-4. **Test navigation between services**:
-   - Click dashboard link to Kasia → Should open Kasia
-   - Click dashboard link to K-Social → Should open K-Social
-   - ✓ All links should work correctly
+3. **Test concurrent indexer access**:
+   - Have all three applications open simultaneously
+   - Try using features in each that query blockchain data
+   - ✓ All applications should work without conflicts
+   - ✓ No application should show "indexer unavailable" errors
 
 **📝 Document**:
 - Did applications successfully connect to indexers? (Yes/No)
-- Did applications successfully connect to the node? (Yes/No)
-- Was the dashboard integration working? (Yes/No)
-- Were all links functional? (Yes/No)
+- Did Kaspa Explorer display blockchain data correctly? (Yes/No)
+- Were all three applications able to access indexers simultaneously? (Yes/No)
+- Were there any performance issues with concurrent access? (Yes/No)
 
 **🐛 If Something Goes Wrong**:
 - Indexer connection fails: Check if public indexers are accessible
-- Node connection fails: Check if Kaspa node is running
-- Dashboard links broken: Check if ports are correct
+- Data not loading: Check browser console for API errors
+- Slow responses: Public indexers may be under load (this is normal)
 
-#### Step 14: Test Service Management (3 minutes)
+**💡 Why Test Concurrent Access?**:
+- Verifies that multiple applications can share indexer endpoints
+- Tests that applications don't interfere with each other's API calls
+- Ensures the system can handle realistic usage patterns
+
+#### Step 15: Test Service Management (3 minutes)
 
 Let's test the service management scripts with multiple services.
 
@@ -1498,9 +1683,9 @@ Let's test the service management scripts with multiple services.
    ./status.sh
    ```
    - ✓ Should show wizard status
-   - ✓ Should show all Docker services
+   - ✓ Should show all Docker services (kasia-app, k-social, kaspa-explorer)
    - ✓ Should show resource usage for each service
-   - ✓ Should show ports in use
+   - ✓ Should show ports in use (3001, 3003, 3004)
 
 2. **Test restart**:
    ```bash
@@ -1512,13 +1697,13 @@ Let's test the service management scripts with multiple services.
    - ✓ All services should come back up
 
 3. **Verify services after restart**:
-   - Open dashboard: `http://localhost:8080`
    - Open Kasia: `http://localhost:3001`
    - Open K-Social: `http://localhost:3003`
+   - Open Kaspa Explorer: `http://localhost:3004`
    - ✓ All should still work
 
 **📝 Document**:
-- Did the status script show all services? (Yes/No)
+- Did the status script show all three services? (Yes/No)
 - Did the restart work correctly? (Yes/No)
 - How long did restart take?
 - Did all services come back up healthy? (Yes/No)
@@ -1528,7 +1713,7 @@ Let's test the service management scripts with multiple services.
 - Tests that configuration is persistent
 - Ensures no data is lost during restart
 
-#### Step 15: Test Cleanup (2 minutes)
+#### Step 16: Test Cleanup (2 minutes)
 
 Finally, let's test the cleanup process with multiple services.
 
@@ -1573,11 +1758,12 @@ Congratulations! You've completed Scenario 2: Kaspa User Applications. 🎉
 
 - ✅ Kaspa User Applications profile installation
 - ✅ Public indexer configuration
-- ✅ Multiple application deployment (Kasia, K-Social)
-- ✅ Application build process
-- ✅ Dashboard with multiple services
+- ✅ Multiple application deployment (Kasia, K-Social, Kaspa Explorer)
+- ✅ Application build process (3 applications)
 - ✅ Application accessibility and functionality
-- ✅ Service integration (apps → indexers → node)
+- ✅ Blockchain explorer functionality (Kaspa Explorer)
+- ✅ Service integration (apps → public indexers)
+- ✅ Concurrent application access
 - ✅ Service management with multiple services
 - ✅ Cleanup process
 

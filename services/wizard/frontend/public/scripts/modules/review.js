@@ -14,7 +14,7 @@ const PROFILE_DEFINITIONS = {
     'core': {
         name: 'Core Profile',
         description: 'Kaspa node (public/private) with optional wallet',
-        services: ['kaspa-node', 'wallet', 'dashboard', 'nginx'],
+        services: ['kaspa-node', 'wallet'],
         resources: {
             cpu: '2 cores',
             ram: '4 GB',
@@ -24,7 +24,11 @@ const PROFILE_DEFINITIONS = {
     'kaspa-user-applications': {
         name: 'Kaspa User Applications',
         description: 'User-facing apps (Kasia, K-Social, Kaspa Explorer)',
-        services: ['kasia-app', 'k-social-app', 'kaspa-explorer'],
+        services: [
+            { name: 'Kasia app', port: 3001 },
+            { name: 'K-Social app', port: 3003 },
+            { name: 'Kaspa Explorer', port: 3004 }
+        ],
         resources: {
             cpu: '2 cores',
             ram: '4 GB',
@@ -95,8 +99,8 @@ export function displayConfigurationSummary() {
     // Display resource requirements
     displayResourceRequirements(selectedProfiles);
     
-    // Display network configuration
-    displayNetworkConfiguration(configuration);
+    // Display configuration (profile-specific)
+    displayConfiguration(selectedProfiles, configuration);
     
     // Add edit buttons
     addEditButtons();
@@ -157,7 +161,21 @@ function displaySelectedProfiles(selectedProfiles) {
         // Profile services
         const profileServices = document.createElement('div');
         profileServices.className = 'review-profile-services';
-        profileServices.textContent = `Services: ${profile.services.join(', ')}`;
+        
+        // Handle both old format (string array) and new format (object array with ports)
+        let servicesText = 'Services: ';
+        if (profile.services && profile.services.length > 0) {
+            if (typeof profile.services[0] === 'string') {
+                // Old format: array of strings
+                servicesText += profile.services.join(', ');
+            } else {
+                // New format: array of objects with name and port
+                servicesText += profile.services
+                    .map(service => `${service.name} (port ${service.port})`)
+                    .join(', ');
+            }
+        }
+        profileServices.textContent = servicesText;
         profileCard.appendChild(profileServices);
         
         // Profile resources
@@ -185,7 +203,11 @@ function displaySelectedProfiles(selectedProfiles) {
     selectedProfiles.forEach(profileId => {
         const profile = PROFILE_DEFINITIONS[profileId];
         if (profile && profile.services) {
-            profile.services.forEach(service => allServices.add(service));
+            profile.services.forEach(service => {
+                // Handle both string and object formats
+                const serviceName = typeof service === 'string' ? service : service.name;
+                allServices.add(serviceName);
+            });
         }
     });
     
@@ -241,7 +263,67 @@ function displayResourceRequirements(selectedProfiles) {
 }
 
 /**
- * Display network configuration
+ * Display configuration based on selected profiles
+ */
+function displayConfiguration(selectedProfiles, configuration) {
+    console.log('Displaying configuration for profiles:', selectedProfiles, configuration);
+    
+    // Determine which configuration fields to show based on selected profiles
+    const hasNetworkConfig = selectedProfiles.some(profileId => 
+        ['core', 'archive-node', 'indexer-services', 'mining'].includes(profileId)
+    );
+    
+    const hasIndexerEndpoints = selectedProfiles.includes('kaspa-user-applications');
+    
+    // Get the network configuration section
+    const networkSection = document.querySelector('.review-section:has(#review-external-ip)');
+    
+    if (hasNetworkConfig) {
+        // Show network configuration for profiles that need it
+        if (networkSection) {
+            networkSection.style.display = 'block';
+        }
+        displayNetworkConfiguration(configuration);
+    } else if (hasIndexerEndpoints) {
+        // Show indexer endpoints for kaspa-user-applications profile
+        if (networkSection) {
+            // Replace network configuration with indexer endpoints
+            const titleElement = networkSection.querySelector('.review-section-title');
+            const contentElement = networkSection.querySelector('.review-content');
+            
+            if (titleElement) {
+                titleElement.textContent = 'Indexer Endpoints';
+            }
+            
+            if (contentElement) {
+                contentElement.innerHTML = `
+                    <div class="review-item">
+                        <span class="review-label">Kasia Indexer URL:</span>
+                        <span class="review-value">${configuration.REMOTE_KASIA_INDEXER_URL || 'https://api.kasia.io/'}</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">K-Social Indexer URL:</span>
+                        <span class="review-value">${configuration.REMOTE_KSOCIAL_INDEXER_URL || 'https://indexer.kaspatalk.net/'}</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Kaspa Node WebSocket URL:</span>
+                        <span class="review-value">${configuration.REMOTE_KASPA_NODE_WBORSH_URL || 'wss://api.kasia.io/ws'}</span>
+                    </div>
+                `;
+            }
+            
+            networkSection.style.display = 'block';
+        }
+    } else {
+        // Hide network configuration section if not needed
+        if (networkSection) {
+            networkSection.style.display = 'none';
+        }
+    }
+}
+
+/**
+ * Display network configuration (for profiles that need it)
  */
 function displayNetworkConfiguration(configuration) {
     const externalIpElement = document.getElementById('review-external-ip');
@@ -324,7 +406,7 @@ function addEditButtons() {
         if (title.includes('Profile')) {
             targetStep = 'profiles';
             buttonText = 'Edit Profiles';
-        } else if (title.includes('Network Configuration')) {
+        } else if (title.includes('Network Configuration') || title.includes('Indexer Endpoints')) {
             targetStep = 'configure';
             buttonText = 'Edit Configuration';
         }

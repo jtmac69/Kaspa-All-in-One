@@ -10,9 +10,21 @@ class ConfigGenerator {
       PUBLIC_NODE: Joi.boolean().default(false),
       EXTERNAL_IP: Joi.string().ip().allow('').optional(),
       
-      // Network settings
+      // Kaspa Node settings (new fields for task 3.1)
+      KASPA_NODE_RPC_PORT: Joi.number().integer().min(1024).max(65535).default(16110),
+      KASPA_NODE_P2P_PORT: Joi.number().integer().min(1024).max(65535).default(16111),
+      KASPA_NETWORK: Joi.string().valid('mainnet', 'testnet').default('mainnet'),
+      
+      // Data directory settings (new fields for task 3.1)
+      KASPA_DATA_DIR: Joi.string().allow('').optional().default('/data/kaspa'),
+      KASPA_ARCHIVE_DATA_DIR: Joi.string().allow('').optional().default('/data/kaspa-archive'),
+      TIMESCALEDB_DATA_DIR: Joi.string().allow('').optional().default('/data/timescaledb'),
+      
+      // Legacy port names (maintain backward compatibility)
       KASPA_P2P_PORT: Joi.number().integer().min(1024).max(65535).default(16110),
       KASPA_RPC_PORT: Joi.number().integer().min(1024).max(65535).default(16111),
+      
+      // Dashboard and Nginx ports
       DASHBOARD_PORT: Joi.number().integer().min(1024).max(65535).default(3001),
       NGINX_HTTP_PORT: Joi.number().integer().min(1).max(65535).default(80),
       NGINX_HTTPS_PORT: Joi.number().integer().min(1).max(65535).default(443),
@@ -87,19 +99,44 @@ class ConfigGenerator {
       lines.push(`EXTERNAL_IP=${config.EXTERNAL_IP}`);
     }
 
+    lines.push('');
+
+    // Kaspa Node configuration (for core and archive-node profiles)
+    if (profiles.includes('core') || profiles.includes('archive-node')) {
+      lines.push(
+        '# Kaspa Node Configuration',
+        `KASPA_NODE_RPC_PORT=${config.KASPA_NODE_RPC_PORT || 16110}`,
+        `KASPA_NODE_P2P_PORT=${config.KASPA_NODE_P2P_PORT || 16111}`,
+        `KASPA_NETWORK=${config.KASPA_NETWORK || 'mainnet'}`,
+        ''
+      );
+      
+      // Data directory (advanced option)
+      if (profiles.includes('core') && config.KASPA_DATA_DIR) {
+        lines.push(`KASPA_DATA_DIR=${config.KASPA_DATA_DIR}`);
+      }
+      if (profiles.includes('archive-node') && config.KASPA_ARCHIVE_DATA_DIR) {
+        lines.push(`KASPA_ARCHIVE_DATA_DIR=${config.KASPA_ARCHIVE_DATA_DIR}`);
+      }
+      
+      if (config.KASPA_DATA_DIR || config.KASPA_ARCHIVE_DATA_DIR) {
+        lines.push('');
+      }
+    }
+
     lines.push(
-      '',
       '# Network Ports',
-      `KASPA_P2P_PORT=${config.KASPA_P2P_PORT || 16110}`,
-      `KASPA_RPC_PORT=${config.KASPA_RPC_PORT || 16111}`,
+      `KASPA_P2P_PORT=${config.KASPA_NODE_P2P_PORT || config.KASPA_P2P_PORT || 16110}`,
+      `KASPA_RPC_PORT=${config.KASPA_NODE_RPC_PORT || config.KASPA_RPC_PORT || 16111}`,
       `DASHBOARD_PORT=${config.DASHBOARD_PORT || 3001}`,
       `NGINX_HTTP_PORT=${config.NGINX_HTTP_PORT || 80}`,
       `NGINX_HTTPS_PORT=${config.NGINX_HTTPS_PORT || 443}`,
       ''
     );
 
-    // Database settings (only if indexer-services or kaspa-user-applications profiles are active)
-    if (profiles.includes('indexer-services') || profiles.includes('kaspa-user-applications')) {
+    // Database settings (only if indexer-services profile is active)
+    // Note: kaspa-user-applications does NOT need database access - apps connect to indexer APIs
+    if (profiles.includes('indexer-services')) {
       lines.push(
         '# Database Settings',
         `POSTGRES_USER=${config.POSTGRES_USER || 'kaspa'}`,
@@ -108,6 +145,14 @@ class ConfigGenerator {
         `POSTGRES_PORT=${config.POSTGRES_PORT || 5432}`,
         ''
       );
+      
+      // TimescaleDB data directory (advanced option)
+      if (config.TIMESCALEDB_DATA_DIR) {
+        lines.push(
+          `TIMESCALEDB_DATA_DIR=${config.TIMESCALEDB_DATA_DIR}`,
+          ''
+        );
+      }
     }
 
     // Archive database settings (only if archive-node profile is active)
@@ -259,6 +304,28 @@ class ConfigGenerator {
         }
       });
       
+      // Backward compatibility: map old field names to new ones (task 3.1)
+      if (config.KASPA_RPC_PORT && !config.KASPA_NODE_RPC_PORT) {
+        config.KASPA_NODE_RPC_PORT = config.KASPA_RPC_PORT;
+      }
+      if (config.KASPA_P2P_PORT && !config.KASPA_NODE_P2P_PORT) {
+        config.KASPA_NODE_P2P_PORT = config.KASPA_P2P_PORT;
+      }
+      
+      // Set defaults for new fields if not present (task 3.1)
+      if (!config.KASPA_NETWORK) {
+        config.KASPA_NETWORK = 'mainnet';
+      }
+      if (!config.KASPA_DATA_DIR) {
+        config.KASPA_DATA_DIR = '/data/kaspa';
+      }
+      if (!config.KASPA_ARCHIVE_DATA_DIR) {
+        config.KASPA_ARCHIVE_DATA_DIR = '/data/kaspa-archive';
+      }
+      if (!config.TIMESCALEDB_DATA_DIR) {
+        config.TIMESCALEDB_DATA_DIR = '/data/timescaledb';
+      }
+      
       return { success: true, config };
     } catch (error) {
       return {
@@ -282,12 +349,33 @@ class ConfigGenerator {
       DEVELOPER_MODE: false
     };
 
+    // Add Kaspa Node configuration if needed (task 3.1)
+    if (profiles.includes('core') || profiles.includes('archive-node')) {
+      config.KASPA_NODE_RPC_PORT = 16110;
+      config.KASPA_NODE_P2P_PORT = 16111;
+      config.KASPA_NETWORK = 'mainnet';
+      
+      // Data directories (optional, will be set if user configures them)
+      if (profiles.includes('core')) {
+        config.KASPA_DATA_DIR = '/data/kaspa';
+      }
+      if (profiles.includes('archive-node')) {
+        config.KASPA_ARCHIVE_DATA_DIR = '/data/kaspa-archive';
+      }
+    }
+
     // Add database passwords if needed
-    if (profiles.includes('indexer-services') || profiles.includes('kaspa-user-applications')) {
+    // Note: Only indexer-services needs database access
+    if (profiles.includes('indexer-services')) {
       config.POSTGRES_USER = 'kaspa';
       config.POSTGRES_PASSWORD = this.generateSecurePassword();
       config.POSTGRES_DB = 'kaspa_explorer';
       config.POSTGRES_PORT = 5432;
+      
+      // TimescaleDB data directory (optional, task 3.1)
+      if (profiles.includes('indexer-services')) {
+        config.TIMESCALEDB_DATA_DIR = '/data/timescaledb';
+      }
     }
 
     // Add archive database settings if needed
@@ -381,7 +469,8 @@ class ConfigGenerator {
     );
 
     // Add pgAdmin service if database profiles are selected
-    if (profiles.includes('indexer-services') || profiles.includes('kaspa-user-applications') || profiles.includes('archive-node')) {
+    // Note: Only profiles that use TimescaleDB need pgAdmin
+    if (profiles.includes('indexer-services') || profiles.includes('archive-node')) {
       lines.push(
         '  pgadmin:',
         '    image: dpage/pgadmin4:latest',
@@ -470,6 +559,761 @@ class ConfigGenerator {
         const backupPath = `${targetPath}.backup.${Date.now()}`;
         await fs.copyFile(targetPath, backupPath);
         console.log(`Backed up existing override to ${backupPath}`);
+      } catch (error) {
+        // File doesn't exist, no backup needed
+      }
+
+      await fs.writeFile(targetPath, content, 'utf8');
+      return { success: true, path: targetPath };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Save installation configuration to JSON file (task 3.2)
+   * @param {Object} config - Configuration object
+   * @param {string[]} profiles - Selected profiles
+   * @param {string} targetPath - Target file path
+   * @returns {Promise<Object>} Result object
+   */
+  async saveInstallationConfig(config, profiles, targetPath = 'installation-config.json') {
+    try {
+      const installationConfig = {
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+        profiles,
+        configuration: config
+      };
+
+      // Backup existing config if it exists
+      try {
+        await fs.access(targetPath);
+        const backupPath = `${targetPath}.backup.${Date.now()}`;
+        await fs.copyFile(targetPath, backupPath);
+        console.log(`Backed up existing installation-config.json to ${backupPath}`);
+      } catch (error) {
+        // File doesn't exist, no backup needed
+      }
+
+      await fs.writeFile(targetPath, JSON.stringify(installationConfig, null, 2), 'utf8');
+      return { success: true, path: targetPath };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Load installation configuration from JSON file (task 3.2)
+   * @param {string} configPath - Path to installation-config.json
+   * @returns {Promise<Object>} Result object with config and profiles
+   */
+  async loadInstallationConfig(configPath = 'installation-config.json') {
+    try {
+      const content = await fs.readFile(configPath, 'utf8');
+      const installationConfig = JSON.parse(content);
+      
+      return {
+        success: true,
+        version: installationConfig.version,
+        timestamp: installationConfig.timestamp,
+        profiles: installationConfig.profiles || [],
+        configuration: installationConfig.configuration || {}
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        profiles: [],
+        configuration: {}
+      };
+    }
+  }
+
+  /**
+   * Load complete configuration from both .env and installation-config.json (task 3.2)
+   * Prioritizes installation-config.json if available, falls back to .env
+   * @param {string} envPath - Path to .env file
+   * @param {string} configPath - Path to installation-config.json
+   * @returns {Promise<Object>} Result object with merged configuration
+   */
+  async loadCompleteConfiguration(envPath = '.env', configPath = 'installation-config.json') {
+    // Try to load installation-config.json first
+    const configResult = await this.loadInstallationConfig(configPath);
+    
+    if (configResult.success) {
+      // Successfully loaded installation-config.json
+      return {
+        success: true,
+        source: 'installation-config.json',
+        profiles: configResult.profiles,
+        configuration: configResult.configuration,
+        timestamp: configResult.timestamp,
+        version: configResult.version
+      };
+    }
+    
+    // Fall back to .env file
+    const envResult = await this.loadEnvFile(envPath);
+    
+    if (envResult.success) {
+      // Extract profiles from COMPOSE_PROFILES if present
+      const profiles = envResult.config.COMPOSE_PROFILES 
+        ? envResult.config.COMPOSE_PROFILES.split(',').map(p => p.trim())
+        : [];
+      
+      return {
+        success: true,
+        source: '.env',
+        profiles,
+        configuration: envResult.config,
+        timestamp: null,
+        version: null
+      };
+    }
+    
+    // No configuration found
+    return {
+      success: false,
+      error: 'No configuration found',
+      source: null,
+      profiles: [],
+      configuration: {}
+    };
+  }
+
+  /**
+   * Create timestamped backup of configuration files (task 3.3)
+   * @param {string} envPath - Path to .env file
+   * @param {string} configPath - Path to installation-config.json
+   * @param {string} backupDir - Directory to store backups
+   * @returns {Promise<Object>} Result object with backup details
+   */
+  async createConfigurationBackup(
+    envPath = '.env',
+    configPath = 'installation-config.json',
+    backupDir = '.kaspa-backups'
+  ) {
+    try {
+      const timestamp = Date.now();
+      const backupDirPath = path.resolve(backupDir);
+      
+      // Create backup directory if it doesn't exist
+      await fs.mkdir(backupDirPath, { recursive: true });
+      
+      const backupResults = {
+        timestamp,
+        date: new Date(timestamp).toISOString(),
+        backupDir: backupDirPath,
+        files: []
+      };
+      
+      // Backup .env file if it exists
+      try {
+        await fs.access(envPath);
+        const envBackupPath = path.join(backupDirPath, `.env.backup.${timestamp}`);
+        await fs.copyFile(envPath, envBackupPath);
+        backupResults.files.push({
+          original: envPath,
+          backup: envBackupPath,
+          success: true
+        });
+        console.log(`Backed up .env to ${envBackupPath}`);
+      } catch (error) {
+        backupResults.files.push({
+          original: envPath,
+          backup: null,
+          success: false,
+          error: 'File not found or not accessible'
+        });
+      }
+      
+      // Backup installation-config.json if it exists
+      try {
+        await fs.access(configPath);
+        const configBackupPath = path.join(backupDirPath, `installation-config.json.backup.${timestamp}`);
+        await fs.copyFile(configPath, configBackupPath);
+        backupResults.files.push({
+          original: configPath,
+          backup: configBackupPath,
+          success: true
+        });
+        console.log(`Backed up installation-config.json to ${configBackupPath}`);
+      } catch (error) {
+        backupResults.files.push({
+          original: configPath,
+          backup: null,
+          success: false,
+          error: 'File not found or not accessible'
+        });
+      }
+      
+      // Clean up old backups (keep last 10)
+      await this.cleanupOldBackups(backupDirPath, 10);
+      
+      return {
+        success: true,
+        backup: backupResults
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Clean up old backup files (task 3.3)
+   * @param {string} backupDir - Backup directory path
+   * @param {number} keepCount - Number of backups to keep
+   * @returns {Promise<void>}
+   */
+  async cleanupOldBackups(backupDir, keepCount = 10) {
+    try {
+      const files = await fs.readdir(backupDir);
+      
+      // Group backups by type
+      const envBackups = files
+        .filter(f => f.startsWith('.env.backup.'))
+        .map(f => ({
+          name: f,
+          path: path.join(backupDir, f),
+          timestamp: parseInt(f.replace('.env.backup.', ''))
+        }))
+        .sort((a, b) => b.timestamp - a.timestamp);
+      
+      const configBackups = files
+        .filter(f => f.startsWith('installation-config.json.backup.'))
+        .map(f => ({
+          name: f,
+          path: path.join(backupDir, f),
+          timestamp: parseInt(f.replace('installation-config.json.backup.', ''))
+        }))
+        .sort((a, b) => b.timestamp - a.timestamp);
+      
+      // Delete old .env backups
+      if (envBackups.length > keepCount) {
+        const toDelete = envBackups.slice(keepCount);
+        for (const backup of toDelete) {
+          try {
+            await fs.unlink(backup.path);
+            console.log(`Deleted old backup: ${backup.name}`);
+          } catch (error) {
+            console.error(`Failed to delete backup ${backup.name}:`, error.message);
+          }
+        }
+      }
+      
+      // Delete old config backups
+      if (configBackups.length > keepCount) {
+        const toDelete = configBackups.slice(keepCount);
+        for (const backup of toDelete) {
+          try {
+            await fs.unlink(backup.path);
+            console.log(`Deleted old backup: ${backup.name}`);
+          } catch (error) {
+            console.error(`Failed to delete backup ${backup.name}:`, error.message);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error cleaning up old backups:', error.message);
+    }
+  }
+
+  /**
+   * List available configuration backups (task 3.3)
+   * @param {string} backupDir - Backup directory path
+   * @returns {Promise<Object>} Result object with backup list
+   */
+  async listConfigurationBackups(backupDir = '.kaspa-backups') {
+    try {
+      const backupDirPath = path.resolve(backupDir);
+      
+      try {
+        await fs.access(backupDirPath);
+      } catch {
+        return {
+          success: true,
+          backups: []
+        };
+      }
+      
+      const files = await fs.readdir(backupDirPath);
+      
+      // Group backups by timestamp
+      const backupMap = new Map();
+      
+      files.forEach(file => {
+        let timestamp = null;
+        let type = null;
+        
+        if (file.startsWith('.env.backup.')) {
+          timestamp = parseInt(file.replace('.env.backup.', ''));
+          type = 'env';
+        } else if (file.startsWith('installation-config.json.backup.')) {
+          timestamp = parseInt(file.replace('installation-config.json.backup.', ''));
+          type = 'config';
+        }
+        
+        if (timestamp && type) {
+          if (!backupMap.has(timestamp)) {
+            backupMap.set(timestamp, {
+              timestamp,
+              date: new Date(timestamp).toISOString(),
+              files: []
+            });
+          }
+          
+          backupMap.get(timestamp).files.push({
+            type,
+            name: file,
+            path: path.join(backupDirPath, file)
+          });
+        }
+      });
+      
+      // Convert to array and sort by timestamp (newest first)
+      const backups = Array.from(backupMap.values())
+        .sort((a, b) => b.timestamp - a.timestamp);
+      
+      return {
+        success: true,
+        backups
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        backups: []
+      };
+    }
+  }
+
+  /**
+   * Restore configuration from backup (task 3.3)
+   * @param {number} timestamp - Backup timestamp to restore
+   * @param {string} backupDir - Backup directory path
+   * @param {string} envPath - Target .env path
+   * @param {string} configPath - Target installation-config.json path
+   * @returns {Promise<Object>} Result object
+   */
+  async restoreConfigurationBackup(
+    timestamp,
+    backupDir = '.kaspa-backups',
+    envPath = '.env',
+    configPath = 'installation-config.json'
+  ) {
+    try {
+      const backupDirPath = path.resolve(backupDir);
+      const results = {
+        timestamp,
+        restored: []
+      };
+      
+      // Restore .env
+      const envBackupPath = path.join(backupDirPath, `.env.backup.${timestamp}`);
+      try {
+        await fs.access(envBackupPath);
+        await fs.copyFile(envBackupPath, envPath);
+        results.restored.push({
+          type: 'env',
+          path: envPath,
+          success: true
+        });
+        console.log(`Restored .env from backup ${timestamp}`);
+      } catch (error) {
+        results.restored.push({
+          type: 'env',
+          path: envPath,
+          success: false,
+          error: error.message
+        });
+      }
+      
+      // Restore installation-config.json
+      const configBackupPath = path.join(backupDirPath, `installation-config.json.backup.${timestamp}`);
+      try {
+        await fs.access(configBackupPath);
+        await fs.copyFile(configBackupPath, configPath);
+        results.restored.push({
+          type: 'config',
+          path: configPath,
+          success: true
+        });
+        console.log(`Restored installation-config.json from backup ${timestamp}`);
+      } catch (error) {
+        results.restored.push({
+          type: 'config',
+          path: configPath,
+          success: false,
+          error: error.message
+        });
+      }
+      
+      const allSuccess = results.restored.every(r => r.success);
+      
+      return {
+        success: allSuccess,
+        results
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Generate docker-compose.yml with dynamic port configuration (task 5.1)
+   * This generates a complete docker-compose.yml file with configured ports
+   * @param {Object} config - Configuration object with port settings
+   * @param {string[]} profiles - Selected profiles
+   * @returns {Promise<string>} docker-compose.yml content
+   */
+  async generateDockerCompose(config, profiles) {
+    const rpcPort = config.KASPA_NODE_RPC_PORT || 16110;
+    const p2pPort = config.KASPA_NODE_P2P_PORT || 16111;
+    const network = config.KASPA_NETWORK || 'mainnet';
+    
+    // Build kaspad command with network flag (task 5.2)
+    let kaspadCommand = `kaspad --utxoindex --rpclisten=0.0.0.0:${rpcPort} --listen=0.0.0.0:${p2pPort}`;
+    if (network === 'testnet') {
+      kaspadCommand += ' --testnet';
+    }
+    
+    // Data directory configuration (task 5.3)
+    const kaspaDataDir = config.KASPA_DATA_DIR || '/data/kaspa';
+    const kaspaArchiveDataDir = config.KASPA_ARCHIVE_DATA_DIR || '/data/kaspa-archive';
+    const timescaledbDataDir = config.TIMESCALEDB_DATA_DIR || '/data/timescaledb';
+    
+    const lines = [
+      '# Docker Compose for Kaspa All-in-One',
+      '# Generated by Installation Wizard',
+      `# Date: ${new Date().toISOString()}`,
+      '',
+      'services:',
+      '  # ============================================================================',
+      '  # CORE INFRASTRUCTURE',
+      '  # ============================================================================',
+      '  '
+    ];
+    
+    // Add kaspa-node only if a profile needs it
+    // kaspa-user-applications does NOT need a local node - it uses remote endpoints
+    const nodeProfiles = ['core', 'archive-node', 'mining', 'indexer-services'].filter(p => profiles.includes(p));
+    if (nodeProfiles.length > 0) {
+      lines.push(
+        '  # Kaspa Node - Official Docker image (Core component)',
+        '  kaspa-node:',
+        '    image: kaspanet/rusty-kaspad:latest',
+        '    container_name: kaspa-node',
+        '    restart: unless-stopped',
+        '    ports:',
+        `      - "\${KASPA_NODE_P2P_PORT:-${p2pPort}}:${p2pPort}"  # P2P port (public)`,
+        `      - "\${KASPA_NODE_RPC_PORT:-${rpcPort}}:${rpcPort}"  # RPC port (local access)`,
+        '    volumes:',
+        `      - kaspa-data:${kaspaDataDir}`,
+        '      - ./logs/kaspa-node:/app/logs',
+        '    environment:',
+        '      - PUBLIC_NODE=${PUBLIC_NODE:-true}',
+        '      - LOG_LEVEL=${LOG_LEVEL:-info}',
+        '      - KASPAD_UTXOINDEX=true',
+        `      - KASPAD_RPCBIND=0.0.0.0:${rpcPort}`,
+        `      - KASPAD_RPCLISTEN_BORSH=0.0.0.0:${rpcPort + 1000}`,
+        `      - KASPAD_RPCLISTEN_JSON=0.0.0.0:${rpcPort + 2000}`,
+        `    command: "${kaspadCommand}"`,
+        '    networks:',
+        '      - kaspa-network',
+        '    profiles:'
+      );
+      
+      nodeProfiles.forEach(profile => {
+        lines.push(`      - ${profile}`);
+      });
+      
+      lines.push('');
+    }
+
+    // Add wizard service
+    lines.push(
+      '  # Installation Wizard (DEPRECATED - Runs on host, not in container)',
+      '  # NOTE: The wizard should be started using ./services/wizard/backend/start-local.sh',
+      '  wizard:',
+      '    build:',
+      '      context: ./services/wizard',
+      '      dockerfile: Dockerfile',
+      '    container_name: kaspa-wizard',
+      '    restart: "no"',
+      '    ports:',
+      '      - "${WIZARD_PORT:-3000}:3000"',
+      '    environment:',
+      '      - NODE_ENV=${NODE_ENV:-production}',
+      '      - WIZARD_MODE=${WIZARD_MODE:-install}',
+      '      - DOCKER_HOST=unix:///var/run/docker.sock',
+      '      - PROJECT_ROOT=/workspace',
+      '    volumes:',
+      '      - /var/run/docker.sock:/var/run/docker.sock',
+      '      - .:/workspace',
+      '      - ./.env:/workspace/.env',
+      '      - ./docker-compose.yml:/workspace/docker-compose.yml:ro',
+      '      - wizard-state:/app/state',
+      '    networks:',
+      '      - kaspa-network',
+      '    profiles:',
+      '      - wizard',
+      ''
+    );
+
+    // Nginx is not needed for kaspa-user-applications profile
+    // Apps are directly accessible on their own ports (3001, 3003)
+    // Nginx would only be needed if we want a unified entry point or SSL termination
+
+    // Add user applications if selected
+    if (profiles.includes('kaspa-user-applications')) {
+      lines.push(
+        '  # ============================================================================',
+        '  # KASPA-USER-APPLICATIONS PROFILE - User-facing applications',
+        '  # ============================================================================',
+        '',
+        '  # Kasia Messaging App',
+        '  kasia-app:',
+        '    build:',
+        '      context: ./services/kasia',
+        '      dockerfile: Dockerfile',
+        '      args:',
+        '        - KASIA_VERSION=v0.6.2',
+        '    container_name: kasia-app',
+        '    restart: unless-stopped',
+        '    ports:',
+        '      - "${KASIA_APP_PORT:-3001}:3000"',
+        '    environment:',
+        `      - VITE_DEFAULT_KASPA_NETWORK=\${KASPA_NETWORK:-${network}}`,
+        '      - VITE_INDEXER_MAINNET_URL=${REMOTE_KASIA_INDEXER_URL:-https://api.kasia.io/}',
+        '    networks:',
+        '      - kaspa-network',
+        '    profiles:',
+        '      - kaspa-user-applications',
+        '',
+        '  # K Social App',
+        '  k-social:',
+        '    build:',
+        '      context: ./services/k-social',
+        '      dockerfile: Dockerfile',
+        '    container_name: k-social',
+        '    restart: unless-stopped',
+        '    ports:',
+        '      - "${KSOCIAL_APP_PORT:-3003}:3000"',
+        '    environment:',
+        `      - KASPA_NODE_URL=\${REMOTE_KASPA_NODE_URL:-http://kaspa-node:${rpcPort}}`,
+        '    networks:',
+        '      - kaspa-network',
+        '    profiles:',
+        '      - kaspa-user-applications',
+        '',
+        '  # Kaspa Explorer',
+        '  kaspa-explorer:',
+        '    build:',
+        '      context: ./services/kaspa-explorer',
+        '      dockerfile: Dockerfile',
+        '    container_name: kaspa-explorer',
+        '    restart: unless-stopped',
+        '    ports:',
+        '      - "${KASPA_EXPLORER_PORT:-3004}:80"',
+        '    environment:',
+        `      - KASPA_NETWORK=\${KASPA_NETWORK:-${network}}`,
+        '      - API_BASE_URL=${REMOTE_KASIA_INDEXER_URL:-https://api.kasia.io/}',
+        '    networks:',
+        '      - kaspa-network',
+        '    profiles:',
+        '      - kaspa-user-applications',
+        ''
+      );
+    }
+
+    // Add indexer services if selected
+    if (profiles.includes('indexer-services')) {
+      lines.push(
+        '  # ============================================================================',
+        '  # INDEXER-SERVICES PROFILE - Local indexing and data services',
+        '  # ============================================================================',
+        '',
+        '  # Shared TimescaleDB for Indexers',
+        '  indexer-db:',
+        '    image: timescale/timescaledb:latest-pg16',
+        '    container_name: indexer-db',
+        '    restart: unless-stopped',
+        '    shm_size: 4G',
+        '    ports:',
+        '      - "${POSTGRES_PORT:-5432}:5432"',
+        '    environment:',
+        '      - POSTGRES_DB=${POSTGRES_DB:-kaspa_indexers}',
+        '      - POSTGRES_USER=${POSTGRES_USER:-indexer}',
+        '      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-secure_password}',
+        '    volumes:',
+        `      - indexer-db-data:${timescaledbDataDir}`,
+        '      - ./config/postgres/init:/docker-entrypoint-initdb.d',
+        '    networks:',
+        '      - kaspa-network',
+        '    profiles:',
+        '      - indexer-services',
+        '',
+        '  # Kasia Indexer',
+        '  kasia-indexer:',
+        '    image: kkluster/kasia-indexer:main',
+        '    platform: linux/amd64',
+        '    container_name: kasia-indexer',
+        '    restart: unless-stopped',
+        '    ports:',
+        '      - "${KASIA_INDEXER_PORT:-3002}:8080"',
+        '    environment:',
+        `      - KASPA_NODE_WBORSH_URL=\${KASPA_NODE_WBORSH_URL:-ws://kaspa-node:${rpcPort + 1000}}`,
+        `      - NETWORK_TYPE=\${KASPA_NETWORK:-${network}}`,
+        '    volumes:',
+        '      - kasia-indexer-data:/app/data',
+        '    networks:',
+        '      - kaspa-network',
+        '    profiles:',
+        '      - indexer-services',
+        '',
+        '  # Simply Kaspa Indexer',
+        '  simply-kaspa-indexer:',
+        '    build:',
+        '      context: ./services/simply-kaspa-indexer',
+        '      dockerfile: Dockerfile',
+        '    container_name: simply-kaspa-indexer',
+        '    restart: unless-stopped',
+        '    ports:',
+        '      - "${SIMPLY_INDEXER_PORT:-3005}:3000"',
+        '    environment:',
+        `      - KASPA_NODE_URL=\${REMOTE_KASPA_NODE_URL:-http://kaspa-node:${rpcPort}}`,
+        '      - DATABASE_URL=postgresql://${POSTGRES_USER:-indexer}:${POSTGRES_PASSWORD}@indexer-db:5432/simply_kaspa',
+        '    depends_on:',
+        '      indexer-db:',
+        '        condition: service_healthy',
+        '      kaspa-node:',
+        '        condition: service_started',
+        '    networks:',
+        '      - kaspa-network',
+        '    profiles:',
+        '      - indexer-services',
+        ''
+      );
+    }
+
+    // Add archive node if selected
+    if (profiles.includes('archive-node')) {
+      lines.push(
+        '  # ============================================================================',
+        '  # ARCHIVE-NODE PROFILE - Extended data retention',
+        '  # ============================================================================',
+        '',
+        '  # Archive TimescaleDB',
+        '  archive-db:',
+        '    image: timescale/timescaledb:latest-pg16',
+        '    container_name: archive-db',
+        '    restart: unless-stopped',
+        '    shm_size: 8G',
+        '    ports:',
+        '      - "${ARCHIVE_POSTGRES_PORT:-5433}:5432"',
+        '    environment:',
+        '      - POSTGRES_DB=${ARCHIVE_POSTGRES_DB:-kaspa_archive}',
+        '      - POSTGRES_USER=${ARCHIVE_POSTGRES_USER:-archiver}',
+        '      - POSTGRES_PASSWORD=${ARCHIVE_POSTGRES_PASSWORD:-archive_password}',
+        '    volumes:',
+        `      - archive-db-data:${kaspaArchiveDataDir}`,
+        '      - ./config/postgres/archive-init:/docker-entrypoint-initdb.d',
+        '    networks:',
+        '      - kaspa-network',
+        '    profiles:',
+        '      - archive-node',
+        ''
+      );
+    }
+
+    // Add mining if selected
+    if (profiles.includes('mining')) {
+      lines.push(
+        '  # ============================================================================',
+        '  # MINING PROFILE - Mining stratum server',
+        '  # ============================================================================',
+        '',
+        '  # Kaspa Mining Stratum',
+        '  kaspa-stratum:',
+        '    build:',
+        '      context: ./services/kaspa-stratum',
+        '      dockerfile: Dockerfile',
+        '    container_name: kaspa-stratum',
+        '    restart: unless-stopped',
+        '    ports:',
+        '      - "${STRATUM_PORT:-5555}:5555"',
+        '    environment:',
+        `      - KASPA_RPC_SERVER=\${REMOTE_KASPA_NODE_URL:-kaspa-node:${rpcPort}}`,
+        '      - STRATUM_PORT=5555',
+        '    depends_on:',
+        '      kaspa-node:',
+        '        condition: service_started',
+        '    networks:',
+        '      - kaspa-network',
+        '    profiles:',
+        '      - mining',
+        ''
+      );
+    }
+
+    // Add volumes section
+    lines.push(
+      'volumes:',
+      '  kaspa-data:',
+      '  wizard-state:'
+    );
+
+    if (profiles.includes('indexer-services')) {
+      lines.push(
+        '  kasia-indexer-data:',
+        '  indexer-db-data:'
+      );
+    }
+
+    if (profiles.includes('archive-node')) {
+      lines.push('  archive-db-data:');
+    }
+
+    lines.push('');
+
+    // Add networks section
+    lines.push(
+      'networks:',
+      '  kaspa-network:',
+      '    driver: bridge',
+      ''
+    );
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Save docker-compose.yml file (task 5.1)
+   * @param {string} content - docker-compose.yml content
+   * @param {string} targetPath - Target file path
+   * @returns {Promise<Object>} Result object
+   */
+  async saveDockerCompose(content, targetPath = 'docker-compose.yml') {
+    try {
+      // Backup existing docker-compose.yml if it exists
+      try {
+        await fs.access(targetPath);
+        const backupPath = `${targetPath}.backup.${Date.now()}`;
+        await fs.copyFile(targetPath, backupPath);
+        console.log(`Backed up existing docker-compose.yml to ${backupPath}`);
       } catch (error) {
         // File doesn't exist, no backup needed
       }

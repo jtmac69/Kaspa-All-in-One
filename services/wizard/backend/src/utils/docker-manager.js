@@ -11,13 +11,14 @@ class DockerManager {
     this.docker = new Docker();
     // Use PROJECT_ROOT env var if available (when running in container)
     // Otherwise calculate relative path (for local development)
-    this.projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../..');
+    // Path from services/wizard/backend/src/utils to project root is 5 levels up
+    this.projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
     
     // Map wizard profile names to docker-compose profile names
     // Now docker-compose uses the same profile names as the wizard
     this.profileMapping = {
       'core': [],  // Core services have no profile (always run)
-      'kaspa-user-applications': ['kaspa-user-applications'],  // kasia-app, k-social
+      'kaspa-user-applications': ['kaspa-user-applications'],  // kasia-app, k-social, kaspa-explorer
       'indexer-services': ['indexer-services'],  // indexer-db, kasia-indexer, k-indexer, simply-kaspa-indexer
       'archive-node': ['archive-node'],  // archive-db, archive-indexer
       'mining': ['mining'],  // kaspa-stratum
@@ -109,7 +110,7 @@ class DockerManager {
     // Note: dashboard is now host-based, not containerized
     const servicesToBuild = {
       core: [],  // Core uses pre-built images only (kaspad, nginx)
-      'kaspa-user-applications': ['kasia-app', 'k-social'],  // These have Dockerfiles
+      'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],  // These have Dockerfiles
       'indexer-services': ['k-indexer', 'simply-kaspa-indexer'],  // These have Dockerfiles
       'archive-node': ['archive-indexer'],  // Uses simply-kaspa-indexer Dockerfile
       mining: ['kaspa-stratum']  // Has a Dockerfile
@@ -282,8 +283,8 @@ class DockerManager {
     // These names must match the container_name in docker-compose.yml
     // Note: dashboard is now host-based, not containerized
     const serviceMap = {
-      core: ['kaspa-node', 'kaspa-nginx'],
-      'kaspa-user-applications': ['kasia-app', 'k-social'],
+      core: ['kaspa-node'],
+      'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],  // nginx removed - not needed
       'indexer-services': ['indexer-db', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
       'archive-node': ['archive-db', 'archive-indexer'],
       mining: ['kaspa-stratum']
