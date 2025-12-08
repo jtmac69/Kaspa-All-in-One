@@ -1,6 +1,7 @@
 # Kasia Messaging Application - Build from Release
 # This Dockerfile builds Kasia from a specific stable release
 # Using v0.6.2 release from https://github.com/K-Kluster/Kasia/releases/tag/v0.6.2
+# Downloads pre-built kaspa-wasm from IzioDev/rusty-kaspa (same as Kasia CI)
 
 FROM node:20-alpine AS builder
 
@@ -14,13 +15,22 @@ RUN apk add --no-cache \
     g++ \
     curl \
     bash \
-    rust \
-    cargo
+    clang \
+    llvm \
+    unzip
+
+# Install Rust via rustup (needed for wasm32 target support for cipher)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install wasm-pack and wasm32 target for cipher WASM compilation
+RUN rustup target add wasm32-unknown-unknown && \
+    cargo install wasm-pack
 
 # Clone specific release version (v0.6.2 - known stable release)
-# Using release tag instead of master branch for stability
+# Note: We need to clone with submodules for tauri-plugin-biometry
 ARG KASIA_VERSION=v0.6.2
-RUN git clone --depth 1 --branch ${KASIA_VERSION} https://github.com/K-Kluster/Kasia.git . && \
+RUN git clone --depth 1 --branch ${KASIA_VERSION} --recurse-submodules https://github.com/K-Kluster/Kasia.git . && \
     rm -rf .git
 
 # Create minimal environment for Docker build
@@ -35,18 +45,33 @@ ARG VITE_DEFAULT_TESTNET_KASPA_NODE_URL=wss://api.kasia.io/ws
 ARG VITE_DEFAULT_KASPA_NETWORK=mainnet
 ARG VITE_DISABLE_INDEXER=false
 
-# Install wasm-pack for WASM compilation
-RUN cargo install wasm-pack
+# ============================================================
+# DOWNLOAD PRE-BUILT KASPA-WASM
+# The Kasia CI downloads pre-built WASM from IzioDev/rusty-kaspa
+# This is the same approach used in their GitHub Actions workflow
+# ============================================================
+ARG KASPA_WASM_VERSION=v1.0.1-beta1
+RUN curl -L -o kaspa-wasm32-sdk.zip \
+    "https://github.com/IzioDev/rusty-kaspa/releases/download/${KASPA_WASM_VERSION}/kaspa-wasm32-sdk-${KASPA_WASM_VERSION}.zip" && \
+    unzip kaspa-wasm32-sdk.zip -d kaspa-wasm32-sdk && \
+    mv kaspa-wasm32-sdk/kaspa-wasm32-sdk/web/kaspa/* wasm/ && \
+    rm -rf kaspa-wasm32-sdk.zip kaspa-wasm32-sdk && \
+    ls -la wasm/
 
-# Install Node.js dependencies
+# ============================================================
+# BUILD KASIA APPLICATION
+# ============================================================
+
+# Build the tauri-plugin-biometry submodule (required dependency)
+RUN npm run submodule:init || echo "Submodule init skipped or failed, continuing..."
+
+# Install Node.js dependencies (kaspa-wasm is now available in ./wasm)
 RUN npm ci --ignore-scripts || npm install --ignore-scripts
 
-# Build WASM modules first (required for kaspa-wasm and cipher)
-# This compiles the Rust cipher code to WebAssembly
+# Build cipher WASM module (Kasia's own cipher)
 RUN npm run wasm:build
 
 # Build the application with environment variables
-# Vite will use these at build time
 ENV VITE_INDEXER_MAINNET_URL=${VITE_INDEXER_MAINNET_URL}
 ENV VITE_INDEXER_TESTNET_URL=${VITE_INDEXER_TESTNET_URL}
 ENV VITE_DEFAULT_MAINNET_KASPA_NODE_URL=${VITE_DEFAULT_MAINNET_KASPA_NODE_URL}
@@ -55,10 +80,11 @@ ENV VITE_DEFAULT_KASPA_NETWORK=${VITE_DEFAULT_KASPA_NETWORK}
 ENV VITE_DISABLE_INDEXER=${VITE_DISABLE_INDEXER}
 
 # Build the application
-# Using the stable v0.6.2 release with proper WASM dependencies
 RUN npm run build:production
 
-# Production stage
+# ============================================================
+# PRODUCTION STAGE
+# ============================================================
 FROM nginx:alpine
 
 # Install curl for health checks
@@ -79,7 +105,7 @@ server {
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
-    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json application/wasm;
 
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
