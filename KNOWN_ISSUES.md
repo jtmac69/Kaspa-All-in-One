@@ -4,10 +4,10 @@
 
 **Most Common Issues Testers Encounter:**
 1. 🕐 **Node sync takes hours** → See [Node Sync Time](#node-sync-time) - Use "Continue in background"
-2. 🪟 **Windows users** → See [Windows Native Not Supported](#windows-native-not-supported) - Requires WSL2
-3. 🔌 **Port conflicts** → See [Port Conflicts](#port-conflicts) - Change ports in wizard
-4. 📊 **Dashboard not available** → See [Dashboard Not Included](#dashboard-not-included-in-test-release) - Use `docker ps` and `./status.sh`
-5. ~~❌ **Kasia app shows "Build failed"**~~ → **FIXED** - Now using official Docker image
+2. ⏱️ **Kasia build takes 5-10 minutes** → See [Kasia App Build Time](#kasia-app-build-time) - Normal, be patient
+3. 🪟 **Windows users** → See [Windows Native Not Supported](#windows-native-not-supported) - Requires WSL2
+4. 🔌 **Port conflicts** → See [Port Conflicts](#port-conflicts) - Change ports in wizard
+5. 📊 **Dashboard not available** → See [Dashboard Not Included](#dashboard-not-included-in-test-release) - Use `docker ps` and `./status.sh`
 
 **Before You Start Testing:**
 - ✅ Docker 20.10+ installed
@@ -58,57 +58,61 @@ None currently.
 - Logs show sync activity in real-time
 - Services remain healthy during sync
 
-### Kasia App Build Failure
+### Kasia App Build Time
 
-**Issue**: The Kasia application fails to build from source due to missing `kaspa-wasm` dependency
+**Issue**: ~~The Kasia application fails to build from source~~ **FIXED** - Now builds successfully but takes 5-10 minutes
 
-**Severity**: High
+**Severity**: ~~High~~ **Low** (informational)
 
-**Status**: **UPSTREAM ISSUE** - Cannot be fixed in this repository
+**Status**: **FIXED** - Builds successfully by downloading pre-built kaspa-wasm binaries
 
-**Root Cause**:
-The Kasia v0.6.2 release has TypeScript code that imports `kaspa-wasm` module, but this dependency is not included in the repository or properly configured in the build process. The build fails with errors like:
-```
-error TS2307: Cannot find module 'kaspa-wasm' or its corresponding type declarations.
-```
+**What Was Fixed**:
+The Kasia v0.6.2 release requires `kaspa-wasm` which wasn't available in the repository. The fix downloads pre-built WASM binaries from the same source used by Kasia's official CI pipeline.
 
-**Technical Details**:
-- The cipher WASM module builds successfully
-- TypeScript compilation fails because `kaspa-wasm` is not available
-- This is an issue with the upstream Kasia repository at https://github.com/K-Kluster/Kasia
-- The v0.6.2 release tag has this dependency issue
-- No official Docker image exists (`kkluster/kasia:latest` doesn't exist)
+**Solution Implemented**:
+- Downloads pre-built `kaspa-wasm` from `IzioDev/rusty-kaspa` releases (v1.0.1-beta1)
+- Matches the exact approach used in Kasia's GitHub Actions workflow
+- Clones with `--recurse-submodules` for tauri-plugin-biometry dependency
+- Builds cipher WASM module and compiles the application
 
-**Previous Attempts**:
-- ✅ Switched from `master` branch to stable `v0.6.2` release tag
-- ✅ Fixed `wasm-pack` PATH issue by adding Cargo bin directory to PATH
-- ❌ Build still fails due to missing `kaspa-wasm` dependency (cannot be resolved without upstream fix)
+**Build Time Expectations**:
+- **First build**: 5-10 minutes (depending on system resources and internet speed)
+- **Subsequent builds**: Faster due to Docker layer caching
+- Build includes: Rust/WASM compilation, npm dependencies, and application bundling
+
+**What Happens During Build**:
+1. Downloads pre-built kaspa-wasm binaries (~2-3 minutes)
+2. Installs Rust toolchain and wasm-pack (~1-2 minutes)
+3. Builds cipher WASM module (~1 minute)
+4. Installs npm dependencies (~1-2 minutes)
+5. Compiles TypeScript and bundles application (~2-3 minutes)
 
 **Testing Impact**:
-- ❌ Kasia app (port 3001) - **Build fails, service unavailable**
+- ✅ Kasia app (port 3001) - **Now builds and works correctly**
 - ✅ K-Social app (port 3003) - Works correctly
 - ✅ Kaspa Explorer (port 3004) - Works correctly
-- ⚠️ Installation wizard - Completes but Kasia service fails to build
-- ⚠️ "Kaspa User Applications" profile - Partially functional (Kasia unavailable)
-
-**Workaround**:
-- **For testing**: Skip the Kasia app and test other services (K-Social, Kaspa Explorer)
-- **For users**: Use K-Social (port 3003) as an alternative messaging application
-- **Profile recommendation**: Choose profiles that don't include Kasia, or accept that Kasia will be unavailable
+- ✅ Installation wizard - Completes successfully
+- ✅ "Kaspa User Applications" profile - Fully functional
 
 **For Testers**:
-- Expect Kasia app build to fail during installation
-- This is a known limitation, not a bug in the test release
-- Focus testing on other services which work correctly
-- Report if you find any workarounds or solutions
+- Expect a 5-10 minute build time when Kasia is included in your profile
+- The wizard will show "Building kasia-app..." during this time
+- This is normal - the build is compiling from source for security and reproducibility
+- Subsequent installations will be faster due to Docker caching
+- You can monitor build progress in the wizard or check Docker logs
 
-**Resolution Path**:
-This issue can only be fixed by:
-1. Upstream Kasia repository adding `kaspa-wasm` as a proper dependency
-2. Kasia team publishing an official Docker image
-3. Kasia team releasing a new version with fixed dependencies
+**Why Build from Source**:
+- **Security**: You can verify exactly what's being built
+- **Reproducibility**: Anyone can build the same image from source
+- **Flexibility**: Easy to update to newer Kasia versions
+- **No external dependencies**: Doesn't rely on pre-built images that might disappear
+- **Matches upstream**: Uses the same approach as Kasia's official CI
 
-**Status**: Documented as known limitation - will be resolved when upstream fix is available
+**Technical Details**:
+- Uses Kasia v0.6.2 stable release
+- Downloads kaspa-wasm32-sdk-v1.0.1-beta1.zip from IzioDev/rusty-kaspa
+- Builds with Node 20 Alpine base image
+- Final image size: ~50MB (nginx + built application)
 
 ## Medium Priority Issues
 

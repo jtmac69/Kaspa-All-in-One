@@ -116,6 +116,7 @@ A comprehensive Docker-based solution for running a complete Kaspa blockchain ec
 
 ### Production Profile (`prod`) - User Applications
 - **Kasia Messaging App** - Decentralized messaging platform ([K-Kluster/Kasia](https://github.com/K-Kluster/Kasia))
+  - Note: First build takes 5-10 minutes (compiles from source for security)
 - **K Social App** - Decentralized social media platform ([thesheepcat/K](https://github.com/thesheepcat/K))
 
 ### Explorer Profile (`explorer`) - Data Indexing Services

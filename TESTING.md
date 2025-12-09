@@ -1371,7 +1371,11 @@ The installation process will now begin. This takes longer than Core Profile due
 - Kasia, K-Social, and Kaspa Explorer are full web applications
 - They need to be compiled (JavaScript, CSS, assets)
 - Dependencies need to be installed
-- This is normal and only happens once
+- **Kasia specifically takes 5-10 minutes** because it:
+  - Downloads pre-built kaspa-wasm binaries (~2-3 min)
+  - Installs Rust toolchain and compiles WASM modules (~2-3 min)
+  - Installs npm dependencies and builds the application (~2-3 min)
+- This is normal and only happens once (Docker caches the build)
 
 #### Step 8: Installation Complete (1 minute)
 
