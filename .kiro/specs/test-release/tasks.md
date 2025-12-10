@@ -209,7 +209,10 @@ This task list implements the test release requirements and design. The goal is 
 - [x] Extract in clean directory
 - [x] Verify all files present
 - [x] Verify no sensitive data included
-- **FILE**: `kaspa-aio-v0.9.0-test.tar.gz`, `kaspa-aio-v0.9.0-test.tar.gz.sha256`
+- [x] **REBUILT**: Fixed nginx configuration syntax errors (kaspa-explorer-nginx-fix spec)
+- [x] **REBUILT**: Used `./build-test-release.sh` script for proper packaging
+- [x] **VERIFIED**: New package contains fixed nginx.conf with proper `add_header` placement
+- **FILE**: `kaspa-aio-v0.9.0-test.tar.gz` (2.0M, SHA256: e94290d43bb4417f656ee683ba6c93532ef21f9559fe0cde5002b86f129de0ae)
 - **NOTE**: Functional testing of scripts is done in Phase 6.1 (Smoke Test)
 - _Requirements: 1, 10_
 
@@ -226,6 +229,9 @@ This task list implements the test release requirements and design. The goal is 
 - [x] Run `./cleanup-test.sh` (tests script from package)
 - [x] Verify cleanup completes
 - [x] Document any issues found
+- [x] **CRITICAL FIX**: Resolved nginx configuration syntax errors causing service startup failures
+- [x] **VERIFIED**: kaspa-user-applications profile now starts successfully (all 3 services running)
+- [x] **TESTED**: New test release package works without "Failed to start services" error
 - **NOTE**: This task validates the package created in 5.3 works correctly
 - **NOTE**: Dashboard is not included in this test release - use `docker ps` and `docker logs` to monitor services
 - _Requirements: 7, 14_
@@ -372,11 +378,11 @@ This task list implements the test release requirements and design. The goal is 
 - ✅ All critical issues fixed
 
 ### Ready for External Testing When:
-- ✅ Internal testing complete
+- 🔄 Internal testing complete (Phase 6.2-6.4 remaining)
 - ✅ All documentation finalized
-- ✅ GitHub release created
+- ⏳ GitHub release created (Phase 7)
 - ✅ Feedback mechanisms in place
-- ✅ You're confident in the package
+- ✅ You're confident in the package (critical issues resolved)
 
 ### Test Release Successful When:
 - ✅ 90% installation success rate
@@ -390,15 +396,21 @@ This task list implements the test release requirements and design. The goal is 
 
 ## Current Status
 
-**Phase 1**: Not started  
-**Phase 2**: Not started  
-**Phase 3**: Not started  
-**Phase 4**: Not started  
-**Phase 5**: Not started  
-**Phase 6**: Not started (waiting for Phases 1-5)  
-**Phase 7**: Not started (waiting for Phase 6)  
-**Phase 8**: Not started (waiting for Phase 7)  
-**Phase 9**: Not started (waiting for Phase 8)
+**Phase 1**: ✅ **COMPLETE** - All quick start scripts created and tested  
+**Phase 2**: ✅ **COMPLETE** - All testing documentation created  
+**Phase 3**: ✅ **COMPLETE** - Feedback mechanisms set up  
+**Phase 4**: ✅ **COMPLETE** - Wizard UI updated with test release banner  
+**Phase 5**: ✅ **COMPLETE** - Package prepared and rebuilt with nginx fix  
+**Phase 6**: 🔄 **IN PROGRESS** - Smoke test complete, full scenario testing in progress  
+**Phase 7**: ⏳ **WAITING** - Ready to start (waiting for Phase 6 completion)  
+**Phase 8**: ⏳ **WAITING** - Ready to start (waiting for Phase 7)  
+**Phase 9**: ⏳ **WAITING** - Ready to start (waiting for Phase 8)
+
+### 🎉 Major Milestone: Critical Service Startup Issue RESOLVED
+- **Issue**: kaspa-user-applications profile failing with "Failed to start services"
+- **Root Cause**: nginx syntax errors in `services/kaspa-explorer/nginx.conf`
+- **Solution**: Moved all `add_header` directives from server level to location blocks
+- **Result**: All services now start successfully, test release package rebuilt and verified
 
 ---
 

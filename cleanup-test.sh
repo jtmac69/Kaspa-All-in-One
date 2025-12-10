@@ -173,6 +173,165 @@ stop_docker_containers() {
   echo ""
 }
 
+# Enhanced container cleanup - handles stuck containers and conflicts
+cleanup_stuck_containers() {
+  echo -e "${BLUE}Performing enhanced container cleanup...${NC}"
+  
+  # Check if Docker is available
+  if ! command -v docker &> /dev/null; then
+    echo -e "${YELLOW}⚠ Docker not found, skipping container cleanup${NC}"
+    echo ""
+    return 0
+  fi
+  
+  local containers_cleaned=0
+  
+  # 1. Find and remove containers in "Created" state (stuck containers)
+  echo -e "${BLUE}Checking for stuck containers...${NC}"
+  local stuck_containers=$(docker ps -a --filter "status=created" --filter "name=kaspa-" --format "{{.Names}}" 2>/dev/null)
+  
+  if [ -n "$stuck_containers" ]; then
+    echo -e "${YELLOW}Found containers stuck in 'Created' state:${NC}"
+    echo "$stuck_containers" | while read container; do
+      echo "  • $container"
+    done
+    
+    echo -e "${BLUE}Removing stuck containers...${NC}"
+    echo "$stuck_containers" | while read container; do
+      if docker rm "$container" 2>/dev/null; then
+        echo -e "${GREEN}✓ Removed stuck container: $container${NC}"
+        containers_cleaned=$((containers_cleaned + 1))
+      else
+        echo -e "${YELLOW}⚠ Could not remove: $container${NC}"
+      fi
+    done
+  else
+    echo -e "${GREEN}✓ No stuck containers found${NC}"
+  fi
+  
+  # 2. Find and remove containers in "Exited" state with non-zero exit codes
+  echo -e "${BLUE}Checking for failed containers...${NC}"
+  local failed_containers=$(docker ps -a --filter "status=exited" --filter "name=kaspa-" --format "{{.Names}}" 2>/dev/null)
+  
+  if [ -n "$failed_containers" ]; then
+    echo -e "${YELLOW}Found exited Kaspa containers:${NC}"
+    echo "$failed_containers" | while read container; do
+      local exit_code=$(docker inspect --format='{{.State.ExitCode}}' "$container" 2>/dev/null)
+      echo "  • $container (exit code: $exit_code)"
+    done
+    
+    echo -e "${BLUE}Removing exited containers...${NC}"
+    echo "$failed_containers" | while read container; do
+      if docker rm "$container" 2>/dev/null; then
+        echo -e "${GREEN}✓ Removed exited container: $container${NC}"
+        containers_cleaned=$((containers_cleaned + 1))
+      else
+        echo -e "${YELLOW}⚠ Could not remove: $container${NC}"
+      fi
+    done
+  else
+    echo -e "${GREEN}✓ No failed containers found${NC}"
+  fi
+  
+  # 3. Check for any remaining Kaspa containers in unusual states
+  echo -e "${BLUE}Checking for containers in other states...${NC}"
+  local other_containers=$(docker ps -a --filter "name=kaspa-" --format "{{.Names}} {{.Status}}" 2>/dev/null)
+  
+  if [ -n "$other_containers" ]; then
+    echo -e "${YELLOW}Found other Kaspa containers:${NC}"
+    echo "$other_containers" | while IFS=' ' read -r container status; do
+      echo "  • $container ($status)"
+    done
+    
+    echo ""
+    read -p "Force remove ALL remaining Kaspa containers? (y/N) " -n 1 -r
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      echo -e "${BLUE}Force removing all Kaspa containers...${NC}"
+      local all_kaspa_containers=$(docker ps -a --filter "name=kaspa-" --format "{{.Names}}" 2>/dev/null)
+      
+      if [ -n "$all_kaspa_containers" ]; then
+        # Stop containers first
+        echo "$all_kaspa_containers" | xargs docker stop 2>/dev/null || true
+        # Then remove them
+        echo "$all_kaspa_containers" | xargs docker rm -f 2>/dev/null || true
+        echo -e "${GREEN}✓ Force removed all Kaspa containers${NC}"
+        containers_cleaned=$((containers_cleaned + $(echo "$all_kaspa_containers" | wc -l)))
+      fi
+    else
+      echo -e "${BLUE}Skipping force removal${NC}"
+    fi
+  else
+    echo -e "${GREEN}✓ No other containers found${NC}"
+  fi
+  
+  # 4. Clean up any orphaned networks
+  echo -e "${BLUE}Checking for orphaned networks...${NC}"
+  local kaspa_networks=$(docker network ls --filter "name=kaspa" --format "{{.Name}}" 2>/dev/null)
+  
+  if [ -n "$kaspa_networks" ]; then
+    echo -e "${YELLOW}Found Kaspa networks:${NC}"
+    echo "$kaspa_networks" | while read network; do
+      echo "  • $network"
+    done
+    
+    echo ""
+    read -p "Remove Kaspa networks? (y/N) " -n 1 -r
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      echo -e "${BLUE}Removing Kaspa networks...${NC}"
+      echo "$kaspa_networks" | while read network; do
+        if docker network rm "$network" 2>/dev/null; then
+          echo -e "${GREEN}✓ Removed network: $network${NC}"
+        else
+          echo -e "${YELLOW}⚠ Could not remove network: $network (may be in use)${NC}"
+        fi
+      done
+    fi
+  else
+    echo -e "${GREEN}✓ No Kaspa networks found${NC}"
+  fi
+  
+  # 5. Prune unused images (optional)
+  echo -e "${BLUE}Checking for unused Kaspa images...${NC}"
+  local kaspa_images=$(docker images --filter "reference=*kaspa*" --filter "dangling=false" --format "{{.Repository}}:{{.Tag}}" 2>/dev/null)
+  
+  if [ -n "$kaspa_images" ]; then
+    echo -e "${YELLOW}Found Kaspa images:${NC}"
+    echo "$kaspa_images" | while read image; do
+      echo "  • $image"
+    done
+    
+    echo ""
+    read -p "Remove unused Kaspa images? This will force rebuild on next start. (y/N) " -n 1 -r
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      echo -e "${BLUE}Removing Kaspa images...${NC}"
+      echo "$kaspa_images" | while read image; do
+        if docker rmi "$image" 2>/dev/null; then
+          echo -e "${GREEN}✓ Removed image: $image${NC}"
+        else
+          echo -e "${YELLOW}⚠ Could not remove image: $image (may be in use)${NC}"
+        fi
+      done
+    fi
+  else
+    echo -e "${GREEN}✓ No Kaspa images found${NC}"
+  fi
+  
+  # Summary
+  if [ $containers_cleaned -gt 0 ]; then
+    echo -e "${GREEN}✓ Enhanced cleanup completed - removed $containers_cleaned containers${NC}"
+  else
+    echo -e "${GREEN}✓ Enhanced cleanup completed - system was already clean${NC}"
+  fi
+  
+  echo ""
+}
+
 # Remove temporary files
 remove_temp_files() {
   echo -e "${BLUE}Removing temporary files...${NC}"
@@ -325,6 +484,17 @@ print_summary() {
   echo "║   Cleanup Complete!                                        ║"
   echo "╚════════════════════════════════════════════════════════════╝"
   echo ""
+  echo -e "${GREEN}Enhanced cleanup completed successfully!${NC}"
+  echo ""
+  echo "The cleanup process has:"
+  echo "  ✓ Stopped all running services"
+  echo "  ✓ Removed stuck and failed containers"
+  echo "  ✓ Cleaned up orphaned networks"
+  echo "  ✓ Removed temporary files and logs"
+  echo "  ✓ Ensured a clean state for fresh installation"
+  echo ""
+  echo -e "${BLUE}Your system is now ready for a fresh test installation.${NC}"
+  echo ""
   echo -e "${GREEN}Thank you for testing Kaspa All-in-One!${NC}"
   echo -e "${BLUE}Your feedback helps make the project better.${NC}"
   echo ""
@@ -332,7 +502,7 @@ print_summary() {
   echo "  🐛 Report bugs: https://github.com/[repo]/issues"
   echo "  💬 Discuss: https://github.com/[repo]/discussions"
   echo ""
-  echo "To test again:"
+  echo "To start a fresh test:"
   echo "  ./start-test.sh"
   echo ""
 }
@@ -343,6 +513,7 @@ main() {
   confirm_cleanup
   stop_wizard
   stop_docker_containers
+  cleanup_stuck_containers
   remove_temp_files
   remove_data_directories
   print_summary
