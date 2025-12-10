@@ -83,9 +83,13 @@ The application is configured via environment variables:
 VITE_DEFAULT_KASPA_NETWORK=mainnet
 VITE_ALLOWED_KASPA_NETWORKS=mainnet
 
-# Service connections
+# Service connections (when using local services)
 VITE_INDEXER_MAINNET_URL=http://kasia-indexer:8080/
 VITE_DEFAULT_MAINNET_KASPA_NODE_URL=ws://kaspa-node:17110
+
+# Service connections (when using public services - Dockerfile defaults)
+VITE_INDEXER_MAINNET_URL=https://indexer.kasia.fyi/
+VITE_DEFAULT_MAINNET_KASPA_NODE_URL=wss://wrpc.kasia.fyi
 
 # Application settings
 VITE_LOG_LEVEL=info

@@ -1,543 +1,589 @@
 /**
  * Dependency Validator
  * 
- * Validates profile selections for:
- * - Circular dependencies
- * - Prerequisites (e.g., Mining requires Core OR Archive)
- * - Startup order calculation
- * - Conflict detection
- * - Dependency graph building
+ * Implements external dependency checking during startup, health checks for external resources,
+ * and provides guidance when dependencies are unavailable.
+ * 
+ * Requirements: 2.3, 3.5
  */
 
+const https = require('https');
+const http = require('http');
+const dns = require('dns').promises;
+const { URL } = require('url');
+
 class DependencyValidator {
-  constructor(profileManager) {
-    this.profileManager = profileManager;
+  constructor() {
+    // Define external dependencies for each service
+    this.serviceDependencies = {
+      'kaspa-explorer': [
+        {
+          name: 'Google Fonts API',
+          url: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap',
+          type: 'stylesheet',
+          critical: false,
+          timeout: 5000
+        },
+        {
+          name: 'Google Fonts Static',
+          url: 'https://fonts.gstatic.com',
+          type: 'font-cdn',
+          critical: false,
+          timeout: 5000
+        },
+        {
+          name: 'CDN JavaScript Libraries',
+          url: 'https://cdn.jsdelivr.net',
+          type: 'script-cdn',
+          critical: false,
+          timeout: 5000
+        },
+        {
+          name: 'Kaspa API',
+          url: 'https://api.kaspa.org/info',
+          type: 'api',
+          critical: true,
+          timeout: 10000
+        }
+      ],
+      'kasia-app': [
+        {
+          name: 'Kasia Indexer API',
+          url: 'https://indexer.kasia.fyi/health',
+          type: 'api',
+          critical: true,
+          timeout: 10000
+        },
+        {
+          name: 'Kaspa WebSocket',
+          url: 'wss://wrpc.kasia.fyi',
+          type: 'websocket',
+          critical: true,
+          timeout: 10000
+        }
+      ],
+      'k-social': [
+        {
+          name: 'K Social Indexer API',
+          url: 'https://indexer.kaspatalk.net/health',
+          type: 'api',
+          critical: true,
+          timeout: 10000
+        }
+      ],
+      'simply-kaspa-indexer': [
+        {
+          name: 'Kaspa Node RPC',
+          url: 'http://kaspa-node:16110',
+          type: 'rpc',
+          critical: true,
+          timeout: 10000,
+          internal: true
+        }
+      ],
+      'kasia-indexer': [
+        {
+          name: 'Kaspa Node WebSocket',
+          url: 'ws://kaspa-node:17110',
+          type: 'websocket',
+          critical: true,
+          timeout: 10000,
+          internal: true
+        }
+      ]
+    };
+
+    // DNS servers to test connectivity
+    this.dnsServers = [
+      '8.8.8.8',
+      '1.1.1.1',
+      '208.67.222.222'
+    ];
+
+    // Common CDN domains to test
+    this.cdnDomains = [
+      'cdn.jsdelivr.net',
+      'unpkg.com',
+      'fonts.googleapis.com',
+      'fonts.gstatic.com'
+    ];
   }
 
   /**
-   * Validate a profile selection
-   * @param {string[]} profileIds - Selected profile IDs
-   * @returns {Object} Validation result with errors, warnings, and metadata
+   * Validate all external dependencies for a service
+   * @param {string} serviceName - Name of the service
+   * @param {Object} options - Validation options
+   * @returns {Promise<Object>} Validation result
    */
-  validateSelection(profileIds) {
-    const errors = [];
-    const warnings = [];
-    const metadata = {};
-
-    // 0. Check for empty selection
-    if (!profileIds || profileIds.length === 0) {
-      errors.push({
-        type: 'empty_selection',
-        message: 'No profiles selected. Please select at least one profile.'
-      });
-      
-      // Return early with minimal metadata
+  async validateServiceDependencies(serviceName, options = {}) {
+    const dependencies = this.serviceDependencies[serviceName] || [];
+    
+    if (dependencies.length === 0) {
       return {
-        valid: false,
-        errors,
-        warnings,
-        metadata: {
-          startupOrder: { services: [], grouped: {}, phases: {} },
-          dependencyGraph: { nodes: [], edges: [] },
-          resolvedProfiles: []
-        }
+        service: serviceName,
+        valid: true,
+        dependencies: [],
+        summary: {
+          total: 0,
+          available: 0,
+          unavailable: 0,
+          critical_failures: 0
+        },
+        message: 'No external dependencies defined for this service'
       };
     }
 
-    // 1. Check for circular dependencies
-    const cycles = this.detectCircularDependencies(profileIds);
-    if (cycles.length > 0) {
-      errors.push({
-        type: 'circular_dependency',
-        message: 'Circular dependencies detected',
-        cycles: cycles.map(cycle => cycle.map(id => this.getProfileName(id)).join(' → '))
-      });
+    console.log(`Validating ${dependencies.length} dependencies for ${serviceName}...`);
+
+    const results = [];
+    let criticalFailures = 0;
+    let totalUnavailable = 0;
+
+    for (const dependency of dependencies) {
+      const result = await this.validateSingleDependency(dependency, options);
+      results.push(result);
+
+      if (!result.available) {
+        totalUnavailable++;
+        if (dependency.critical) {
+          criticalFailures++;
+        }
+      }
     }
 
-    // 2. Validate prerequisites
-    const prerequisiteErrors = this.validatePrerequisites(profileIds);
-    errors.push(...prerequisiteErrors);
-
-    // 3. Check for conflicts
-    const conflicts = this.detectConflicts(profileIds);
-    if (conflicts.length > 0) {
-      errors.push(...conflicts);
-    }
-
-    // 4. Calculate startup order
-    const startupOrder = this.calculateStartupOrder(profileIds);
-    metadata.startupOrder = startupOrder;
-
-    // 5. Build dependency graph
-    const dependencyGraph = this.buildDependencyGraph(profileIds);
-    metadata.dependencyGraph = dependencyGraph;
-
-    // 6. Resolve all dependencies
-    const resolvedProfiles = this.resolveDependencies(profileIds);
-    metadata.resolvedProfiles = resolvedProfiles;
-
-    // 7. Check resource requirements
-    const resourceWarnings = this.checkResourceRequirements(profileIds);
-    warnings.push(...resourceWarnings);
+    const valid = criticalFailures === 0;
 
     return {
-      valid: errors.length === 0,
-      errors,
-      warnings,
-      metadata
-    };
-  }
-
-  /**
-   * Detect circular dependencies using DFS
-   * @param {string[]} profileIds - Profile IDs to check
-   * @returns {string[][]} Array of circular dependency chains
-   */
-  detectCircularDependencies(profileIds) {
-    const cycles = [];
-    const visited = new Set();
-    const recursionStack = new Set();
-
-    const dfs = (profileId, path = []) => {
-      // Check if we've found a cycle
-      if (recursionStack.has(profileId)) {
-        const cycleStart = path.indexOf(profileId);
-        if (cycleStart !== -1) {
-          cycles.push([...path.slice(cycleStart), profileId]);
-        }
-        return;
-      }
-
-      // Skip if already fully explored
-      if (visited.has(profileId)) {
-        return;
-      }
-
-      // Mark as being explored
-      visited.add(profileId);
-      recursionStack.add(profileId);
-      path.push(profileId);
-
-      // Get profile and explore dependencies
-      const profile = this.profileManager.getProfile(profileId);
-      if (profile && profile.dependencies) {
-        for (const dep of profile.dependencies) {
-          dfs(dep, [...path]);
-        }
-      }
-
-      // Remove from recursion stack after exploring
-      recursionStack.delete(profileId);
-    };
-
-    // Start DFS from each selected profile
-    for (const profileId of profileIds) {
-      if (!visited.has(profileId)) {
-        dfs(profileId);
-      }
-    }
-
-    return cycles;
-  }
-
-  /**
-   * Validate prerequisites for all profiles
-   * @param {string[]} profileIds - Selected profile IDs
-   * @returns {Object[]} Array of prerequisite errors
-   */
-  validatePrerequisites(profileIds) {
-    const errors = [];
-    const resolvedProfiles = this.resolveDependencies(profileIds);
-
-    for (const profileId of profileIds) {
-      const profile = this.profileManager.getProfile(profileId);
-      if (!profile) {
-        errors.push({
-          type: 'invalid_profile',
-          profile: profileId,
-          message: `Profile '${profileId}' does not exist`
-        });
-        continue;
-      }
-
-      // Check if profile has prerequisites
-      if (profile.prerequisites && profile.prerequisites.length > 0) {
-        const hasPrerequisite = profile.prerequisites.some(prereq =>
-          resolvedProfiles.includes(prereq)
-        );
-
-        if (!hasPrerequisite) {
-          const prerequisiteNames = profile.prerequisites
-            .map(id => this.getProfileName(id))
-            .join(' OR ');
-
-          errors.push({
-            type: 'missing_prerequisite',
-            profile: profileId,
-            profileName: profile.name,
-            prerequisites: profile.prerequisites,
-            message: `${profile.name} requires one of: ${prerequisiteNames}`
-          });
-        }
-      }
-    }
-
-    return errors;
-  }
-
-  /**
-   * Detect conflicts between profiles
-   * @param {string[]} profileIds - Selected profile IDs
-   * @returns {Object[]} Array of conflict errors
-   */
-  detectConflicts(profileIds) {
-    const errors = [];
-    const resolvedProfiles = this.resolveDependencies(profileIds);
-
-    // Check for profile-level conflicts
-    for (const profileId of resolvedProfiles) {
-      const profile = this.profileManager.getProfile(profileId);
-      if (!profile || !profile.conflicts) continue;
-
-      for (const conflictId of profile.conflicts) {
-        if (resolvedProfiles.includes(conflictId)) {
-          errors.push({
-            type: 'profile_conflict',
-            profiles: [profileId, conflictId],
-            message: `${profile.name} conflicts with ${this.getProfileName(conflictId)}`
-          });
-        }
-      }
-    }
-
-    // Check for port conflicts
-    const portConflicts = this.detectPortConflicts(profileIds);
-    errors.push(...portConflicts);
-
-    return errors;
-  }
-
-  /**
-   * Detect port conflicts between profiles
-   * @param {string[]} profileIds - Selected profile IDs
-   * @returns {Object[]} Array of port conflict errors
-   */
-  detectPortConflicts(profileIds) {
-    const errors = [];
-    const resolvedProfiles = this.resolveDependencies(profileIds);
-    const portMap = new Map();
-
-    for (const profileId of resolvedProfiles) {
-      const profile = this.profileManager.getProfile(profileId);
-      if (!profile || !profile.ports) continue;
-
-      for (const port of profile.ports) {
-        if (portMap.has(port)) {
-          const existingProfile = portMap.get(port);
-          errors.push({
-            type: 'port_conflict',
-            port,
-            profiles: [existingProfile, profileId],
-            message: `Port ${port} is used by both ${this.getProfileName(existingProfile)} and ${profile.name}`
-          });
-        } else {
-          portMap.set(port, profileId);
-        }
-      }
-    }
-
-    return errors;
-  }
-
-  /**
-   * Calculate startup order for all services
-   * @param {string[]} profileIds - Selected profile IDs
-   * @returns {Object[]} Services sorted by startup order
-   */
-  calculateStartupOrder(profileIds) {
-    const resolvedProfiles = this.resolveDependencies(profileIds);
-    const services = [];
-
-    // Collect all services from all profiles
-    for (const profileId of resolvedProfiles) {
-      const profile = this.profileManager.getProfile(profileId);
-      if (!profile) continue;
-
-      for (const service of profile.services) {
-        services.push({
-          name: service.name,
-          required: service.required,
-          startupOrder: service.startupOrder,
-          description: service.description,
-          profile: profileId,
-          profileName: profile.name
-        });
-      }
-    }
-
-    // Sort by startup order, then by name for consistency
-    services.sort((a, b) => {
-      if (a.startupOrder !== b.startupOrder) {
-        return a.startupOrder - b.startupOrder;
-      }
-      return a.name.localeCompare(b.name);
-    });
-
-    // Group by startup order for better visualization
-    const grouped = {};
-    for (const service of services) {
-      const order = service.startupOrder;
-      if (!grouped[order]) {
-        grouped[order] = [];
-      }
-      grouped[order].push(service);
-    }
-
-    return {
-      services,
-      grouped,
-      phases: {
-        1: 'Kaspa Node',
-        2: 'Indexer Services',
-        3: 'Applications'
-      }
-    };
-  }
-
-  /**
-   * Build dependency graph for visualization
-   * @param {string[]} profileIds - Selected profile IDs
-   * @returns {Object} Dependency graph structure
-   */
-  buildDependencyGraph(profileIds) {
-    const graph = {
-      nodes: [],
-      edges: []
-    };
-
-    const resolvedProfiles = this.resolveDependencies(profileIds);
-    const processedNodes = new Set();
-
-    // Build nodes
-    for (const profileId of resolvedProfiles) {
-      const profile = this.profileManager.getProfile(profileId);
-      if (!profile) continue;
-
-      graph.nodes.push({
-        id: profileId,
-        name: profile.name,
-        category: profile.category,
-        selected: profileIds.includes(profileId),
-        services: profile.services.map(s => s.name)
-      });
-
-      processedNodes.add(profileId);
-    }
-
-    // Build edges (dependencies)
-    for (const profileId of resolvedProfiles) {
-      const profile = this.profileManager.getProfile(profileId);
-      if (!profile) continue;
-
-      // Add dependency edges
-      if (profile.dependencies) {
-        for (const dep of profile.dependencies) {
-          graph.edges.push({
-            from: profileId,
-            to: dep,
-            type: 'dependency',
-            label: 'depends on'
-          });
-        }
-      }
-
-      // Add prerequisite edges
-      if (profile.prerequisites) {
-        for (const prereq of profile.prerequisites) {
-          if (resolvedProfiles.includes(prereq)) {
-            graph.edges.push({
-              from: profileId,
-              to: prereq,
-              type: 'prerequisite',
-              label: 'requires one of'
-            });
-          }
-        }
-      }
-
-      // Add conflict edges
-      if (profile.conflicts) {
-        for (const conflict of profile.conflicts) {
-          if (resolvedProfiles.includes(conflict)) {
-            graph.edges.push({
-              from: profileId,
-              to: conflict,
-              type: 'conflict',
-              label: 'conflicts with'
-            });
-          }
-        }
-      }
-    }
-
-    return graph;
-  }
-
-  /**
-   * Resolve all dependencies recursively
-   * @param {string[]} profileIds - Selected profile IDs
-   * @returns {string[]} All profiles including dependencies
-   */
-  resolveDependencies(profileIds) {
-    const resolved = new Set(profileIds);
-    const toProcess = [...profileIds];
-    const processed = new Set();
-
-    while (toProcess.length > 0) {
-      const profileId = toProcess.shift();
-
-      // Skip if already processed
-      if (processed.has(profileId)) {
-        continue;
-      }
-      processed.add(profileId);
-
-      const profile = this.profileManager.getProfile(profileId);
-      if (!profile) continue;
-
-      // Add dependencies
-      if (profile.dependencies) {
-        for (const dep of profile.dependencies) {
-          if (!resolved.has(dep)) {
-            resolved.add(dep);
-            toProcess.push(dep);
-          }
-        }
-      }
-    }
-
-    return Array.from(resolved);
-  }
-
-  /**
-   * Check resource requirements and generate warnings
-   * @param {string[]} profileIds - Selected profile IDs
-   * @returns {Object[]} Array of resource warnings
-   */
-  checkResourceRequirements(profileIds) {
-    const warnings = [];
-    const requirements = this.profileManager.calculateResourceRequirements(profileIds);
-
-    // Check memory requirements
-    if (requirements.minMemory > 32) {
-      warnings.push({
-        type: 'high_memory',
-        value: requirements.minMemory,
-        message: `Selected profiles require ${requirements.minMemory}GB RAM (minimum). Recommended: ${requirements.recommendedMemory}GB`
-      });
-    } else if (requirements.minMemory > 16) {
-      warnings.push({
-        type: 'moderate_memory',
-        value: requirements.minMemory,
-        message: `Selected profiles require ${requirements.minMemory}GB RAM. Ensure your system has sufficient resources.`
-      });
-    }
-
-    // Check disk requirements
-    if (requirements.minDisk > 1000) {
-      warnings.push({
-        type: 'high_disk',
-        value: requirements.minDisk,
-        message: `Selected profiles require ${requirements.minDisk}GB disk space (minimum). Recommended: ${requirements.recommendedDisk}GB`
-      });
-    }
-
-    // Check CPU requirements
-    if (requirements.minCpu > 8) {
-      warnings.push({
-        type: 'high_cpu',
-        value: requirements.minCpu,
-        message: `Selected profiles require ${requirements.minCpu} CPU cores (minimum). Recommended: ${requirements.recommendedCpu} cores`
-      });
-    }
-
-    return warnings;
-  }
-
-  /**
-   * Get profile name by ID
-   * @param {string} profileId - Profile ID
-   * @returns {string} Profile name or ID if not found
-   */
-  getProfileName(profileId) {
-    const profile = this.profileManager.getProfile(profileId);
-    return profile ? profile.name : profileId;
-  }
-
-  /**
-   * Get detailed validation report
-   * @param {string[]} profileIds - Selected profile IDs
-   * @returns {Object} Detailed validation report
-   */
-  getValidationReport(profileIds) {
-    const validation = this.validateSelection(profileIds);
-    const requirements = this.profileManager.calculateResourceRequirements(profileIds);
-
-    return {
-      ...validation,
+      service: serviceName,
+      valid,
+      dependencies: results,
       summary: {
-        totalProfiles: profileIds.length,
-        resolvedProfiles: validation.metadata.resolvedProfiles?.length || 0,
-        totalServices: validation.metadata.startupOrder?.services?.length || 0,
-        errorCount: validation.errors.length,
-        warningCount: validation.warnings.length
+        total: dependencies.length,
+        available: dependencies.length - totalUnavailable,
+        unavailable: totalUnavailable,
+        critical_failures: criticalFailures
       },
-      requirements,
-      recommendations: this.generateRecommendations(validation, requirements)
+      message: valid 
+        ? 'All critical dependencies are available'
+        : `${criticalFailures} critical dependencies are unavailable`
     };
   }
 
   /**
-   * Generate recommendations based on validation results
-   * @param {Object} validation - Validation result
-   * @param {Object} requirements - Resource requirements
-   * @returns {string[]} Array of recommendations
+   * Validate a single external dependency
+   * @param {Object} dependency - Dependency configuration
+   * @param {Object} options - Validation options
+   * @returns {Promise<Object>} Validation result for single dependency
    */
-  generateRecommendations(validation, requirements) {
+  async validateSingleDependency(dependency, options = {}) {
+    const startTime = Date.now();
+    
+    try {
+      let result;
+      
+      switch (dependency.type) {
+        case 'api':
+        case 'stylesheet':
+        case 'script-cdn':
+        case 'font-cdn':
+          result = await this.validateHttpDependency(dependency);
+          break;
+        case 'websocket':
+          result = await this.validateWebSocketDependency(dependency);
+          break;
+        case 'rpc':
+          result = await this.validateRpcDependency(dependency);
+          break;
+        default:
+          result = await this.validateHttpDependency(dependency);
+      }
+
+      const duration = Date.now() - startTime;
+
+      return {
+        name: dependency.name,
+        url: dependency.url,
+        type: dependency.type,
+        critical: dependency.critical,
+        available: result.available,
+        status_code: result.statusCode,
+        response_time: duration,
+        error: result.error,
+        guidance: result.available ? null : this.generateGuidance(dependency, result)
+      };
+
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      
+      return {
+        name: dependency.name,
+        url: dependency.url,
+        type: dependency.type,
+        critical: dependency.critical,
+        available: false,
+        status_code: null,
+        response_time: duration,
+        error: error.message,
+        guidance: this.generateGuidance(dependency, { error: error.message })
+      };
+    }
+  }
+
+  /**
+   * Validate HTTP-based dependency (API, CDN, etc.)
+   * @param {Object} dependency - Dependency configuration
+   * @returns {Promise<Object>} HTTP validation result
+   */
+  async validateHttpDependency(dependency) {
+    return new Promise((resolve) => {
+      const url = new URL(dependency.url);
+      const isHttps = url.protocol === 'https:';
+      const client = isHttps ? https : http;
+
+      const options = {
+        hostname: url.hostname,
+        port: url.port || (isHttps ? 443 : 80),
+        path: url.pathname + url.search,
+        method: 'HEAD', // Use HEAD to minimize data transfer
+        timeout: dependency.timeout || 5000,
+        headers: {
+          'User-Agent': 'Kaspa-AIO-Dependency-Validator/1.0'
+        }
+      };
+
+      const req = client.request(options, (res) => {
+        const available = res.statusCode >= 200 && res.statusCode < 400;
+        resolve({
+          available,
+          statusCode: res.statusCode,
+          error: available ? null : `HTTP ${res.statusCode} ${res.statusMessage}`
+        });
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({
+          available: false,
+          statusCode: null,
+          error: `Timeout after ${dependency.timeout}ms`
+        });
+      });
+
+      req.on('error', (error) => {
+        resolve({
+          available: false,
+          statusCode: null,
+          error: error.message
+        });
+      });
+
+      req.end();
+    });
+  }
+
+  /**
+   * Validate WebSocket dependency
+   * @param {Object} dependency - Dependency configuration
+   * @returns {Promise<Object>} WebSocket validation result
+   */
+  async validateWebSocketDependency(dependency) {
+    // For WebSocket validation, we'll check if the host is reachable
+    // Full WebSocket connection testing would require additional dependencies
+    try {
+      const url = new URL(dependency.url);
+      const hostname = url.hostname;
+      
+      // Test DNS resolution
+      await dns.lookup(hostname);
+      
+      // Test basic connectivity by attempting HTTP connection to same host
+      const httpUrl = dependency.url.replace(/^wss?:/, 'https:').replace(/:\d+$/, '');
+      const httpDependency = { ...dependency, url: httpUrl };
+      
+      const result = await this.validateHttpDependency(httpDependency);
+      
+      return {
+        available: result.available || result.statusCode === 404, // 404 is OK for WebSocket endpoints
+        statusCode: result.statusCode,
+        error: result.available ? null : `WebSocket host unreachable: ${result.error}`
+      };
+      
+    } catch (error) {
+      return {
+        available: false,
+        statusCode: null,
+        error: `WebSocket validation failed: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Validate RPC dependency (internal services)
+   * @param {Object} dependency - Dependency configuration
+   * @returns {Promise<Object>} RPC validation result
+   */
+  async validateRpcDependency(dependency) {
+    // For internal RPC services, we'll do a basic HTTP health check
+    const httpDependency = { ...dependency };
+    return await this.validateHttpDependency(httpDependency);
+  }
+
+  /**
+   * Generate guidance for unavailable dependencies
+   * @param {Object} dependency - Dependency configuration
+   * @param {Object} result - Validation result
+   * @returns {Object} Guidance information
+   */
+  generateGuidance(dependency, result) {
+    const guidance = {
+      severity: dependency.critical ? 'critical' : 'warning',
+      impact: dependency.critical 
+        ? 'Service may not function properly'
+        : 'Some features may be limited',
+      suggestions: []
+    };
+
+    // Generate specific suggestions based on dependency type and error
+    if (result.error && result.error.includes('timeout')) {
+      guidance.suggestions.push('Check internet connectivity');
+      guidance.suggestions.push('Verify firewall settings allow outbound connections');
+      guidance.suggestions.push('Consider increasing timeout values if network is slow');
+    } else if (result.error && result.error.includes('ENOTFOUND')) {
+      guidance.suggestions.push('Check DNS resolution');
+      guidance.suggestions.push('Verify internet connectivity');
+      guidance.suggestions.push('Try using alternative DNS servers');
+    } else if (result.statusCode >= 500) {
+      guidance.suggestions.push('External service is experiencing issues');
+      guidance.suggestions.push('Try again later');
+      guidance.suggestions.push('Check service status page if available');
+    } else if (result.statusCode === 403 || result.statusCode === 401) {
+      guidance.suggestions.push('Access denied - check API keys or authentication');
+      guidance.suggestions.push('Verify service configuration');
+    }
+
+    // Add fallback suggestions based on dependency type
+    switch (dependency.type) {
+      case 'api':
+        if (dependency.critical) {
+          guidance.suggestions.push('Consider using local indexer services instead of remote APIs');
+          guidance.suggestions.push('Enable indexer-services profile for local data');
+        }
+        break;
+      case 'stylesheet':
+      case 'font-cdn':
+        guidance.suggestions.push('Service will work without external fonts/styles');
+        guidance.suggestions.push('Consider hosting fonts locally for better reliability');
+        break;
+      case 'script-cdn':
+        guidance.suggestions.push('Consider hosting JavaScript libraries locally');
+        guidance.suggestions.push('Use npm packages instead of CDN versions');
+        break;
+      case 'websocket':
+        guidance.suggestions.push('Check WebSocket proxy configuration');
+        guidance.suggestions.push('Verify firewall allows WebSocket connections');
+        break;
+    }
+
+    return guidance;
+  }
+
+  /**
+   * Test basic internet connectivity
+   * @returns {Promise<Object>} Connectivity test result
+   */
+  async testInternetConnectivity() {
+    console.log('Testing basic internet connectivity...');
+    
+    const results = {
+      dns_resolution: false,
+      http_connectivity: false,
+      cdn_accessibility: false,
+      details: []
+    };
+
+    // Test DNS resolution
+    try {
+      await dns.lookup('google.com');
+      results.dns_resolution = true;
+      results.details.push({ test: 'DNS Resolution', status: 'success', message: 'DNS working' });
+    } catch (error) {
+      results.details.push({ test: 'DNS Resolution', status: 'failed', message: error.message });
+    }
+
+    // Test basic HTTP connectivity
+    try {
+      const httpResult = await this.validateHttpDependency({
+        url: 'https://www.google.com',
+        timeout: 5000
+      });
+      results.http_connectivity = httpResult.available;
+      results.details.push({ 
+        test: 'HTTP Connectivity', 
+        status: httpResult.available ? 'success' : 'failed', 
+        message: httpResult.available ? 'HTTP working' : httpResult.error 
+      });
+    } catch (error) {
+      results.details.push({ test: 'HTTP Connectivity', status: 'failed', message: error.message });
+    }
+
+    // Test CDN accessibility
+    let cdnSuccess = 0;
+    for (const domain of this.cdnDomains) {
+      try {
+        const cdnResult = await this.validateHttpDependency({
+          url: `https://${domain}`,
+          timeout: 5000
+        });
+        if (cdnResult.available) {
+          cdnSuccess++;
+        }
+        results.details.push({ 
+          test: `CDN Access (${domain})`, 
+          status: cdnResult.available ? 'success' : 'failed', 
+          message: cdnResult.available ? 'Accessible' : cdnResult.error 
+        });
+      } catch (error) {
+        results.details.push({ test: `CDN Access (${domain})`, status: 'failed', message: error.message });
+      }
+    }
+
+    results.cdn_accessibility = cdnSuccess > 0;
+
+    return {
+      connected: results.dns_resolution && results.http_connectivity,
+      partial: results.dns_resolution || results.http_connectivity,
+      cdn_available: results.cdn_accessibility,
+      results
+    };
+  }
+
+  /**
+   * Validate dependencies for multiple services
+   * @param {string[]} services - Array of service names
+   * @param {Object} options - Validation options
+   * @returns {Promise<Object>} Combined validation result
+   */
+  async validateMultipleServices(services, options = {}) {
+    console.log(`Validating dependencies for ${services.length} services...`);
+
+    // First test basic connectivity
+    const connectivityTest = await this.testInternetConnectivity();
+
+    const serviceResults = [];
+    let totalCriticalFailures = 0;
+
+    for (const service of services) {
+      const result = await this.validateServiceDependencies(service, options);
+      serviceResults.push(result);
+      totalCriticalFailures += result.summary.critical_failures;
+    }
+
+    const overallValid = totalCriticalFailures === 0 && connectivityTest.connected;
+
+    return {
+      valid: overallValid,
+      connectivity: connectivityTest,
+      services: serviceResults,
+      summary: {
+        services_tested: services.length,
+        services_valid: serviceResults.filter(s => s.valid).length,
+        total_critical_failures: totalCriticalFailures,
+        internet_connected: connectivityTest.connected,
+        cdn_available: connectivityTest.cdn_available
+      },
+      recommendations: this.generateOverallRecommendations(serviceResults, connectivityTest)
+    };
+  }
+
+  /**
+   * Generate overall recommendations based on validation results
+   * @param {Object[]} serviceResults - Results from service validations
+   * @param {Object} connectivityTest - Internet connectivity test results
+   * @returns {Object[]} Array of recommendations
+   */
+  generateOverallRecommendations(serviceResults, connectivityTest) {
     const recommendations = [];
 
-    // Recommend adding missing prerequisites
-    const prerequisiteErrors = validation.errors.filter(e => e.type === 'missing_prerequisite');
-    if (prerequisiteErrors.length > 0) {
-      for (const error of prerequisiteErrors) {
-        recommendations.push(
-          `Add one of these profiles: ${error.prerequisites.map(id => this.getProfileName(id)).join(' or ')}`
-        );
-      }
+    if (!connectivityTest.connected) {
+      recommendations.push({
+        priority: 'critical',
+        category: 'connectivity',
+        title: 'Internet Connectivity Issues',
+        message: 'Basic internet connectivity is not working',
+        actions: [
+          'Check network connection',
+          'Verify DNS settings',
+          'Check firewall configuration',
+          'Contact network administrator if needed'
+        ]
+      });
     }
 
-    // Recommend resource upgrades
-    if (requirements.minMemory > 16) {
-      recommendations.push(
-        `Consider upgrading to ${requirements.recommendedMemory}GB RAM for optimal performance`
-      );
+    if (!connectivityTest.cdn_available) {
+      recommendations.push({
+        priority: 'warning',
+        category: 'cdn',
+        title: 'CDN Access Limited',
+        message: 'Some CDN services are not accessible',
+        actions: [
+          'External fonts and scripts may not load',
+          'Consider hosting assets locally',
+          'Check if corporate firewall blocks CDNs'
+        ]
+      });
     }
 
-    if (requirements.minDisk > 500) {
-      recommendations.push(
-        `Ensure you have at least ${requirements.recommendedDisk}GB of free disk space`
-      );
+    // Check for services with critical failures
+    const failedServices = serviceResults.filter(s => !s.valid);
+    if (failedServices.length > 0) {
+      recommendations.push({
+        priority: 'high',
+        category: 'services',
+        title: 'Service Dependencies Unavailable',
+        message: `${failedServices.length} services have critical dependency failures`,
+        actions: [
+          'Review individual service dependency reports',
+          'Consider using local services instead of remote APIs',
+          'Enable indexer-services profile for local data processing'
+        ]
+      });
     }
 
-    // Recommend removing conflicts
-    const conflicts = validation.errors.filter(e => e.type === 'profile_conflict');
-    if (conflicts.length > 0) {
-      recommendations.push(
-        'Remove conflicting profiles or choose an alternative configuration'
-      );
+    // Check for kaspa-user-applications specific recommendations
+    const kaspaUserAppsResult = serviceResults.find(s => s.service === 'kaspa-user-applications');
+    if (kaspaUserAppsResult && !kaspaUserAppsResult.valid) {
+      recommendations.push({
+        priority: 'high',
+        category: 'configuration',
+        title: 'User Applications May Need Local Services',
+        message: 'Remote APIs are unavailable for user applications',
+        actions: [
+          'Enable indexer-services profile to use local indexers',
+          'Enable core profile to run local Kaspa node',
+          'This will provide local alternatives to remote services'
+        ]
+      });
     }
 
     return recommendations;
+  }
+
+  /**
+   * Get dependency validation summary for a service
+   * @param {string} serviceName - Name of the service
+   * @returns {Promise<Object>} Quick validation summary
+   */
+  async getServiceDependencySummary(serviceName) {
+    const result = await this.validateServiceDependencies(serviceName);
+    
+    return {
+      service: serviceName,
+      status: result.valid ? 'healthy' : 'issues',
+      critical_issues: result.summary.critical_failures,
+      total_dependencies: result.summary.total,
+      available_dependencies: result.summary.available,
+      message: result.message
+    };
   }
 }
 

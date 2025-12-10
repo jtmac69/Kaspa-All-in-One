@@ -192,7 +192,7 @@ const PROFILE_CONFIG_FIELDS = {
       key: 'REMOTE_KASIA_INDEXER_URL',
       label: 'Kasia Indexer URL',
       type: 'text',
-      defaultValue: 'https://api.kasia.io/',
+      defaultValue: 'https://indexer.kasia.fyi/',
       required: false,
       validation: [
         {
@@ -201,7 +201,7 @@ const PROFILE_CONFIG_FIELDS = {
           message: 'Must be a valid HTTP or HTTPS URL'
         }
       ],
-      tooltip: 'URL for Kasia indexer API (use local indexer URL if indexer-services profile is selected)',
+      tooltip: 'URL for Kasia indexer API (automatically set to local indexer if indexer-services profile is selected)',
       category: 'basic',
       group: 'indexer-endpoints',
       visibleForProfiles: ['kaspa-user-applications']
@@ -219,7 +219,7 @@ const PROFILE_CONFIG_FIELDS = {
           message: 'Must be a valid HTTP or HTTPS URL'
         }
       ],
-      tooltip: 'URL for K-Social indexer API (use local indexer URL if indexer-services profile is selected)',
+      tooltip: 'URL for K-Social indexer API (automatically set to local indexer if indexer-services profile is selected)',
       category: 'basic',
       group: 'indexer-endpoints',
       visibleForProfiles: ['kaspa-user-applications']
@@ -228,7 +228,7 @@ const PROFILE_CONFIG_FIELDS = {
       key: 'REMOTE_KASPA_NODE_WBORSH_URL',
       label: 'Kaspa Node WebSocket URL',
       type: 'text',
-      defaultValue: 'wss://api.kasia.io/ws',
+      defaultValue: 'wss://wrpc.kasia.fyi',
       required: false,
       validation: [
         {
@@ -237,7 +237,7 @@ const PROFILE_CONFIG_FIELDS = {
           message: 'Must be a valid WebSocket URL (ws:// or wss://)'
         }
       ],
-      tooltip: 'WebSocket URL for Kaspa node connection (use local node URL if core profile is selected)',
+      tooltip: 'WebSocket URL for Kaspa node connection (automatically set to local node if core profile is selected)',
       category: 'basic',
       group: 'indexer-endpoints',
       visibleForProfiles: ['kaspa-user-applications']

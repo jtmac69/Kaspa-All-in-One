@@ -2,9 +2,11 @@ const crypto = require('crypto');
 const fs = require('fs').promises;
 const path = require('path');
 const Joi = require('joi');
+const ServiceValidator = require('./service-validator');
 
 class ConfigGenerator {
   constructor() {
+    this.serviceValidator = new ServiceValidator();
     this.configSchema = Joi.object({
       // Core settings
       PUBLIC_NODE: Joi.boolean().default(false),
@@ -239,10 +241,11 @@ class ConfigGenerator {
       } else {
         lines.push(
           '# Using public indexers (indexer-services profile not active)',
-          'REMOTE_KASIA_INDEXER_URL=https://api.kasia.io/',
+          '# URLs match Kasia official .env.production',
+          'REMOTE_KASIA_INDEXER_URL=https://indexer.kasia.fyi/',
           'REMOTE_KSOCIAL_INDEXER_URL=https://indexer.kaspatalk.net/',
           '# Public Kaspa node WebSocket',
-          'REMOTE_KASPA_NODE_WBORSH_URL=wss://api.kasia.io/ws'
+          'REMOTE_KASPA_NODE_WBORSH_URL=wss://wrpc.kasia.fyi'
         );
       }
       
@@ -1097,7 +1100,8 @@ class ConfigGenerator {
         '      - "${KASIA_APP_PORT:-3001}:3000"',
         '    environment:',
         `      - VITE_DEFAULT_KASPA_NETWORK=\${KASPA_NETWORK:-${network}}`,
-        '      - VITE_INDEXER_MAINNET_URL=${REMOTE_KASIA_INDEXER_URL:-https://api.kasia.io/}',
+        '      - VITE_INDEXER_MAINNET_URL=${REMOTE_KASIA_INDEXER_URL:-https://indexer.kasia.fyi/}',
+        '      - VITE_DEFAULT_MAINNET_KASPA_NODE_URL=${REMOTE_KASPA_NODE_WBORSH_URL:-wss://wrpc.kasia.fyi}',
         '    networks:',
         '      - kaspa-network',
         '    profiles:',
@@ -1130,7 +1134,7 @@ class ConfigGenerator {
         '      - "${KASPA_EXPLORER_PORT:-3004}:80"',
         '    environment:',
         `      - KASPA_NETWORK=\${KASPA_NETWORK:-${network}}`,
-        '      - API_BASE_URL=${REMOTE_KASIA_INDEXER_URL:-https://api.kasia.io/}',
+        '      - API_BASE_URL=${REMOTE_KASIA_INDEXER_URL:-https://indexer.kasia.fyi/}',
         '    networks:',
         '      - kaspa-network',
         '    profiles:',
@@ -1326,6 +1330,98 @@ class ConfigGenerator {
         error: error.message
       };
     }
+  }
+
+  /**
+   * Validate generated docker-compose configuration
+   * @param {string} dockerComposeContent - Generated docker-compose.yml content
+   * @param {string[]} profiles - Selected profiles
+   * @param {Object} config - Configuration object
+   * @returns {Object} Validation result with errors and warnings
+   */
+  validateDockerComposeGeneration(dockerComposeContent, profiles, config = {}) {
+    return this.serviceValidator.validateServicePresence(dockerComposeContent, profiles);
+  }
+
+  /**
+   * Validate profile configuration and detect mismatches
+   * @param {string[]} profiles - Selected profiles
+   * @returns {Object} Profile validation result
+   */
+  validateProfileConfiguration(profiles) {
+    return this.serviceValidator.validateProfiles(profiles);
+  }
+
+  /**
+   * Generate comprehensive diagnostic report
+   * @param {string} dockerComposeContent - Generated docker-compose.yml content
+   * @param {string[]} profiles - Selected profiles
+   * @param {Object} config - Configuration object
+   * @returns {Object} Diagnostic report
+   */
+  generateDiagnosticReport(dockerComposeContent, profiles, config = {}) {
+    return this.serviceValidator.generateDiagnosticReport(dockerComposeContent, profiles, config);
+  }
+
+  /**
+   * Generate docker-compose.yml with validation
+   * @param {Object} config - Configuration object
+   * @param {string[]} profiles - Selected profiles
+   * @param {boolean} validate - Whether to validate the generated content
+   * @returns {Promise<Object>} Generation result with optional validation
+   */
+  async generateDockerComposeWithValidation(config, profiles, validate = true) {
+    try {
+      // Generate docker-compose content
+      const dockerComposeContent = await this.generateDockerCompose(config, profiles);
+      
+      const result = {
+        success: true,
+        content: dockerComposeContent,
+        profiles,
+        config
+      };
+
+      // Add validation if requested
+      if (validate) {
+        const validation = this.validateDockerComposeGeneration(dockerComposeContent, profiles, config);
+        result.validation = validation;
+        
+        // If validation fails, include diagnostic report
+        if (!validation.valid) {
+          result.diagnostics = this.generateDiagnosticReport(dockerComposeContent, profiles, config);
+        }
+      }
+
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        profiles,
+        config
+      };
+    }
+  }
+
+  /**
+   * Check if specific service is missing from configuration
+   * @param {string} serviceName - Name of service to check
+   * @param {string} dockerComposeContent - Generated docker-compose.yml content
+   * @returns {Object} Service check result
+   */
+  checkServicePresence(serviceName, dockerComposeContent) {
+    return this.serviceValidator.validateSpecificService(serviceName, dockerComposeContent);
+  }
+
+  /**
+   * Get quick validation summary
+   * @param {string} dockerComposeContent - Generated docker-compose.yml content
+   * @param {string[]} profiles - Selected profiles
+   * @returns {Object} Quick validation summary
+   */
+  getValidationSummary(dockerComposeContent, profiles) {
+    return this.serviceValidator.getValidationSummary(dockerComposeContent, profiles);
   }
 }
 

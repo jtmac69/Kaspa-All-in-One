@@ -30,6 +30,7 @@ const nodeSyncRouter = require('./api/node-sync');
 const wizardStateRouter = require('./api/wizard-state');
 const backupRouter = require('./api/backup');
 const dashboardIntegrationRouter = require('./api/dashboard-integration');
+const dependencyValidationRouter = require('./api/dependency-validation');
 
 // Import utilities
 const DockerManager = require('./utils/docker-manager');
@@ -117,6 +118,7 @@ app.use('/api/wizard/backup', backupRouter); // Backup routes under /api/wizard/
 app.use('/api/wizard/backups', backupRouter); // Also mount under /api/wizard/backups for list endpoint
 app.use('/api/wizard/rollback', backupRouter); // Rollback endpoint under /api/wizard/rollback
 app.use('/api/wizard', dashboardIntegrationRouter); // Dashboard integration routes
+app.use('/api/dependencies', dependencyValidationRouter); // Dependency validation routes
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

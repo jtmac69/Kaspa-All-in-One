@@ -38,10 +38,12 @@ RUN mkdir -p .husky && \
     echo 'console.log("Husky install skipped in Docker");' > .husky/install.mjs
 
 # Build arguments for environment configuration
-ARG VITE_INDEXER_MAINNET_URL=https://api.kasia.io/
-ARG VITE_INDEXER_TESTNET_URL=https://api.kasia.io/
-ARG VITE_DEFAULT_MAINNET_KASPA_NODE_URL=wss://api.kasia.io/ws
-ARG VITE_DEFAULT_TESTNET_KASPA_NODE_URL=wss://api.kasia.io/ws
+# These defaults match Kasia's official .env.production file
+# See: https://github.com/K-Kluster/Kasia/blob/staging/.env.production
+ARG VITE_INDEXER_MAINNET_URL=https://indexer.kasia.fyi/
+ARG VITE_INDEXER_TESTNET_URL=https://dev-indexer.kasia.fyi/
+ARG VITE_DEFAULT_MAINNET_KASPA_NODE_URL=wss://wrpc.kasia.fyi
+ARG VITE_DEFAULT_TESTNET_KASPA_NODE_URL=wss://wrpc.kasia.fyi
 ARG VITE_DEFAULT_KASPA_NETWORK=mainnet
 ARG VITE_DISABLE_INDEXER=false
 
