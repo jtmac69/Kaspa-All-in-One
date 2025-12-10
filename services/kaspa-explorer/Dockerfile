@@ -38,6 +38,9 @@ RUN if [ -d "dist" ]; then \
 # Production stage
 FROM nginx:alpine
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 # Copy built files to nginx from our standardized location
 COPY --from=builder /app/build-output /usr/share/nginx/html
 
@@ -46,5 +49,9 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port 80 (mapped to 3004 externally)
 EXPOSE 80
+
+# Health check - use dedicated health endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:80/health || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

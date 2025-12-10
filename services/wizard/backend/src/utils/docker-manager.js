@@ -42,6 +42,32 @@ class DockerManager {
     return Array.from(dockerProfiles);
   }
 
+  /**
+   * Get container names that will be created for the given profiles
+   * Used to remove conflicting containers from other projects before starting
+   * @param {string[]} profiles - Array of wizard profile names
+   * @returns {string[]} Array of container names
+   */
+  getContainerNamesForProfiles(profiles) {
+    // Map profiles to container names (must match container_name in docker-compose.yml)
+    const containerMap = {
+      'core': ['kaspa-node'],
+      'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],
+      'indexer-services': ['indexer-db', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
+      'archive-node': ['archive-db', 'archive-indexer'],
+      'mining': ['kaspa-stratum'],
+      'development': ['portainer', 'pgadmin']
+    };
+
+    const containerNames = new Set();
+    profiles.forEach(profile => {
+      if (containerMap[profile]) {
+        containerMap[profile].forEach(name => containerNames.add(name));
+      }
+    });
+    return Array.from(containerNames);
+  }
+
   async pullImages(profiles, progressCallback) {
     // Map wizard profiles to pre-built Docker images that need pulling
     // Services with local Dockerfiles are built, not pulled
@@ -165,6 +191,47 @@ class DockerManager {
 
   async startServices(profiles, progressCallback) {
     try {
+      // Clean up any orphan containers from previous installations/tests
+      // This prevents conflicts with containers from different project names
+      if (progressCallback) {
+        progressCallback({
+          stage: 'start',
+          message: 'Cleaning up orphan containers...'
+        });
+      }
+      
+      try {
+        await execAsync(`cd ${this.projectRoot} && docker compose down --remove-orphans`, {
+          maxBuffer: 10 * 1024 * 1024
+        });
+      } catch (cleanupError) {
+        console.log('Warning: Cleanup failed, continuing anyway:', cleanupError.message);
+      }
+
+      // CRITICAL: Remove containers by name that might conflict from other projects
+      // Container names are global in Docker, so we must remove any existing containers
+      // with the same names regardless of which project created them
+      const containerNames = this.getContainerNamesForProfiles(profiles);
+      if (containerNames.length > 0) {
+        if (progressCallback) {
+          progressCallback({
+            stage: 'start',
+            message: 'Removing conflicting containers...'
+          });
+        }
+        
+        for (const containerName of containerNames) {
+          try {
+            // Stop and remove container if it exists (ignore errors if it doesn't)
+            await execAsync(`docker stop ${containerName} 2>/dev/null || true`);
+            await execAsync(`docker rm ${containerName} 2>/dev/null || true`);
+          } catch (err) {
+            // Ignore errors - container might not exist
+            console.log(`Note: Could not remove container ${containerName}: ${err.message}`);
+          }
+        }
+      }
+
       if (progressCallback) {
         progressCallback({
           stage: 'start',
