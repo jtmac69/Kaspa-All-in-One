@@ -781,7 +781,8 @@ if (typeof window !== 'undefined') {
     };
     
     window.generatePassword = (inputId) => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+        // Use only alphanumeric characters to avoid database URL parsing issues
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         let password = '';
         for (let i = 0; i < 16; i++) {
             password += chars.charAt(Math.floor(Math.random() * chars.length));

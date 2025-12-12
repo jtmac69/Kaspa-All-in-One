@@ -320,7 +320,8 @@ const PROFILE_CONFIG_FIELDS = {
       group: 'network',
       // Note: Only needed for profiles that accept external connections
       // kaspa-user-applications runs behind nginx and doesn't need external IP config
-      visibleForProfiles: ['core', 'archive-node', 'indexer-services', 'mining']
+      // indexer-services connect TO nodes, they don't serve as public nodes
+      visibleForProfiles: ['core', 'archive-node', 'mining']
     },
     {
       key: 'PUBLIC_NODE',

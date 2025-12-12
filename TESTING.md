@@ -1876,7 +1876,7 @@ Your feedback from this scenario is invaluable. Testing multiple applications an
 - Simply Kaspa Indexer deployment
 - Indexer synchronization process
 - Database connectivity and data storage
-- Integration with Kaspa node
+- Integration with public Kaspa network
 
 **Prerequisites**:
 - All prerequisites installed (Docker, Docker Compose, Node.js)
@@ -1939,10 +1939,11 @@ The wizard should automatically perform a system check.
 - Do you have sufficient resources for indexer services?
 
 **💡 Understanding Resource Needs**:
-- Kaspa node: ~2GB RAM, ~15GB disk
 - TimescaleDB: ~1-2GB RAM, ~5-10GB disk
 - Simply Kaspa Indexer: ~2-3GB RAM, ~5-10GB disk
-- **Total**: ~5-7GB RAM, ~25-35GB disk
+- K-Indexer: ~1-2GB RAM, ~3-5GB disk
+- Kasia Indexer: ~1-2GB RAM, ~3-5GB disk
+- **Total**: ~5-9GB RAM, ~16-30GB disk
 
 #### Step 3: Profile Selection (2 minutes)
 
@@ -1980,36 +1981,49 @@ Select the Explorer Profile which includes indexer services.
 
 Configure the indexer services.
 
-1. **Review indexer configuration options**:
-   - ✓ Should show TimescaleDB configuration
-     - Database port (default: 5432)
-     - Database name
-     - Database credentials
-   - ✓ Should show Simply Kaspa Indexer configuration
-     - Indexer port (default: 8080)
-     - Connection to Kaspa node
-     - Connection to TimescaleDB
+> **📌 Important**: Indexer Services profile should ONLY show database configuration options. If you see network configuration (External IP, Public Node toggle), this is a bug - please report it!
 
-2. **For this test, use default values**:
-   - Don't change any settings
+1. **Review database configuration options**:
+   - ✓ Should show "Database Configuration" section with:
+     - Database User field (default: "kaspa")
+     - Database Password field (required, minimum 12 characters)
+     - "Generate" button next to password field
+   - ✓ Should show "Advanced Options" section (may be collapsed):
+     - TimescaleDB Data Directory (default: "/data/timescaledb")
+
+2. **What should NOT be shown**:
+   - ❌ Network Configuration (External IP, Public Node toggle) - indexers don't need this
+   - ❌ Kaspa Node Settings (RPC/P2P ports) - indexers connect to nodes, don't run nodes
+   - ❌ Indexer Endpoints - this is only for kaspa-user-applications profile
+
+3. **Test database password generation**:
+   - Click the "Generate" button next to Database Password
+   - ✓ Should generate a secure password (12+ characters)
+   - ✓ Password should be visible in the field
+
+4. **For this test, use generated password**:
+   - Keep the generated password (don't change it)
+   - Keep default database user ("kaspa")
+   - Keep default data directory ("/data/timescaledb")
    - This tests the "happy path" with defaults
 
-3. **Review the configuration summary** (if shown):
-   - ✓ Should clearly show what will be installed
-   - ✓ Should show which ports will be used
-   - ✓ Should show database connection details
-
-4. **Click "Continue" or "Next"**
+5. **Click "Continue" or "Next"**
 
 **📝 Document**:
-- Were the default values clearly shown?
-- Were the configuration options understandable?
-- Was it clear how services connect to each other?
-- Were there any confusing options?
+- Did you see ONLY database configuration options? (Yes/No)
+- If you saw network configuration, please report this as a bug
+- Did the password generation work correctly? (Yes/No)
+- Were the default values clearly shown? (Yes/No)
+- Were the configuration options understandable? (Yes/No)
+
+**🐛 Bug Report**: If you see network configuration options (External IP, Public Node), please report this bug:
+- Go to: https://github.com/jtmac69/Kaspa-All-in-One/issues/new?template=bug_report.md
+- Title: "Indexer Services profile shows incorrect network configuration"
+- Description: "When selecting only Indexer Services profile, the configuration page shows External IP and Public Node options, but these should only appear for Core/Archive/Mining profiles."
 
 **🔍 Service Dependencies**:
-- Simply Kaspa Indexer → connects to → Kaspa Node (for blockchain data)
-- Simply Kaspa Indexer → connects to → TimescaleDB (to store processed data)
+- Indexer Services → connect to → Public Kaspa APIs (for blockchain data)
+- Indexer Services → connect to → TimescaleDB (to store processed data)
 - Applications → connect to → TimescaleDB (to query data)
 
 #### Step 5: Review and Confirm (2 minutes)
@@ -2017,25 +2031,25 @@ Configure the indexer services.
 Review the installation summary before proceeding.
 
 1. **Review the installation summary**:
-   - ✓ Should show selected profile: "Explorer Profile"
+   - ✓ Should show selected profile: "Indexer Services"
    - ✓ Should show list of services to be installed:
-     - Kaspa node (kaspad) - dependency
      - TimescaleDB (indexer-db)
      - Simply Kaspa Indexer (simply-kaspa-indexer)
-     - Dashboard
+     - K-Indexer (k-indexer)
+     - Kasia Indexer (kasia-indexer)
      - Nginx (reverse proxy)
    - ✓ Should show estimated disk space usage
    - ✓ Should show estimated installation time
 
 2. **Verify the information**:
-   - Profile: Explorer Profile
-   - Services: Kaspa node + TimescaleDB + Indexer
-   - Ports: 16110 (node RPC), 16111 (node P2P), 5432 (database), 8080 (indexer)
+   - Profile: Indexer Services
+   - Services: TimescaleDB + Multiple Indexers (no local Kaspa node)
+   - Ports: 5432 (database), 8080 (indexers), 80/443 (nginx)
 
 3. **Look for important notices**:
-   - ✓ May show notice: "Kaspa node will sync blockchain (several hours)"
+   - ✓ May show notice: "Indexers will connect to public Kaspa network"
    - ✓ May show notice: "Indexer will process blockchain data (several hours)"
-   - ✓ May show notice: "Both processes can run in background"
+   - ✓ May show notice: "Indexing processes can run in background"
 
 4. **Click "Install" or "Start Installation"**
 
@@ -2047,10 +2061,10 @@ Review the installation summary before proceeding.
 
 **⚠️ Important**: This installation involves:
 1. Downloading Docker images (~2-3GB)
-2. Starting services
-3. Kaspa node syncing blockchain (4-8 hours)
-4. Indexer processing blockchain (4-8 hours after node sync)
-5. Both can run in background
+2. Starting indexer services
+3. Indexers connecting to public Kaspa network
+4. Indexer processing blockchain data (several hours)
+5. All processes can run in background
 
 #### Step 6: Installation Progress (8-12 minutes)
 
@@ -2063,13 +2077,16 @@ The installation process will now begin.
 
 2. **Watch for these stages** (order may vary):
    - "Pulling Docker images..." (5-8 minutes) ⏰ **Longest step**
-     - Kaspa node image (~500MB-1GB)
      - TimescaleDB image (~200-300MB)
      - Simply Kaspa Indexer image (~500MB-1GB)
+     - K-Indexer image (~300-500MB)
+     - Kasia Indexer image (~300-500MB)
+     - Simply Kaspa Indexer image (~500MB-1GB)
    - "Creating Docker containers..."
-   - "Starting Kaspa node..."
    - "Starting TimescaleDB..."
    - "Starting Simply Kaspa Indexer..."
+   - "Starting K-Indexer..."
+   - "Starting Kasia Indexer..."
    - "Waiting for services to be ready..."
    - "Running health checks..."
 
@@ -2091,80 +2108,129 @@ The installation process will now begin.
 - Installation fails: Note the error and proceed to cleanup
 
 **💡 What's Actually Happening**:
-- Docker is downloading images for node, database, and indexer
+- Docker is downloading images for database and indexer services
 - Docker Compose is creating and configuring containers
 - Services are starting up in dependency order
 - Health checks are verifying services are responding
-- Kaspa node begins blockchain sync
-- Indexer waits for node to be ready, then begins processing
+- Indexers connect to public Kaspa network
+- Indexers begin processing blockchain data from public APIs
 
 #### Step 7: Installation Complete (1 minute)
 
 When installation finishes, you should see a completion screen.
+
+> **📌 Important**: The management dashboard is not included in this test release. You'll use Docker commands to verify services instead.
 
 1. **Verify the completion message**:
    - ✓ Should show "Installation Complete!" or similar success message
    - ✓ Should show summary of what was installed
    - ✓ Should show list of running services
 
-2. **Check for access links**:
-   - ✓ Should show link to Dashboard: `http://localhost:8080`
-   - ✓ Should show Kaspa node RPC endpoint: `localhost:16110`
-   - ✓ May show TimescaleDB connection info: `localhost:5432`
-   - ✓ May show Indexer API endpoint: `localhost:8080/api`
-
-3. **Look for important notices**:
-   - ✓ Should show notice: "Kaspa node is syncing blockchain (this may take several hours)"
-   - ✓ Should show notice: "Indexer will begin processing after node sync completes"
+2. **Check for important notices**:
+   - ✓ Should show notice: "Indexers are connecting to public Kaspa network"
+   - ✓ Should show notice: "Indexer processing will begin automatically"
    - ✓ Should show notice: "Services will continue running in background"
+   - ✓ May show notice: "Use 'docker ps' and 'docker logs' to monitor services"
 
-4. **Click on the Dashboard link** or manually navigate to `http://localhost:8080`
+3. **Note any access information shown**:
+   - ✓ May show TimescaleDB connection info: `localhost:5432`
+   - ✓ May show indexer API endpoints
+   - ✓ May show nginx proxy endpoints
 
 **📝 Document**:
 - Was the completion message clear?
-- Were the access links easy to find?
 - Were you informed about the sync/indexing process?
 - Did you understand that processing would continue in background?
+- Were Docker monitoring commands mentioned?
 
 **💡 Understanding the Process**:
-1. **Node Sync** (4-8 hours): Kaspa node downloads entire blockchain
-2. **Indexer Processing** (4-8 hours): Indexer processes blockchain data into database
-3. **Both run in background**: You can close browser, services continue running
-4. **Check progress**: Use dashboard to monitor sync/indexing status
+1. **Network Connection**: Indexers connect to public Kaspa network APIs
+2. **Indexer Processing** (several hours): Indexers process blockchain data into database
+3. **Background Operation**: You can close browser, services continue running
+4. **Check progress**: Use Docker commands to monitor services (dashboard not included in test release)
 
-#### Step 8: Verify Dashboard Access (2 minutes)
+#### Step 8: Verify Services with Docker Commands (3 minutes)
 
-Verify the management dashboard shows all indexer services.
+Since the dashboard is not included in this test release, use Docker commands to verify all services are running correctly.
 
-1. **Open the dashboard** at `http://localhost:8080`:
-   - ✓ Dashboard should load without errors
-   - ✓ Should show Kaspa All-in-One branding/title
+1. **Check all running containers**:
+   ```bash
+   docker ps
+   ```
+   
+   **Expected output** - you should see these containers running:
+   - ✅ `indexer-db` - TimescaleDB database
+   - ✅ `kasia-indexer` - Kasia blockchain indexer
+   - ✅ `k-indexer` - K-Social blockchain indexer  
+   - ✅ `simply-kaspa-indexer` - Simply Kaspa indexer
+   - ✅ `nginx` - Reverse proxy (if configured)
+   
+   **All containers should show**:
+   - Status: "Up X minutes" (not "Exited")
+   - Healthy status if health checks are configured
 
-2. **Check the service status section**:
-   - ✓ Should show "Kaspa Node" or "kaspad" - Status: Running
-   - ✓ Should show "TimescaleDB" or "indexer-db" - Status: Running
-   - ✓ Should show "Simply Kaspa Indexer" or "simply-kaspa-indexer" - Status: Running
-   - ✓ Should show "Dashboard" - Status: Running
-   - ✓ Should show "Nginx" - Status: Running
-   - ✓ All services should show "Running" or "Healthy" (green indicators)
+2. **Check service logs for startup success**:
+   
+   **TimescaleDB**:
+   ```bash
+   docker logs indexer-db --tail 20
+   ```
+   - ✓ Should show "database system is ready to accept connections"
+   - ✓ Should NOT show connection errors
 
-3. **Check for sync/indexing progress**:
-   - ✓ Should show Kaspa node sync status
-   - ✓ Should show current block height
-   - ✓ Should show sync percentage (likely 0-5% at this point)
-   - ✓ May show indexer status (likely "Waiting for node sync")
+   **Kasia Indexer**:
+   ```bash
+   docker logs kasia-indexer --tail 20
+   ```
+   - ✓ Should show indexer starting up
+   - ✓ May show "Waiting for node" or "Connecting to database"
+   - ✓ Should NOT show repeated connection failures
 
-4. **Explore the dashboard** (briefly):
-   - Look for indexer-specific information
-   - Check for database connection status
-   - Note resource usage for each service
+   **K-Indexer**:
+   ```bash
+   docker logs k-indexer --tail 20
+   ```
+   - ✓ Should show indexer starting up
+   - ✓ May show database connection messages
+   - ✓ Should NOT show build or startup errors
+
+   **Simply Kaspa Indexer**:
+   ```bash
+   docker logs simply-kaspa-indexer --tail 20
+   ```
+   - ✓ Should show indexer starting up
+   - ✓ May show "Waiting for dependencies"
+   - ✓ Should NOT show repeated errors
+
+3. **Check resource usage**:
+   ```bash
+   docker stats --no-stream
+   ```
+   - ✓ Should show all containers using CPU and memory
+   - ✓ Indexers should show moderate CPU usage (processing data)
+   - ✓ No container should show 0% CPU for extended periods (indicates crash)
+
+4. **Test basic connectivity** (optional):
+   
+   **TimescaleDB** (if accessible):
+   ```bash
+   docker exec indexer-db pg_isready -U indexer
+   ```
+   - ✓ Should return "accepting connections"
 
 **📝 Document**:
-- Did the dashboard load successfully? (Yes/No)
-- Were all services shown? (Yes/No)
-- Were the service statuses clearly displayed?
-- Was sync/indexing progress information shown?
-- Was the dashboard interface intuitive?
+- Were all expected containers running? (Yes/No)
+- Did any containers show "Exited" status? (Yes/No - list which ones)
+- Were the service logs showing normal startup? (Yes/No)
+- Did any service show repeated errors? (Yes/No - describe)
+- Was resource usage reasonable? (Yes/No)
+- Were you able to connect to any services? (Yes/No)
+
+**🐛 If Something Goes Wrong**:
+- **Container not running**: Check logs with `docker logs <container-name>`
+- **Container keeps restarting**: Check for port conflicts or resource issues
+- **High CPU usage**: Normal for indexers during data processing
+- **Connection refused**: Service may still be starting up, wait 1-2 minutes
 
 **🐛 If Something Goes Wrong**:
 - Dashboard doesn't load: Check if port 8080 is accessible
@@ -2180,10 +2246,10 @@ Verify all indexer-related containers are running.
    docker ps
    ```
    - ✓ Should see multiple containers:
-     - `kaspa-node` - Status: Up
      - `indexer-db` or `timescaledb` - Status: Up
      - `simply-kaspa-indexer` - Status: Up
-     - `dashboard` - Status: Up
+     - `k-indexer` - Status: Up
+     - `kasia-indexer` - Status: Up
      - `kaspa-nginx` - Status: Up
    - ✓ All should show "Up" status (not "Restarting" or "Exited")
 
@@ -2191,9 +2257,10 @@ Verify all indexer-related containers are running.
    ```bash
    docker logs indexer-db --tail 20
    docker logs simply-kaspa-indexer --tail 20
+   docker logs k-indexer --tail 20
    ```
    - ✓ TimescaleDB logs should show database initialization
-   - ✓ Indexer logs should show connection attempts to node and database
+   - ✓ Indexer logs should show connection attempts to public APIs and database
    - ✓ Should NOT see repeated error messages
 
 3. **Check resource usage**:
@@ -2201,9 +2268,9 @@ Verify all indexer-related containers are running.
    docker stats --no-stream
    ```
    - ✓ Should show CPU and memory usage for all containers
-   - ✓ Kaspa node may use high CPU during sync (50-100%)
-   - ✓ Indexer may use moderate CPU (20-50%)
+   - ✓ Indexers may use moderate CPU during processing (20-50%)
    - ✓ TimescaleDB should use moderate resources
+   - ✓ Nginx should use minimal resources
 
 **📝 Document**:
 - Were all expected containers running? (Yes/No)
@@ -2212,10 +2279,10 @@ Verify all indexer-related containers are running.
 - Were any containers using unexpectedly high resources?
 
 **💡 Expected Resource Usage**:
-- Kaspa node: 50-100% CPU during sync, 1-2GB RAM
 - TimescaleDB: 10-20% CPU, 1-2GB RAM
 - Simply Kaspa Indexer: 20-50% CPU (when processing), 2-3GB RAM
-- Dashboard: <5% CPU, <100MB RAM
+- K-Indexer: 10-30% CPU (when processing), 1-2GB RAM
+- Kasia Indexer: 10-30% CPU (when processing), 1-2GB RAM
 - Nginx: <5% CPU, <100MB RAM
 
 #### Step 10: Verify TimescaleDB Connectivity (3 minutes)
@@ -2273,10 +2340,10 @@ Test that the indexer is running and processing data.
    docker logs simply-kaspa-indexer --tail 50
    ```
    - ✓ Should show indexer startup messages
-   - ✓ Should show connection to Kaspa node
+   - ✓ Should show connection to public Kaspa APIs
    - ✓ Should show connection to TimescaleDB
-   - ✓ May show "Waiting for node to sync" (if node not synced yet)
-   - ✓ May show "Processing block X" (if node is synced)
+   - ✓ May show "Connecting to public node" or similar
+   - ✓ May show "Processing block X" (when processing data)
 
 2. **Check indexer API** (optional, if exposed):
    ```bash
@@ -2295,30 +2362,30 @@ Test that the indexer is running and processing data.
 
 **📝 Document**:
 - Was the indexer running? (Yes/No)
-- Was it connected to the Kaspa node? (Yes/No)
+- Was it connected to public Kaspa APIs? (Yes/No)
 - Was it connected to TimescaleDB? (Yes/No)
 - Was it processing blocks? (Yes/No/Waiting for node sync)
 
 **🐛 If Something Goes Wrong**:
 - Indexer not running: Check logs for errors
-- Connection errors: Verify node and database are running
-- Not processing: Normal if node hasn't synced yet
+- Connection errors: Verify database is running and public APIs are accessible
+- Not processing: May be normal during initial startup
 
 **💡 Understanding Indexer Behavior**:
-- **Phase 1**: Indexer starts and connects to node and database
-- **Phase 2**: Indexer waits for node to sync blockchain
-- **Phase 3**: Once node is synced, indexer begins processing blocks
+- **Phase 1**: Indexer starts and connects to public APIs and database
+- **Phase 2**: Indexer begins fetching blockchain data from public network
+- **Phase 3**: Indexer processes and stores blockchain data in database
 - **Phase 4**: Indexer processes historical blocks (can take hours)
-- **Phase 5**: Indexer stays in sync with new blocks
+- **Phase 5**: Indexer stays in sync with new blocks from public APIs
 
 #### Step 12: Test Service Integration (3 minutes)
 
 Verify that all services are properly integrated.
 
-1. **Test node → indexer connection**:
-   - Check indexer logs for node connection messages
-   - ✓ Should show "Connected to Kaspa node" or similar
-   - ✓ Should show node RPC endpoint being used
+1. **Test public API → indexer connection**:
+   - Check indexer logs for API connection messages
+   - ✓ Should show "Connected to public API" or similar
+   - ✓ Should show public API endpoints being used
 
 2. **Test indexer → database connection**:
    - Check indexer logs for database connection messages
@@ -2339,16 +2406,16 @@ Verify that all services are properly integrated.
    - ✓ No services should be "Restarting"
 
 **📝 Document**:
-- Did indexer successfully connect to node? (Yes/No)
+- Did indexer successfully connect to public APIs? (Yes/No)
 - Did indexer successfully connect to database? (Yes/No)
 - Was the dashboard integration working? (Yes/No)
 - Were all services healthy? (Yes/No)
 
 **🔍 Service Dependency Chain**:
 ```
-Kaspa Node (kaspad)
+Public Kaspa Network APIs
     ↓ (provides blockchain data)
-Simply Kaspa Indexer
+Indexer Services (Simply Kaspa, K-Indexer, Kasia)
     ↓ (stores processed data)
 TimescaleDB
     ↓ (provides queryable data)
@@ -2359,27 +2426,28 @@ Applications (future)
 
 Observe the sync and indexing process for a few minutes.
 
-1. **Monitor Kaspa node sync**:
-   ```bash
-   docker logs kaspa-node --tail 20 --follow
-   ```
-   - ✓ Should show blocks being synced
-   - ✓ Should show increasing block height
-   - ✓ Should show peer connections
-   - Press Ctrl+C to stop following
-
-2. **Check sync progress via dashboard**:
-   - Open dashboard at `http://localhost:8080`
-   - ✓ Should show current block height
-   - ✓ Should show sync percentage
-   - ✓ Should show estimated time remaining (if available)
-
-3. **Monitor indexer status**:
+1. **Monitor indexer processing**:
    ```bash
    docker logs simply-kaspa-indexer --tail 20 --follow
    ```
-   - ✓ If node not synced: Should show "Waiting for node"
-   - ✓ If node synced: Should show blocks being processed
+   - ✓ Should show blocks being processed
+   - ✓ Should show increasing block height
+   - ✓ Should show API connections
+   - Press Ctrl+C to stop following
+
+2. **Check processing progress** (if dashboard available):
+   - Open dashboard at `http://localhost:8080` (if included)
+   - ✓ Should show current block height being processed
+   - ✓ Should show indexing progress
+   - ✓ Should show estimated time remaining (if available)
+
+3. **Monitor additional indexers**:
+   ```bash
+   docker logs k-indexer --tail 20 --follow
+   docker logs kasia-indexer --tail 20 --follow
+   ```
+   - ✓ Should show indexers connecting to APIs
+   - ✓ Should show blocks being processed
    - Press Ctrl+C to stop following
 
 4. **Observe resource usage over time**:
@@ -2391,17 +2459,17 @@ Observe the sync and indexing process for a few minutes.
    - Press Ctrl+C to stop
 
 **📝 Document**:
-- What was the node sync percentage after 5 minutes?
-- Was the indexer processing blocks? (Yes/No/Waiting)
+- What was the indexer processing status after 5 minutes?
+- Were the indexers processing blocks? (Yes/No/Starting up)
 - How did resource usage change over time?
 - Did you observe any issues or errors?
 
 **💡 What to Expect**:
-- **First 5-10 minutes**: Services starting up, node beginning sync
-- **First hour**: Node syncing rapidly, indexer waiting
-- **Hours 2-8**: Node continuing sync, indexer may start processing
-- **After 8+ hours**: Node fully synced, indexer processing historical blocks
-- **After 12+ hours**: Both fully synced, indexer processing new blocks in real-time
+- **First 5-10 minutes**: Services starting up, connecting to public APIs
+- **First hour**: Indexers connecting and beginning data processing
+- **Hours 2-8**: Indexers processing historical blockchain data
+- **After 8+ hours**: Indexers processing recent blocks
+- **After 12+ hours**: Indexers fully synced, processing new blocks in real-time
 
 #### Step 14: Test Service Management (3 minutes)
 
@@ -2426,22 +2494,21 @@ Test the service management scripts with indexer services.
    - ✓ All services should come back up
 
 3. **Verify services after restart**:
-   - Open dashboard: `http://localhost:8080`
-   - Check all services are running
-   - ✓ Node should resume syncing from where it left off
-   - ✓ Indexer should resume processing from where it left off
+   - Check all services are running with `docker ps`
+   - ✓ Indexers should resume processing from where they left off
    - ✓ Database data should be preserved
+   - ✓ API connections should be re-established
 
 **📝 Document**:
 - Did the status script show all services? (Yes/No)
 - Did the restart work correctly? (Yes/No)
 - How long did restart take?
 - Did all services come back up healthy? (Yes/No)
-- Was sync/indexing progress preserved? (Yes/No)
+- Was indexing progress preserved? (Yes/No)
 
 **💡 Why Test Restart?**:
 - Verifies services can recover from restarts
-- Tests that sync/indexing progress is persistent
+- Tests that indexing progress is persistent
 - Ensures no data is lost during restart
 - Important for real-world scenarios (system reboots, updates, etc.)
 
@@ -2598,14 +2665,12 @@ Now is the time to report your findings! Please create a bug report or feedback 
 
 **Important Note**: This scenario tested the INSTALLATION of indexer services, not the full sync/indexing process. Here's what happens after installation:
 
-**Blockchain Sync** (4-8 hours):
-- Kaspa node downloads entire blockchain
-- Progress visible in dashboard
+**Indexer Processing** (several hours):
+- Indexers connect to public Kaspa network
+- Indexers process blockchain data from public APIs
+- Progress may be visible in logs
 - Can run in background
 - Resumes after restart
-
-**Indexer Processing** (4-8 hours after node sync):
-- Indexer processes blockchain data
 - Stores data in TimescaleDB
 - Progress visible in logs
 - Can run in background

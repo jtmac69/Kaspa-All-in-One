@@ -269,8 +269,9 @@ function displayConfiguration(selectedProfiles, configuration) {
     console.log('Displaying configuration for profiles:', selectedProfiles, configuration);
     
     // Determine which configuration fields to show based on selected profiles
+    // indexer-services don't need network config - they connect TO nodes, not serve as public nodes
     const hasNetworkConfig = selectedProfiles.some(profileId => 
-        ['core', 'archive-node', 'indexer-services', 'mining'].includes(profileId)
+        ['core', 'archive-node', 'mining'].includes(profileId)
     );
     
     const hasIndexerEndpoints = selectedProfiles.includes('kaspa-user-applications');

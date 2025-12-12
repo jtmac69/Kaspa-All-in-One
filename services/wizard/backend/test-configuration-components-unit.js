@@ -372,7 +372,7 @@ testFramework.test('Configuration Validation - Password Generation', async () =>
   
   testFramework.assert(password1.length >= 32, 'Generated password should be at least 32 characters');
   testFramework.assert(password1 !== password2, 'Generated passwords should be unique');
-  testFramework.assert(/^[A-Za-z0-9+/]+$/.test(password1), 'Generated password should be base64-like');
+  testFramework.assert(/^[A-Za-z0-9]+$/.test(password1), 'Generated password should be alphanumeric only');
 });
 
 // Run all tests

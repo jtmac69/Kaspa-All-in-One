@@ -75,6 +75,7 @@ CMD ["sh", "-c", "\
     DB_PASS=$(echo $DATABASE_URL | sed -n 's/.*:\\/\\/[^:]*:\\([^@]*\\)@.*/\\1/p') && \
     ./k-indexer \
         --db-host ${DB_HOST:-indexer-db} \
+        --db-port ${DB_PORT:-5432} \
         --db-name ${DB_NAME:-ksocial} \
         --db-user ${DB_USER:-indexer} \
         --db-password ${DB_PASS:-secure_password} \

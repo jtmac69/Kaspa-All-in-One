@@ -62,7 +62,14 @@ class ConfigGenerator {
   }
 
   generateSecurePassword(length = 32) {
-    return crypto.randomBytes(length).toString('base64').slice(0, length);
+    // Use only alphanumeric characters to avoid database URL parsing issues
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * chars.length);
+      password += chars.charAt(randomIndex);
+    }
+    return password;
   }
 
   async validateConfig(config) {
@@ -227,6 +234,7 @@ class ConfigGenerator {
     // Otherwise, use public indexers
     if (profiles.includes('kaspa-user-applications')) {
       const useLocalIndexers = profiles.includes('indexer-services');
+      const hasLocalNode = profiles.includes('kaspa-node');
       
       lines.push('# Indexer URLs for User Applications');
       
@@ -235,8 +243,8 @@ class ConfigGenerator {
           '# Using local indexers (indexer-services profile is active)',
           'REMOTE_KASIA_INDEXER_URL=http://kasia-indexer:8080/',
           'REMOTE_KSOCIAL_INDEXER_URL=http://k-indexer:8080/',
-          '# Local Kaspa node WebSocket for apps',
-          'REMOTE_KASPA_NODE_WBORSH_URL=ws://kaspa-node:17110'
+          '# Kaspa node WebSocket for apps',
+          `REMOTE_KASPA_NODE_WBORSH_URL=${hasLocalNode ? 'ws://kaspa-node:17110' : 'wss://wrpc.kasia.fyi'}`
         );
       } else {
         lines.push(
@@ -1012,7 +1020,8 @@ class ConfigGenerator {
     
     // Add kaspa-node only if a profile needs it
     // kaspa-user-applications does NOT need a local node - it uses remote endpoints
-    const nodeProfiles = ['core', 'archive-node', 'mining', 'indexer-services'].filter(p => profiles.includes(p));
+    // indexer-services can work with OR without a local node (fallback to public endpoints)
+    const nodeProfiles = ['core', 'archive-node', 'mining'].filter(p => profiles.includes(p));
     if (nodeProfiles.length > 0) {
       lines.push(
         '  # Kaspa Node - Official Docker image (Core component)',
@@ -1165,6 +1174,11 @@ class ConfigGenerator {
         '    volumes:',
         `      - indexer-db-data:${timescaledbDataDir}`,
         '      - ./config/postgres/init:/docker-entrypoint-initdb.d',
+        '    healthcheck:',
+        '      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-indexer} -d ${POSTGRES_DB:-kaspa_indexers}"]',
+        '      interval: 10s',
+        '      timeout: 5s',
+        '      retries: 5',
         '    networks:',
         '      - kaspa-network',
         '    profiles:',
@@ -1179,10 +1193,49 @@ class ConfigGenerator {
         '    ports:',
         '      - "${KASIA_INDEXER_PORT:-3002}:8080"',
         '    environment:',
-        `      - KASPA_NODE_WBORSH_URL=\${KASPA_NODE_WBORSH_URL:-ws://kaspa-node:${rpcPort + 1000}}`,
+        `      - KASPA_NODE_WBORSH_URL=\${KASPA_NODE_WBORSH_URL:-${profiles.includes('kaspa-node') ? `ws://kaspa-node:${rpcPort + 1000}` : 'wss://wrpc.kasia.fyi'}}`,
         `      - NETWORK_TYPE=\${KASPA_NETWORK:-${network}}`,
         '    volumes:',
         '      - kasia-indexer-data:/app/data',
+        '    healthcheck:',
+        '      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/metrics"]',
+        '      interval: 30s',
+        '      timeout: 10s',
+        '      start_period: 60s',
+        '      retries: 3',
+        '    networks:',
+        '      - kaspa-network',
+        '    profiles:',
+        '      - indexer-services',
+        '',
+        '  # K-Indexer (K-Social Indexer)',
+        '  k-indexer:',
+        '    build:',
+        '      context: ./services/k-indexer',
+        '      dockerfile: Dockerfile',
+        '    container_name: k-indexer',
+        '    restart: unless-stopped',
+        '    ports:',
+        '      - "${K_INDEXER_PORT:-3006}:8080"',
+        '    environment:',
+        `      - KASPA_NODE_URL=\${REMOTE_KASPA_NODE_URL:-https://api.kaspa.org}`,
+        '      - DATABASE_URL=postgresql://${POSTGRES_USER:-indexer}:${POSTGRES_PASSWORD}@indexer-db:${POSTGRES_PORT:-5432}/ksocial',
+        '      - POSTGRES_HOST=indexer-db',
+        '      - POSTGRES_PORT=${POSTGRES_PORT:-5432}',
+        '      - POSTGRES_DB=ksocial',
+        '      - POSTGRES_USER=${POSTGRES_USER:-indexer}',
+        '      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}',
+        '    volumes:',
+        '      - k-indexer-data:/app/data',
+        '    healthcheck:',
+        '      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]',
+        '      interval: 30s',
+        '      timeout: 10s',
+        '      start_period: 60s',
+        '      retries: 3',
+        '    depends_on:',
+        '      indexer-db:',
+        '        condition: service_healthy',
         '    networks:',
         '      - kaspa-network',
         '    profiles:',
@@ -1198,13 +1251,17 @@ class ConfigGenerator {
         '    ports:',
         '      - "${SIMPLY_INDEXER_PORT:-3005}:3000"',
         '    environment:',
-        `      - KASPA_NODE_URL=\${REMOTE_KASPA_NODE_URL:-http://kaspa-node:${rpcPort}}`,
+        `      - KASPA_NODE_URL=\${REMOTE_KASPA_NODE_URL:-https://api.kaspa.org}`,
         '      - DATABASE_URL=postgresql://${POSTGRES_USER:-indexer}:${POSTGRES_PASSWORD}@indexer-db:5432/simply_kaspa',
+        '    healthcheck:',
+        '      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/metrics"]',
+        '      interval: 30s',
+        '      timeout: 10s',
+        '      start_period: 60s',
+        '      retries: 3',
         '    depends_on:',
         '      indexer-db:',
         '        condition: service_healthy',
-        '      kaspa-node:',
-        '        condition: service_started',
         '    networks:',
         '      - kaspa-network',
         '    profiles:',
@@ -1283,6 +1340,7 @@ class ConfigGenerator {
     if (profiles.includes('indexer-services')) {
       lines.push(
         '  kasia-indexer-data:',
+        '  k-indexer-data:',
         '  indexer-db-data:'
       );
     }

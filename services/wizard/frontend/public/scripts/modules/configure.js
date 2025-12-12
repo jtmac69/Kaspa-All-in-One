@@ -136,12 +136,13 @@ function populateConfigurationForm(config) {
  * Update form visibility based on selected profiles
  */
 function updateFormVisibility(profiles) {
-    // Network Configuration section - show for core, archive-node, indexer-services, mining
-    // Hide for kaspa-user-applications (they don't need external IP or public node toggle)
+    // Network Configuration section - show for core, archive-node, mining
+    // Hide for kaspa-user-applications and indexer-services (they don't need external IP or public node toggle)
+    // indexer-services connect TO nodes, they don't serve as public nodes
     const networkSection = document.querySelector('.config-section:has(#external-ip)');
     if (networkSection) {
         const needsNetwork = profiles.includes('core') || profiles.includes('archive-node') || 
-                            profiles.includes('indexer-services') || profiles.includes('mining');
+                            profiles.includes('mining');
         networkSection.style.display = needsNetwork ? 'block' : 'none';
     }
     
