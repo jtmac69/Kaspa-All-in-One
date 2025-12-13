@@ -2037,14 +2037,13 @@ Review the installation summary before proceeding.
      - Simply Kaspa Indexer (simply-kaspa-indexer)
      - K-Indexer (k-indexer)
      - Kasia Indexer (kasia-indexer)
-     - Nginx (reverse proxy)
    - ✓ Should show estimated disk space usage
    - ✓ Should show estimated installation time
 
 2. **Verify the information**:
    - Profile: Indexer Services
    - Services: TimescaleDB + Multiple Indexers (no local Kaspa node)
-   - Ports: 5432 (database), 8080 (indexers), 80/443 (nginx)
+   - Ports: 5432 (database), 3002/3005/3006 (indexers)
 
 3. **Look for important notices**:
    - ✓ May show notice: "Indexers will connect to public Kaspa network"
@@ -2135,7 +2134,6 @@ When installation finishes, you should see a completion screen.
 3. **Note any access information shown**:
    - ✓ May show TimescaleDB connection info: `localhost:5432`
    - ✓ May show indexer API endpoints
-   - ✓ May show nginx proxy endpoints
 
 **📝 Document**:
 - Was the completion message clear?
@@ -2163,7 +2161,6 @@ Since the dashboard is not included in this test release, use Docker commands to
    - ✅ `kasia-indexer` - Kasia blockchain indexer
    - ✅ `k-indexer` - K-Social blockchain indexer  
    - ✅ `simply-kaspa-indexer` - Simply Kaspa indexer
-   - ✅ `nginx` - Reverse proxy (if configured)
    
    **All containers should show**:
    - Status: "Up X minutes" (not "Exited")
@@ -2182,9 +2179,13 @@ Since the dashboard is not included in this test release, use Docker commands to
    ```bash
    docker logs kasia-indexer --tail 20
    ```
-   - ✓ Should show indexer starting up
-   - ✓ May show "Waiting for node" or "Connecting to database"
-   - ✓ Should NOT show repeated connection failures
+   - ✓ Should show "Connected to Some("wss://...")" 
+   - ✓ Should show "Successfully connected to RPC client"
+   - ✓ Should show "Starting VirtualChainSyncer"
+   - ⚠️ If shows "Error while connecting to node: vcc handler connect send failed":
+     - WebSocket endpoint may be down
+     - Try alternative endpoint in .env: `KASPA_NODE_WBORSH_URL=wss://vivi.kaspa.blue/kaspa/mainnet/wrpc/borsh`
+     - Recreate container: `docker stop kasia-indexer && docker rm kasia-indexer && docker compose up -d kasia-indexer`
 
    **K-Indexer**:
    ```bash
@@ -2246,11 +2247,10 @@ Verify all indexer-related containers are running.
    docker ps
    ```
    - ✓ Should see multiple containers:
-     - `indexer-db` or `timescaledb` - Status: Up
+     - `indexer-db` - Status: Up
      - `simply-kaspa-indexer` - Status: Up
      - `k-indexer` - Status: Up
      - `kasia-indexer` - Status: Up
-     - `kaspa-nginx` - Status: Up
    - ✓ All should show "Up" status (not "Restarting" or "Exited")
 
 2. **Check container logs** (sample a few):
@@ -2270,7 +2270,6 @@ Verify all indexer-related containers are running.
    - ✓ Should show CPU and memory usage for all containers
    - ✓ Indexers may use moderate CPU during processing (20-50%)
    - ✓ TimescaleDB should use moderate resources
-   - ✓ Nginx should use minimal resources
 
 **📝 Document**:
 - Were all expected containers running? (Yes/No)
@@ -2283,7 +2282,6 @@ Verify all indexer-related containers are running.
 - Simply Kaspa Indexer: 20-50% CPU (when processing), 2-3GB RAM
 - K-Indexer: 10-30% CPU (when processing), 1-2GB RAM
 - Kasia Indexer: 10-30% CPU (when processing), 1-2GB RAM
-- Nginx: <5% CPU, <100MB RAM
 
 #### Step 10: Verify TimescaleDB Connectivity (3 minutes)
 
@@ -2297,18 +2295,26 @@ Test that the TimescaleDB database is accessible and functioning.
    - ✓ If `nc` not available, try `telnet localhost 5432` (should connect)
 
 2. **Connect to TimescaleDB** (optional, requires `psql`):
+   
+   **List available databases**:
    ```bash
-   docker exec -it indexer-db psql -U kaspa -d kaspa_indexer
+   docker exec indexer-db psql -U kaspa -d postgres -c "\l"
+   ```
+   - ✓ Should show databases: `kaspa_explorer`, `ksocial`, `simply_kaspa`
+   
+   **Connect to active database**:
+   ```bash
+   docker exec -it indexer-db psql -U kaspa -d simply_kaspa
    ```
    - ✓ Should connect to database
-   - ✓ Should show PostgreSQL prompt: `kaspa_indexer=#`
+   - ✓ Should show PostgreSQL prompt: `simply_kaspa=#`
 
 3. **Check database tables** (if connected):
    ```sql
    \dt
    ```
-   - ✓ Should show list of tables (may be empty initially)
-   - ✓ Tables will be created as indexer processes data
+   - ✓ Should show indexer tables: `blocks`, `transactions`, `addresses_transactions`, etc.
+   - ✓ Tables are created by simply-kaspa-indexer as it processes data
 
 4. **Exit database** (if connected):
    ```sql
@@ -2318,7 +2324,8 @@ Test that the TimescaleDB database is accessible and functioning.
 **📝 Document**:
 - Was TimescaleDB port accessible? (Yes/No)
 - Were you able to connect to the database? (Yes/No/Skipped)
-- Were database tables present? (Yes/No/Skipped)
+- Which databases were present? (kaspa_explorer, ksocial, simply_kaspa)
+- Were indexer tables present in simply_kaspa? (Yes/No/Skipped)
 
 **🐛 If Something Goes Wrong**:
 - Port not accessible: Check if container is running with `docker ps`

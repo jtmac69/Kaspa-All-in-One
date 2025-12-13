@@ -71,7 +71,7 @@ services:
     ports:
       - "${KASIA_INDEXER_PORT:-3002}:8080"
     environment:
-      - KASPA_NODE_WBORSH_URL=${KASPA_NODE_WBORSH_URL:-wss://wrpc.kasia.fyi}
+      - KASPA_NODE_WBORSH_URL=${KASPA_NODE_WBORSH_URL:-wss://rose.kaspa.green/kaspa/mainnet/wrpc/borsh}
       - NETWORK_TYPE=${KASPA_NETWORK:-mainnet}
     volumes:
       - kasia-indexer-data:/app/data
