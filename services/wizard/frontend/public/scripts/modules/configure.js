@@ -67,11 +67,18 @@ function populateConfigurationForm(config) {
         publicNodeToggle.checked = config.PUBLIC_NODE || false;
     }
     
-    // Database password
-    const dbPasswordInput = document.getElementById('db-password');
-    if (dbPasswordInput && config.POSTGRES_PASSWORD) {
-        dbPasswordInput.value = config.POSTGRES_PASSWORD;
-        dbPasswordInput.placeholder = 'Auto-generated password';
+    // K-Social Database password
+    const kSocialDbPasswordInput = document.getElementById('k-social-db-password');
+    if (kSocialDbPasswordInput && config.K_SOCIAL_DB_PASSWORD) {
+        kSocialDbPasswordInput.value = config.K_SOCIAL_DB_PASSWORD;
+        kSocialDbPasswordInput.placeholder = 'Auto-generated password';
+    }
+    
+    // Simply Kaspa Database password
+    const simplyKaspaDbPasswordInput = document.getElementById('simply-kaspa-db-password');
+    if (simplyKaspaDbPasswordInput && config.SIMPLY_KASPA_DB_PASSWORD) {
+        simplyKaspaDbPasswordInput.value = config.SIMPLY_KASPA_DB_PASSWORD;
+        simplyKaspaDbPasswordInput.placeholder = 'Auto-generated password';
     }
     
     // Kaspa Network
@@ -155,7 +162,7 @@ function updateFormVisibility(profiles) {
     
     // Database section - show ONLY if indexer-services profile is selected
     // Kaspa User Applications use public indexers by default and don't need database config
-    const dbSection = document.querySelector('.config-section:has(#db-password)');
+    const dbSection = document.querySelector('.config-section:has(#k-social-db-password)');
     if (dbSection) {
         const needsDatabase = profiles.includes('indexer-services');
         dbSection.style.display = needsDatabase ? 'block' : 'none';
@@ -204,9 +211,14 @@ const validationRules = {
         message: 'Please enter a valid IPv4 address',
         required: false
     },
-    'db-password': {
-        minLength: 16,
-        message: 'Password must be at least 16 characters long',
+    'k-social-db-password': {
+        minLength: 12,
+        message: 'Password must be at least 12 characters long',
+        required: false  // Conditionally required based on selected profiles
+    },
+    'simply-kaspa-db-password': {
+        minLength: 12,
+        message: 'Password must be at least 12 characters long',
         required: false  // Conditionally required based on selected profiles
     },
     'custom-env': {
@@ -368,17 +380,24 @@ function validateAllFields() {
         }
     });
     
-    // Check if database password is required based on selected profiles
+    // Check if database passwords are required based on selected profiles
     // Only indexer-services profile needs database configuration
     const selectedProfiles = stateManager.get('selectedProfiles') || [];
     const needsDatabase = selectedProfiles.includes('indexer-services');
     
     if (needsDatabase) {
-        const dbPasswordField = document.getElementById('db-password');
-        if (dbPasswordField && (!dbPasswordField.value || dbPasswordField.value.trim() === '')) {
+        const kSocialDbPasswordField = document.getElementById('k-social-db-password');
+        if (kSocialDbPasswordField && (!kSocialDbPasswordField.value || kSocialDbPasswordField.value.trim() === '')) {
             isValid = false;
-            showFieldError('db-password', 'Database password is required for indexer services');
-            errors.push({ field: 'db-password', message: 'Database password is required' });
+            showFieldError('k-social-db-password', 'K-Social Database Password is required');
+            errors.push({ field: 'k-social-db-password', message: 'K-Social Database Password is required' });
+        }
+        
+        const simplyKaspaDbPasswordField = document.getElementById('simply-kaspa-db-password');
+        if (simplyKaspaDbPasswordField && (!simplyKaspaDbPasswordField.value || simplyKaspaDbPasswordField.value.trim() === '')) {
+            isValid = false;
+            showFieldError('simply-kaspa-db-password', 'Simply Kaspa Database Password is required');
+            errors.push({ field: 'simply-kaspa-db-password', message: 'Simply Kaspa Database Password is required' });
         }
     }
     
@@ -463,10 +482,16 @@ function gatherConfigurationFromForm() {
         config.PUBLIC_NODE = publicNodeToggle.checked;
     }
     
-    // Database password
-    const dbPasswordInput = document.getElementById('db-password');
-    if (dbPasswordInput && dbPasswordInput.value) {
-        config.POSTGRES_PASSWORD = dbPasswordInput.value;
+    // K-Social Database password
+    const kSocialDbPasswordInput = document.getElementById('k-social-db-password');
+    if (kSocialDbPasswordInput && kSocialDbPasswordInput.value) {
+        config.K_SOCIAL_DB_PASSWORD = kSocialDbPasswordInput.value;
+    }
+    
+    // Simply Kaspa Database password
+    const simplyKaspaDbPasswordInput = document.getElementById('simply-kaspa-db-password');
+    if (simplyKaspaDbPasswordInput && simplyKaspaDbPasswordInput.value) {
+        config.SIMPLY_KASPA_DB_PASSWORD = simplyKaspaDbPasswordInput.value;
     }
     
     // Indexer Endpoints

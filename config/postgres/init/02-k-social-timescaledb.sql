@@ -1,17 +1,51 @@
 -- K-Social Indexer TimescaleDB Initialization
 -- Optimized for Kaspa's 10 blocks/second rate and social media patterns
 
--- Enable TimescaleDB extension
-CREATE EXTENSION IF NOT EXISTS timescaledb;
-
--- Create K-Social database if it doesn't exist
-SELECT 'CREATE DATABASE ksocial' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'ksocial')\gexec
-
 -- Connect to ksocial database
 \c ksocial;
 
--- Enable TimescaleDB extension in ksocial database
+-- Enable TimescaleDB extension
 CREATE EXTENSION IF NOT EXISTS timescaledb;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+CREATE EXTENSION IF NOT EXISTS "btree_gin";
+
+-- ============================================================================
+-- K PROTOCOL CONFIGURATION AND METADATA TABLES
+-- ============================================================================
+
+-- K Variables table (configuration and metadata storage)
+-- Create both k_vars and vars tables to handle different k-indexer versions
+CREATE TABLE IF NOT EXISTS k_vars (
+    key VARCHAR PRIMARY KEY,
+    value TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS vars (
+    key VARCHAR PRIMARY KEY,
+    value TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Insert default configuration values into both tables
+INSERT INTO k_vars (key, value) VALUES 
+    ('network', 'mainnet'),
+    ('version', '1.0.0'),
+    ('indexer_mode', 'full'),
+    ('last_processed_block', '0'),
+    ('sync_status', 'starting')
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
+
+INSERT INTO vars (key, value) VALUES 
+    ('network', 'mainnet'),
+    ('version', '1.0.0'),
+    ('indexer_mode', 'full'),
+    ('last_processed_block', '0'),
+    ('sync_status', 'starting')
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
 
 -- ============================================================================
 -- K PROTOCOL SOCIAL MEDIA TABLES WITH TIMESCALEDB OPTIMIZATION
@@ -287,10 +321,11 @@ FROM timescaledb_information.hypertables ht
 WHERE ht.schema_name = 'public'
 ORDER BY ht.total_bytes DESC;
 
--- Grant permissions to indexer user
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO indexer;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO indexer;
-GRANT USAGE ON SCHEMA public TO indexer;
+-- Grant permissions to k-social user and admin
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA k_social TO k_social_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA k_social TO k_social_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA k_social TO kaspa;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA k_social TO kaspa;
 
 -- Success message
 \echo 'K-Social TimescaleDB initialization completed successfully!'

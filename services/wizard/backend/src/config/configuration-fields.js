@@ -246,43 +246,8 @@ const PROFILE_CONFIG_FIELDS = {
 
   'indexer-services': [
     {
-      key: 'TIMESCALEDB_DATA_DIR',
-      label: 'TimescaleDB Data Directory',
-      type: 'text',
-      defaultValue: '/data/timescaledb',
-      required: false,
-      validation: [
-        {
-          type: 'path',
-          message: 'Must be a valid path'
-        }
-      ],
-      tooltip: 'Container path for TimescaleDB data',
-      category: 'advanced',
-      group: 'database',
-      visibleForProfiles: ['indexer-services']
-    },
-    {
-      key: 'POSTGRES_USER',
-      label: 'Database User',
-      type: 'text',
-      defaultValue: 'kaspa',
-      required: true,
-      validation: [
-        {
-          type: 'pattern',
-          pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
-          message: 'Username must start with a letter and contain only letters, numbers, and underscores'
-        }
-      ],
-      tooltip: 'PostgreSQL database username',
-      category: 'basic',
-      group: 'database',
-      visibleForProfiles: ['indexer-services']
-    },
-    {
-      key: 'POSTGRES_PASSWORD',
-      label: 'Database Password',
+      key: 'K_SOCIAL_DB_PASSWORD',
+      label: 'K-Social Database Password',
       type: 'password',
       defaultValue: '',
       required: true,
@@ -293,8 +258,64 @@ const PROFILE_CONFIG_FIELDS = {
           message: 'Password must be at least 12 characters'
         }
       ],
-      tooltip: 'PostgreSQL database password (will be auto-generated if left empty)',
+      tooltip: 'PostgreSQL password for K-Social database (will be auto-generated if left empty)',
       category: 'basic',
+      group: 'database',
+      visibleForProfiles: ['indexer-services']
+    },
+    {
+      key: 'SIMPLY_KASPA_DB_PASSWORD',
+      label: 'Simply Kaspa Database Password',
+      type: 'password',
+      defaultValue: '',
+      required: true,
+      validation: [
+        {
+          type: 'minLength',
+          min: 12,
+          message: 'Password must be at least 12 characters'
+        }
+      ],
+      tooltip: 'PostgreSQL password for Simply Kaspa database (will be auto-generated if left empty)',
+      category: 'basic',
+      group: 'database',
+      visibleForProfiles: ['indexer-services']
+    },
+    {
+      key: 'K_SOCIAL_DB_PORT',
+      label: 'K-Social Database Port',
+      type: 'number',
+      defaultValue: 5433,
+      required: false,
+      validation: [
+        {
+          type: 'range',
+          min: 1024,
+          max: 65535,
+          message: 'Port must be between 1024 and 65535'
+        }
+      ],
+      tooltip: 'Port for K-Social TimescaleDB database',
+      category: 'advanced',
+      group: 'database',
+      visibleForProfiles: ['indexer-services']
+    },
+    {
+      key: 'SIMPLY_KASPA_DB_PORT',
+      label: 'Simply Kaspa Database Port',
+      type: 'number',
+      defaultValue: 5434,
+      required: false,
+      validation: [
+        {
+          type: 'range',
+          min: 1024,
+          max: 65535,
+          message: 'Port must be between 1024 and 65535'
+        }
+      ],
+      tooltip: 'Port for Simply Kaspa TimescaleDB database',
+      category: 'advanced',
       group: 'database',
       visibleForProfiles: ['indexer-services']
     }

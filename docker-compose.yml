@@ -37,23 +37,48 @@ services:
   # INDEXER-SERVICES PROFILE - Local indexing and data services
   # ============================================================================
 
-  # Shared TimescaleDB for Indexers
-  indexer-db:
+  # K-Social Database (dedicated for k-indexer)
+  k-social-db:
     image: timescale/timescaledb:latest-pg16
-    container_name: indexer-db
+    container_name: k-social-db
     restart: unless-stopped
-    shm_size: 4G
+    shm_size: 2G
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${K_SOCIAL_DB_PORT:-5433}:5432"
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-kaspa_indexers}
-      - POSTGRES_USER=${POSTGRES_USER:-indexer}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-secure_password}
+      - POSTGRES_DB=ksocial
+      - POSTGRES_USER=k_social_user
+      - POSTGRES_PASSWORD=${K_SOCIAL_DB_PASSWORD:-k_social_secure_pass}
     volumes:
-      - indexer-db-data:/data/timescaledb
-      - ./config/postgres/init:/docker-entrypoint-initdb.d
+      - k-social-db-data:/var/lib/postgresql/data
+      - ./config/postgres/k-social-init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-indexer} -d ${POSTGRES_DB:-kaspa_indexers}"]
+      test: ["CMD-SHELL", "pg_isready -U k_social_user -d ksocial"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kaspa-network
+    profiles:
+      - indexer-services
+
+  # Simply Kaspa Database (dedicated for simply-kaspa-indexer)
+  simply-kaspa-db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: simply-kaspa-db
+    restart: unless-stopped
+    shm_size: 2G
+    ports:
+      - "${SIMPLY_KASPA_DB_PORT:-5434}:5432"
+    environment:
+      - POSTGRES_DB=simply_kaspa
+      - POSTGRES_USER=simply_kaspa_user
+      - POSTGRES_PASSWORD=${SIMPLY_KASPA_DB_PASSWORD:-simply_kaspa_secure_pass}
+    volumes:
+      - simply-kaspa-db-data:/var/lib/postgresql/data
+      - ./config/postgres/simply-kaspa-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U simply_kaspa_user -d simply_kaspa"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -97,12 +122,12 @@ services:
       - "${K_INDEXER_PORT:-3006}:8080"
     environment:
       - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-https://api.kaspa.org}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-indexer}:${POSTGRES_PASSWORD}@indexer-db:${POSTGRES_PORT:-5432}/ksocial
-      - POSTGRES_HOST=indexer-db
-      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - DATABASE_URL=postgresql://k_social_user:${K_SOCIAL_DB_PASSWORD:-k_social_secure_pass}@k-social-db:5432/ksocial
+      - POSTGRES_HOST=k-social-db
+      - POSTGRES_PORT=5432
       - POSTGRES_DB=ksocial
-      - POSTGRES_USER=${POSTGRES_USER:-indexer}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=k_social_user
+      - POSTGRES_PASSWORD=${K_SOCIAL_DB_PASSWORD:-k_social_secure_pass}
     volumes:
       - k-indexer-data:/app/data
     healthcheck:
@@ -112,7 +137,7 @@ services:
       start_period: 60s
       retries: 3
     depends_on:
-      indexer-db:
+      k-social-db:
         condition: service_healthy
     networks:
       - kaspa-network
@@ -130,7 +155,7 @@ services:
       - "${SIMPLY_INDEXER_PORT:-3005}:3000"
     environment:
       - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-https://api.kaspa.org}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-indexer}:${POSTGRES_PASSWORD}@indexer-db:5432/simply_kaspa
+      - DATABASE_URL=postgresql://simply_kaspa_user:${SIMPLY_KASPA_DB_PASSWORD:-simply_kaspa_secure_pass}@simply-kaspa-db:5432/simply_kaspa
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/metrics"]
       interval: 30s
@@ -138,7 +163,7 @@ services:
       start_period: 60s
       retries: 3
     depends_on:
-      indexer-db:
+      simply-kaspa-db:
         condition: service_healthy
     networks:
       - kaspa-network
@@ -150,7 +175,8 @@ volumes:
   wizard-state:
   kasia-indexer-data:
   k-indexer-data:
-  indexer-db-data:
+  k-social-db-data:
+  simply-kaspa-db-data:
 
 networks:
   kaspa-network:

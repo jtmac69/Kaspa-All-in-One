@@ -926,16 +926,29 @@
                         <h3 class="config-section-title">Database Configuration</h3>
                         <div class="config-form">
                             <div class="form-group">
-                                <label for="db-password" class="form-label">
-                                    Database Password
-                                    <span class="form-tooltip" title="Password for PostgreSQL/TimescaleDB">ⓘ</span>
+                                <label for="k-social-db-password" class="form-label">
+                                    K-Social Database Password
+                                    <span class="form-tooltip" title="Password for K-Social TimescaleDB database">ⓘ</span>
                                 </label>
                                 <div class="password-input-group">
-                                    <input type="password" id="db-password" class="form-input" placeholder="Auto-generated" />
-                                    <button class="btn-icon-only" onclick="togglePasswordVisibility('db-password')">
+                                    <input type="password" id="k-social-db-password" class="form-input" placeholder="Auto-generated" />
+                                    <button class="btn-icon-only" onclick="togglePasswordVisibility('k-social-db-password')">
                                         <span class="icon-eye">👁</span>
                                     </button>
-                                    <button class="btn-secondary btn-small" onclick="generatePassword('db-password')">Generate</button>
+                                    <button class="btn-secondary btn-small" onclick="generatePassword('k-social-db-password')">Generate</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="simply-kaspa-db-password" class="form-label">
+                                    Simply Kaspa Database Password
+                                    <span class="form-tooltip" title="Password for Simply Kaspa TimescaleDB database">ⓘ</span>
+                                </label>
+                                <div class="password-input-group">
+                                    <input type="password" id="simply-kaspa-db-password" class="form-input" placeholder="Auto-generated" />
+                                    <button class="btn-icon-only" onclick="togglePasswordVisibility('simply-kaspa-db-password')">
+                                        <span class="icon-eye">👁</span>
+                                    </button>
+                                    <button class="btn-secondary btn-small" onclick="generatePassword('simply-kaspa-db-password')">Generate</button>
                                 </div>
                             </div>
                         </div>

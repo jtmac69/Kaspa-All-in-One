@@ -2157,8 +2157,9 @@ Since the dashboard is not included in this test release, use Docker commands to
    ```
    
    **Expected output** - you should see these containers running:
-   - ✅ `indexer-db` - TimescaleDB database
-   - ✅ `kasia-indexer` - Kasia blockchain indexer
+   - ✅ `k-social-db` - TimescaleDB database for K-Social indexer (port 5433)
+   - ✅ `simply-kaspa-db` - TimescaleDB database for Simply Kaspa indexer (port 5434)
+   - ✅ `kasia-indexer` - Kasia blockchain indexer (file-based storage)
    - ✅ `k-indexer` - K-Social blockchain indexer  
    - ✅ `simply-kaspa-indexer` - Simply Kaspa indexer
    
@@ -2168,12 +2169,21 @@ Since the dashboard is not included in this test release, use Docker commands to
 
 2. **Check service logs for startup success**:
    
-   **TimescaleDB**:
+   **K-Social Database**:
    ```bash
-   docker logs indexer-db --tail 20
+   docker logs k-social-db --tail 20
    ```
    - ✓ Should show "database system is ready to accept connections"
-   - ✓ Should NOT show connection errors
+   - ✓ Should show "K-Social database initialization completed successfully!"
+   - ✓ Should NOT show connection errors or schema errors
+
+   **Simply Kaspa Database**:
+   ```bash
+   docker logs simply-kaspa-db --tail 20
+   ```
+   - ✓ Should show "database system is ready to accept connections"
+   - ✓ Should show "Simply Kaspa database initialization completed successfully!"
+   - ✓ Should NOT show connection errors or schema errors
 
    **Kasia Indexer**:
    ```bash
@@ -2191,9 +2201,12 @@ Since the dashboard is not included in this test release, use Docker commands to
    ```bash
    docker logs k-indexer --tail 20
    ```
-   - ✓ Should show indexer starting up
-   - ✓ May show database connection messages
-   - ✓ Should NOT show build or startup errors
+   - ✓ Should show "Starting K-indexer PostgreSQL webserver"
+   - ✓ Should show "Successfully connected to PostgreSQL database"
+   - ✓ Should show "Database pool connection test successful"
+   - ✓ Should show "Web server starting on 127.0.0.1:8080"
+   - ✓ Should NOT show "relation does not exist" errors
+   - ✓ Should NOT show database connection failures
 
    **Simply Kaspa Indexer**:
    ```bash
@@ -2211,13 +2224,57 @@ Since the dashboard is not included in this test release, use Docker commands to
    - ✓ Indexers should show moderate CPU usage (processing data)
    - ✓ No container should show 0% CPU for extended periods (indicates crash)
 
-4. **Test basic connectivity** (optional):
+4. **Verify Database Architecture** (2 minutes):
    
-   **TimescaleDB** (if accessible):
+   **Test K-Social Database**:
    ```bash
-   docker exec indexer-db pg_isready -U indexer
+   docker exec k-social-db pg_isready -U k_social_user -d ksocial
    ```
    - ✓ Should return "accepting connections"
+   
+   **Test Simply Kaspa Database**:
+   ```bash
+   docker exec simply-kaspa-db pg_isready -U simply_kaspa_user -d simply_kaspa
+   ```
+   - ✓ Should return "accepting connections"
+
+   **Verify Database Isolation**:
+   ```bash
+   # Check K-Social database tables
+   docker exec k-social-db psql -U k_social_user -d ksocial -c "\dt"
+   
+   # Check Simply Kaspa database tables  
+   docker exec simply-kaspa-db psql -U simply_kaspa_user -d simply_kaspa -c "\dt"
+   ```
+   
+   **Expected K-Social Tables**:
+   - ✓ Should show: `k_vars`, `vars`, `k_posts`, `k_votes` (and others)
+   - ✓ Should NOT show blockchain tables like `blocks`, `transactions_acceptances`
+   
+   **Expected Simply Kaspa Tables**:
+   - ✓ Should show: `vars`, `blocks`, `transactions`, `transactions_acceptances` (and others)
+   - ✓ Should NOT show social media tables like `k_posts`, `k_votes`
+
+5. **Test service health endpoints** (optional):
+   
+   **K-Indexer Health**:
+   ```bash
+   curl -s http://localhost:3006/health
+   ```
+   - ✓ Should return JSON with status information
+   - ✓ Should show `"status":"healthy"` or similar
+   
+   **Simply Kaspa Indexer Metrics**:
+   ```bash
+   curl -s http://localhost:3005/api/metrics
+   ```
+   - ✓ Should return metrics data (may be empty initially)
+   
+   **Kasia Indexer Metrics**:
+   ```bash
+   curl -s http://localhost:3002/metrics
+   ```
+   - ✓ Should return Prometheus-style metrics
 
 **📝 Document**:
 - Were all expected containers running? (Yes/No)
@@ -2225,7 +2282,14 @@ Since the dashboard is not included in this test release, use Docker commands to
 - Were the service logs showing normal startup? (Yes/No)
 - Did any service show repeated errors? (Yes/No - describe)
 - Was resource usage reasonable? (Yes/No)
-- Were you able to connect to any services? (Yes/No)
+- **Database Architecture Verification**:
+  - Did both databases accept connections? (Yes/No)
+  - Did K-Social database contain social media tables? (Yes/No)
+  - Did Simply Kaspa database contain blockchain tables? (Yes/No)
+  - Were the databases properly isolated? (Yes/No)
+- **Service Health Endpoints**:
+  - Did K-Indexer health endpoint respond? (Yes/No)
+  - Did indexer metrics endpoints respond? (Yes/No)
 
 **🐛 If Something Goes Wrong**:
 - **Container not running**: Check logs with `docker logs <container-name>`

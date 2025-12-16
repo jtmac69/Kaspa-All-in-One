@@ -37,8 +37,8 @@ const PROFILE_DEFINITIONS = {
     },
     'indexer-services': {
         name: 'Indexer Services',
-        description: 'Local indexers (Kasia, K-Indexer, Simply-Kaspa)',
-        services: ['timescaledb', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
+        description: 'Local indexers (Kasia, K-Indexer, Simply-Kaspa) with dedicated databases',
+        services: ['k-social-db', 'simply-kaspa-db', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
         resources: {
             cpu: '4 cores',
             ram: '8 GB',

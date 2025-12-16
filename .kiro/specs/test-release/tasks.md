@@ -268,6 +268,23 @@ This task list implements the test release requirements and design. The goal is 
   - [x] **ENHANCED**: Added comprehensive health checks to all indexer services
   - [x] **DOCUMENTED**: Created TASK_6.2_INDEXER_SERVICES_ARCHITECTURE_FIX.md
   - [x] **REBUILDING**: Test release package with all indexer services fixes and architectural improvements
+  - [x] **DATABASE INITIALIZATION BUG FOUND**: k-indexer failing with "relation k_vars does not exist" errors
+  - [x] **ROOT CAUSE**: Database initialization scripts missing k_vars configuration table required by k-indexer
+  - [x] **FIXED**: Created k_vars table manually and populated with required configuration (network=mainnet)
+  - [x] **FIXED**: Updated database initialization scripts to create k_vars table automatically
+  - [x] **FIXED**: Corrected user permissions in all init scripts from 'indexer' to 'kaspa'
+  - [x] **VERIFIED**: k-indexer health endpoint now responds successfully, database errors eliminated
+  - [x] **DOCUMENTED**: Created TASK_INDEXER_DB_INITIALIZATION_FIX.md implementation summary
+  - [x] **ARCHITECTURE REDESIGN**: Implemented Database-Per-Service architecture to eliminate all conflicts
+  - [x] **ROOT CAUSE**: Shared database approach caused irreconcilable schema and naming conflicts
+  - [x] **SOLUTION**: Separate TimescaleDB containers for each indexer service
+  - [x] **IMPLEMENTED**: k-social-db (port 5433) for k-indexer, simply-kaspa-db (port 5434) for simply-kaspa-indexer
+  - [x] **BENEFITS**: Complete isolation, independent scaling, fault tolerance, schema freedom
+  - [x] **DOCUMENTED**: Created DATABASE_PER_SERVICE_ARCHITECTURE.md comprehensive design document
+  - [x] **SPEC UPDATES**: Updated all relevant specs with new database architecture
+  - [x] **TESTING UPDATED**: Updated TESTING.md Scenario 3 with new verification procedures
+  - [x] **CROSS-SPEC SYNC**: Documented changes across kaspa-all-in-one, web-installation-wizard, management-dashboard, and test-release specs
+  - [x] **IMPLEMENTATION SUMMARY**: Created TASK_DATABASE_PER_SERVICE_ARCHITECTURE_IMPLEMENTATION.md
 - [ ] Test Scenario 4: Error Handling (follow TESTING.md)
 - [ ] Test Scenario 5: Reconfiguration (follow TESTING.md)
 - [x] Document time taken for each scenario

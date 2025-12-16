@@ -1,14 +1,16 @@
--- Create databases for indexers with TimescaleDB
+-- Create separate databases for indexers (indexers expect specific database names)
 -- This script runs when the TimescaleDB container starts for the first time
 -- NOTE: Kasia indexer uses file-based storage (RocksDB), not PostgreSQL
 
--- Create K Social database  
-CREATE DATABASE ksocial;
-GRANT ALL PRIVILEGES ON DATABASE ksocial TO indexer;
+-- Create K Social database (only if it doesn't exist)
+SELECT 'CREATE DATABASE ksocial' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'ksocial')\gexec
 
--- Create Simply Kaspa database
-CREATE DATABASE simply_kaspa;
-GRANT ALL PRIVILEGES ON DATABASE simply_kaspa TO indexer;
+-- Create Simply Kaspa database (only if it doesn't exist)  
+SELECT 'CREATE DATABASE simply_kaspa' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'simply_kaspa')\gexec
+
+-- Grant permissions on databases
+GRANT ALL PRIVILEGES ON DATABASE ksocial TO kaspa;
+GRANT ALL PRIVILEGES ON DATABASE simply_kaspa TO kaspa;
 
 -- Configure K Social database with TimescaleDB
 \c ksocial;

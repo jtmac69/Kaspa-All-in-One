@@ -465,7 +465,7 @@ function determineActiveProfiles(services, installationState, wizardState) {
   }
   
   // Indexer Services profile
-  if (services.some(s => ['kasia-indexer', 'k-indexer', 'simply-kaspa-indexer', 'timescaledb'].includes(s.name))) {
+  if (services.some(s => ['kasia-indexer', 'k-indexer', 'simply-kaspa-indexer', 'k-social-db', 'simply-kaspa-db'].includes(s.name))) {
     profiles.add('indexer-services');
   }
   
@@ -583,7 +583,7 @@ function determineAffectedServices(diff, profiles) {
     const profileServiceMap = {
       'core': ['kaspa-node', 'dashboard'],
       'kaspa-user-applications': ['kasia-app', 'k-social'],
-      'indexer-services': ['kasia-indexer', 'k-indexer', 'simply-kaspa-indexer', 'timescaledb'],
+      'indexer-services': ['kasia-indexer', 'k-indexer', 'simply-kaspa-indexer', 'k-social-db', 'simply-kaspa-db'],
       'archive-node': ['kaspa-archive-node'],
       'mining': ['kaspa-stratum']
     };

@@ -19,7 +19,7 @@ class DockerManager {
     this.profileMapping = {
       'core': [],  // Core services have no profile (always run)
       'kaspa-user-applications': ['kaspa-user-applications'],  // kasia-app, k-social, kaspa-explorer
-      'indexer-services': ['indexer-services'],  // indexer-db, kasia-indexer, k-indexer, simply-kaspa-indexer
+      'indexer-services': ['indexer-services'],  // k-social-db, simply-kaspa-db, kasia-indexer, k-indexer, simply-kaspa-indexer
       'archive-node': ['archive-node'],  // archive-db, archive-indexer
       'mining': ['mining'],  // kaspa-stratum
       'development': ['development']  // portainer, pgadmin
@@ -53,7 +53,7 @@ class DockerManager {
     const containerMap = {
       'core': ['kaspa-node'],
       'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],
-      'indexer-services': ['indexer-db', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
+      'indexer-services': ['k-social-db', 'simply-kaspa-db', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
       'archive-node': ['archive-db', 'archive-indexer'],
       'mining': ['kaspa-stratum'],
       'development': ['portainer', 'pgadmin']
@@ -352,7 +352,7 @@ class DockerManager {
     const serviceMap = {
       core: ['kaspa-node'],
       'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],  // nginx removed - not needed
-      'indexer-services': ['indexer-db', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
+      'indexer-services': ['k-social-db', 'simply-kaspa-db', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
       'archive-node': ['archive-db', 'archive-indexer'],
       mining: ['kaspa-stratum']
     };

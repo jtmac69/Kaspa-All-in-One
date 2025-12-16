@@ -13,15 +13,16 @@ class ServiceValidator {
     this.profileServiceMap = {
       'core': ['kaspa-node'],
       'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],
-      'indexer-services': ['indexer-db', 'kasia-indexer', 'simply-kaspa-indexer'],
+      'indexer-services': ['k-social-db', 'simply-kaspa-db', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
       'archive-node': ['kaspa-node', 'archive-db'],
       'mining': ['kaspa-node', 'kaspa-stratum']
     };
 
     // Define service dependencies
     this.serviceDependencies = {
-      'kasia-indexer': ['indexer-db'],
-      'simply-kaspa-indexer': ['indexer-db', 'kaspa-node'],
+      'kasia-indexer': [],  // File-based storage, no database dependency
+      'k-indexer': ['k-social-db'],
+      'simply-kaspa-indexer': ['simply-kaspa-db'],
       'kaspa-stratum': ['kaspa-node'],
       'k-social': [], // Uses remote endpoints by default
       'kasia-app': [], // Uses remote endpoints by default

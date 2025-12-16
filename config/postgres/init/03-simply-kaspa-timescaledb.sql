@@ -1,17 +1,12 @@
 -- Simply Kaspa Indexer TimescaleDB Initialization
 -- Optimized for Kaspa's 10 blocks/second rate (864,000 blocks/day)
+-- Uses simply_kaspa schema within shared kaspa_indexers database
 
--- Enable TimescaleDB extension
-CREATE EXTENSION IF NOT EXISTS timescaledb;
+-- Connect to shared database
+\c kaspa_indexers;
 
--- Create Simply Kaspa database if it doesn't exist
-SELECT 'CREATE DATABASE simply_kaspa' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'simply_kaspa')\gexec
-
--- Connect to simply_kaspa database
-\c simply_kaspa;
-
--- Enable TimescaleDB extension in simply_kaspa database
-CREATE EXTENSION IF NOT EXISTS timescaledb;
+-- Set schema for simply-kaspa tables
+SET search_path = simply_kaspa, public;
 
 -- ============================================================================
 -- KASPA BLOCKCHAIN TABLES WITH TIMESCALEDB OPTIMIZATION
@@ -47,6 +42,21 @@ SELECT create_hypertable('blocks', 'created_at',
     chunk_time_interval => INTERVAL '30 minutes',
     if_not_exists => TRUE);
 
+-- Configuration table for simply-kaspa-indexer
+CREATE TABLE IF NOT EXISTS vars (
+    key VARCHAR PRIMARY KEY,
+    value TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Insert default configuration values for simply-kaspa-indexer
+INSERT INTO vars (key, value) VALUES 
+    ('network', 'mainnet'),
+    ('version', '1.0.0'),
+    ('last_processed_block', '0')
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
+
 -- Transactions table (high frequency, optimized for batch processing)
 CREATE TABLE IF NOT EXISTS transactions (
     id BIGSERIAL,
@@ -67,6 +77,15 @@ CREATE TABLE IF NOT EXISTS transactions (
     total_output_value BIGINT DEFAULT 0,
     fee BIGINT DEFAULT 0,
     mass BIGINT DEFAULT 0,
+    PRIMARY KEY (created_at, id)
+);
+
+-- Transaction acceptances table (required by simply-kaspa-indexer)
+CREATE TABLE IF NOT EXISTS transactions_acceptances (
+    id BIGSERIAL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    transaction_id VARCHAR NOT NULL,
+    block_hash VARCHAR NOT NULL,
     PRIMARY KEY (created_at, id)
 );
 
@@ -384,10 +403,11 @@ SELECT
     pg_size_pretty(pg_database_size(current_database())) as value,
     'Total database size' as description;
 
--- Grant permissions to indexer user
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO indexer;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO indexer;
-GRANT USAGE ON SCHEMA public TO indexer;
+-- Grant permissions to simply-kaspa user and admin
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA simply_kaspa TO simply_kaspa_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA simply_kaspa TO simply_kaspa_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA simply_kaspa TO kaspa;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA simply_kaspa TO kaspa;
 
 -- Success message
 \echo 'Simply Kaspa TimescaleDB initialization completed successfully!'
