@@ -53,9 +53,9 @@ assert(
 
 const ksocialIndexerField = kaspaUserAppFields.find(f => f.key === 'REMOTE_KSOCIAL_INDEXER_URL');
 assert(
-  ksocialIndexerField && ksocialIndexerField.defaultValue === 'https://indexer.kaspatalk.net/',
+  ksocialIndexerField && ksocialIndexerField.defaultValue === 'https://indexer0.kaspatalk.net/',
   'REMOTE_KSOCIAL_INDEXER_URL has correct default',
-  'https://indexer.kaspatalk.net/',
+  'https://indexer0.kaspatalk.net/',
   ksocialIndexerField?.defaultValue
 );
 

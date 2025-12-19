@@ -65,7 +65,7 @@ class DependencyValidator {
       'k-social': [
         {
           name: 'K Social Indexer API',
-          url: 'https://indexer.kaspatalk.net/health',
+          url: 'https://indexer0.kaspatalk.net/health',
           type: 'api',
           critical: true,
           timeout: 10000

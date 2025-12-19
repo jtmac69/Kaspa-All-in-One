@@ -79,4 +79,5 @@ CMD ["sh", "-c", "\
         --db-name ${DB_NAME:-ksocial} \
         --db-user ${DB_USER:-indexer} \
         --db-password ${DB_PASS:-secure_password} \
+        --bind-address 0.0.0.0:8080 \
 "]

@@ -210,7 +210,7 @@ const PROFILE_CONFIG_FIELDS = {
       key: 'REMOTE_KSOCIAL_INDEXER_URL',
       label: 'K-Social Indexer URL',
       type: 'text',
-      defaultValue: 'https://indexer.kaspatalk.net/',
+      defaultValue: 'https://indexer0.kaspatalk.net/',
       required: false,
       validation: [
         {

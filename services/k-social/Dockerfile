@@ -38,7 +38,7 @@ RUN mkdir -p /var/cache/nginx /var/log/nginx && \
     chown -R ksocial:ksocial /var/cache/nginx /var/log/nginx /usr/share/nginx/html
 
 # Default indexer URL (can be overridden by environment variable)
-ENV KSOCIAL_INDEXER_URL=https://indexer.kaspatalk.net/
+ENV KSOCIAL_INDEXER_URL=https://indexer0.kaspatalk.net/
 
 # Expose port
 EXPOSE 3000

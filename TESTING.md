@@ -2298,9 +2298,9 @@ Since the dashboard is not included in this test release, use Docker commands to
 - **Connection refused**: Service may still be starting up, wait 1-2 minutes
 
 **🐛 If Something Goes Wrong**:
-- Dashboard doesn't load: Check if port 8080 is accessible
 - Service shows as "Stopped": Check logs with `docker logs <container-name>`
 - Service shows as "Unhealthy": May need a minute to initialize, try refreshing
+- Connection errors: Verify services are on the same Docker network
 
 #### Step 9: Verify Docker Containers (2 minutes)
 
@@ -2463,11 +2463,11 @@ Verify that all services are properly integrated.
    - ✓ Should show "Connected to database" or similar
    - ✓ Should show database name and host
 
-3. **Test dashboard integration**:
-   - Go back to dashboard at `http://localhost:8080`
-   - ✓ Should show all services as healthy
-   - ✓ Should show sync/indexing progress
-   - ✓ Should show resource usage
+3. **Test service monitoring** (Dashboard not yet available in v0.9.0):
+   - Use `docker ps` to check service status
+   - ✓ All indexer services should show "Up (healthy)"
+   - ✓ Database services should show "Up (healthy)"
+   - Note: Web dashboard is planned for future release
 
 4. **Check service dependencies**:
    ```bash
@@ -2506,11 +2506,11 @@ Observe the sync and indexing process for a few minutes.
    - ✓ Should show API connections
    - Press Ctrl+C to stop following
 
-2. **Check processing progress** (if dashboard available):
-   - Open dashboard at `http://localhost:8080` (if included)
+2. **Check processing progress** (via logs):
+   - Monitor indexer logs for progress indicators
    - ✓ Should show current block height being processed
-   - ✓ Should show indexing progress
-   - ✓ Should show estimated time remaining (if available)
+   - ✓ Should show indexing progress messages
+   - Note: Web dashboard not available in v0.9.0
 
 3. **Monitor additional indexers**:
    ```bash
@@ -3405,7 +3405,7 @@ First, we need an existing installation to reconfigure.
 
 4. **Verify installation completed**:
    - ✓ Should show "Installation Complete!"
-   - ✓ Dashboard should be accessible at `http://localhost:8080`
+   - ✓ Wizard should show success message
    - ✓ Kaspa node should be running
 
 5. **Check what's installed**:
@@ -3631,14 +3631,16 @@ After reconfiguration completes, verify everything is working.
    - ✓ Dashboard (existing)
 
 3. **Check access links**:
-   - ✓ Dashboard: `http://localhost:8080`
    - ✓ Kasia app: `http://localhost:3001`
    - ✓ Kaspa node RPC: `localhost:16110`
+   - Note: Dashboard not available in v0.9.0
 
-4. **Open the dashboard** at `http://localhost:8080`:
-   - ✓ Should show both Kaspa node and Kasia app
-   - ✓ Both should show "Running" or "Healthy" status
-   - ✓ Should show resource usage for both
+4. **Verify services with Docker**:
+   ```bash
+   docker ps --format "table {{.Names}}\t{{.Status}}"
+   ```
+   - ✓ Should show both Kaspa node and Kasia app running
+   - ✓ Both should show "Up (healthy)" status
 
 5. **Verify Docker containers**:
    ```bash
@@ -4092,7 +4094,7 @@ kaspa-node    kaspanet/rusty-kaspad:latest   "entrypoint.sh kaspa…"   kaspa-no
 
 ✓ Restart complete!
 
-Access the dashboard at: http://localhost:8080
+Note: Dashboard not available in v0.9.0 - use `docker ps` to verify services
 ```
 
 **When to Use:**

@@ -126,7 +126,7 @@ if (runTest('Should show REMOTE_KSOCIAL_INDEXER_URL field', () => {
   logInfo(`Default: ${ksocialField.defaultValue}`);
   logInfo(`Group: ${ksocialField.group}`);
   
-  if (ksocialField.defaultValue !== 'https://indexer.kaspatalk.net/') {
+  if (ksocialField.defaultValue !== 'https://indexer0.kaspatalk.net/') {
     logError(`Wrong default value: ${ksocialField.defaultValue}`);
     return false;
   }

@@ -19,13 +19,15 @@ export async function runSystemCheck() {
         const portDescriptions = {
             8080: 'Dashboard (alternative)',
             8081: 'Dashboard',
-            5432: 'PostgreSQL Database',
+            5433: 'K-Social Database',
+            5434: 'Simply Kaspa Database',
             16110: 'Kaspa Node (P2P)',
             16111: 'Kaspa Node (RPC)'
         };
         
         // Get required ports (excluding 3000 since wizard uses it)
-        const requiredPorts = [8080, 16110, 16111, 5432, 8081];
+        // Updated for Database-Per-Service Architecture: 5433 (k-social-db), 5434 (simply-kaspa-db)
+        const requiredPorts = [8080, 16110, 16111, 5433, 5434, 8081];
         
         // Call backend API
         const results = await api.get(`/system-check?ports=${requiredPorts.join(',')}`);

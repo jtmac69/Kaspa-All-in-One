@@ -304,7 +304,7 @@ function displayConfiguration(selectedProfiles, configuration) {
                     </div>
                     <div class="review-item">
                         <span class="review-label">K-Social Indexer URL:</span>
-                        <span class="review-value">${configuration.REMOTE_KSOCIAL_INDEXER_URL || 'https://indexer.kaspatalk.net/'}</span>
+                        <span class="review-value">${configuration.REMOTE_KSOCIAL_INDEXER_URL || 'https://indexer0.kaspatalk.net/'}</span>
                     </div>
                     <div class="review-item">
                         <span class="review-label">Kaspa Node WebSocket URL:</span>

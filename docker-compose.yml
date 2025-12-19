@@ -130,6 +130,7 @@ services:
       - POSTGRES_PASSWORD=${K_SOCIAL_DB_PASSWORD:-k_social_secure_pass}
     volumes:
       - k-indexer-data:/app/data
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s

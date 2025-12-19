@@ -110,7 +110,7 @@ async function testReviewProfileSpecificConfig() {
         
         const hasKSocialIndexer = await page.evaluate(() => {
             const content = document.body.textContent;
-            return content.includes('K-Social Indexer URL') || content.includes('https://indexer.kaspatalk.net/');
+            return content.includes('K-Social Indexer URL') || content.includes('https://indexer0.kaspatalk.net/');
         });
         
         const hasWebSocketURL = await page.evaluate(() => {

@@ -251,7 +251,7 @@ class ConfigGenerator {
           '# Using public indexers (indexer-services profile not active)',
           '# URLs match Kasia official .env.production',
           'REMOTE_KASIA_INDEXER_URL=https://indexer.kasia.fyi/',
-          'REMOTE_KSOCIAL_INDEXER_URL=https://indexer.kaspatalk.net/',
+          'REMOTE_KSOCIAL_INDEXER_URL=https://indexer0.kaspatalk.net/',
           '# Public Kaspa node WebSocket',
           'REMOTE_KASPA_NODE_WBORSH_URL=wss://wrpc.kasia.fyi'
         );
