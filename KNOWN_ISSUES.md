@@ -116,6 +116,44 @@ The Kasia v0.6.2 release requires `kaspa-wasm` which wasn't available in the rep
 
 ## Medium Priority Issues
 
+### TESTING.md Documentation Accuracy Issues (FIXED)
+**Issue**: ~~Scenario 5 in TESTING.md documented advanced reconfiguration features that don't exist in the current wizard~~ **FIXED**
+
+**Severity**: ~~Medium~~ **RESOLVED**
+
+**Status**: **FIXED** - Documentation updated to match actual wizard behavior
+
+**What Was Wrong**:
+- Scenario 5 described a sophisticated "Existing Installation Detection" screen that doesn't exist
+- Documented service addition/removal workflows not implemented in wizard
+- Described configuration change features not available in v0.9.0-test
+- Created confusion for testers expecting features that weren't there
+
+**What Was Fixed**:
+- **Scenario 5 Completely Rewritten**: Changed from "Reconfiguration" to "State Management and Fresh Start"
+- **Accurate Testing**: Now tests actual wizard behavior (state file detection, fresh start process)
+- **Realistic Expectations**: Reduced complexity from 🟡 Intermediate (20-30 min) to 🟢 Beginner (10-15 min)
+- **Clear Scope**: Added note that advanced reconfiguration is planned for future releases
+
+**New Scenario 5 Tests**:
+- ✅ State file detection (`.env`, `.kaspa-aio/`)
+- ✅ Fresh start prompts and warnings
+- ✅ State cleanup process
+- ✅ Container vs. state file management
+- ✅ Wizard restart functionality (`./restart-wizard.sh`)
+- ✅ Cleanup script usage (`./cleanup-test.sh`)
+
+**Impact on Testers**:
+- **Before Fix**: Testers were confused when wizard didn't show expected reconfiguration features
+- **After Fix**: Testers can successfully complete Scenario 5 and test real functionality
+- **Documentation Accuracy**: TESTING.md now matches actual wizard behavior
+
+**Root Cause**:
+The documentation was written to describe an ideal reconfiguration system that was planned but not implemented in the v0.9.0-test wizard. The current wizard focuses on fresh installations rather than modifying existing ones.
+
+**Future Plans**:
+Advanced reconfiguration features (service addition/removal, configuration changes) are planned for future releases (v1.0+) and will be documented when actually implemented.
+
 ### Windows Native Not Supported
 **Issue**: Windows requires WSL2 (Windows Subsystem for Linux) - native Windows is not supported
 
@@ -551,18 +589,37 @@ These are known limitations of the test release, categorized by their impact on 
 
 15. **Limited Reconfiguration** [Severity: Medium]
     
-    Some changes require full reinstallation
-    - Changing profiles may require stopping all services
-    - Some configuration changes need container recreation
-    - Cannot dynamically add/remove services without restart
-    - Profile changes may require data resync
+    Advanced reconfiguration features are not available in v0.9.0-test
+    - **No service addition/removal**: Cannot add or remove services from existing installation
+    - **No configuration changes**: Cannot modify existing service configurations through wizard
+    - **No existing installation detection**: Wizard doesn't detect or display running Docker containers
+    - **State file detection only**: Wizard only detects `.env` and `.kaspa-aio/` files, not running services
+    - **Fresh installation focus**: Wizard is designed for new installations, not modifications
+    
+    **Current Behavior**:
+    - When restarting wizard with existing state files, it prompts: "Remove existing state and start fresh? (Y/n)"
+    - Answering 'n' keeps state files but wizard starts normally (no reconfiguration mode)
+    - Answering 'y' removes state files for fresh installation
+    - No sophisticated "Existing Installation Detected" screen exists
     
     **Workaround**:
-    - Use `./stop-services.sh` before making changes
-    - Reopen wizard at http://localhost:3000 to reconfigure
-    - Wizard will detect existing installation and offer update mode
-    - For major changes, use `./fresh-start.sh` to start clean (preserves config)
-    - Test configuration changes in a separate directory first
+    - **For major changes**: Use `./fresh-start.sh` to start completely clean
+    - **For service management**: Use Docker commands directly:
+      ```bash
+      # Stop specific service
+      docker-compose stop <service-name>
+      
+      # Remove service
+      docker-compose rm <service-name>
+      
+      # Add service by editing docker-compose.yml and running
+      docker-compose up -d <service-name>
+      ```
+    - **For configuration changes**: Edit configuration files manually and restart services
+    - **For testing different profiles**: Use separate directories for each test
+    
+    **Future Plans**:
+    Advanced reconfiguration features (service addition/removal, configuration changes, existing installation detection) are planned for future releases (v1.0+)
 
 16. **No Commercial Support** [Severity: Low]
     
@@ -836,6 +893,7 @@ These are known limitations of the test release, categorized by their impact on 
 - ✅ Automatic backup system before configuration changes
 - ✅ Improved error messages and troubleshooting guidance
 - ✅ Service management scripts (restart, stop, fresh-start, status)
+- ✅ **TESTING.md Scenario 5 Documentation Alignment** - Fixed major discrepancy between documented and actual wizard behavior
 
 ## Document Updates and Version History
 

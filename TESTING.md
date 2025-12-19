@@ -3360,30 +3360,29 @@ Your feedback from this scenario is invaluable. Testing error handling helps ens
 
 ---
 
-### Scenario 5: Reconfiguration 🟡 (20-30 minutes)
+### Scenario 5: State Management and Fresh Start 🟢 (10-15 minutes)
 
-**Goal**: Test the wizard's ability to detect existing installations and modify configurations
+**Goal**: Test how the wizard handles existing installation artifacts and the fresh start process
 
 **What You'll Test**:
-- Existing installation detection
-- Reconfiguration mode
-- Adding services to existing installation
-- Removing services from existing installation
-- Configuration changes without data loss
-- Service restart after reconfiguration
+- Existing state file detection (`.env`, `.kaspa-aio/`)
+- Fresh start prompts and workflow
+- State cleanup process
+- Wizard restart behavior
+- Container cleanup verification
 
 **Prerequisites**:
 - All prerequisites installed (Docker, Docker Compose, Node.js)
-- At least 20GB free disk space
+- At least 10GB free disk space
 - Stable internet connection
-- 20-30 minutes of time
-- **Recommended**: Complete Scenario 1 first to understand basic installation
+- 10-15 minutes of time
+- **Recommended**: Complete Scenario 1 first to have existing state
 
-**Note**: This scenario tests the wizard's ability to modify an existing installation rather than starting from scratch. This is a critical feature for users who want to add or remove services over time.
+**Note**: This scenario tests the wizard's handling of existing installation artifacts. Advanced reconfiguration features (adding/removing services) are planned for future releases.
 
-#### Step 1: Initial Installation (5 minutes)
+#### Step 1: Create Existing Installation (3 minutes)
 
-First, we need an existing installation to reconfigure.
+First, we need an existing installation to test state detection.
 
 1. **Ensure you have a clean slate**:
    ```bash
@@ -3391,113 +3390,151 @@ First, we need an existing installation to reconfigure.
    ```
    - Respond `y` to both prompts
 
-2. **Start the wizard**:
+2. **Start the wizard and complete a basic installation**:
+   ```bash
+   ./start-test.sh
+   ```
+   - Complete a Core Profile installation (follow Scenario 1 if needed)
+   - Wait for installation to complete
+   - Close the wizard browser tab when done
+
+3. **Verify installation artifacts exist**:
+   ```bash
+   ls -la .env .kaspa-aio/
+   docker ps --filter "name=kaspa-"
+   ```
+   - ✓ Should see `.env` file
+   - ✓ Should see `.kaspa-aio/` directory
+   - ✓ Should see running Kaspa containers
+
+**📝 Document**:
+- Did the installation complete successfully? (Yes/No)
+- What files/directories were created?
+- What containers are running?
+
+#### Step 2: Test State Detection (2 minutes)
+
+Now test how the wizard handles existing state when restarted.
+
+1. **Restart the wizard**:
    ```bash
    ./start-test.sh
    ```
 
-3. **Complete a basic Core Profile installation**:
-   - System Check → Continue
-   - Profile Selection → Select "Core Profile"
-   - Configuration → Use defaults
-   - Review → Click "Install"
-   - Wait for installation to complete (~5 minutes)
+2. **Observe the state detection prompt**:
+   - ✓ Should show: "⚠ Found existing installation state"
+   - ✓ Should list: "- .kaspa-aio/ directory exists"
+   - ✓ Should list: "- .env file exists"
+   - ✓ Should warn: "This may cause the wizard to skip steps or show incorrect state"
+   - ✓ Should ask: "Remove existing state and start fresh? (Y/n)"
 
-4. **Verify installation completed**:
-   - ✓ Should show "Installation Complete!"
-   - ✓ Wizard should show success message
-   - ✓ Kaspa node should be running
-
-5. **Check what's installed**:
-   ```bash
-   docker ps
-   ```
-   - ✓ Should see `kaspa-node` container running
-   - ✓ Should see `dashboard` container running
+3. **Test answering 'n' (keep existing state)**:
+   - Type `n` and press Enter
+   - ✓ Wizard should continue starting
+   - ✓ Browser should open to wizard interface
+   - ✓ Note what the wizard shows (does it detect existing installation?)
 
 **📝 Document**:
-- Did the initial installation complete successfully? (Yes/No)
-- What services are currently running?
+- Was the state detection prompt clear? (Yes/No)
+- Did the warning explain the implications? (Yes/No)
+- What happened when you chose to keep existing state?
+- Did the wizard show any existing installation information?
 
-**💡 What We're Setting Up**:
-- We're creating a baseline installation (Core Profile)
-- We'll then use the wizard to add more services
-- This tests the "upgrade" or "expand" use case
+#### Step 3: Test Fresh Start Process (3 minutes)
 
-#### Step 2: Close and Reopen Wizard (1 minute)
+Now test the fresh start workflow.
 
-Now let's test if the wizard can detect the existing installation.
+1. **Close the wizard browser tab**
 
-1. **Close the wizard browser tab** (if still open)
-
-2. **Stop the wizard process**:
-   ```bash
-   # Find the wizard PID
-   cat /tmp/kaspa-wizard.pid
-   
-   # Stop it
-   kill $(cat /tmp/kaspa-wizard.pid)
-   ```
-   - Or simply close the terminal where wizard is running
-
-3. **Restart the wizard**:
+2. **Restart the wizard again**:
    ```bash
    ./start-test.sh
    ```
 
-4. **Observe the wizard startup**:
-   - ✓ Should start normally
-   - ✓ Browser should open to `http://localhost:3000`
+3. **This time, choose fresh start**:
+   - When prompted "Remove existing state and start fresh? (Y/n)"
+   - Press Enter (default is Y) or type `y`
+   - ✓ Should show: "Removing existing state..."
+   - ✓ Should show: "✓ State cleared"
+
+4. **Verify state was cleared**:
+   ```bash
+   ls -la .env .kaspa-aio/ 2>/dev/null || echo "Files removed"
+   ```
+   - ✓ `.env` file should be gone
+   - ✓ `.kaspa-aio/` directory should be gone
+
+5. **Check if containers are still running**:
+   ```bash
+   docker ps --filter "name=kaspa-"
+   ```
+   - ✓ Note: Containers may still be running (this is expected)
+   - ✓ Fresh start only removes state files, not containers
 
 **📝 Document**:
-- Did the wizard restart successfully? (Yes/No)
-- How long did restart take?
+- Was the fresh start process clear? (Yes/No)
+- Were the state files properly removed? (Yes/No)
+- Are containers still running? (Yes/No)
+- Did you understand what was being cleared vs. preserved?
 
-#### Step 3: Existing Installation Detection (2 minutes)
+#### Step 4: Test Container Cleanup (2 minutes)
 
-The wizard should detect that services are already installed.
+Test the proper way to clean up containers.
 
-1. **Observe the wizard's initial screen**:
-   - ✓ Should show a message like "Existing Installation Detected"
-   - ✓ Should show what's currently installed (Core Profile, Kaspa node)
-   - ✓ Should show current configuration details
+1. **Use the cleanup script**:
+   ```bash
+   ./cleanup-test.sh
+   ```
+   - Follow the prompts to stop and remove containers
+   - ✓ Should offer to stop running services
+   - ✓ Should offer to remove containers
+   - ✓ Should offer to remove data volumes
 
-2. **Review the detected configuration**:
-   - ✓ Should show Kaspa node is installed
-   - ✓ Should show current ports (16110, 16111)
-   - ✓ Should show current data directory
-   - ✓ Should show installation date/time (if available)
-
-3. **Look for reconfiguration options**:
-   - ✓ Should show option to "Add Services" or "Modify Installation"
-   - ✓ Should show option to "Reconfigure" or "Change Settings"
-   - ✓ Should show option to "Start Fresh" or "Reinstall"
-   - ✓ May show option to "Continue" with current setup
-
-4. **Select the "Add Services" or "Modify Installation" option**
+2. **Verify cleanup**:
+   ```bash
+   docker ps --filter "name=kaspa-"
+   docker ps -a --filter "name=kaspa-"
+   ```
+   - ✓ Should show no running Kaspa containers
+   - ✓ Should show no stopped Kaspa containers (if you chose to remove them)
 
 **📝 Document**:
-- Did the wizard detect the existing installation? (Yes/No)
-- Was the detection message clear? (Yes/No)
-- Was the current configuration accurately displayed? (Yes/No)
-- Were the reconfiguration options clear? (Yes/No)
+- Was the cleanup process clear? (Yes/No)
+- Did it properly stop and remove containers? (Yes/No)
+- Were you given appropriate choices about what to remove?
 
-**🐛 If Something Goes Wrong**:
-- Wizard doesn't detect installation: Check if containers are running with `docker ps`
-- Detection is inaccurate: Note what's wrong in your bug report
-- No reconfiguration options: Take a screenshot and report
+#### Step 5: Test Restart Wizard Script (2 minutes)
 
-**💡 Why This Matters**:
-- Users often want to expand their installation over time
-- Starting from scratch would lose blockchain sync progress
-- Detecting existing installations prevents conflicts and data loss
+Test the restart wizard functionality.
 
-#### Step 4: Select Additional Services (2 minutes)
+1. **Start the wizard normally**:
+   ```bash
+   ./start-test.sh
+   ```
+   - Let it start completely
+   - Don't close the browser tab
 
-Now let's add more services to the existing installation.
+2. **Use the restart script**:
+   ```bash
+   ./restart-wizard.sh
+   ```
+   - ✓ Should show: "Stopping wizard..."
+   - ✓ Should ask: "Reset wizard to fresh state? (y/N)"
+   - Try answering 'n' first (keep state)
+   - ✓ Should show: "Keeping existing state"
+   - ✓ Should restart the wizard
 
-1. **Review available services to add**:
-   - ✓ Should show services that are NOT currently installed
+3. **Test with state reset**:
+   - Run `./restart-wizard.sh` again
+   - This time answer 'y' to reset state
+   - ✓ Should show: "Resetting wizard state..."
+   - ✓ Should remove configuration files
+   - ✓ Should warn about browser cache refresh
+
+**📝 Document**:
+- Did the restart script work properly? (Yes/No)
+- Were the state reset options clear? (Yes/No)
+- Did you understand the browser refresh requirement?
    - ✓ Should NOT show services that are already installed
    - ✓ May show profiles or individual services
 
@@ -3527,374 +3564,47 @@ Now let's add more services to the existing installation.
 - Was the "what will be added" summary clear? (Yes/No)
 - Were configuration options appropriate? (Yes/No)
 
-**💡 What's Happening**:
-- Wizard is planning to add Kasia to existing installation
-- Existing Kaspa node will remain untouched
-- New containers will be created for Kasia
-- Configuration will be updated to include both services
-
-#### Step 5: Review Reconfiguration Plan (2 minutes)
+---
 
 Before applying changes, review what will happen.
 
-1. **Review the reconfiguration summary**:
-   - ✓ Should show "Reconfiguration Summary" or similar title
-   - ✓ Should clearly separate:
-     - **Existing services** (will be kept): Kaspa node
-     - **New services** (will be added): Kasia app
-     - **Services to remove** (none in this test)
 
-2. **Verify the plan**:
-   - ✓ Kaspa node: Keep running (no changes)
-   - ✓ Kasia app: Will be installed
-   - ✓ Dashboard: Will be updated to show new service
-   - ✓ Ports: 3001 will be used for Kasia
-
-3. **Check for warnings**:
-   - ✓ May show: "Existing services will not be interrupted"
-   - ✓ May show: "Blockchain sync will continue"
-   - ✓ May show: "New services will be built and started"
-
-4. **Look for data safety assurances**:
-   - ✓ Should indicate that existing data will be preserved
-   - ✓ Should indicate that configuration will be backed up
-
-5. **Click "Apply Changes" or "Reconfigure"**
-
-**📝 Document**:
-- Was the reconfiguration plan clear? (Yes/No)
-- Did you feel confident that existing services wouldn't be affected? (Yes/No)
-- Were data safety assurances present? (Yes/No)
-- Was the "Apply" button clearly labeled? (Yes/No)
-
-**⚠️ Important**: This is the point where changes will be applied. The wizard should make it very clear what will happen.
-
-#### Step 6: Apply Reconfiguration (5-10 minutes)
-
-Now the wizard will apply the changes.
-
-1. **Observe the reconfiguration progress**:
-   - ✓ Should show "Reconfiguring..." or "Applying changes..."
-   - ✓ Should show progress indicator
-   - ✓ Should show current step
-
-2. **Watch for these stages**:
-   - "Backing up current configuration..." (30 seconds)
-   - "Pulling Docker images for new services..." (2-3 minutes)
-   - "Building Kasia application..." (5-8 minutes) ⏰ **Longest step**
-   - "Creating new containers..."
-   - "Starting new services..."
-   - "Updating dashboard..."
-   - "Running health checks..."
-   - "Verifying existing services..." (important!)
-
-3. **Monitor existing services**:
-   - In another terminal, run:
-     ```bash
-     watch -n 5 'docker ps --format "table {{.Names}}\t{{.Status}}"'
-     ```
-   - ✓ Kaspa node should remain "Up" throughout
-   - ✓ Should NOT see kaspa-node restarting
-
-4. **Note the time taken for each stage**
-
-**📝 Document**:
-- How long did reconfiguration take total?
-- How long did building Kasia take?
-- Did existing services remain running? (Yes/No)
-- Were progress updates clear? (Yes/No)
-- Did you feel informed about what was happening? (Yes/No)
-
-**🐛 If Something Goes Wrong**:
-- Existing services stop: This is a critical bug! Note exactly when it happened
-- Reconfiguration fails: Note the error message and stage where it failed
-- Progress hangs: Wait 10 minutes, then check `docker ps` and logs
-
-**💡 What's Actually Happening**:
-- Wizard is adding new services WITHOUT touching existing ones
-- Docker Compose is being updated with new service definitions
-- New containers are being created alongside existing ones
-- Dashboard is being updated to monitor all services
-
-#### Step 7: Verify Reconfiguration Success (3 minutes)
-
-After reconfiguration completes, verify everything is working.
-
-1. **Check the completion screen**:
-   - ✓ Should show "Reconfiguration Complete!" or similar
-   - ✓ Should show summary of changes made
-   - ✓ Should list all services now running (both old and new)
-
-2. **Verify all services are listed**:
-   - ✓ Kaspa node (existing)
-   - ✓ Kasia app (new)
-   - ✓ Dashboard (existing)
-
-3. **Check access links**:
-   - ✓ Kasia app: `http://localhost:3001`
-   - ✓ Kaspa node RPC: `localhost:16110`
-   - Note: Dashboard not available in v0.9.0
-
-4. **Verify services with Docker**:
-   ```bash
-   docker ps --format "table {{.Names}}\t{{.Status}}"
-   ```
-   - ✓ Should show both Kaspa node and Kasia app running
-   - ✓ Both should show "Up (healthy)" status
-
-5. **Verify Docker containers**:
-   ```bash
-   docker ps
-   ```
-   - ✓ Should see `kaspa-node` - Status: Up (uptime should be continuous from before)
-   - ✓ Should see `kasia-app` - Status: Up (newly created)
-   - ✓ Should see `dashboard` - Status: Up
-
-**📝 Document**:
-- Did reconfiguration complete successfully? (Yes/No)
-- Are all services running? (Yes/No)
-- Did the Kaspa node maintain its uptime? (Yes/No)
-- Is the dashboard showing all services? (Yes/No)
-
-**🔍 Critical Check - Kaspa Node Uptime**:
-```bash
-docker ps --format "table {{.Names}}\t{{.Status}}" | grep kaspa-node
-```
-- The "Up" time should show the node has been running since the initial installation
-- If it shows "Up 2 minutes" but you installed 15 minutes ago, the node was restarted (BUG!)
-
-#### Step 8: Test New Service (2 minutes)
-
-Verify the newly added Kasia app is working.
-
-1. **Open Kasia app** at `http://localhost:3001`:
-   - ✓ Should load without errors
-   - ✓ Should show Kasia interface
-
-2. **Check for connectivity**:
-   - ✓ Should NOT show "Cannot connect to indexer"
-   - ✓ Should NOT show "Cannot connect to node"
-   - ✓ Should appear functional
-
-3. **Check browser console** (F12 → Console):
-   - ✓ Should not show repeated errors
-   - ✓ May show some warnings (normal)
-
-**📝 Document**:
-- Did Kasia app load successfully? (Yes/No)
-- Is it functional? (Yes/No)
-- Any error messages? (Yes/No - if yes, what?)
-
-#### Step 9: Test Existing Service (2 minutes)
-
-Verify the existing Kaspa node is still working correctly.
-
-1. **Check Kaspa node in dashboard**:
-   - ✓ Should still show "Running" or "Healthy"
-   - ✓ Should show blockchain sync progress
-   - ✓ Sync should have continued (block height should be higher than before)
-
-2. **Check Kaspa node logs**:
-   ```bash
-   docker logs kaspa-node --tail 50
-   ```
-   - ✓ Should show continuous operation
-   - ✓ Should NOT show restart messages
-   - ✓ Should show ongoing sync activity
-
-3. **Test RPC connectivity**:
-   ```bash
-   curl -X POST http://localhost:16110 \
-     -H "Content-Type: application/json" \
-     -d '{"jsonrpc":"2.0","method":"getBlockDagInfo","params":[],"id":1}'
-   ```
-   - ✓ Should return JSON response
-   - ✓ Block height should be higher than before reconfiguration
-
-**📝 Document**:
-- Is Kaspa node still running correctly? (Yes/No)
-- Did blockchain sync continue uninterrupted? (Yes/No)
-- Is the block height higher than before? (Yes/No)
-
-**💡 Why This Is Critical**:
-- Blockchain sync takes hours
-- If reconfiguration restarts the node, sync progress is lost
-- Users would be very frustrated if adding a service reset their sync
-
-#### Step 10: Test Removing a Service (5 minutes)
-
-Now let's test removing a service from the installation.
-
-1. **Reopen the wizard** (if closed):
-   ```bash
-   ./start-test.sh
-   ```
-
-2. **Wizard should again detect existing installation**:
-   - ✓ Should show "Existing Installation Detected"
-   - ✓ Should show both Kaspa node and Kasia app installed
-
-3. **Select "Modify Installation" or "Remove Services"**
-
-4. **Choose to remove Kasia app**:
-   - ✓ Should show list of installed services
-   - ✓ Should allow deselecting or removing Kasia
-   - Deselect or mark Kasia for removal
-   - ✓ Keep Kaspa node selected (don't remove it)
-
-5. **Review the removal plan**:
-   - ✓ Should show: "Removing: Kasia app"
-   - ✓ Should show: "Keeping: Kaspa node"
-   - ✓ May show warning: "Kasia data will be removed"
-
-6. **Apply the changes**:
-   - Click "Apply" or "Remove Services"
-   - ✓ Should show progress: "Stopping Kasia...", "Removing container..."
-   - ✓ Should complete quickly (1-2 minutes)
-
-7. **Verify removal**:
-   ```bash
-   docker ps
-   ```
-   - ✓ Should NOT see `kasia-app` container
-   - ✓ Should still see `kaspa-node` container (running continuously)
-
-8. **Check dashboard**:
-   - ✓ Should only show Kaspa node
-   - ✓ Should NOT show Kasia app
-
-**📝 Document**:
-- Did service removal work correctly? (Yes/No)
-- Was the removal process clear? (Yes/No)
-- Was Kasia removed completely? (Yes/No)
-- Did Kaspa node remain unaffected? (Yes/No)
-
-**🐛 If Something Goes Wrong**:
-- Can't find remove option: Note what options are available
-- Removal fails: Note the error message
-- Wrong service removed: Critical bug! Report immediately
-
-#### Step 11: Test Configuration Changes (5 minutes)
-
-Finally, let's test changing configuration of an existing service.
-
-1. **Reopen the wizard**:
-   ```bash
-   ./start-test.sh
-   ```
-
-2. **Select "Reconfigure" or "Change Settings"**
-
-3. **Modify Kaspa node configuration**:
-   - Look for Kaspa node settings
-   - Try changing a non-critical setting, such as:
-     - RPC port (change from 16110 to 16120)
-     - Or enable/disable a feature
-   - ✓ Should show current values
-   - ✓ Should allow editing
-
-4. **Review the configuration change**:
-   - ✓ Should show: "Changing Kaspa node configuration"
-   - ✓ Should show: Old value → New value
-   - ✓ May show warning: "Service will be restarted"
-
-5. **Apply the configuration change**:
-   - Click "Apply"
-   - ✓ Should show: "Stopping Kaspa node..."
-   - ✓ Should show: "Updating configuration..."
-   - ✓ Should show: "Starting Kaspa node..."
-
-6. **Verify the change**:
-   ```bash
-   docker ps
-   ```
-   - ✓ Kaspa node should be running
-   - ✓ Check if new port is in use:
-     ```bash
-     netstat -tuln | grep 16120
-     ```
-     or
-     ```bash
-     ss -tuln | grep 16120
-     ```
-
-7. **Test RPC on new port**:
-   ```bash
-   curl -X POST http://localhost:16120 \
-     -H "Content-Type: application/json" \
-     -d '{"jsonrpc":"2.0","method":"getBlockDagInfo","params":[],"id":1}'
-   ```
-   - ✓ Should work on new port (16120)
-
-**📝 Document**:
-- Did configuration change work? (Yes/No)
-- Was the change process clear? (Yes/No)
-- Was the service restarted properly? (Yes/No)
-- Is the new configuration active? (Yes/No)
-
-**⚠️ Note**: Changing configuration typically requires restarting the service, which is expected behavior.
-
-#### Step 12: Final Cleanup (2 minutes)
-
-Clean up the test environment.
-
-1. **Run cleanup**:
-   ```bash
-   ./cleanup-test.sh
-   ```
-
-2. **Respond to prompts**:
-   - "Continue? (y/N)" → `y`
-   - "Remove all data? (y/N)" → `y`
-
-3. **Verify cleanup**:
-   ```bash
-   docker ps -a | grep kaspa
-   ```
-   - ✓ Should show no containers
-
-**📝 Document**:
-- Did cleanup work correctly? (Yes/No)
-
----
 
 ### Scenario 5: Summary and Feedback
 
-Congratulations! You've completed Scenario 5: Reconfiguration. 🎉
+Congratulations! You've completed Scenario 5: State Management and Fresh Start. 🎉
 
 #### What You Tested
 
-- ✅ Existing installation detection
-- ✅ Reconfiguration mode activation
-- ✅ Adding services to existing installation (Kasia)
-- ✅ Removing services from existing installation (Kasia)
-- ✅ Configuration changes (port change)
-- ✅ Data preservation during reconfiguration
-- ✅ Service continuity (Kaspa node uptime maintained)
-- ✅ Dashboard updates after reconfiguration
+- ✅ Existing state file detection (`.env`, `.kaspa-aio/`)
+- ✅ State detection prompts and warnings
+- ✅ Fresh start process and state cleanup
+- ✅ Container vs. state file management
+- ✅ Wizard restart functionality
+- ✅ Cleanup script usage
 
 #### Time to Complete
 
-**Expected**: ~20-30 minutes  
+**Expected**: ~10-15 minutes  
 **Your Time**: _____ minutes
 
 #### Critical Success Factors
 
 The most important aspects of this scenario:
 
-1. **Existing Installation Detection**: Did the wizard correctly identify what was already installed?
-2. **Service Continuity**: Did the Kaspa node remain running during reconfiguration?
-3. **Data Preservation**: Was blockchain sync progress maintained?
-4. **Clear Communication**: Were changes clearly explained before being applied?
+1. **State Detection**: Did the wizard correctly identify existing state files?
+2. **Clear Warnings**: Were the implications of keeping vs. removing state clear?
+3. **Proper Cleanup**: Did the cleanup processes work as expected?
+4. **User Control**: Did you feel in control of what was being removed/preserved?
 
 #### Overall Experience
 
 Please rate your experience (1-5 stars):
 
-- **Installation detection accuracy**: ⭐⭐⭐⭐⭐
-- **Reconfiguration process clarity**: ⭐⭐⭐⭐⭐
-- **Service continuity**: ⭐⭐⭐⭐⭐
-- **Data safety confidence**: ⭐⭐⭐⭐⭐
+- **State detection clarity**: ⭐⭐⭐⭐⭐
+- **Fresh start process**: ⭐⭐⭐⭐⭐
+- **Cleanup script usability**: ⭐⭐⭐⭐⭐
+- **Documentation accuracy**: ⭐⭐⭐⭐⭐
 - **Overall satisfaction**: ⭐⭐⭐⭐⭐
 
 #### Provide Detailed Feedback
@@ -3903,32 +3613,32 @@ Now is the time to report your findings! Please create a bug report or feedback 
 
 **What Worked Well** ✅:
 - (List things that worked smoothly)
-- Example: "Wizard correctly detected existing installation"
-- Example: "Kaspa node remained running during reconfiguration"
-- Example: "Adding Kasia was straightforward"
+- Example: "State detection prompts were clear"
+- Example: "Fresh start process worked perfectly"
+- Example: "Cleanup script was easy to use"
 
 **What Didn't Work** ❌:
 - (List any errors, failures, or problems)
-- Example: "Wizard didn't detect existing services"
-- Example: "Kaspa node restarted unexpectedly"
-- Example: "Configuration change failed"
+- Example: "State files weren't detected"
+- Example: "Fresh start didn't remove all files"
+- Example: "Cleanup script failed to stop containers"
 
 **What Was Confusing** 🤔:
 - (List anything that was unclear or hard to understand)
-- Example: "Wasn't clear which services would be affected"
-- Example: "Didn't understand if data would be preserved"
-- Example: "Remove option was hard to find"
+- Example: "Wasn't clear what 'state' meant"
+- Example: "Didn't understand difference between state files and containers"
+- Example: "Restart wizard options were unclear"
 
 **Suggestions for Improvement** 💡:
 - (List ideas for making it better)
-- Example: "Show estimated downtime for each change"
-- Example: "Add confirmation before removing services"
-- Example: "Show backup status before making changes"
+- Example: "Explain what each state file contains"
+- Example: "Show which containers will be affected"
+- Example: "Add option to backup state before removing"
 
 **Critical Issues** 🚨:
-- Did the Kaspa node restart unexpectedly? (Yes/No)
-- Was any data lost? (Yes/No)
-- Did any service fail to start after reconfiguration? (Yes/No)
+- Did state detection fail to work? (Yes/No)
+- Were important files accidentally removed? (Yes/No)
+- Did any cleanup process fail? (Yes/No)
 
 **System Information**:
 - OS: (e.g., Ubuntu 22.04, macOS 13.0, Windows 11 WSL2)
