@@ -285,31 +285,31 @@ This task list implements the test release requirements and design. The goal is 
   - [x] **TESTING UPDATED**: Updated TESTING.md Scenario 3 with new verification procedures
   - [x] **CROSS-SPEC SYNC**: Documented changes across kaspa-all-in-one, web-installation-wizard, management-dashboard, and test-release specs
   - [x] **IMPLEMENTATION SUMMARY**: Created TASK_DATABASE_PER_SERVICE_ARCHITECTURE_IMPLEMENTATION.md
-- [ ] Test Scenario 4: Error Handling (follow TESTING.md)
-- [ ] Test Scenario 5: Reconfiguration (follow TESTING.md)
+- [x] Test Scenario 4: Error Handling (follow TESTING.md)
+- [x] Test Scenario 5: Reconfiguration (follow TESTING.md)
 - [x] Document time taken for each scenario
 - [x] Document any issues or confusion
 - [x] Update TESTING.md based on findings
-- [ ] Update KNOWN_ISSUES.md with new issues
+- [x] Update KNOWN_ISSUES.md with new issues
 - _Requirements: 4, 11, 13, 14_
 
 ### 6.3 Documentation validation (1 hour)
-- [ ] Read TESTING.md as a new user
-- [ ] Verify all instructions are clear
-- [ ] Test all links work correctly
-- [ ] Verify prerequisites are accurate
-- [ ] Check for typos and errors
-- [ ] Update documentation as needed
-- [ ] Have someone else review if possible
+- [x] Read TESTING.md as a new user
+- [x] Verify all instructions are clear
+- [x] Test all links work correctly
+- [x] Verify prerequisites are accurate
+- [x] Check for typos and errors
+- [x] Update documentation as needed
+- [x] Have someone else review if possible
 - _Requirements: 4, 16_
 
 ### 6.4 Create test report
-- [ ] Document what worked well
-- [ ] Document what needs improvement
-- [ ] List all bugs found
-- [ ] Estimate installation times
-- [ ] Rate documentation clarity
-- [ ] Provide recommendations for improvements
+- [X] Document what worked well
+- [X] Document what needs improvement
+- [X] List all bugs found
+- [X] Estimate installation times
+- [X] Rate documentation clarity
+- [X] Provide recommendations for improvements
 - **FILE**: `docs/TEST_REPORT_INTERNAL.md`
 - _Requirements: 13_
 
@@ -318,19 +318,19 @@ This task list implements the test release requirements and design. The goal is 
 ## Phase 7: GitHub Release Preparation 🟡 MEDIUM PRIORITY
 
 ### 7.1 Create release notes
-- [ ] Write release title
-- [ ] Write release description
-- [ ] List new features
-- [ ] List known issues (link to KNOWN_ISSUES.md)
-- [ ] Add quick start instructions
-- [ ] Add prerequisites
-- [ ] Add feedback links
-- [ ] Add thank you message
+- [x] Write release title
+- [x] Write release description
+- [x] List new features
+- [x] List known issues (link to KNOWN_ISSUES.md)
+- [x] Add quick start instructions
+- [x] Add prerequisites (refer to TESTING.md for content)
+- [x] Add feedback links
+- [x] Add thank you message (Can refer to the TETING.md file for content)
 - **FILE**: `docs/RELEASE_NOTES_v0.9.0.md`
 - _Requirements: 1, 6_
 
 ### 7.2 Create GitHub release
-- [ ] Create git tag: `v0.9.0-test`
+- [-] Create git tag: `v0.9.0-test`
 - [ ] Push tag to GitHub
 - [ ] Create GitHub release from tag
 - [ ] Mark as "Pre-release" ✓
