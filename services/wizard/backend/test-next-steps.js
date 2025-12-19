@@ -70,7 +70,7 @@ function runTests() {
             'kaspa.org/docs',
             'QUICK_START.md',
             'README.md',
-            'discord.gg/kaspa',
+            'discord.com/invite/ssB46MXzRU',
             'github.com/kaspanet',
             'kaspa.org'
         ];

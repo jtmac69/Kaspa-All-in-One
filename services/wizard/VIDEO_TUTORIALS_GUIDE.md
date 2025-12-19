@@ -153,7 +153,7 @@ also explore the applications included in your profile."
 
 [SCENE 21: Community resources]
 NARRATOR: "Remember, you're not alone. The Kaspa community is friendly and helpful. Join 
-the Discord server, visit the forums, or check out the GitHub repository for updates and 
+the Discord server at https://discord.com/invite/ssB46MXzRU, visit the forums, or check out the GitHub repository for updates and 
 discussions."
 
 [SCENE 22: Closing screen with key takeaways]

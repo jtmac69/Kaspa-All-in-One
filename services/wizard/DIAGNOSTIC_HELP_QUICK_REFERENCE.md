@@ -301,7 +301,7 @@ curl -X POST http://localhost:3000/api/diagnostic/search \
 1. **Search First**: Use the search function before generating diagnostics
 2. **Be Specific**: Include error messages in search queries
 3. **Share Diagnostics**: Include diagnostic reports when asking for help
-4. **Check Community**: Browse Discord/Forum before creating GitHub issues
+4. **Check Community**: Browse Discord (https://discord.com/invite/ssB46MXzRU) or Forum before creating GitHub issues
 
 ### For Developers
 
@@ -352,5 +352,5 @@ Potential improvements for future versions:
 
 For issues with the help system itself:
 - GitHub: https://github.com/argonmining/KaspaAllInOne/issues
-- Discord: https://discord.gg/kaspa
+- Discord: https://discord.com/invite/ssB46MXzRU
 - Forum: https://forum.kaspa.org

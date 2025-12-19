@@ -376,7 +376,7 @@ Same as Option 1, Steps 6-7
 
 **Community**:
 - Reddit: r/videography, r/VideoEditing
-- Discord: [Kaspa community]
+- Discord: https://discord.com/invite/ssB46MXzRU
 - GitHub: [Open issue]
 
 ---

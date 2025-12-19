@@ -346,7 +346,7 @@ class SafetySystem {
     // For now, just show a simple help dialog
     alert('Help Resources:\n\n' +
           '1. Check the documentation at https://kaspa.org/docs\n' +
-          '2. Join our Discord community for support\n' +
+          '2. Join our Discord community for support: https://discord.com/invite/ssB46MXzRU\n' +
           '3. Search for similar issues on GitHub\n' +
           '4. Contact support if you continue to have problems');
   }

@@ -753,7 +753,7 @@ export function showResourcesModal() {
                 
                 <h4 style="color: var(--text-primary, #fff); margin-top: 24px;">💬 Community</h4>
                 <div style="display: grid; gap: 12px; margin-bottom: 24px;">
-                    <a href="https://discord.gg/kaspa" target="_blank" class="resource-link" style="
+                    <a href="https://discord.com/invite/ssB46MXzRU" target="_blank" class="resource-link" style="
                         display: flex;
                         align-items: center;
                         gap: 12px;

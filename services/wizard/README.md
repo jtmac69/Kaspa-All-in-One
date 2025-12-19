@@ -159,7 +159,7 @@ See the following documents for detailed design specifications:
 - **Kaspa Media Kit**: https://kaspa.org/media-kit/
 - **Kaspa Website**: https://kaspa.org/
 - **GitHub**: https://github.com/kaspanet
-- **Discord**: https://discord.gg/kaspa
+- **Discord**: https://discord.com/invite/ssB46MXzRU
 
 ## 📝 Notes
 

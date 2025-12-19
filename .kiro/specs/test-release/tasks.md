@@ -330,22 +330,22 @@ This task list implements the test release requirements and design. The goal is 
 - _Requirements: 1, 6_
 
 ### 7.2 Create GitHub release
-- [-] Create git tag: `v0.9.0-test`
-- [ ] Push tag to GitHub
-- [ ] Create GitHub release from tag
-- [ ] Mark as "Pre-release" ✓
-- [ ] Upload package archive
-- [ ] Add release notes
-- [ ] Publish release
+- [x] Create git tag: `v0.9.0-test`
+- [x] Push tag to GitHub
+- [x] Create GitHub release from tag (note existance of the build-test-release script)
+- [x] Mark as "Pre-release" ✓
+- [x] Upload package archive
+- [x] Add release notes
+- [x] Publish release
 - _Requirements: 1, 6_
 
 ### 7.3 Announce test release
-- [ ] Create announcement in GitHub Discussions
-- [ ] Explain purpose of test release
+- [x] Create announcement in GitHub Discussions and also a post for X social and other direct messaging platforms (i.e. Telegram)
+- [x] Explain purpose of test release
 - [ ] Link to TESTING.md
-- [ ] Request testers
-- [ ] Set expectations (2 week testing period)
-- [ ] Thank testers in advance
+- [x] Request testers
+- [x] Set expectations (2 week testing period)
+- [x] Thank testers in advance
 - _Requirements: 18_
 
 ---

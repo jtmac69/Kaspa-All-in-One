@@ -1814,7 +1814,7 @@ const tourSteps = [
                 <strong>🎉 Congratulations!</strong>
                 <p>You're now running your own Kaspa infrastructure!</p>
             </div>
-            <p>If you have questions, check the documentation or ask in Discord.</p>
+            <p>If you have questions, check the documentation or ask in Discord: https://discord.com/invite/ssB46MXzRU</p>
         `,
         icon: "🚀"
     }
@@ -2609,7 +2609,7 @@ const helpSystem = {
                                     <div class="community-card">
                                         <h4>Discord Community</h4>
                                         <p>Join the Kaspa Discord server for real-time help and discussions.</p>
-                                        <a href="https://discord.gg/kaspa" target="_blank" class="btn btn-primary">
+                                        <a href="https://discord.com/invite/ssB46MXzRU" target="_blank" class="btn btn-primary">
                                             Join Discord
                                         </a>
                                     </div>
