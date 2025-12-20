@@ -46,12 +46,16 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9_
 
 
-- [ ] 1.5 Enhance system resource monitoring
+- [ ] 1.5 Enhance system resource monitoring with emergency controls
   - Extend ResourceMonitor with per-service resource tracking
   - Add resource usage trend calculation
   - Implement threshold-based alert generation
   - Add resource usage history storage (last 24 hours)
-  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8_
+  - Integrate with scripts/monitoring/resource-monitor.sh
+  - Add emergency stop functionality integration
+  - Add Docker container resource limits display
+  - Add load average and uptime monitoring
+  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 6.10, 6.11, 6.12, 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8, 16.9, 16.10, 16.11, 16.12_
 
 - [ ] 1.6 Implement service control endpoints with dependency awareness
   - Add dependency checking before stop operations
@@ -74,13 +78,24 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Add backup integrity validation
   - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7, 15.8_
 
-- [ ] 1.9 Write unit tests for backend services
+- [ ] 1.9 Implement configuration suggestion engine
+  - Create ConfigurationAnalyzer class to analyze current setup
+  - Implement profile optimization recommendations
+  - Add performance improvement suggestions
+  - Add security configuration recommendations
+  - Implement resource usage optimization suggestions
+  - Add indexer connection optimization analysis
+  - Create suggestion priority and impact scoring
+  - _Requirements: 9.8, 9.9, 9.10, 9.11, 9.12, 9.13_
+
+- [ ] 1.10 Write unit tests for backend services
   - Test ServiceMonitor health check logic
   - Test KaspaNodeClient RPC methods
   - Test UpdateMonitor GitHub API integration
   - Test ResourceMonitor calculations
   - Test wallet operation validation
   - Test backup creation and validation
+  - Test configuration suggestion engine
   - _Requirements: All backend requirements_
 
 - [ ] 2. Enhance WebSocket Real-Time Communication
@@ -160,13 +175,18 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Display update history timeline
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9_
 
-- [ ] 3.6 Enhance system resource monitoring display
+- [ ] 3.6 Enhance system resource monitoring display with emergency controls
   - Add visual progress bars with color coding
   - Implement warning indicators for high usage (>80%)
   - Implement critical indicators for very high usage (>90%)
   - Add simple trend graphs (last hour)
   - Add per-service resource display when available
-  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8_
+  - Add emergency stop button for critical resource situations
+  - Add resource monitoring script launch button
+  - Display Docker container resource limits
+  - Add load average and uptime display
+  - Add resource monitoring status indicator
+  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 6.10, 6.11, 6.12, 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8, 16.9, 16.10, 16.11, 16.12_
 
 - [ ] 3.7 Enhance log viewer modal
   - Add search and filter functionality
@@ -184,7 +204,17 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Implement alert priority sorting
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8_
 
-- [ ] 3.9 Implement reconfiguration workflow UI
+- [ ] 3.9 Implement configuration management panel
+  - Create configuration overview section showing current profiles
+  - Add configuration suggestion display with actionable recommendations
+  - Implement "Launch Wizard" button with context passing
+  - Add configuration change history timeline
+  - Show pending configuration changes and their status
+  - Add configuration backup and restore options
+  - Display configuration validation status and warnings
+  - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 9.10, 9.11, 9.12, 9.13_
+
+- [ ] 3.10 Implement reconfiguration workflow UI
   - Add "Reconfigure System" button
   - Display current active profiles and configuration
   - Implement wizard launch with current config passing
@@ -192,7 +222,17 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Add warning modal for service restart implications
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7_
 
-- [ ] 3.10 Write E2E tests for frontend workflows
+- [ ] 3.10 Enhance wizard launch and integration UI
+  - Update "Reconfigure System" button with improved styling
+  - Add wizard launch with reconfiguration mode parameter
+  - Implement configuration context passing to wizard
+  - Add wizard completion callback handling
+  - Display wizard operation status and progress
+  - Add post-reconfiguration service restart coordination
+  - Show configuration change summary after wizard completion
+  - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 17.1, 17.2, 17.3, 17.4, 17.5, 17.6, 17.7, 17.8_
+
+- [ ] 3.11 Write E2E tests for frontend workflows
   - Test dashboard loading and service display
   - Test service control operations (start/stop/restart)
   - Test log viewing functionality
@@ -279,25 +319,61 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Implement wizard URL return
   - _Requirements: 9.1, 9.2_
 
-- [ ] 6.2 Implement wizard completion handling
+- [ ] 6.4 Enhance wizard launch mechanism for reconfiguration mode
+  - Update POST /api/wizard/launch endpoint to support reconfiguration mode
+  - Implement current configuration analysis and export
+  - Add configuration suggestion generation before wizard launch
+  - Pass profile installation status to wizard
+  - Add wizard launch with specific reconfiguration context
+  - Implement wizard URL return with mode parameters
+  - _Requirements: 9.1, 9.2, 9.8, 9.9, 17.1, 17.2_
+
+- [ ] 6.5 Implement wizard completion handling
   - Add wizard status polling
   - Implement configuration reload after wizard completion
   - Add service restart for changed services
   - Display success notification
   - _Requirements: 9.4, 9.5_
 
-- [ ] 6.3 Implement configuration synchronization
+- [ ] 6.5 Implement wizard completion handling
+  - Add wizard status polling with reconfiguration awareness
+  - Implement configuration reload after wizard completion
+  - Add selective service restart for changed services only
+  - Display reconfiguration success notification with change summary
+  - Update configuration suggestion engine after changes
+  - Refresh dashboard state after reconfiguration
+  - _Requirements: 9.4, 9.5, 9.6, 9.7_
+
+- [ ] 6.6 Implement configuration synchronization
   - Add configuration change detection
   - Implement automatic dashboard refresh
   - Add configuration history tracking
   - _Requirements: 9.6, 9.7_
 
-- [ ] 6.4 Write integration tests for wizard interaction
+- [ ] 6.6 Implement configuration synchronization
+  - Add configuration change detection with diff analysis
+  - Implement automatic dashboard refresh after configuration changes
+  - Add configuration history tracking with change attribution
+  - Implement configuration validation after changes
+  - Add configuration rollback capability
+  - _Requirements: 9.6, 9.7_
+
+- [ ] 6.7 Implement resource monitoring integration with wizard
+  - Add automatic resource monitoring startup for indexer-services profile
+  - Implement resource monitoring configuration in wizard completion
+  - Add resource monitoring status to wizard completion summary
+  - Add option to enable/disable automatic resource monitoring
+  - _Requirements: 17.1, 17.2, 17.3, 17.4, 17.5, 17.6, 17.7, 17.8_
+
+- [ ] 6.8 Write integration tests for wizard interaction
   - Test wizard launch from dashboard
   - Test configuration passing to wizard
   - Test dashboard refresh after reconfiguration
   - Test service restart after changes
-  - _Requirements: 9.x_
+  - Test resource monitoring startup after wizard completion
+  - Test configuration suggestion detection and wizard launch with context
+  - Test wizard completion handling and dashboard synchronization
+  - _Requirements: 9.x, 17.x_
 
 - [ ] 7. Host-Based Deployment Configuration
 - [ ] 7.1 Create installation script for host-based deployment
@@ -398,6 +474,15 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Fix high-priority bugs
   - Document known limitations
   - _Requirements: All requirements_
+
+- [ ] 9.5 Create comprehensive documentation and user guides
+  - Create user documentation for dashboard features and operations
+  - Document API endpoints with request/response examples
+  - Create developer documentation for architecture and contribution
+  - Document host-based deployment and systemd service management
+  - Create troubleshooting guide for common issues
+  - Document security considerations and best practices
+  - _Requirements: All user-facing and technical requirements_
 
 - [ ] 10. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.

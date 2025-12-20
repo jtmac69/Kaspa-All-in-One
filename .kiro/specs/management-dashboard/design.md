@@ -195,6 +195,13 @@ The dashboard follows a three-tier architecture running on the host system:
   - `POST /api/services/:name/restart` - Restart service
   - `GET /api/services/:name/logs` - Service logs
   - `GET /api/system/resources` - System metrics
+  - `GET /api/system/resources/detailed` - Enhanced resource metrics with alerts and limits
+  - `GET /api/system/resources/limits` - Docker container resource limits
+  - `POST /api/system/emergency-stop` - Emergency shutdown
+  - `GET /api/monitoring/status` - Monitoring script status
+  - `POST /api/monitoring/start` - Start monitoring
+  - `POST /api/monitoring/stop` - Stop monitoring
+  - `POST /api/monitoring/quick-check` - Execute quick resource check
   - `GET /api/kaspa/info` - Node information
   - `GET /api/kaspa/stats` - Network statistics
   - `GET /api/kaspa/wallet` - Wallet information
@@ -408,18 +415,26 @@ class UpdateMonitor {
 
 
 #### System Resource Monitor
-- **Purpose**: Track CPU, memory, and disk usage
+- **Purpose**: Track CPU, memory, and disk usage with emergency controls
 - **Implementation**:
 ```typescript
 class ResourceMonitor {
   async getSystemResources(): Promise<ResourceMetrics> {
-    const [cpu, memory, disk] = await Promise.all([
+    const [cpu, memory, disk, loadAverage] = await Promise.all([
       this.getCpuUsage(),
       this.getMemoryUsage(),
-      this.getDiskUsage()
+      this.getDiskUsage(),
+      this.getLoadAverage()
     ]);
     
-    return { cpu, memory, disk, timestamp: new Date().toISOString() };
+    return { 
+      cpu, 
+      memory, 
+      disk, 
+      loadAverage,
+      timestamp: new Date().toISOString(),
+      alerts: this.checkAlertThresholds({ cpu, memory, loadAverage })
+    };
   }
   
   async getCpuUsage(): Promise<number> {
@@ -443,21 +458,132 @@ class ResourceMonitor {
     return parseFloat(stdout.trim()) || 0;
   }
   
+  async getLoadAverage(): Promise<number[]> {
+    const { stdout } = await execAsync("uptime | awk -F'load average:' '{print $2}'");
+    return stdout.trim().split(',').map(x => parseFloat(x.trim()));
+  }
+  
   async getPerServiceResources(): Promise<Map<string, ServiceResources>> {
     const { stdout } = await execAsync(
-      "docker stats --no-stream --format '{{.Name}}\t{{.CPUPerc}}\t{{.MemPerc}}'"
+      "docker stats --no-stream --format '{{.Name}}\t{{.CPUPerc}}\t{{.MemPerc}}\t{{.MemUsage}}'"
     );
     
     const resources = new Map();
     stdout.trim().split('\n').forEach(line => {
-      const [name, cpu, mem] = line.split('\t');
+      const [name, cpu, memPerc, memUsage] = line.split('\t');
       resources.set(name, {
         cpu: parseFloat(cpu.replace('%', '')),
-        memory: parseFloat(mem.replace('%', ''))
+        memory: parseFloat(memPerc.replace('%', '')),
+        memoryUsage: memUsage
       });
     });
     
     return resources;
+  }
+  
+  async getDockerResourceLimits(): Promise<Map<string, ResourceLimits>> {
+    const { stdout } = await execAsync(
+      "docker inspect $(docker ps -q) --format '{{.Name}}\t{{.HostConfig.Memory}}\t{{.HostConfig.CpuQuota}}\t{{.HostConfig.CpuPeriod}}'"
+    );
+    
+    const limits = new Map();
+    stdout.trim().split('\n').forEach(line => {
+      const [name, memory, cpuQuota, cpuPeriod] = line.split('\t');
+      const cpuLimit = cpuQuota && cpuPeriod ? (parseInt(cpuQuota) / parseInt(cpuPeriod)) : null;
+      limits.set(name.replace('/', ''), {
+        memory: parseInt(memory) || null,
+        cpu: cpuLimit,
+        memoryFormatted: this.formatBytes(parseInt(memory) || 0)
+      });
+    });
+    
+    return limits;
+  }
+  
+  checkAlertThresholds(metrics: ResourceMetrics): ResourceAlert[] {
+    const alerts: ResourceAlert[] = [];
+    
+    if (metrics.cpu > 90) {
+      alerts.push({
+        type: 'cpu',
+        level: 'critical',
+        message: `CPU usage critical: ${metrics.cpu.toFixed(1)}%`,
+        threshold: 90,
+        current: metrics.cpu
+      });
+    } else if (metrics.cpu > 80) {
+      alerts.push({
+        type: 'cpu',
+        level: 'warning',
+        message: `CPU usage high: ${metrics.cpu.toFixed(1)}%`,
+        threshold: 80,
+        current: metrics.cpu
+      });
+    }
+    
+    if (metrics.memory > 90) {
+      alerts.push({
+        type: 'memory',
+        level: 'critical',
+        message: `Memory usage critical: ${metrics.memory.toFixed(1)}%`,
+        threshold: 90,
+        current: metrics.memory
+      });
+    } else if (metrics.memory > 85) {
+      alerts.push({
+        type: 'memory',
+        level: 'warning',
+        message: `Memory usage high: ${metrics.memory.toFixed(1)}%`,
+        threshold: 85,
+        current: metrics.memory
+      });
+    }
+    
+    if (metrics.loadAverage[0] > 10.0) {
+      alerts.push({
+        type: 'load',
+        level: 'critical',
+        message: `Load average critical: ${metrics.loadAverage[0].toFixed(2)}`,
+        threshold: 10.0,
+        current: metrics.loadAverage[0]
+      });
+    }
+    
+    return alerts;
+  }
+  
+  async executeEmergencyStop(): Promise<EmergencyStopResult> {
+    try {
+      const { stdout, stderr } = await execAsync('./scripts/monitoring/emergency-stop.sh');
+      return {
+        success: true,
+        output: stdout,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+  
+  async executeQuickCheck(): Promise<QuickCheckResult> {
+    try {
+      const { stdout } = await execAsync('./scripts/monitoring/quick-check.sh');
+      return {
+        success: true,
+        output: stdout,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+    }
   }
 }
 ```
@@ -577,13 +703,53 @@ interface ResourceMetrics {
   cpu: number;
   memory: number;
   disk: number;
+  loadAverage: number[];
   timestamp: string;
+  alerts: ResourceAlert[];
 }
 
 interface ServiceResources {
   cpu: number;
   memory: number;
+  memoryUsage: string;
   disk?: number;
+}
+
+interface ResourceLimits {
+  cpu: number | null;
+  memory: number | null;
+  memoryFormatted: string;
+}
+
+interface ResourceAlert {
+  type: 'cpu' | 'memory' | 'disk' | 'load';
+  level: 'warning' | 'critical';
+  message: string;
+  threshold: number;
+  current: number;
+  timestamp?: string;
+}
+
+interface EmergencyStopResult {
+  success: boolean;
+  output?: string;
+  error?: string;
+  timestamp: string;
+}
+
+interface QuickCheckResult {
+  success: boolean;
+  output?: string;
+  error?: string;
+  timestamp: string;
+}
+
+interface MonitoringStatus {
+  enabled: boolean;
+  running: boolean;
+  lastCheck: string;
+  alertCount: number;
+  criticalAlerts: number;
 }
 ```
 
@@ -616,9 +782,10 @@ interface AlertRule {
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Header                                                       │
-│ ⚡ Kaspa All-in-One Dashboard    [Profile ▼] [⚙️] [●Connected]│
+│ ⚡ Kaspa All-in-One Dashboard [Profile ▼] [⚙️] [🔴●Monitor] [●Connected]│
 ├─────────────────────────────────────────────────────────────┤
 │ Alerts Bar (when active)                                    │
+│ 🚨 CRITICAL: CPU 95% - Emergency controls available         │
 │ ⚠️ 2 services unhealthy | ℹ️ 3 updates available           │
 ├─────────────────────────────────────────────────────────────┤
 │ Overview Section                                            │
@@ -634,15 +801,25 @@ interface AlertRule {
 │ │Kaspa │ │Kasia │ │K-Soc │ │Index │                       │
 │ │Node  │ │App   │ │ial   │ │er DB │                       │
 │ │✓ Run │ │✓ Run │ │✗ Stop│ │✓ Run │                       │
+│ │2.0/4.0│ │0.5/2.0│ │0/2.0 │ │1.2/2.0│ (CPU: used/limit) │
 │ └──────┘ └──────┘ └──────┘ └──────┘                       │
+├─────────────────────────────────────────────────────────────┤
+│ Configuration Management                                     │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ Suggestions: ⚡ Switch to local indexers                │ │
+│ │ [Configure in Wizard] [View All Suggestions]           │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│ [Add Profiles] [Modify Settings] [Remove Profiles]          │
 ├─────────────────────────────────────────────────────────────┤
 │ Quick Actions                                               │
 │ [🔄 Restart All] [⬆️ Updates] [💾 Backup] [⚙️ Reconfigure] │
+│ [🚨 Emergency Stop] (when critical)                        │
 ├─────────────────────────────────────────────────────────────┤
 │ System Resources                                            │
-│ CPU:    [████████░░] 80%                                    │
-│ Memory: [██████░░░░] 60%                                    │
-│ Disk:   [████░░░░░░] 40%                                    │
+│ CPU:    [████████▓▓] 85% (Warning) Load: 8.97             │
+│ Memory: [██████░░░░] 60% (Normal)   Uptime: 2d 5h          │
+│ Disk:   [████░░░░░░] 40% (Normal)                          │
+│ [Quick Check] [View Monitoring Logs]                       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -1488,15 +1665,16 @@ const serviceHealthChecks = new Counter({
 
 **From Dashboard**:
 ```typescript
-async function launchReconfigurationWizard(): Promise<void> {
+async function launchReconfigurationWizard(context?: WizardContext): Promise<void> {
   try {
-    // Call backend to start wizard
+    // Call backend to prepare wizard launch
     const response = await fetch('/api/wizard/launch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         mode: 'reconfigure',
-        currentConfig: await getCurrentConfig()
+        currentConfig: await getCurrentConfig(),
+        context: context // Optional pre-fill context from suggestions
       })
     });
     
@@ -1506,15 +1684,28 @@ async function launchReconfigurationWizard(): Promise<void> {
       // Show notification
       showNotification('info', 'Opening reconfiguration wizard...');
       
-      // Open wizard in new window
-      window.open(wizardUrl, '_blank', 'width=1200,height=800');
+      // Open wizard in new window or same window
+      if (context?.openInNewWindow) {
+        window.open(wizardUrl, '_blank', 'width=1200,height=800');
+      } else {
+        window.location.href = wizardUrl;
+      }
       
-      // Poll for wizard completion
-      pollWizardStatus();
+      // Poll for wizard completion if opened in new window
+      if (context?.openInNewWindow) {
+        pollWizardStatus();
+      }
     }
   } catch (error) {
     showNotification('error', 'Failed to launch wizard');
   }
+}
+
+interface WizardContext {
+  action?: 'add-profiles' | 'modify-config' | 'remove-profiles';
+  suggestion?: ConfigurationSuggestion;
+  openInNewWindow?: boolean;
+  returnUrl?: string;
 }
 ```
 
@@ -1522,22 +1713,23 @@ async function launchReconfigurationWizard(): Promise<void> {
 ```typescript
 app.post('/api/wizard/launch', async (req, res) => {
   try {
-    const { mode, currentConfig } = req.body;
+    const { mode, currentConfig, context } = req.body;
     
-    // Write current config to temp file for wizard
+    // Write current config and context to temp file for wizard
     await fs.writeFile(
-      '/tmp/wizard-config.json',
-      JSON.stringify(currentConfig)
+      '/tmp/wizard-launch-context.json',
+      JSON.stringify({ currentConfig, context })
     );
     
-    // Start wizard process on host
-    const scriptPath = path.join(__dirname, '../../wizard/start-wizard.sh');
-    await execAsync(`${scriptPath} --mode=${mode}`);
+    // Wizard will read this file on startup
+    // No need to start wizard process - it's already running on host
     
-    // Return wizard URL
+    // Return wizard URL with mode parameter
+    const wizardUrl = `http://localhost:3000/wizard?mode=${mode}`;
+    
     res.json({
       success: true,
-      wizardUrl: 'http://localhost:3000'
+      wizardUrl: wizardUrl
     });
   } catch (error) {
     res.status(500).json({
@@ -1546,6 +1738,176 @@ app.post('/api/wizard/launch', async (req, res) => {
     });
   }
 });
+```
+
+### Configuration Suggestion Detection
+
+**Dashboard monitors system state and detects optimization opportunities**:
+
+```typescript
+class ConfigurationSuggestionEngine {
+  async detectSuggestions(): Promise<ConfigurationSuggestion[]> {
+    const suggestions: ConfigurationSuggestion[] = [];
+    const state = await this.getSystemState();
+    
+    // Detect local indexers available but apps using public
+    if (this.hasLocalIndexers(state) && this.appsUsingPublicIndexers(state)) {
+      suggestions.push({
+        id: 'switch-to-local-indexers',
+        title: 'Switch to Local Indexers',
+        description: 'Local indexers are running. Switch apps to use them for better performance and reduced external dependencies.',
+        priority: 'high',
+        category: 'optimization',
+        trigger: {
+          type: 'service-detected',
+          context: {
+            localIndexers: this.getLocalIndexers(state),
+            currentEndpoints: this.getCurrentIndexerEndpoints(state)
+          }
+        },
+        action: {
+          type: 'modify-config',
+          parameters: {
+            profiles: ['kaspa-user-applications'],
+            changes: this.generateIndexerSwitchConfig(state)
+          },
+          wizardContext: 'switch-to-local-indexers'
+        },
+        impact: {
+          services: ['kasia-app', 'k-social-app', 'kaspa-explorer'],
+          downtime: 30, // seconds
+          benefits: [
+            'Faster response times',
+            'Reduced external dependencies',
+            'Better privacy'
+          ],
+          risks: ['Brief service restart required']
+        }
+      });
+    }
+    
+    // Detect wallet not configured but mining profile available
+    if (!this.hasWallet(state) && this.hasMiningCapability(state)) {
+      suggestions.push({
+        id: 'configure-wallet-for-mining',
+        title: 'Configure Wallet for Mining',
+        description: 'Set up a wallet to enable mining capabilities.',
+        priority: 'medium',
+        category: 'feature',
+        trigger: {
+          type: 'configuration-mismatch',
+          context: {
+            hasMiningProfile: true,
+            hasWallet: false
+          }
+        },
+        action: {
+          type: 'modify-config',
+          parameters: {
+            profiles: ['core'],
+            walletAction: 'create'
+          },
+          wizardContext: 'configure-wallet'
+        },
+        impact: {
+          services: ['kaspa-node'],
+          downtime: 0,
+          benefits: ['Enable mining', 'Receive mining rewards'],
+          risks: []
+        }
+      });
+    }
+    
+    // Detect updates available
+    const updates = await this.checkForUpdates();
+    if (updates.length > 0) {
+      suggestions.push({
+        id: 'updates-available',
+        title: `${updates.length} Update${updates.length > 1 ? 's' : ''} Available`,
+        description: 'New versions available for installed services.',
+        priority: 'medium',
+        category: 'maintenance',
+        trigger: {
+          type: 'update-available',
+          context: { updates }
+        },
+        action: {
+          type: 'modify-config',
+          parameters: { updates },
+          wizardContext: 'apply-updates'
+        },
+        impact: {
+          services: updates.map(u => u.service),
+          downtime: 120, // 2 minutes
+          benefits: ['Bug fixes', 'New features', 'Security patches'],
+          risks: ['Service restart required', 'Potential breaking changes']
+        }
+      });
+    }
+    
+    return suggestions;
+  }
+  
+  private hasLocalIndexers(state: SystemState): boolean {
+    return state.services.some(s => 
+      ['kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'].includes(s.name) &&
+      s.status === 'running'
+    );
+  }
+  
+  private appsUsingPublicIndexers(state: SystemState): boolean {
+    const config = state.configuration;
+    return (
+      config.KASIA_INDEXER_URL?.includes('api.kasia.io') ||
+      config.K_INDEXER_URL?.includes('api.k-social.io')
+    );
+  }
+}
+```
+
+### Dashboard Configuration Panel
+
+**New UI Component for Configuration Management**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Configuration Management                                     │
+├─────────────────────────────────────────────────────────────┤
+│ Current Installation                                         │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ Installed Profiles:                                     │ │
+│ │   • Core Profile (Kaspa Node) ✓                        │ │
+│ │   • Kaspa User Applications ✓                          │ │
+│ │                                                          │ │
+│ │ Last Modified: 2024-12-20 14:30                        │ │
+│ │ Version: v0.9.0                                         │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                              │
+│ Configuration Suggestions                                    │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ ⚡ HIGH PRIORITY                                         │ │
+│ │ Switch to Local Indexers                                │ │
+│ │ Local indexers are running. Switch apps to use them    │ │
+│ │ for better performance.                                 │ │
+│ │                                                          │ │
+│ │ Impact: 3 services, ~30s downtime                      │ │
+│ │ [Configure in Wizard]                                   │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                              │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ 💡 MEDIUM PRIORITY                                      │ │
+│ │ Configure Wallet for Mining                             │ │
+│ │ Set up a wallet to enable mining capabilities.         │ │
+│ │                                                          │ │
+│ │ Impact: 1 service, no downtime                         │ │
+│ │ [Configure in Wizard]                                   │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                              │
+│ Configuration Actions                                        │
+│ [Add Profiles] [Modify Settings] [Remove Profiles]          │
+│                                                              │
+│ [View Configuration File] [Backup Configuration]             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### Configuration Synchronization

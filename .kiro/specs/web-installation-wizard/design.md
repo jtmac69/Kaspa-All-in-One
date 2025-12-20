@@ -14,10 +14,11 @@ The Web-Based Installation Wizard is a modern, intuitive interface that guides u
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │  Installation Wizard UI (React/Vue or Vanilla JS)      │ │
 │  │  - Step Navigation                                      │ │
-│  │  - Profile Selection                                    │ │
+│  │  - Profile Selection (with Installation State)         │ │
 │  │  - Configuration Forms                                  │ │
 │  │  - Progress Tracking                                    │ │
 │  │  - Validation Display                                   │ │
+│  │  - Reconfiguration Mode Interface                      │ │
 │  └────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
                             │
@@ -32,6 +33,8 @@ The Web-Based Installation Wizard is a modern, intuitive interface that guides u
 │  │  - /api/wizard/config                                  │ │
 │  │  - /api/wizard/install                                 │ │
 │  │  - /api/wizard/validate                                │ │
+│  │  - /api/wizard/reconfigure                             │ │
+│  │  - /api/wizard/remove-profile                          │ │
 │  │  - /ws/wizard/progress (WebSocket)                     │ │
 │  └────────────────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────────────────┐ │
@@ -40,6 +43,8 @@ The Web-Based Installation Wizard is a modern, intuitive interface that guides u
 │  │  - Docker Compose Manager                              │ │
 │  │  - Configuration Generator                             │ │
 │  │  - Service Health Monitor                              │ │
+│  │  - Profile State Manager                               │ │
+│  │  - Backup Manager                                      │ │
 │  └────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
                             │
@@ -52,6 +57,72 @@ The Web-Based Installation Wizard is a modern, intuitive interface that guides u
 │  - Network Configuration                                     │
 │  - Volume Management                                         │
 └─────────────────────────────────────────────────────────────┘
+```
+
+### Wizard Modes
+
+The wizard operates in three distinct modes, each with different entry points and workflows:
+
+#### 1. Initial Installation Mode
+- **Entry Point**: Direct access to wizard (fresh system)
+- **URL**: `http://localhost:3000/wizard`
+- **State**: No existing configuration
+- **Flow**: Welcome → System Check → Profile Selection → Configuration → Installation → Validation → Complete
+
+#### 2. Reconfiguration Mode
+- **Entry Point**: Launched from Management Dashboard
+- **URL**: `http://localhost:3000/wizard?mode=reconfigure`
+- **State**: Loads existing configuration from `installation-config.json`
+- **Flow**: Reconfiguration Landing → Profile Management → Configuration → Apply Changes → Validation → Complete
+
+#### 3. Update Mode
+- **Entry Point**: Launched from Dashboard update notifications
+- **URL**: `http://localhost:3000/wizard?mode=update&updates=[...]`
+- **State**: Loads current versions and available updates
+- **Flow**: Update Selection → Backup → Apply Updates → Validation → Complete
+
+### Reconfiguration Mode Architecture
+
+```mermaid
+graph TB
+    subgraph "Dashboard"
+        D1[Service Status]
+        D2[Configuration Suggestions]
+        D3[Reconfigure Button]
+    end
+    
+    subgraph "Wizard Reconfiguration Mode"
+        W1[Landing Page]
+        W2[Add Profiles]
+        W3[Modify Configuration]
+        W4[Remove Profiles]
+        W5[Profile Selection with State]
+        W6[Configuration Forms]
+        W7[Apply Changes]
+    end
+    
+    subgraph "Backend Services"
+        B1[Profile State Manager]
+        B2[Configuration Loader]
+        B3[Backup Manager]
+        B4[Docker Manager]
+    end
+    
+    D3 --> W1
+    D2 --> W1
+    W1 --> W2
+    W1 --> W3
+    W1 --> W4
+    W2 --> W5
+    W3 --> W6
+    W4 --> W5
+    W5 --> W6
+    W6 --> W7
+    W7 --> B1
+    W7 --> B3
+    W7 --> B4
+    B2 --> W5
+    B2 --> W6
 ```
 
 ## Profile Architecture and Dependencies
@@ -551,7 +622,107 @@ interface SyncProgress {
 }
 ```
 
-#### 6. Validation Results Component
+#### 7. Reconfiguration Landing Component
+**Purpose**: Entry point for reconfiguration mode with clear action options
+
+**Interface**:
+```typescript
+interface ReconfigurationLanding {
+  currentInstallation: InstallationSummary;
+  availableActions: ReconfigurationAction[];
+  suggestions: ConfigurationSuggestion[];
+}
+
+interface InstallationSummary {
+  installedProfiles: string[];
+  lastModified: string;
+  version: string;
+  servicesRunning: number;
+  servicesTotal: number;
+}
+
+interface ReconfigurationAction {
+  id: 'add-profiles' | 'modify-config' | 'remove-profiles';
+  title: string;
+  description: string;
+  icon: string;
+  enabled: boolean;
+  estimatedTime: string;
+}
+
+interface ConfigurationSuggestion {
+  id: string;
+  title: string;
+  description: string;
+  action: string;
+  priority: 'high' | 'medium' | 'low';
+  context: Record<string, any>;
+}
+```
+
+#### 8. Profile State Management Component
+**Purpose**: Display profiles with installation state and management options
+
+**Interface**:
+```typescript
+interface ProfileWithState extends Profile {
+  installationState: 'installed' | 'not-installed' | 'partial' | 'error';
+  status: 'running' | 'stopped' | 'unhealthy' | 'unknown';
+  version?: string;
+  lastModified?: string;
+  dataSize?: number;
+  dependencies: ProfileDependency[];
+}
+
+interface ProfileDependency {
+  profileId: string;
+  type: 'required' | 'optional' | 'conflicts';
+  status: 'satisfied' | 'missing' | 'conflict';
+  message: string;
+}
+
+interface ProfileManagementActions {
+  canModify: boolean;
+  canRemove: boolean;
+  canAdd: boolean;
+  warnings: string[];
+  dataRemovalOptions?: DataRemovalOption[];
+}
+
+interface DataRemovalOption {
+  id: string;
+  label: string;
+  description: string;
+  dataSize: number;
+  recommended: boolean;
+}
+```
+
+#### 9. Configuration Diff Component
+**Purpose**: Show before/after comparison of configuration changes
+
+**Interface**:
+```typescript
+interface ConfigurationDiff {
+  changes: ConfigurationChange[];
+  affectedServices: string[];
+  estimatedDowntime: number;
+  backupRequired: boolean;
+  warnings: string[];
+}
+
+interface ConfigurationChange {
+  type: 'add' | 'modify' | 'remove';
+  category: 'profile' | 'environment' | 'network' | 'advanced';
+  key: string;
+  oldValue?: any;
+  newValue?: any;
+  description: string;
+  impact: 'low' | 'medium' | 'high';
+}
+```
+
+#### 10. Validation Results Component
 **Purpose**: Display post-installation validation results
 
 **Interface**:
@@ -662,6 +833,55 @@ Response: InfrastructureValidationResult
 - **TimescaleDB Testing**: Hypertables, compression, continuous aggregates (for explorer profile)
 - **Integration**: Executes `test-nginx.sh` and `test-timescaledb.sh` scripts
 - **Results**: Detailed pass/fail/warn status for each infrastructure component
+
+#### 6. Reconfiguration API
+```
+GET /api/wizard/installation-state
+Response: InstallationState
+
+POST /api/wizard/reconfigure/preview
+Request: { profiles: string[], configuration: InstallationConfig }
+Response: { diff: ConfigurationDiff, validation: ValidationResult[] }
+
+POST /api/wizard/reconfigure/apply
+Request: { changes: ConfigurationChange[], backupName?: string }
+Response: { success: boolean, backupId: string, installationId: string }
+
+POST /api/wizard/profile/remove
+Request: { profileId: string, removeData: boolean, dataOptions: DataRemovalOption[] }
+Response: { success: boolean, removedServices: string[], preservedData: string[] }
+
+GET /api/wizard/suggestions
+Response: ConfigurationSuggestion[]
+```
+
+#### 7. Profile Management API
+```
+GET /api/wizard/profiles/state
+Response: ProfileWithState[]
+
+POST /api/wizard/profiles/validate-removal
+Request: { profileId: string }
+Response: { canRemove: boolean, dependencies: string[], warnings: string[] }
+
+POST /api/wizard/profiles/validate-addition
+Request: { profileId: string, existingProfiles: string[] }
+Response: { canAdd: boolean, conflicts: string[], suggestions: string[] }
+```
+
+#### 8. Backup Management API
+```
+GET /api/wizard/backups
+Response: Backup[]
+
+POST /api/wizard/backup/create
+Request: { name: string, reason: string }
+Response: { backupId: string, path: string, size: number }
+
+POST /api/wizard/backup/restore
+Request: { backupId: string }
+Response: { success: boolean, restoredFiles: string[] }
+```
 
 #### 6. WebSocket Progress Stream
 ```
@@ -854,9 +1074,236 @@ const PROFILES = {
 };
 ```
 
+### Installation State Management
+```typescript
+interface InstallationState {
+  version: string;
+  installedAt: string;
+  lastModified: string;
+  mode: 'initial' | 'reconfiguration' | 'update';
+  
+  profiles: {
+    selected: string[];
+    configuration: Record<string, any>;
+    states: Record<string, ProfileInstallationState>;
+  };
+  
+  services: {
+    name: string;
+    version: string;
+    status: 'running' | 'stopped' | 'error';
+    profile: string;
+    containerId?: string;
+    dataVolumes: string[];
+    ports: number[];
+  }[];
+  
+  configuration: {
+    environment: Record<string, string>;
+    network: NetworkConfig;
+    advanced: AdvancedConfig;
+  };
+  
+  backups: {
+    id: string;
+    createdAt: string;
+    reason: string;
+    size: number;
+  }[];
+  
+  history: {
+    timestamp: string;
+    action: 'install' | 'reconfigure' | 'update' | 'remove';
+    changes: string[];
+    user?: string;
+  }[];
+}
+
+interface ProfileInstallationState {
+  installed: boolean;
+  version?: string;
+  installedAt?: string;
+  status: 'running' | 'stopped' | 'error' | 'partial';
+  services: string[];
+  dataSize?: number;
+  dependencies: {
+    satisfied: string[];
+    missing: string[];
+    conflicts: string[];
+  };
+}
+
+interface Backup {
+  id: string;
+  name: string;
+  createdAt: string;
+  reason: string;
+  size: number;
+  files: string[];
+  metadata: {
+    profiles: string[];
+    version: string;
+    services: string[];
+  };
+}
+```
+
+### Reconfiguration Workflow Models
+```typescript
+interface ReconfigurationWorkflow {
+  id: string;
+  startedAt: string;
+  mode: 'add-profiles' | 'modify-config' | 'remove-profiles' | 'update';
+  currentStep: string;
+  
+  changes: {
+    profiles: {
+      add: string[];
+      remove: string[];
+      modify: string[];
+    };
+    configuration: ConfigurationChange[];
+    services: {
+      restart: string[];
+      stop: string[];
+      start: string[];
+    };
+  };
+  
+  validation: {
+    passed: boolean;
+    warnings: string[];
+    errors: string[];
+    conflicts: string[];
+  };
+  
+  backup: {
+    required: boolean;
+    created?: string;
+    backupId?: string;
+  };
+  
+  progress: {
+    phase: 'planning' | 'backing-up' | 'applying' | 'validating' | 'complete' | 'error';
+    percentage: number;
+    currentTask: string;
+    estimatedTimeRemaining?: number;
+  };
+}
+
+interface ConfigurationSuggestion {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  category: 'optimization' | 'security' | 'feature' | 'maintenance';
+  
+  trigger: {
+    type: 'service-detected' | 'configuration-mismatch' | 'update-available' | 'resource-optimization';
+    context: Record<string, any>;
+  };
+  
+  action: {
+    type: 'add-profile' | 'modify-config' | 'switch-endpoint' | 'enable-feature';
+    parameters: Record<string, any>;
+    wizardContext?: string; // Pre-fill wizard with this context
+  };
+  
+  impact: {
+    services: string[];
+    downtime: number;
+    benefits: string[];
+    risks: string[];
+  };
+}
+```
+
+// Specific Profile Definitions
+const PROFILES = {
+  core: {
+    id: 'core',
+    name: 'Core Profile',
+    description: 'Kaspa node (public/private) with optional wallet',
+    services: [
+      { name: 'kaspa-node', required: true, startupOrder: 1 },
+      { name: 'wallet', required: false, startupOrder: 1 }
+    ],
+    configuration: {
+      nodeUsage: 'local', // Can be 'public', 'private', or 'for-other-services'
+      fallbackToPublic: true // If node fails, other services use public network
+    }
+  },
+  
+  kaspaUserApplications: {
+    id: 'kaspa-user-applications',
+    name: 'Kaspa User Applications',
+    description: 'User-facing apps (Kasia, K-Social, Kaspa Explorer)',
+    services: [
+      { name: 'kasia-app', required: true, startupOrder: 3 },
+      { name: 'k-social-app', required: true, startupOrder: 3 },
+      { name: 'kaspa-explorer', required: true, startupOrder: 3 }
+    ],
+    configuration: {
+      indexerChoice: 'public', // Can be 'public' or 'local'
+      publicEndpoints: {
+        kasiaIndexer: 'https://api.kasia.io',
+        kIndexer: 'https://api.k-social.io',
+        simplyKaspaIndexer: 'https://api.simplykaspa.io'
+      }
+    },
+    dependencies: [], // Optional: can add 'indexer-services' for local indexers
+    prerequisites: [] // No hard requirements
+  },
+  
+  indexerServices: {
+    id: 'indexer-services',
+    name: 'Indexer Services',
+    description: 'Local indexers (Kasia, K-Indexer, Simply-Kaspa)',
+    services: [
+      { name: 'timescaledb', required: true, startupOrder: 2 },
+      { name: 'kasia-indexer', required: false, startupOrder: 2 },
+      { name: 'k-indexer', required: false, startupOrder: 2 },
+      { name: 'simply-kaspa-indexer', required: false, startupOrder: 2 }
+    ],
+    configuration: {
+      sharedDatabase: true, // Single TimescaleDB with separate databases per indexer
+      databases: ['kasia_db', 'k_db', 'simply_kaspa_db']
+    },
+    dependencies: [], // Optional: can use 'core' for local node
+    fallbackToPublic: true // If no local node, use public Kaspa network
+  },
+  
+  archiveNode: {
+    id: 'archive-node',
+    name: 'Archive Node Profile',
+    description: 'Non-pruning Kaspa node for complete history',
+    services: [
+      { name: 'kaspa-archive-node', required: true, startupOrder: 1 }
+    ],
+    resources: {
+      minMemory: 16, // Higher requirements
+      minDisk: 1000
+    }
+  },
+  
+  mining: {
+    id: 'mining',
+    name: 'Mining Profile',
+    description: 'Local mining stratum pointed to local node',
+    services: [
+      { name: 'kaspa-stratum', required: true, startupOrder: 3 }
+    ],
+    prerequisites: ['core', 'archive-node'], // Requires one of these
+    dependencies: [] // Will be validated during selection
+  }
+};
+```
+
 ## User Interface Design
 
 ### Wizard Steps
+
+#### Initial Installation Mode Steps
 
 #### Step 1: Welcome
 - Project introduction
@@ -929,6 +1376,154 @@ const PROFILES = {
 - Next steps guide
 - Links to documentation
 - "Go to Dashboard" button
+
+### Reconfiguration Mode Steps
+
+#### Step 1: Reconfiguration Landing
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Reconfiguration Options                                      │
+├─────────────────────────────────────────────────────────────┤
+│ Current Installation                                         │
+│ • Installed: Core Profile, Kaspa User Applications          │
+│ • Last Modified: 2024-12-20 14:30                          │
+│ • Services Running: 5/5                                     │
+├─────────────────────────────────────────────────────────────┤
+│ Configuration Suggestions                                    │
+│ ⚡ Local indexers available - switch apps to local          │
+│    [Configure Now]                                          │
+│                                                              │
+│ 💡 Wallet not configured for mining                         │
+│    [Configure Now]                                          │
+├─────────────────────────────────────────────────────────────┤
+│ What would you like to do?                                   │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ 📦 Add New Profiles                                     │ │
+│ │ Install additional services to your system              │ │
+│ │ [Continue →]                                            │ │
+│ └────────────────────────────────────────────────────────┘ │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ ⚙️ Modify Configuration                                 │ │
+│ │ Change settings for installed profiles                  │ │
+│ │ [Continue →]                                            │ │
+│ └────────────────────────────────────────────────────────┘ │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ 🗑️ Remove Profiles                                      │ │
+│ │ Uninstall services and optionally delete data          │ │
+│ │ [Continue →]                                            │ │
+│ └────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Step 2: Profile Selection with Installation State
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Profile Management                                           │
+├─────────────────────────────────────────────────────────────┤
+│ Currently Installed                                          │
+├─────────────────────────────────────────────────────────────┤
+│ ┌──────────────────┐ ┌──────────────────┐                  │
+│ │ ✓ Core Profile   │ │ ✓ Kaspa Apps     │                  │
+│ │ Status: Running  │ │ Status: Running  │                  │
+│ │ Version: v0.14.0 │ │ Version: v1.2.0  │                  │
+│ │ Data: 2.1 GB     │ │ Data: 150 MB     │                  │
+│ │ Green Border     │ │ Green Border     │                  │
+│ │ Checkmark Badge  │ │ Checkmark Badge  │                  │
+│ │                  │ │                  │                  │
+│ │ [Modify] [Remove]│ │ [Modify] [Remove]│                  │
+│ └──────────────────┘ └──────────────────┘                  │
+├─────────────────────────────────────────────────────────────┤
+│ Available to Add                                             │
+├─────────────────────────────────────────────────────────────┤
+│ ┌──────────────────┐ ┌──────────────────┐                  │
+│ │ Indexer Services │ │ Mining Profile   │                  │
+│ │ Not Installed    │ │ Not Installed    │                  │
+│ │ Est. Size: 5 GB  │ │ Est. Size: 100MB │                  │
+│ │ Gray Border      │ │ Gray Border      │                  │
+│ │                  │ │                  │                  │
+│ │ [Select to Add]  │ │ [Select to Add]  │                  │
+│ └──────────────────┘ └──────────────────┘                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Step 3: Configuration with Context Awareness
+- **Existing Configuration Display**: Show current values for all settings
+- **Change Highlighting**: Highlight fields that have been modified
+- **Impact Assessment**: Show which services will be affected by changes
+- **Dependency Detection**: Automatically suggest related configuration changes
+- **Advanced Scenarios**:
+  - Adding Indexer Services to existing Node: Show local node connection options
+  - Modifying Kaspa User Apps: Detect local indexers and suggest switching
+  - Wallet Configuration: Show all wallet management options (create, import, configure)
+
+#### Step 4: Configuration Preview and Backup
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Review Changes                                               │
+├─────────────────────────────────────────────────────────────┤
+│ Configuration Changes                                        │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ + Add Profile: Indexer Services                         │ │
+│ │ ~ Modify: KASIA_INDEXER_URL → localhost:8081            │ │
+│ │ ~ Modify: K_INDEXER_URL → localhost:8082                │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                              │
+│ Affected Services                                            │
+│ • kasia-app (restart required)                              │
+│ • k-social-app (restart required)                           │
+│ • timescaledb (new service)                                 │
+│ • kasia-indexer (new service)                               │
+│                                                              │
+│ Estimated Downtime: 2-3 minutes                             │
+│                                                              │
+│ Backup Options                                               │
+│ ☑ Create backup before applying changes                     │
+│ Backup Name: [auto-backup-2024-12-20-14-30    ]            │
+│                                                              │
+│ [Back] [Apply Changes]                                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Step 5: Apply Changes with Progress
+- Real-time progress tracking
+- Service-by-service status updates
+- Rollback option if errors occur
+- Log streaming for troubleshooting
+
+#### Step 6: Validation and Completion
+- Validate all services after changes
+- Show before/after comparison
+- Provide access to updated services
+- Return to dashboard option
+
+### Profile Removal Flow
+
+#### Removal Confirmation Dialog
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Remove Core Profile?                                         │
+├─────────────────────────────────────────────────────────────┤
+│ ⚠️ Warning: Other services depend on this profile           │
+│                                                              │
+│ Dependent Services:                                          │
+│ • Indexer Services (will switch to public network)          │
+│ • Mining Profile (will be disabled)                         │
+│                                                              │
+│ Data Management:                                             │
+│ ○ Keep data volumes (2.1 GB) - can reinstall later         │
+│ ○ Delete all data - clean removal                           │
+│                                                              │
+│ This action will:                                            │
+│ • Stop kaspa-node container                                 │
+│ • Update dependent service configurations                   │
+│ • Create backup before removal                              │
+│                                                              │
+│ [Cancel] [Remove Profile]                                    │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ### Visual Design Elements
 

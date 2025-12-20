@@ -52,6 +52,15 @@ services:
     volumes:
       - k-social-db-data:/var/lib/postgresql/data
       - ./config/postgres/k-social-init:/docker-entrypoint-initdb.d
+    # Resource limits for database
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'      # Limit to 2 CPU cores
+          memory: 2G       # Limit to 2GB RAM
+        reservations:
+          cpus: '0.5'      # Reserve 0.5 CPU cores
+          memory: 512M     # Reserve 512MB RAM
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U k_social_user -d ksocial"]
       interval: 10s
@@ -77,6 +86,15 @@ services:
     volumes:
       - simply-kaspa-db-data:/var/lib/postgresql/data
       - ./config/postgres/simply-kaspa-init:/docker-entrypoint-initdb.d
+    # Resource limits for database
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'      # Limit to 2 CPU cores
+          memory: 2G       # Limit to 2GB RAM
+        reservations:
+          cpus: '0.5'      # Reserve 0.5 CPU cores
+          memory: 512M     # Reserve 512MB RAM
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U simply_kaspa_user -d simply_kaspa"]
       interval: 10s
@@ -100,6 +118,15 @@ services:
       - NETWORK_TYPE=${KASPA_NETWORK:-mainnet}
     volumes:
       - kasia-indexer-data:/app/data
+    # Resource limits to prevent system overload
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'      # Limit to 4 CPU cores
+          memory: 2G       # Limit to 2GB RAM
+        reservations:
+          cpus: '0.5'      # Reserve 0.5 CPU cores
+          memory: 512M     # Reserve 512MB RAM
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/metrics"]
       interval: 30s
@@ -130,7 +157,15 @@ services:
       - POSTGRES_PASSWORD=${K_SOCIAL_DB_PASSWORD:-k_social_secure_pass}
     volumes:
       - k-indexer-data:/app/data
-
+    # Resource limits to prevent system overload
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'      # Limit to 2 CPU cores
+          memory: 1G       # Limit to 1GB RAM
+        reservations:
+          cpus: '0.25'     # Reserve 0.25 CPU cores
+          memory: 256M     # Reserve 256MB RAM
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -157,6 +192,15 @@ services:
     environment:
       - KASPA_NODE_URL=${REMOTE_KASPA_NODE_URL:-https://api.kaspa.org}
       - DATABASE_URL=postgresql://simply_kaspa_user:${SIMPLY_KASPA_DB_PASSWORD:-simply_kaspa_secure_pass}@simply-kaspa-db:5432/simply_kaspa
+    # Resource limits to prevent system overload
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'      # Limit to 2 CPU cores
+          memory: 1G       # Limit to 1GB RAM
+        reservations:
+          cpus: '0.25'     # Reserve 0.25 CPU cores
+          memory: 256M     # Reserve 256MB RAM
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/metrics"]
       interval: 30s

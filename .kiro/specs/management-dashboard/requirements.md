@@ -14,7 +14,9 @@ This document defines the requirements for the Management Dashboard, a **host-ba
 ## Glossary
 
 - **Management_Dashboard**: Host-based web application for monitoring and managing the Kaspa All-in-One system (runs on host, not in container)
-- **Installation_Wizard**: Host-based web interface for initial setup and reconfiguration
+- **Installation_Wizard**: Host-based web interface for initial setup and reconfiguration (handles all configuration operations)
+- **Configuration_Suggestion**: Dashboard-detected optimization opportunity that launches wizard with pre-selected context
+- **Reconfiguration_Mode**: Wizard mode accessed from Dashboard for modifying existing installations
 - **Kaspa_Node**: The core Kaspa blockchain node (rusty-kaspad) that maintains the blockchain state
 - **Service**: A Docker container component (kaspa-node, indexers, apps, etc.)
 - **Profile**: Docker Compose profile-based deployment configuration (Core, Kaspa User Applications, Indexer Services, Archive Node, Mining, Developer Mode)
@@ -112,18 +114,27 @@ This document defines the requirements for the Management Dashboard, a **host-ba
 
 ### Requirement 6: System Resource Monitoring
 
-**User Story:** As a system operator, I want to monitor system resource utilization, so that I can ensure adequate resources are available and identify performance issues.
+**User Story:** As a system operator, I want to monitor system resource utilization with emergency controls, so that I can ensure adequate resources are available and prevent system freezes.
 
 #### Acceptance Criteria
 
-1. THE Management_Dashboard SHALL display CPU usage percentage with visual progress indicator
-2. THE Management_Dashboard SHALL display memory usage percentage with visual progress indicator
-3. THE Management_Dashboard SHALL display disk usage percentage with visual progress indicator
-4. THE Management_Dashboard SHALL update resource metrics in real-time via WebSocket connection
+1. THE Management_Dashboard SHALL display CPU usage percentage with visual progress indicator and color-coded warnings (yellow at 80%, red at 90%)
+2. THE Management_Dashboard SHALL display memory usage percentage with visual progress indicator and color-coded warnings (yellow at 85%, red at 90%)
+3. THE Management_Dashboard SHALL display disk usage percentage with visual progress indicator and color-coded warnings (yellow at 80%, red at 90%)
+4. THE Management_Dashboard SHALL update resource metrics in real-time via WebSocket connection every 5 seconds
 5. WHEN resource usage exceeds 80%, THE Management_Dashboard SHALL display warning indicators
-6. WHEN resource usage exceeds 90%, THE Management_Dashboard SHALL display critical indicators
+6. WHEN resource usage exceeds 90%, THE Management_Dashboard SHALL display critical indicators with emergency controls
 7. THE Management_Dashboard SHALL show resource usage trends over time with simple graphs
-8. THE Management_Dashboard SHALL display per-service resource consumption when available
+8. THE Management_Dashboard SHALL display per-service resource consumption with Docker container limits vs actual usage
+9. THE Management_Dashboard SHALL display system load average and uptime information
+10. THE Management_Dashboard SHALL provide emergency stop button when system resources reach critical levels (>90% CPU or >90% memory)
+11. THE Management_Dashboard SHALL integrate with monitoring scripts (resource-monitor.sh, emergency-stop.sh, quick-check.sh)
+12. THE Management_Dashboard SHALL display Docker resource limits for each container alongside current usage
+13. WHEN emergency stop is triggered, THE Management_Dashboard SHALL execute emergency-stop.sh script and display shutdown progress
+9. THE Management_Dashboard SHALL integrate with resource monitoring scripts for comprehensive system oversight
+10. THE Management_Dashboard SHALL provide quick access to emergency stop functionality when resources are critically high
+11. THE Management_Dashboard SHALL display Docker container resource limits and current usage
+12. THE Management_Dashboard SHALL show load average and system uptime information
 
 ### Requirement 7: Service Control and Management
 
@@ -155,19 +166,23 @@ This document defines the requirements for the Management Dashboard, a **host-ba
 7. THE Management_Dashboard SHALL provide log viewing for multiple services simultaneously
 8. THE Management_Dashboard SHALL auto-scroll logs as new entries arrive with option to pause
 
-### Requirement 9: Reconfiguration Workflow Integration
+### Requirement 9: Configuration Management Integration
 
-**User Story:** As a system operator, I want to reconfigure my installation from the dashboard, so that I can modify profiles and settings without reinstalling.
+**User Story:** As a system operator, I want to access configuration management from the dashboard, so that I can modify profiles and settings through a unified interface.
 
 #### Acceptance Criteria
 
-1. THE Management_Dashboard SHALL provide a "Reconfigure System" button that launches the Installation Wizard
-2. WHEN reconfiguration is initiated, THE Management_Dashboard SHALL pass current configuration to the wizard
-3. THE Management_Dashboard SHALL display the current active profiles and configuration summary
-4. WHEN the wizard completes reconfiguration, THE Management_Dashboard SHALL reload and reflect changes
-5. THE Management_Dashboard SHALL warn users that reconfiguration may cause service restarts
-6. THE Management_Dashboard SHALL display configuration change history with timestamps
-7. THE Management_Dashboard SHALL allow users to view the current .env configuration
+1. THE Management_Dashboard SHALL provide a "Reconfigure System" button that launches the Installation Wizard in reconfiguration mode
+2. THE Management_Dashboard SHALL display the current active profiles with installation status indicators
+3. THE Management_Dashboard SHALL show configuration suggestions when optimization opportunities are detected (e.g., "Local indexers available - switch apps to local")
+4. WHEN configuration suggestions are available, THE Management_Dashboard SHALL provide "Configure in Wizard" buttons that launch the wizard with pre-selected context
+5. THE Management_Dashboard SHALL display a configuration summary showing installed profiles, key settings, and last modification date
+6. WHEN the wizard completes reconfiguration, THE Management_Dashboard SHALL reload and reflect changes automatically
+7. THE Management_Dashboard SHALL warn users that reconfiguration may cause service restarts
+8. THE Management_Dashboard SHALL display configuration change history with timestamps and change descriptions
+9. THE Management_Dashboard SHALL allow users to view the current .env configuration in read-only mode
+10. THE Management_Dashboard SHALL detect when wallet is not configured and suggest wallet setup through the wizard
+11. THE Management_Dashboard SHALL detect when local indexers are available but apps are using public indexers and suggest switching
 
 ### Requirement 10: Alert and Notification System
 
@@ -258,3 +273,31 @@ This document defines the requirements for the Management Dashboard, a **host-ba
 6. THE Management_Dashboard SHALL allow users to restore from backup through the Installation Wizard
 7. THE Management_Dashboard SHALL validate backup integrity before allowing restore
 8. THE Management_Dashboard SHALL warn users about data loss risks before restore operations
+
+### Requirement 17: Installation Wizard Integration for Automatic Monitoring
+
+**User Story:** As a user completing installation with indexer services, I want automatic monitoring setup, so that my system is protected from resource exhaustion without manual configuration.
+
+#### Acceptance Criteria
+
+1. WHEN the Installation Wizard completes with Indexer Services profile, THE Installation_Wizard SHALL automatically configure resource monitoring scripts
+2. THE Installation_Wizard SHALL set appropriate permissions for monitoring scripts (resource-monitor.sh, emergency-stop.sh, quick-check.sh)
+3. THE Installation_Wizard SHALL add resource monitoring startup to the dashboard service configuration
+4. THE Installation_Wizard SHALL validate that monitoring tools are properly installed and functional
+5. THE Installation_Wizard SHALL configure default alert thresholds (CPU: 80%, Memory: 85%, Load: 10.0)
+6. THE Installation_Wizard SHALL display monitoring setup status in the completion summary
+7. THE Installation_Wizard SHALL provide option to enable/disable automatic monitoring during installation
+8. THE Installation_Wizard SHALL test monitoring functionality as part of post-installation validation
+9. THE Installation_Wizard SHALL create monitoring log directory and configure log rotation
+10. THE Installation_Wizard SHALL integrate monitoring status into the "Go to Dashboard" completion step
+
+#### Acceptance Criteria
+
+1. WHEN the Installation Wizard completes setup with indexer-services profile, THE Installation_Wizard SHALL automatically start resource monitoring
+2. THE Installation_Wizard SHALL configure resource monitoring scripts with appropriate permissions
+3. THE Installation_Wizard SHALL add resource monitoring startup to the Management Dashboard service
+4. THE Installation_Wizard SHALL display resource monitoring status in the completion summary
+5. THE Installation_Wizard SHALL provide option to enable/disable automatic resource monitoring
+6. THE Installation_Wizard SHALL configure resource monitoring alerts and thresholds
+7. THE Installation_Wizard SHALL create systemd service for resource monitoring if requested
+8. THE Installation_Wizard SHALL validate that resource monitoring tools are properly installed

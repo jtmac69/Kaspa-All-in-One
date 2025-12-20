@@ -6,7 +6,10 @@ This document defines the requirements for a web-based installation wizard that 
 
 ## Glossary
 
-- **Installation_Wizard**: A host-based web interface that guides users through system setup
+- **Installation_Wizard**: A host-based web interface that guides users through system setup and reconfiguration
+- **Reconfiguration_Mode**: Wizard mode for modifying existing installations (add/remove profiles, change settings)
+- **Profile_Installation_State**: Status indicating whether a profile is currently installed and operational
+- **Configuration_Suggestion**: Dashboard-detected optimization opportunity that can be addressed through wizard reconfiguration
 - **Core_Profile**: Kaspa node deployment (public or private) with optional wallet
 - **Kaspa_User_Applications_Profile**: User-facing applications (Kasia, K-Social, Kaspa Explorer) with public or local indexer options
 - **Indexer_Services_Profile**: Optional local indexers (Kasia-indexer, K-Indexer, Simply-Kaspa Indexer) for application backends
@@ -186,13 +189,59 @@ This document defines the requirements for a web-based installation wizard that 
 #### Acceptance Criteria
 
 1. WHEN accessed from the Management Dashboard, THE Installation_Wizard SHALL load the current installation configuration
-2. THE Installation_Wizard SHALL allow users to add or remove profiles from existing installations
-3. THE Installation_Wizard SHALL allow users to modify service settings and regenerate configuration
-4. WHEN configuration changes are applied, THE Installation_Wizard SHALL backup existing configuration before making changes
-5. THE Installation_Wizard SHALL handle service updates when underlying packages have new versions available
-6. WHEN a service update is available, THE Installation_Wizard SHALL display version information and allow selective updates
-7. THE Installation_Wizard SHALL assume each service handles its own data migration during updates
-8. IF a service update fails, THEN THE Installation_Wizard SHALL provide rollback options to restore previous configuration
+2. THE Installation_Wizard SHALL provide a reconfiguration mode with a landing page offering three main options: "Add New Profiles", "Modify Configuration", and "Remove Profiles"
+3. THE Installation_Wizard SHALL allow users to add or remove profiles from existing installations
+4. THE Installation_Wizard SHALL allow users to modify service settings and regenerate configuration
+5. WHEN configuration changes are applied, THE Installation_Wizard SHALL backup existing configuration before making changes
+6. THE Installation_Wizard SHALL handle service updates when underlying packages have new versions available
+7. WHEN a service update is available, THE Installation_Wizard SHALL display version information and allow selective updates
+8. THE Installation_Wizard SHALL assume each service handles its own data migration during updates
+9. IF a service update fails, THEN THE Installation_Wizard SHALL provide rollback options to restore previous configuration
+
+### Requirement 16: Profile Installation State Management
+
+**User Story:** As a user with existing installations, I want to see which profiles are already installed and their status, so that I can make informed decisions about adding, modifying, or removing services.
+
+#### Acceptance Criteria
+
+1. WHEN in reconfiguration mode, THE Installation_Wizard SHALL display installed profiles in a separate "Currently Installed" section with visual indicators (checkmark badge, green border, "Installed ✓" status text)
+2. THE Installation_Wizard SHALL display available profiles in an "Available to Add" section with standard styling
+3. THE Installation_Wizard SHALL show installation/running status for each installed profile
+4. WHEN a user selects an installed profile, THE Installation_Wizard SHALL provide options to "Modify Configuration" or "Remove Profile"
+5. THE Installation_Wizard SHALL detect service dependencies and warn users when removing profiles that other services depend on
+6. WHEN adding new profiles to existing installations, THE Installation_Wizard SHALL detect existing services and offer integration options (e.g., "Local Kaspa Node detected - connect indexers to local node?")
+7. THE Installation_Wizard SHALL preserve existing service data by default when modifying configurations
+8. THE Installation_Wizard SHALL allow users to view current configuration values when modifying existing profiles
+
+### Requirement 17: Advanced Configuration Management
+
+**User Story:** As a system operator, I want granular control over service configurations, so that I can optimize my deployment for specific use cases.
+
+#### Acceptance Criteria
+
+1. WHEN adding Indexer Services to an existing Kaspa Node installation, THE Installation_Wizard SHALL allow per-indexer configuration of node connections (some indexers to local node, some to public network)
+2. THE Installation_Wizard SHALL support both switching indexer URLs (public to local or vice versa) and changing specific endpoint URLs for Kaspa User Applications
+3. THE Installation_Wizard SHALL provide comprehensive wallet management including wallet creation, import, and configuration changes (mining address, RPC settings)
+4. WHEN removing profiles, THE Installation_Wizard SHALL offer users choice to delete data volumes or keep them for potential reinstallation
+5. THE Installation_Wizard SHALL validate configuration changes against existing services and warn about potential conflicts
+6. THE Installation_Wizard SHALL support modifying network settings (ports, SSL, public node configuration) for existing installations
+7. THE Installation_Wizard SHALL allow users to enable or disable Developer Mode on existing installations
+8. THE Installation_Wizard SHALL provide configuration templates for common reconfiguration scenarios (e.g., "Switch to Local Indexers", "Add Mining Setup")
+
+### Requirement 18: Reconfiguration User Experience
+
+**User Story:** As a user, I want reconfiguration to be intuitive and safe, so that I can modify my installation without fear of breaking existing services.
+
+#### Acceptance Criteria
+
+1. WHEN launched in reconfiguration mode, THE Installation_Wizard SHALL display a clear landing page explaining available reconfiguration options
+2. THE Installation_Wizard SHALL provide contextual help and suggestions based on current installation state (e.g., "You can now add local indexers to reduce external dependencies")
+3. THE Installation_Wizard SHALL show before/after configuration comparisons for major changes
+4. THE Installation_Wizard SHALL estimate downtime and service restart requirements for proposed changes
+5. THE Installation_Wizard SHALL allow users to preview generated configuration files before applying changes
+6. THE Installation_Wizard SHALL provide detailed progress tracking during reconfiguration with ability to rollback on failure
+7. THE Installation_Wizard SHALL validate that proposed changes won't break existing functionality
+8. THE Installation_Wizard SHALL offer "quick reconfiguration" paths for common scenarios launched from Dashboard suggestions
 
 ### Requirement 14: Service Startup Order and Dependencies
 
