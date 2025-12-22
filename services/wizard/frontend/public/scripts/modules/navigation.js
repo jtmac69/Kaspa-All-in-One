@@ -6,12 +6,13 @@
 import { stateManager } from './state-manager.js';
 import { buildConfig, isFeatureEnabled } from './build-config.js';
 
-export const TOTAL_STEPS = 8;
+export const TOTAL_STEPS = 9;
 
 const STEP_IDS = [
     'welcome',
     'checklist',
     'system-check',
+    'templates',
     'profiles',
     'configure',
     'review',
@@ -176,6 +177,10 @@ function handleStepEntry(stepNumber) {
                 }, 1000);
             }
             break;
+        case 'templates':
+            // Initialize template selection
+            initializeTemplateSelection();
+            break;
         case 'profiles':
             // Profiles module will handle this
             break;
@@ -194,6 +199,25 @@ function handleStepEntry(stepNumber) {
         case 'complete':
             // Complete module will handle this
             break;
+    }
+}
+
+/**
+ * Initialize template selection
+ */
+async function initializeTemplateSelection() {
+    try {
+        // Dynamically import template selection module
+        const { default: TemplateSelection } = await import('./template-selection.js');
+        
+        // Initialize template selection if not already done
+        if (!window.templateSelection) {
+            window.templateSelection = new TemplateSelection();
+        }
+        
+        await window.templateSelection.initialize();
+    } catch (error) {
+        console.error('Failed to initialize template selection:', error);
     }
 }
 

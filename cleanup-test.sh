@@ -144,19 +144,21 @@ stop_docker_containers() {
   
   if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo -e "${BLUE}Stopping containers and removing volumes...${NC}"
-    $compose_cmd down -v 2>/dev/null || true
+    # Stop all profiles to ensure we catch everything
+    $compose_cmd --profile "*" down -v 2>/dev/null || $compose_cmd down -v 2>/dev/null || true
     echo -e "${GREEN}✓ Containers stopped and volumes removed${NC}"
   else
     echo -e "${BLUE}Stopping containers (preserving volumes)...${NC}"
-    $compose_cmd down 2>/dev/null || true
+    # Stop all profiles to ensure we catch everything
+    $compose_cmd --profile "*" down 2>/dev/null || $compose_cmd down 2>/dev/null || true
     echo -e "${GREEN}✓ Containers stopped (volumes preserved)${NC}"
   fi
   
-  # Also stop any kaspa containers by name (in case they're from another directory)
-  echo -e "${BLUE}Checking for any remaining Kaspa containers...${NC}"
-  local remaining_containers=$(docker ps -a --filter "name=kaspa-" --format "{{.Names}}" 2>/dev/null)
+  # Also stop any remaining containers by name patterns (covers all Kaspa-related containers)
+  echo -e "${BLUE}Checking for any remaining Kaspa-related containers...${NC}"
+  local remaining_containers=$(docker ps -a --filter "name=kaspa-" --filter "name=k-indexer" --filter "name=kasia-indexer" --filter "name=k-social-db" --filter "name=simply-kaspa" --format "{{.Names}}" 2>/dev/null)
   if [ -n "$remaining_containers" ]; then
-    echo -e "${YELLOW}Found containers from other installations:${NC}"
+    echo -e "${YELLOW}Found remaining containers:${NC}"
     echo "$remaining_containers" | while read container; do
       echo "  • $container"
     done
@@ -166,7 +168,7 @@ stop_docker_containers() {
     if [[ ! $REPLY =~ ^[Nn]$ ]]; then
       echo "$remaining_containers" | xargs docker stop 2>/dev/null || true
       echo "$remaining_containers" | xargs docker rm 2>/dev/null || true
-      echo -e "${GREEN}✓ Removed all Kaspa containers${NC}"
+      echo -e "${GREEN}✓ Removed all remaining containers${NC}"
     fi
   fi
   
@@ -188,7 +190,7 @@ cleanup_stuck_containers() {
   
   # 1. Find and remove containers in "Created" state (stuck containers)
   echo -e "${BLUE}Checking for stuck containers...${NC}"
-  local stuck_containers=$(docker ps -a --filter "status=created" --filter "name=kaspa-" --format "{{.Names}}" 2>/dev/null)
+  local stuck_containers=$(docker ps -a --filter "status=created" \( --filter "name=kaspa-" -o --filter "name=k-indexer" -o --filter "name=kasia-indexer" -o --filter "name=k-social-db" -o --filter "name=simply-kaspa" \) --format "{{.Names}}" 2>/dev/null)
   
   if [ -n "$stuck_containers" ]; then
     echo -e "${YELLOW}Found containers stuck in 'Created' state:${NC}"
@@ -211,10 +213,10 @@ cleanup_stuck_containers() {
   
   # 2. Find and remove containers in "Exited" state with non-zero exit codes
   echo -e "${BLUE}Checking for failed containers...${NC}"
-  local failed_containers=$(docker ps -a --filter "status=exited" --filter "name=kaspa-" --format "{{.Names}}" 2>/dev/null)
+  local failed_containers=$(docker ps -a --filter "status=exited" \( --filter "name=kaspa-" -o --filter "name=k-indexer" -o --filter "name=kasia-indexer" -o --filter "name=k-social-db" -o --filter "name=simply-kaspa" \) --format "{{.Names}}" 2>/dev/null)
   
   if [ -n "$failed_containers" ]; then
-    echo -e "${YELLOW}Found exited Kaspa containers:${NC}"
+    echo -e "${YELLOW}Found exited containers:${NC}"
     echo "$failed_containers" | while read container; do
       local exit_code=$(docker inspect --format='{{.State.ExitCode}}' "$container" 2>/dev/null)
       echo "  • $container (exit code: $exit_code)"
@@ -233,31 +235,31 @@ cleanup_stuck_containers() {
     echo -e "${GREEN}✓ No failed containers found${NC}"
   fi
   
-  # 3. Check for any remaining Kaspa containers in unusual states
+  # 3. Check for any remaining Kaspa-related containers in unusual states
   echo -e "${BLUE}Checking for containers in other states...${NC}"
-  local other_containers=$(docker ps -a --filter "name=kaspa-" --format "{{.Names}} {{.Status}}" 2>/dev/null)
+  local other_containers=$(docker ps -a \( --filter "name=kaspa-" -o --filter "name=k-indexer" -o --filter "name=kasia-indexer" -o --filter "name=k-social-db" -o --filter "name=simply-kaspa" \) --format "{{.Names}} {{.Status}}" 2>/dev/null)
   
   if [ -n "$other_containers" ]; then
-    echo -e "${YELLOW}Found other Kaspa containers:${NC}"
+    echo -e "${YELLOW}Found other containers:${NC}"
     echo "$other_containers" | while IFS=' ' read -r container status; do
       echo "  • $container ($status)"
     done
     
     echo ""
-    read -p "Force remove ALL remaining Kaspa containers? (y/N) " -n 1 -r
+    read -p "Force remove ALL remaining containers? (y/N) " -n 1 -r
     echo
     
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-      echo -e "${BLUE}Force removing all Kaspa containers...${NC}"
-      local all_kaspa_containers=$(docker ps -a --filter "name=kaspa-" --format "{{.Names}}" 2>/dev/null)
+      echo -e "${BLUE}Force removing all containers...${NC}"
+      local all_containers=$(docker ps -a \( --filter "name=kaspa-" -o --filter "name=k-indexer" -o --filter "name=kasia-indexer" -o --filter "name=k-social-db" -o --filter "name=simply-kaspa" \) --format "{{.Names}}" 2>/dev/null)
       
-      if [ -n "$all_kaspa_containers" ]; then
+      if [ -n "$all_containers" ]; then
         # Stop containers first
-        echo "$all_kaspa_containers" | xargs docker stop 2>/dev/null || true
+        echo "$all_containers" | xargs docker stop 2>/dev/null || true
         # Then remove them
-        echo "$all_kaspa_containers" | xargs docker rm -f 2>/dev/null || true
-        echo -e "${GREEN}✓ Force removed all Kaspa containers${NC}"
-        containers_cleaned=$((containers_cleaned + $(echo "$all_kaspa_containers" | wc -l)))
+        echo "$all_containers" | xargs docker rm -f 2>/dev/null || true
+        echo -e "${GREEN}✓ Force removed all containers${NC}"
+        containers_cleaned=$((containers_cleaned + $(echo "$all_containers" | wc -l)))
       fi
     else
       echo -e "${BLUE}Skipping force removal${NC}"
@@ -295,21 +297,21 @@ cleanup_stuck_containers() {
   fi
   
   # 5. Prune unused images (optional)
-  echo -e "${BLUE}Checking for unused Kaspa images...${NC}"
-  local kaspa_images=$(docker images --filter "reference=*kaspa*" --filter "dangling=false" --format "{{.Repository}}:{{.Tag}}" 2>/dev/null)
+  echo -e "${BLUE}Checking for unused images...${NC}"
+  local kaspa_images=$(docker images --filter "reference=*kaspa*" --filter "reference=*kasia*" --filter "reference=*k-indexer*" --filter "dangling=false" --format "{{.Repository}}:{{.Tag}}" 2>/dev/null)
   
   if [ -n "$kaspa_images" ]; then
-    echo -e "${YELLOW}Found Kaspa images:${NC}"
+    echo -e "${YELLOW}Found related images:${NC}"
     echo "$kaspa_images" | while read image; do
       echo "  • $image"
     done
     
     echo ""
-    read -p "Remove unused Kaspa images? This will force rebuild on next start. (y/N) " -n 1 -r
+    read -p "Remove unused images? This will force rebuild on next start. (y/N) " -n 1 -r
     echo
     
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-      echo -e "${BLUE}Removing Kaspa images...${NC}"
+      echo -e "${BLUE}Removing images...${NC}"
       echo "$kaspa_images" | while read image; do
         if docker rmi "$image" 2>/dev/null; then
           echo -e "${GREEN}✓ Removed image: $image${NC}"
@@ -319,7 +321,7 @@ cleanup_stuck_containers() {
       done
     fi
   else
-    echo -e "${GREEN}✓ No Kaspa images found${NC}"
+    echo -e "${GREEN}✓ No related images found${NC}"
   fi
   
   # Summary

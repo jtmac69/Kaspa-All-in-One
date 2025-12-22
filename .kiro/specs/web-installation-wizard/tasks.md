@@ -217,7 +217,7 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Explain mainnet vs testnet differences
   - _Requirements: 3.12_
 
-- [ ] 8.11 Implement Infrastructure Validation System
+- [x] 8.11 Implement Infrastructure Validation System
   - Add comprehensive infrastructure testing after installation
   - Integrate test-nginx.sh and test-timescaledb.sh execution
   - Create InfrastructureValidationResult interface with categorized results
@@ -226,7 +226,7 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Show detailed test results with remediation steps for failures
   - _Requirements: 6.1, 6.2, 6.3, 6.7_
 
-- [ ] 8.12 Implement Profile Templates and Presets System
+- [x] 8.12 Implement Profile Templates and Presets System
   - Create preset templates (Home Node, Public Node, Developer Setup, Full Stack)
   - Add template selection interface with descriptions and resource requirements
   - Allow customization of template settings before application
@@ -234,7 +234,7 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Add template validation and conflict detection
   - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5_
 
-- [ ] 8.13 Implement Enhanced Validation and Troubleshooting
+- [x] 8.13 Implement Enhanced Validation and Troubleshooting
   - Add guided troubleshooting system with context-specific steps
   - Implement automatic retry mechanisms for transient failures
   - Create diagnostic export functionality with system info and logs
@@ -242,7 +242,7 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Implement fallback options for Core Profile node failures
   - _Requirements: 6.6, 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 8.14 Implement Kaspa Brand Visual Design
+- [x] 8.14 Implement Kaspa Brand Visual Design (refer to the web-installation-wizard/BRAND-DESIGN-GUIDE.md)
   - Apply official Kaspa brand colors (#70C7BA primary, #49C8B5 dark, #9FE7DC light)
   - Implement Kaspa typography (Montserrat headings, Open Sans body)
   - Add official Kaspa logo integration from media kit

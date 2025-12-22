@@ -442,6 +442,11 @@ export function handleInstallationComplete(data) {
     // Add final log entry
     addToLogs('Installation completed successfully!');
     
+    // Show infrastructure validation if available
+    if (data.validation && data.validation.infrastructure) {
+        displayInfrastructureValidation(data.validation.infrastructure, data.validation.infrastructureSummary);
+    }
+    
     // Enable navigation to next step
     const continueBtn = document.getElementById('install-continue-btn');
     if (continueBtn) {
@@ -1997,3 +2002,474 @@ window.resumeSync = function() {
     // Clear paused state
     stateManager.delete('syncPaused');
 };
+
+/**
+ * Display infrastructure validation results
+ * @param {Object} infrastructureResults - Infrastructure validation results
+ * @param {Object} summary - Infrastructure validation summary
+ */
+export function displayInfrastructureValidation(infrastructureResults, summary) {
+    console.log('Displaying infrastructure validation:', infrastructureResults, summary);
+    
+    // Create infrastructure validation section
+    let validationSection = document.getElementById('infrastructure-validation-section');
+    
+    if (!validationSection) {
+        validationSection = document.createElement('div');
+        validationSection.id = 'infrastructure-validation-section';
+        validationSection.className = 'infrastructure-validation-section';
+        validationSection.style.cssText = `
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid ${getStatusColor(summary.overallStatus)};
+        `;
+        
+        const installProgress = document.querySelector('.install-progress');
+        if (installProgress) {
+            installProgress.appendChild(validationSection);
+        }
+    }
+    
+    // Build validation content
+    validationSection.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; color: #2c3e50; font-size: 16px;">
+                ${getStatusIcon(summary.overallStatus)} Infrastructure Validation
+            </h3>
+            <div style="display: flex; gap: 8px;">
+                ${summary.totalFailed > 0 ? `
+                    <button id="retry-infrastructure-btn" onclick="window.retryInfrastructureValidation()" style="
+                        padding: 6px 12px;
+                        border: 1px solid #e74c3c;
+                        background: white;
+                        color: #e74c3c;
+                        border-radius: 6px;
+                        font-size: 12px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                    " onmouseover="this.style.background='#e74c3c'; this.style.color='white';"
+                       onmouseout="this.style.background='white'; this.style.color='#e74c3c';">
+                        <span>🔄</span> Retry Failed
+                    </button>
+                ` : ''}
+                <button onclick="window.toggleInfrastructureDetails()" style="
+                    padding: 6px 12px;
+                    border: 1px solid #70C7BA;
+                    background: white;
+                    color: #70C7BA;
+                    border-radius: 6px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                " onmouseover="this.style.background='#70C7BA'; this.style.color='white';"
+                   onmouseout="this.style.background='white'; this.style.color='#70C7BA';">
+                    Details
+                </button>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px;">
+            <div style="text-align: center; padding: 12px; background: white; border-radius: 6px;">
+                <div style="font-size: 24px; font-weight: bold; color: #27ae60;">${summary.totalPassed}</div>
+                <div style="font-size: 12px; color: #7f8c8d; text-transform: uppercase;">Passed</div>
+            </div>
+            <div style="text-align: center; padding: 12px; background: white; border-radius: 6px;">
+                <div style="font-size: 24px; font-weight: bold; color: #e74c3c;">${summary.totalFailed}</div>
+                <div style="font-size: 12px; color: #7f8c8d; text-transform: uppercase;">Failed</div>
+            </div>
+            <div style="text-align: center; padding: 12px; background: white; border-radius: 6px;">
+                <div style="font-size: 24px; font-weight: bold; color: #f39c12;">${summary.totalWarnings}</div>
+                <div style="font-size: 12px; color: #7f8c8d; text-transform: uppercase;">Warnings</div>
+            </div>
+            <div style="text-align: center; padding: 12px; background: white; border-radius: 6px;">
+                <div style="font-size: 24px; font-weight: bold; color: #70C7BA;">${summary.passRate}%</div>
+                <div style="font-size: 12px; color: #7f8c8d; text-transform: uppercase;">Pass Rate</div>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+            ${buildComponentStatus('nginx', summary.components.nginx, infrastructureResults.nginx)}
+            ${summary.components.timescaledb.tested ? buildComponentStatus('timescaledb', summary.components.timescaledb, infrastructureResults.timescaledb) : ''}
+        </div>
+        
+        <div id="infrastructure-details" style="display: none; margin-top: 16px;">
+            ${buildInfrastructureDetails(infrastructureResults)}
+        </div>
+    `;
+    
+    validationSection.style.display = 'block';
+    
+    // Store validation results for retry functionality
+    stateManager.set('infrastructureValidation', {
+        results: infrastructureResults,
+        summary: summary,
+        timestamp: new Date().toISOString()
+    });
+    
+    // Add to logs
+    addToLogs(`Infrastructure validation: ${summary.overallStatus} (${summary.totalPassed}/${summary.totalTests} passed)`);
+    if (summary.totalFailed > 0) {
+        addToLogs(`⚠️ ${summary.totalFailed} infrastructure tests failed - see details above`);
+    }
+}
+
+/**
+ * Build component status display
+ * @param {string} component - Component name
+ * @param {Object} componentSummary - Component summary
+ * @param {Object} componentResults - Component detailed results
+ * @returns {string} HTML for component status
+ */
+function buildComponentStatus(component, componentSummary, componentResults) {
+    const statusColor = componentSummary.status === 'healthy' ? '#27ae60' : '#e74c3c';
+    const statusIcon = componentSummary.status === 'healthy' ? '✓' : '✗';
+    
+    return `
+        <div style="
+            background: white;
+            border-radius: 6px;
+            padding: 12px;
+            border-left: 3px solid ${statusColor};
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="font-weight: 600; color: #2c3e50; text-transform: capitalize;">
+                    ${statusIcon} ${component}
+                </div>
+                <div style="font-size: 12px; color: ${statusColor}; font-weight: 600;">
+                    ${componentSummary.passRate}%
+                </div>
+            </div>
+            <div style="font-size: 12px; color: #7f8c8d;">
+                ${componentResults.passed}/${componentResults.totalTests} tests passed
+                ${componentResults.failed > 0 ? ` • ${componentResults.failed} failed` : ''}
+                ${componentResults.warnings > 0 ? ` • ${componentResults.warnings} warnings` : ''}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Build detailed infrastructure test results
+ * @param {Object} results - Infrastructure validation results
+ * @returns {string} HTML for detailed results
+ */
+function buildInfrastructureDetails(results) {
+    let html = '';
+    
+    // Nginx details
+    if (results.nginx.tested) {
+        html += buildComponentDetails('Nginx', results.nginx);
+    }
+    
+    // TimescaleDB details
+    if (results.timescaledb.tested) {
+        html += buildComponentDetails('TimescaleDB', results.timescaledb);
+    }
+    
+    return html;
+}
+
+/**
+ * Build detailed component test results
+ * @param {string} componentName - Component display name
+ * @param {Object} componentResults - Component test results
+ * @returns {string} HTML for component details
+ */
+function buildComponentDetails(componentName, componentResults) {
+    const tests = componentResults.tests || [];
+    
+    if (tests.length === 0) {
+        return `
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #2c3e50; margin-bottom: 12px;">${componentName} Tests</h4>
+                <div style="padding: 12px; background: #f8f9fa; border-radius: 6px; color: #7f8c8d;">
+                    No test results available
+                </div>
+            </div>
+        `;
+    }
+    
+    // Group tests by category
+    const testsByCategory = {};
+    tests.forEach(test => {
+        const category = test.category || 'general';
+        if (!testsByCategory[category]) {
+            testsByCategory[category] = [];
+        }
+        testsByCategory[category].push(test);
+    });
+    
+    let html = `
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #2c3e50; margin-bottom: 12px;">${componentName} Tests</h4>
+    `;
+    
+    Object.entries(testsByCategory).forEach(([category, categoryTests]) => {
+        html += `
+            <div style="margin-bottom: 16px;">
+                <h5 style="color: #7f8c8d; font-size: 13px; text-transform: uppercase; margin-bottom: 8px;">
+                    ${category.replace(/([A-Z])/g, ' $1').trim()}
+                </h5>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+        `;
+        
+        categoryTests.forEach(test => {
+            const statusColor = getTestStatusColor(test.status);
+            const statusIcon = getTestStatusIcon(test.status);
+            
+            html += `
+                <div style="
+                    display: flex;
+                    align-items: flex-start;
+                    padding: 8px 12px;
+                    background: white;
+                    border-radius: 4px;
+                    border-left: 3px solid ${statusColor};
+                    font-size: 13px;
+                ">
+                    <div style="
+                        width: 20px;
+                        height: 20px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin-right: 8px;
+                        flex-shrink: 0;
+                    ">
+                        <span style="color: ${statusColor}; font-size: 14px;">${statusIcon}</span>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: #2c3e50; margin-bottom: 2px;">
+                            ${test.name}
+                        </div>
+                        <div style="color: #7f8c8d; margin-bottom: 4px;">
+                            ${test.message}
+                        </div>
+                        ${test.remediation ? `
+                            <div style="
+                                background: rgba(231, 76, 60, 0.1);
+                                padding: 6px 8px;
+                                border-radius: 4px;
+                                font-size: 12px;
+                                color: #e74c3c;
+                                margin-top: 4px;
+                            ">
+                                <strong>Remediation:</strong> ${test.remediation}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+/**
+ * Get status color for overall status
+ * @param {string} status - Status string
+ * @returns {string} Color code
+ */
+function getStatusColor(status) {
+    const colors = {
+        'healthy': '#27ae60',
+        'degraded': '#f39c12',
+        'unhealthy': '#e74c3c'
+    };
+    return colors[status] || '#95a5a6';
+}
+
+/**
+ * Get status icon for overall status
+ * @param {string} status - Status string
+ * @returns {string} Icon
+ */
+function getStatusIcon(status) {
+    const icons = {
+        'healthy': '✅',
+        'degraded': '⚠️',
+        'unhealthy': '❌'
+    };
+    return icons[status] || '❓';
+}
+
+/**
+ * Get test status color
+ * @param {string} status - Test status
+ * @returns {string} Color code
+ */
+function getTestStatusColor(status) {
+    const colors = {
+        'pass': '#27ae60',
+        'fail': '#e74c3c',
+        'warn': '#f39c12'
+    };
+    return colors[status] || '#95a5a6';
+}
+
+/**
+ * Get test status icon
+ * @param {string} status - Test status
+ * @returns {string} Icon
+ */
+function getTestStatusIcon(status) {
+    const icons = {
+        'pass': '✓',
+        'fail': '✗',
+        'warn': '⚠'
+    };
+    return icons[status] || '?';
+}
+
+/**
+ * Toggle infrastructure validation details
+ */
+window.toggleInfrastructureDetails = function() {
+    const details = document.getElementById('infrastructure-details');
+    if (!details) return;
+    
+    const isHidden = details.style.display === 'none';
+    details.style.display = isHidden ? 'block' : 'none';
+    
+    // Update button text
+    const button = event.target;
+    if (button) {
+        button.textContent = isHidden ? 'Hide Details' : 'Details';
+    }
+    
+    // Scroll to details if showing
+    if (isHidden) {
+        details.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+};
+
+/**
+ * Retry infrastructure validation
+ */
+window.retryInfrastructureValidation = async function() {
+    console.log('Retrying infrastructure validation...');
+    
+    const profiles = stateManager.get('selectedProfiles');
+    if (!profiles || profiles.length === 0) {
+        showNotification('No profiles selected for retry', 'error');
+        return;
+    }
+    
+    // Show loading state
+    const retryBtn = document.getElementById('retry-infrastructure-btn');
+    if (retryBtn) {
+        retryBtn.innerHTML = '<div class="spinner-small"></div> Retrying...';
+        retryBtn.disabled = true;
+    }
+    
+    try {
+        // Call infrastructure validation API
+        const response = await fetch('/api/infrastructure/retry', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                profiles: profiles,
+                failedTests: [] // Retry all tests for now
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update display with new results
+            displayInfrastructureValidation(data.results, data.summary);
+            showNotification('Infrastructure validation retry completed', 'success');
+            addToLogs('Infrastructure validation retry completed');
+        } else {
+            throw new Error(data.message || 'Retry failed');
+        }
+        
+    } catch (error) {
+        console.error('Infrastructure retry error:', error);
+        showNotification(`Infrastructure retry failed: ${error.message}`, 'error');
+        addToLogs(`❌ Infrastructure retry failed: ${error.message}`);
+        
+        // Restore button state
+        if (retryBtn) {
+            retryBtn.innerHTML = '<span>🔄</span> Retry Failed';
+            retryBtn.disabled = false;
+        }
+    }
+};
+
+/**
+ * Run infrastructure validation manually
+ * @param {string[]} profiles - Selected profiles
+ * @returns {Promise<Object>} Validation results
+ */
+export async function runInfrastructureValidation(profiles) {
+    try {
+        const response = await fetch('/api/infrastructure/validate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                profiles: profiles
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            return {
+                success: true,
+                results: data.results,
+                summary: data.summary
+            };
+        } else {
+            throw new Error(data.message || 'Validation failed');
+        }
+        
+    } catch (error) {
+        console.error('Infrastructure validation error:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+/**
+ * Handle infrastructure validation event from WebSocket
+ * @param {Object} data - Infrastructure validation event data
+ */
+export function handleInfrastructureValidation(data) {
+    console.log('Infrastructure validation event:', data);
+    
+    if (data.results && data.summary) {
+        displayInfrastructureValidation(data.results, data.summary);
+    } else if (data.error) {
+        showNotification(`Infrastructure validation failed: ${data.error}`, 'error');
+        addToLogs(`❌ Infrastructure validation failed: ${data.error}`);
+    }
+}

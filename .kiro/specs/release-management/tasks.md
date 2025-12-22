@@ -93,6 +93,23 @@ This implementation plan covers the creation of an automated release management 
   - [ ] Include troubleshooting section
   - _Requirements: 2.5, 11.1, 11.2, 11.4_
 
+- [ ] 2.5 Implement Node.js dependency packaging
+  - [ ] Create self-contained Docker images with pre-installed dependencies
+  - [ ] Bundle wizard backend with all npm dependencies
+  - [ ] Bundle dashboard with all npm dependencies
+  - [ ] Create dependency-free installation option
+  - [ ] Implement Node.js version validation in installation script
+  - [ ] Add fallback to automated npm install if Docker unavailable
+  - _Requirements: 2.7, 11.5_
+
+- [ ] 2.6 Create dependency-free installation modes
+  - [ ] Implement Docker-only installation (recommended)
+  - [ ] Implement bundled Node.js installation option
+  - [ ] Create platform-specific Node.js bundles (Linux, macOS, Windows)
+  - [ ] Add dependency verification during installation
+  - [ ] Create offline installation package option
+  - _Requirements: 2.8, 11.6_
+
 ---
 
 ## Task 3: Checksum and Security
@@ -132,14 +149,63 @@ This implementation plan covers the creation of an automated release management 
 
 ---
 
-## Task 4: GitHub Integration
+## Task 4: End-User Installation Experience
 
 **Priority**: HIGH  
 **Estimated Time**: 2 days
 
 ### Subtasks
 
-- [ ] 4.1 Implement GitHub API client
+- [ ] 4.1 Create zero-dependency installation package
+  - [ ] Build Docker images with pre-installed Node.js dependencies
+  - [ ] Create wizard Docker image with all npm packages bundled
+  - [ ] Create dashboard Docker image with all npm packages bundled
+  - [ ] Optimize image sizes using multi-stage builds
+  - [ ] Test images work without external npm install
+  - _Requirements: 2.7, 11.5_
+
+- [ ] 4.2 Implement smart installation detection
+  - [ ] Detect if Docker is available and working
+  - [ ] Detect if Node.js is available (version >=18)
+  - [ ] Detect if npm/yarn is available
+  - [ ] Choose best installation method automatically
+  - [ ] Provide fallback options for each scenario
+  - _Requirements: 2.8, 11.6_
+
+- [ ] 4.3 Create offline installation support
+  - [ ] Bundle all Docker images in installation package
+  - [ ] Create offline Docker image loading script
+  - [ ] Include all required dependencies in package
+  - [ ] Test installation without internet connection
+  - [ ] Document offline installation process
+  - _Requirements: 11.7_
+
+- [ ] 4.4 Implement installation validation
+  - [ ] Verify all services start correctly after installation
+  - [ ] Check wizard backend responds on expected port
+  - [ ] Check dashboard responds on expected port
+  - [ ] Validate Docker containers are running
+  - [ ] Provide troubleshooting for common issues
+  - _Requirements: 11.8_
+
+- [ ] 4.5 Create user-friendly installation script
+  - [ ] Create single-command installation (`curl | bash` style)
+  - [ ] Add interactive mode for configuration choices
+  - [ ] Add silent mode for automated installations
+  - [ ] Include progress indicators and status updates
+  - [ ] Add comprehensive error messages and recovery suggestions
+  - _Requirements: 11.9_
+
+---
+
+## Task 5: GitHub Integration
+
+**Priority**: HIGH  
+**Estimated Time**: 2 days
+
+### Subtasks
+
+- [ ] 5.1 Implement GitHub API client
   - [ ] Create `lib/github.sh`
   - [ ] Implement authentication with GITHUB_TOKEN
   - [ ] Implement API request wrapper
@@ -147,7 +213,7 @@ This implementation plan covers the creation of an automated release management 
   - [ ] Add rate limiting handling
   - _Requirements: 4.1_
 
-- [ ] 4.2 Implement GitHub release creation
+- [ ] 5.2 Implement GitHub release creation
   - [ ] Implement `create_github_release()` function
   - [ ] Create release with version tag
   - [ ] Support draft releases
@@ -155,7 +221,7 @@ This implementation plan covers the creation of an automated release management 
   - [ ] Set release name and description
   - _Requirements: 4.1, 4.3, 4.4, 4.5_
 
-- [ ] 4.3 Implement asset upload
+- [ ] 5.3 Implement asset upload
   - [ ] Implement `upload_asset()` function
   - [ ] Upload all package files
   - [ ] Upload checksums file
@@ -164,7 +230,7 @@ This implementation plan covers the creation of an automated release management 
   - [ ] Retry on failure
   - _Requirements: 4.2_
 
-- [ ] 4.4 Implement release management
+- [ ] 5.4 Implement release management
   - [ ] Implement `update_release_notes()` function
   - [ ] Implement `delete_release()` function
   - [ ] Implement `mark_as_latest()` function
@@ -173,7 +239,7 @@ This implementation plan covers the creation of an automated release management 
 
 ---
 
-## Task 5: Release Notes Generation
+## Task 6: Release Notes Generation
 
 **Priority**: MEDIUM  
 **Estimated Time**: 1.5 days
@@ -214,7 +280,7 @@ This implementation plan covers the creation of an automated release management 
 
 ---
 
-## Task 6: Validation System
+## Task 7: Validation System
 
 **Priority**: HIGH  
 **Estimated Time**: 1.5 days
@@ -253,7 +319,7 @@ This implementation plan covers the creation of an automated release management 
 
 ---
 
-## Task 7: Workflow Automation
+## Task 8: Workflow Automation
 
 **Priority**: MEDIUM  
 **Estimated Time**: 1 day
@@ -293,7 +359,7 @@ This implementation plan covers the creation of an automated release management 
 
 ---
 
-## Task 8: Notification System
+## Task 9: Notification System
 
 **Priority**: LOW  
 **Estimated Time**: 0.5 days
@@ -316,7 +382,7 @@ This implementation plan covers the creation of an automated release management 
 
 ---
 
-## Task 9: Documentation and Templates
+## Task 10: Documentation and Templates
 
 **Priority**: MEDIUM  
 **Estimated Time**: 1 day
@@ -354,7 +420,7 @@ This implementation plan covers the creation of an automated release management 
 
 ---
 
-## Task 10: Testing and Validation
+## Task 11: Testing and Validation
 
 **Priority**: HIGH  
 **Estimated Time**: 1.5 days
@@ -391,7 +457,7 @@ This implementation plan covers the creation of an automated release management 
 
 ---
 
-## Task 11: Rollback and Recovery
+## Task 12: Rollback and Recovery
 
 **Priority**: MEDIUM  
 **Estimated Time**: 0.5 days
@@ -413,7 +479,7 @@ This implementation plan covers the creation of an automated release management 
 
 ---
 
-## Task 12: Metrics and Monitoring (Future)
+## Task 13: Metrics and Monitoring (Future)
 
 **Priority**: LOW  
 **Estimated Time**: 1 day  

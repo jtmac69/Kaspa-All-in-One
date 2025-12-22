@@ -31,6 +31,8 @@ const wizardStateRouter = require('./api/wizard-state');
 const backupRouter = require('./api/backup');
 const dashboardIntegrationRouter = require('./api/dashboard-integration');
 const dependencyValidationRouter = require('./api/dependency-validation');
+const infrastructureValidationRouter = require('./api/infrastructure-validation');
+const troubleshootingRouter = require('./api/troubleshooting');
 
 // Import utilities
 const DockerManager = require('./utils/docker-manager');
@@ -119,6 +121,8 @@ app.use('/api/wizard/backups', backupRouter); // Also mount under /api/wizard/ba
 app.use('/api/wizard/rollback', backupRouter); // Rollback endpoint under /api/wizard/rollback
 app.use('/api/wizard', dashboardIntegrationRouter); // Dashboard integration routes
 app.use('/api/dependencies', dependencyValidationRouter); // Dependency validation routes
+app.use('/api/infrastructure', infrastructureValidationRouter); // Infrastructure validation routes
+app.use('/api/troubleshooting', troubleshootingRouter); // Enhanced troubleshooting routes
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -343,13 +347,39 @@ io.on('connection', (socket) => {
         });
       });
 
-      const pullFailed = pullResults.some(r => !r.success);
       if (pullFailed) {
-        socket.emit('install:error', {
-          stage: 'pull',
-          message: 'Failed to pull some images',
-          results: pullResults
-        });
+        // Enhanced error handling with troubleshooting
+        const TroubleshootingSystem = require('./utils/troubleshooting-system');
+        const troubleshootingSystem = new TroubleshootingSystem();
+        
+        const failedResults = pullResults.filter(r => !r.success);
+        const errorMessage = failedResults.map(r => r.error).join('; ');
+        
+        // Get troubleshooting guide
+        try {
+          const guide = await troubleshootingSystem.getGuidedTroubleshooting({
+            stage: 'pull',
+            error: errorMessage,
+            service: failedResults[0]?.image,
+            profiles
+          });
+          
+          socket.emit('install:error', {
+            stage: 'pull',
+            message: 'Failed to pull some images',
+            error: errorMessage,
+            results: pullResults,
+            troubleshootingGuide: guide
+          });
+        } catch (troubleshootingError) {
+          console.error('Failed to generate troubleshooting guide:', troubleshootingError);
+          socket.emit('install:error', {
+            stage: 'pull',
+            message: 'Failed to pull some images',
+            error: errorMessage,
+            results: pullResults
+          });
+        }
         return;
       }
 
@@ -376,11 +406,35 @@ io.on('connection', (socket) => {
       });
 
       if (!buildResult.success) {
-        socket.emit('install:error', {
-          stage: 'build',
-          message: 'Failed to build some services',
-          results: buildResult.services
-        });
+        // Enhanced error handling with troubleshooting
+        const TroubleshootingSystem = require('./utils/troubleshooting-system');
+        const troubleshootingSystem = new TroubleshootingSystem();
+        
+        // Get troubleshooting guide
+        try {
+          const guide = await troubleshootingSystem.getGuidedTroubleshooting({
+            stage: 'build',
+            error: buildResult.error || 'Build failed',
+            service: buildResult.failedService,
+            profiles
+          });
+          
+          socket.emit('install:error', {
+            stage: 'build',
+            message: 'Failed to build some services',
+            error: buildResult.error,
+            results: buildResult.services,
+            troubleshootingGuide: guide
+          });
+        } catch (troubleshootingError) {
+          console.error('Failed to generate troubleshooting guide:', troubleshootingError);
+          socket.emit('install:error', {
+            stage: 'build',
+            message: 'Failed to build some services',
+            error: buildResult.error,
+            results: buildResult.services
+          });
+        }
         return;
       }
 
@@ -407,11 +461,33 @@ io.on('connection', (socket) => {
       });
 
       if (!deployResult.success) {
-        socket.emit('install:error', {
-          stage: 'deploy',
-          message: 'Failed to start services',
-          error: deployResult.error
-        });
+        // Enhanced error handling with troubleshooting
+        const TroubleshootingSystem = require('./utils/troubleshooting-system');
+        const troubleshootingSystem = new TroubleshootingSystem();
+        
+        // Get troubleshooting guide
+        try {
+          const guide = await troubleshootingSystem.getGuidedTroubleshooting({
+            stage: 'deploy',
+            error: deployResult.error || 'Deployment failed',
+            service: deployResult.failedService,
+            profiles
+          });
+          
+          socket.emit('install:error', {
+            stage: 'deploy',
+            message: 'Failed to start services',
+            error: deployResult.error,
+            troubleshootingGuide: guide
+          });
+        } catch (troubleshootingError) {
+          console.error('Failed to generate troubleshooting guide:', troubleshootingError);
+          socket.emit('install:error', {
+            stage: 'deploy',
+            message: 'Failed to start services',
+            error: deployResult.error
+          });
+        }
         return;
       }
 
@@ -425,7 +501,7 @@ io.on('connection', (socket) => {
       socket.emit('install:progress', {
         stage: 'validate',
         message: 'Validating installation...',
-        progress: 95
+        progress: 90
       });
 
       // Wait a bit for services to initialize
@@ -435,13 +511,47 @@ io.on('connection', (socket) => {
 
       socket.emit('install:progress', {
         stage: 'validate',
+        message: 'Running infrastructure tests...',
+        progress: 95
+      });
+
+      // Run infrastructure validation
+      let infrastructureValidation = null;
+      let infrastructureSummary = null;
+      
+      try {
+        const InfrastructureValidator = require('./utils/infrastructure-validator');
+        const infrastructureValidator = new InfrastructureValidator();
+        
+        infrastructureValidation = await infrastructureValidator.validateInfrastructure(profiles);
+        infrastructureSummary = infrastructureValidator.getValidationSummary(infrastructureValidation);
+        
+        // Emit infrastructure validation results
+        socket.emit('infrastructure:validation', {
+          results: infrastructureValidation,
+          summary: infrastructureSummary
+        });
+        
+      } catch (error) {
+        console.error('Infrastructure validation error:', error);
+        socket.emit('infrastructure:validation', {
+          error: error.message
+        });
+      }
+
+      socket.emit('install:progress', {
+        stage: 'validate',
         message: 'Validation complete',
         progress: 100
       });
 
       socket.emit('install:complete', {
         message: 'Installation completed successfully',
-        validation: serviceValidation
+        validation: {
+          services: serviceValidation,
+          infrastructure: infrastructureValidation,
+          infrastructureSummary: infrastructureSummary
+        }
       });
 
     } catch (error) {

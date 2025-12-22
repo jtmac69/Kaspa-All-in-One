@@ -133,19 +133,46 @@ remove_containers() {
   local existing_containers=$($compose_cmd ps -a --services 2>/dev/null || echo "")
   
   if [ -z "$existing_containers" ]; then
-    echo -e "${YELLOW}⚠ No containers found${NC}"
+    echo -e "${YELLOW}⚠ No containers found via docker-compose${NC}"
+    
+    # Check for containers by name patterns (in case they're running outside compose)
+    local manual_containers=$(docker ps -a \( --filter "name=kaspa-" -o --filter "name=k-indexer" -o --filter "name=kasia-indexer" -o --filter "name=k-social-db" -o --filter "name=simply-kaspa" \) --format "{{.Names}}" 2>/dev/null)
+    
+    if [ -n "$manual_containers" ]; then
+      echo -e "${YELLOW}Found containers running outside docker-compose:${NC}"
+      echo "$manual_containers" | while read container; do
+        echo "  • $container"
+      done
+      echo ""
+      read -p "Stop and remove these containers? (Y/n) " -n 1 -r
+      echo
+      if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        echo -e "${BLUE}Stopping and removing manual containers...${NC}"
+        echo "$manual_containers" | xargs docker stop 2>/dev/null || true
+        if [ "$remove_volumes" = "yes" ]; then
+          echo "$manual_containers" | xargs docker rm -v 2>/dev/null || true
+        else
+          echo "$manual_containers" | xargs docker rm 2>/dev/null || true
+        fi
+        echo -e "${GREEN}✓ Manual containers removed${NC}"
+      fi
+    else
+      echo -e "${GREEN}✓ No containers found${NC}"
+    fi
     echo ""
     return 0
   fi
   
-  # Remove containers with or without volumes
+  # Remove containers with or without volumes using docker-compose
   if [ "$remove_volumes" = "yes" ]; then
     echo -e "${YELLOW}  Removing containers and volumes...${NC}"
-    $compose_cmd down -v 2>&1 | grep -v "^$" || true
+    # Try with --profile "*" first, fall back to regular down
+    $compose_cmd --profile "*" down -v 2>&1 | grep -v "^$" || $compose_cmd down -v 2>&1 | grep -v "^$" || true
     echo -e "${GREEN}✓ Containers and volumes removed${NC}"
   else
     echo -e "${YELLOW}  Removing containers (preserving volumes)...${NC}"
-    $compose_cmd down 2>&1 | grep -v "^$" || true
+    # Try with --profile "*" first, fall back to regular down
+    $compose_cmd --profile "*" down 2>&1 | grep -v "^$" || $compose_cmd down 2>&1 | grep -v "^$" || true
     echo -e "${GREEN}✓ Containers removed (volumes preserved)${NC}"
   fi
   

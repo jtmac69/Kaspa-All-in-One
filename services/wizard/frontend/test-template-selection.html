@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Template Selection Test</title>
+    <link rel="stylesheet" href="/styles/wizard.css">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--background);
+        }
+        
+        .test-header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .mock-api {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>Template Selection UI Test</h1>
+        <p>Testing the template selection interface with mock data</p>
+    </div>
+
+    <!-- Mock the wizard step structure -->
+    <div class="wizard-step active" id="step-templates">
+        <div class="step-header">
+            <h2 class="step-title">Choose a Template</h2>
+            <p class="step-description">
+                Start with a pre-configured template or build your own custom setup.
+            </p>
+        </div>
+
+        <!-- Template Categories -->
+        <div class="template-categories">
+            <div class="category-tabs">
+                <button class="category-tab active" data-category="all">All Templates</button>
+                <button class="category-tab" data-category="beginner">Beginner</button>
+                <button class="category-tab" data-category="intermediate">Intermediate</button>
+                <button class="category-tab" data-category="advanced">Advanced</button>
+                <button class="category-tab" data-category="custom">Custom</button>
+            </div>
+        </div>
+
+        <!-- Template Grid -->
+        <div class="template-grid" id="template-grid">
+            <!-- Templates will be loaded here -->
+        </div>
+
+        <!-- Custom Template Option -->
+        <div class="custom-template-section">
+            <div class="custom-template-card">
+                <div class="custom-template-icon">⚙️</div>
+                <h3>Build Custom Setup</h3>
+                <p>Select individual profiles and configure them manually</p>
+                <button class="btn-secondary" id="build-custom-btn">Build Custom</button>
+            </div>
+        </div>
+
+        <!-- Template Details Modal -->
+        <div class="modal-overlay" id="template-details-modal" style="display: none;">
+            <div class="modal-content template-details-modal">
+                <div class="modal-header">
+                    <h3 id="template-modal-title">Template Details</h3>
+                    <button class="modal-close" onclick="closeTemplateModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="template-details-content" id="template-details-content">
+                        <!-- Template details will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="closeTemplateModal()">Cancel</button>
+                    <button class="btn-primary" id="apply-template-btn">Use This Template</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="loadMockTemplates()" class="btn-primary">Load Mock Templates</button>
+        <button onclick="testCategoryFilter('beginner')" class="btn-secondary">Filter Beginner</button>
+        <button onclick="testCategoryFilter('advanced')" class="btn-secondary">Filter Advanced</button>
+        <button onclick="testTemplateSelect('home-node')" class="btn-secondary">Select Home Node</button>
+        
+        <div class="mock-api">
+            <strong>Mock API Status:</strong> <span id="api-status">Ready</span><br>
+            <strong>Selected Template:</strong> <span id="selected-template">None</span><br>
+            <strong>Current Category:</strong> <span id="current-category">all</span>
+        </div>
+    </div>
+
+    <!-- Mock state manager and navigation -->
+    <script>
+        // Mock modules for testing
+        window.stateManager = {
+            data: {},
+            get: function(key) { return this.data[key]; },
+            set: function(key, value) { this.data[key] = value; },
+            update: function(key, value) { this.data[key] = { ...this.data[key], ...value }; }
+        };
+        
+        window.navigation = {
+            goToStep: function(step) { 
+                console.log('Navigate to step:', step);
+                document.getElementById('api-status').textContent = `Navigate to ${step}`;
+            }
+        };
+        
+        // Mock API responses
+        const mockTemplates = [
+            {
+                id: 'home-node',
+                name: 'Home Node',
+                description: 'Basic Kaspa node for personal use - perfect for learning and development',
+                longDescription: 'A simple setup with just the Kaspa node running locally. Ideal for developers, enthusiasts, or anyone wanting to support the network without public exposure.',
+                profiles: ['core'],
+                category: 'beginner',
+                useCase: 'personal',
+                estimatedSetupTime: '10-15 minutes',
+                syncTime: '2-4 hours',
+                icon: '🏠',
+                resources: { minMemory: 4, minCpu: 2, minDisk: 100 },
+                features: ['Local Kaspa node', 'Web dashboard', 'Basic monitoring', 'Wallet support'],
+                benefits: ['Support the Kaspa network', 'Learn about blockchain technology'],
+                recommended: true,
+                tags: ['beginner', 'personal', 'node']
+            },
+            {
+                id: 'public-node',
+                name: 'Public Node',
+                description: 'Public-facing Kaspa node with indexer services for community use',
+                longDescription: 'A robust setup that provides public access to your Kaspa node and indexer services.',
+                profiles: ['core', 'indexer-services'],
+                category: 'intermediate',
+                useCase: 'community',
+                estimatedSetupTime: '20-30 minutes',
+                syncTime: '4-8 hours',
+                icon: '🌐',
+                resources: { minMemory: 12, minCpu: 6, minDisk: 600 },
+                features: ['Public Kaspa node', 'Local indexer services', 'SSL/TLS encryption'],
+                benefits: ['Contribute to network infrastructure', 'Support dApp developers'],
+                tags: ['intermediate', 'public', 'indexers']
+            },
+            {
+                id: 'developer-setup',
+                name: 'Developer Setup',
+                description: 'Complete development environment with all tools and debugging features',
+                longDescription: 'A comprehensive setup designed for Kaspa developers.',
+                profiles: ['core', 'kaspa-user-applications', 'indexer-services'],
+                category: 'advanced',
+                useCase: 'development',
+                estimatedSetupTime: '30-45 minutes',
+                syncTime: '4-8 hours',
+                icon: '👨‍💻',
+                resources: { minMemory: 16, minCpu: 8, minDisk: 650 },
+                features: ['All Kaspa services', 'Development tools', 'Debug logging'],
+                benefits: ['Complete development environment', 'Easy debugging'],
+                developerMode: true,
+                tags: ['advanced', 'development', 'debugging']
+            },
+            {
+                id: 'full-stack',
+                name: 'Full Stack',
+                description: 'Complete production deployment with all services and applications',
+                longDescription: 'The ultimate Kaspa deployment including node, indexers, and all user applications.',
+                profiles: ['core', 'kaspa-user-applications', 'indexer-services'],
+                category: 'advanced',
+                useCase: 'production',
+                estimatedSetupTime: '45-60 minutes',
+                syncTime: '4-8 hours',
+                icon: '🚀',
+                resources: { minMemory: 16, minCpu: 8, minDisk: 650 },
+                features: ['Public Kaspa node', 'All user applications', 'Production monitoring'],
+                benefits: ['Complete Kaspa ecosystem', 'Maximum functionality'],
+                tags: ['advanced', 'production', 'complete']
+            }
+        ];
+        
+        // Mock fetch function
+        window.fetch = function(url, options) {
+            console.log('Mock fetch:', url, options);
+            document.getElementById('api-status').textContent = `Fetching ${url}`;
+            
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    let response;
+                    
+                    if (url.includes('/templates/all')) {
+                        response = { templates: mockTemplates };
+                    } else if (url.includes('/system-check')) {
+                        response = { 
+                            resources: { 
+                                memory: { total: 16 * 1024 * 1024 * 1024 },
+                                cpu: { cores: 8 },
+                                disk: { available: 1000 * 1024 * 1024 * 1024 }
+                            }
+                        };
+                    } else if (url.includes('/recommendations')) {
+                        response = { 
+                            recommendations: mockTemplates.map((t, i) => ({
+                                template: t,
+                                score: 10 - i,
+                                suitability: 'suitable',
+                                reasons: ['Good match for your system'],
+                                recommended: i === 0
+                            }))
+                        };
+                    } else if (url.includes('/validate')) {
+                        response = { valid: true, errors: [], warnings: [] };
+                    } else if (url.includes('/apply')) {
+                        const template = mockTemplates.find(t => url.includes(t.id));
+                        response = { 
+                            config: { 
+                                ...template?.config || {},
+                                PUBLIC_NODE: template?.id === 'home-node' ? 'false' : 'true'
+                            }
+                        };
+                    }
+                    
+                    resolve({
+                        ok: true,
+                        json: () => Promise.resolve(response)
+                    });
+                }, 500);
+            });
+        };
+    </script>
+
+    <!-- Load the template selection module -->
+    <script type="module">
+        // Import and initialize template selection
+        import('./scripts/modules/template-selection.js').then(module => {
+            console.log('Template selection module loaded');
+            
+            // Create instance
+            window.templateSelection = new module.default();
+            
+            // Auto-load templates for demo
+            setTimeout(() => {
+                loadMockTemplates();
+            }, 1000);
+        }).catch(error => {
+            console.error('Failed to load template selection module:', error);
+            document.getElementById('api-status').textContent = 'Module load failed: ' + error.message;
+        });
+        
+        // Test functions
+        window.loadMockTemplates = function() {
+            if (window.templateSelection) {
+                window.templateSelection.initialize();
+                document.getElementById('api-status').textContent = 'Templates loaded';
+            }
+        };
+        
+        window.testCategoryFilter = function(category) {
+            if (window.templateSelection) {
+                window.templateSelection.handleCategoryChange(category);
+                document.getElementById('current-category').textContent = category;
+            }
+        };
+        
+        window.testTemplateSelect = function(templateId) {
+            if (window.templateSelection) {
+                window.templateSelection.handleTemplateSelect(templateId);
+                document.getElementById('selected-template').textContent = templateId;
+            }
+        };
+        
+        window.closeTemplateModal = function() {
+            if (window.templateSelection) {
+                window.templateSelection.closeTemplateModal();
+            }
+        };
+    </script>
+</body>
+</html>

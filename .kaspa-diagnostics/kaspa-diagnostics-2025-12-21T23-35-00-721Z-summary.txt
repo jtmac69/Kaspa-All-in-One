@@ -1,0 +1,35 @@
+KASPA ALL-IN-ONE DIAGNOSTIC SUMMARY
+=====================================
+
+Export ID: kaspa-diagnostics-2025-12-21T23-35-00-721Z
+Timestamp: 2025-12-21T23:35:00.722Z
+
+SYSTEM INFORMATION
+------------------
+Platform: linux x64
+Release: 6.8.0-88-generic
+Hostname: jt-SER-KasNode
+Uptime: 30 hours
+Memory: 19.64GB free of 27.33GB total
+
+DOCKER INFORMATION
+------------------
+Version: Docker version 28.2.2, build 28.2.2-0ubuntu1~24.04.1
+Containers: 0
+Images: 18
+
+FILES INCLUDED
+--------------
+- Full diagnostic data (JSON format)
+- System information and resource usage
+- Docker configuration and container status
+- Service logs (last 100 lines per service)
+- Network configuration
+- Sanitized configuration files
+
+PRIVACY NOTICE
+--------------
+Sensitive information (passwords, keys, secrets) has been redacted.
+Please review the diagnostic files before sharing with support.
+
+For support, please provide both the diagnostic JSON file and this summary.

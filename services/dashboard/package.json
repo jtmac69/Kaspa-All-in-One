@@ -6,16 +6,28 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "build": "echo 'Build completed'"
+    "build": "echo 'Build completed'",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "express": "^4.18.2",
     "axios": "^1.6.0",
     "ws": "^8.14.2",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "joi": "^17.11.0",
+    "express-validator": "^7.0.1",
+    "dompurify": "^3.0.5",
+    "jsdom": "^23.0.1",
+    "compression": "^1.7.4"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
   },
   "keywords": ["kaspa", "dashboard", "management"],
   "author": "Kaspa Community",

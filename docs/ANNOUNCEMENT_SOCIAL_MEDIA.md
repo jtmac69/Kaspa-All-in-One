@@ -4,9 +4,9 @@
 
 ### Main Announcement Post
 ```
-🚀 Kaspa All-in-One v0.9.0 Test Release is HERE!
+🚀 Kaspa All-in-One v0.9.0 Test Release is ready!
 
-We need YOUR help to make Kaspa infrastructure accessible to everyone! 
+I could use anyone who is slightly technical to help make Kaspa infrastructure accessible to everyone! 
 
 ✨ Web-based installation wizard
 ⚡ One-command setup: `./start-test.sh`
@@ -15,8 +15,8 @@ We need YOUR help to make Kaspa infrastructure accessible to everyone!
 
 Help us test before v1.0! 
 
-Download: [link]
-Testing Guide: [link]
+Download: https://github.com/jtmac69/Kaspa-All-in-One/releases/tag/v0.9.0-test
+Testing Guide: https://github.com/jtmac69/Kaspa-All-in-One/blob/v0.9.0-test/TESTING.md
 
 #Kaspa #Blockchain #Testing #OpenSource
 
@@ -65,8 +65,8 @@ The start script checks everything and shows you what to install if missing.
 
 Ready to help shape Kaspa's future? 
 
-Download: [link]
-Report bugs: [link]
+Download: https://github.com/jtmac69/Kaspa-All-in-One/releases/tag/v0.9.0-test
+Report bugs: https://github.com/jtmac69/Kaspa-All-in-One/blob/v0.9.0-test/TESTING.md
 
 Let's build this together! 🤝
 ```
@@ -97,7 +97,7 @@ Your feedback shapes v1.0! We need to validate across different platforms before
 
 **Download:** [GitHub Release Link]
 **Instructions:** See TESTING.md in the package
-**Report Issues:** [GitHub Issues Link]
+**Report Issues:** [GitHub Issues Link]https://github.com/jtmac69/Kaspa-All-in-One/issues/new?template=bug_report.md
 
 Help us make Kaspa infrastructure accessible to everyone! 💪
 
@@ -129,9 +129,9 @@ Docker 20.10+, Docker Compose 2.0+, Node.js 18+, 4GB RAM
 
 **Your feedback determines v1.0 readiness!**
 
-Download: [link]
-Testing guide: TESTING.md
-Bug reports: [GitHub Issues]
+Download: https://github.com/jtmac69/Kaspa-All-in-One/releases/tag/v0.9.0-test
+Testing guide: https://github.com/jtmac69/Kaspa-All-in-One/blob/main/TESTING.md
+Bug reports: https://github.com/jtmac69/Kaspa-All-in-One/issues/new?template=bug_report.md
 
 Let's make Kaspa infrastructure deployment bulletproof! 🛡️
 ```

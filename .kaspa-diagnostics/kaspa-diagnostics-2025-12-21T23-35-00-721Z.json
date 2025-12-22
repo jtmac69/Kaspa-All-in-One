@@ -1,0 +1,786 @@
+{
+  "exportId": "kaspa-diagnostics-2025-12-21T23-35-00-721Z",
+  "timestamp": "2025-12-21T23:35:00.722Z",
+  "context": {
+    "stage": "test",
+    "error": "test error",
+    "profiles": [
+      "core"
+    ]
+  },
+  "system": {
+    "platform": "linux",
+    "arch": "x64",
+    "release": "6.8.0-88-generic",
+    "hostname": "jt-SER-KasNode",
+    "uptime": 110444.83,
+    "memory": {
+      "total": 29342015488,
+      "free": 21086425088,
+      "usage": {
+        "rss": 87441408,
+        "heapTotal": 19697664,
+        "heapUsed": 11060720,
+        "external": 3814956,
+        "arrayBuffers": 168243
+      }
+    },
+    "cpu": [
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 3507,
+        "times": {
+          "user": 2078820,
+          "nice": 320,
+          "sys": 1111740,
+          "idle": 106582820,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 400,
+        "times": {
+          "user": 968850,
+          "nice": 830,
+          "sys": 652780,
+          "idle": 108534840,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 3514,
+        "times": {
+          "user": 3126940,
+          "nice": 740,
+          "sys": 1424620,
+          "idle": 105090640,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 3565,
+        "times": {
+          "user": 1366960,
+          "nice": 820,
+          "sys": 743380,
+          "idle": 108083080,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 4382,
+        "times": {
+          "user": 2282140,
+          "nice": 1420,
+          "sys": 1173170,
+          "idle": 106426760,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 3522,
+        "times": {
+          "user": 1099750,
+          "nice": 1140,
+          "sys": 673550,
+          "idle": 108445910,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 3532,
+        "times": {
+          "user": 1546310,
+          "nice": 1620,
+          "sys": 945520,
+          "idle": 107564470,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 400,
+        "times": {
+          "user": 895370,
+          "nice": 1380,
+          "sys": 650990,
+          "idle": 108692210,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 3938,
+        "times": {
+          "user": 1583590,
+          "nice": 1730,
+          "sys": 930670,
+          "idle": 107513010,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 3513,
+        "times": {
+          "user": 1053060,
+          "nice": 2640,
+          "sys": 811840,
+          "idle": 107966920,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 3513,
+        "times": {
+          "user": 2121580,
+          "nice": 1310,
+          "sys": 1145760,
+          "idle": 106621360,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 3538,
+        "times": {
+          "user": 1325000,
+          "nice": 1050,
+          "sys": 785250,
+          "idle": 107517680,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 4405,
+        "times": {
+          "user": 4395310,
+          "nice": 740,
+          "sys": 1749090,
+          "idle": 103292750,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 4415,
+        "times": {
+          "user": 2539280,
+          "nice": 1340,
+          "sys": 1025770,
+          "idle": 106486640,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 3524,
+        "times": {
+          "user": 4522000,
+          "nice": 340,
+          "sys": 1771870,
+          "idle": 103150040,
+          "irq": 0
+        }
+      },
+      {
+        "model": "AMD Ryzen 7 5825U with Radeon Graphics",
+        "speed": 3521,
+        "times": {
+          "user": 2520560,
+          "nice": 1970,
+          "sys": 1035370,
+          "idle": 106504120,
+          "irq": 0
+        }
+      }
+    ],
+    "loadavg": [
+      1.81,
+      1.52,
+      1.49
+    ],
+    "diskUsage": "Filesystem      Size  Used Avail Use% Mounted on\ntmpfs           2.8G  1.8M  2.8G   1% /run\nefivarfs        128K   23K  101K  19% /sys/firmware/efi/efivars\n/dev/nvme0n1p2  916G  260G  610G  30% /\ntmpfs            14G  213M   14G   2% /dev/shm\ntmpfs           5.0M   20K  5.0M   1% /run/lock\n/dev/nvme0n1p1  511M  6.2M  505M   2% /boot/efi\ntmpfs           2.8G  208K  2.8G   1% /run/user/1000\n"
+  },
+  "docker": {
+    "version": "Docker version 28.2.2, build 28.2.2-0ubuntu1~24.04.1",
+    "info": {
+      "ID": "096feab9-7d1f-4b59-8a62-04eaf46592cc",
+      "Containers": 0,
+      "ContainersRunning": 0,
+      "ContainersPaused": 0,
+      "ContainersStopped": 0,
+      "Images": 23,
+      "Driver": "overlay2",
+      "DriverStatus": [
+        [
+          "Backing Filesystem",
+          "extfs"
+        ],
+        [
+          "Supports d_type",
+          "true"
+        ],
+        [
+          "Using metacopy",
+          "false"
+        ],
+        [
+          "Native Overlay Diff",
+          "true"
+        ],
+        [
+          "userxattr",
+          "false"
+        ]
+      ],
+      "Plugins": {
+        "Volume": [
+          "local"
+        ],
+        "Network": [
+          "bridge",
+          "host",
+          "ipvlan",
+          "macvlan",
+          "null",
+          "overlay"
+        ],
+        "Authorization": null,
+        "Log": [
+          "awslogs",
+          "fluentd",
+          "gcplogs",
+          "gelf",
+          "journald",
+          "json-file",
+          "local",
+          "splunk",
+          "syslog"
+        ]
+      },
+      "MemoryLimit": true,
+      "SwapLimit": true,
+      "CpuCfsPeriod": true,
+      "CpuCfsQuota": true,
+      "CPUShares": true,
+      "CPUSet": true,
+      "PidsLimit": true,
+      "IPv4Forwarding": true,
+      "Debug": false,
+      "NFd": 42,
+      "OomKillDisable": false,
+      "NGoroutines": 46,
+      "SystemTime": "2025-12-21T18:35:00.770870934-05:00",
+      "LoggingDriver": "json-file",
+      "CgroupDriver": "systemd",
+      "CgroupVersion": "2",
+      "NEventsListener": 0,
+      "KernelVersion": "6.8.0-88-generic",
+      "OperatingSystem": "Linux Mint 22",
+      "OSVersion": "22",
+      "OSType": "linux",
+      "Architecture": "x86_64",
+      "IndexServerAddress": "https://index.docker.io/v1/",
+      "RegistryConfig": {
+        "IndexConfigs": {
+          "docker.io": {
+            "Mirrors": [],
+            "Name": "docker.io",
+            "Official": true,
+            "Secure": true
+          }
+        },
+        "InsecureRegistryCIDRs": [
+          "::1/128",
+          "127.0.0.0/8"
+        ],
+        "Mirrors": null
+      },
+      "NCPU": 16,
+      "MemTotal": 29342015488,
+      "GenericResources": null,
+      "DockerRootDir": "/var/lib/docker",
+      "HttpProxy": "",
+      "HttpsProxy": "",
+      "NoProxy": "",
+      "Name": "jt-SER-KasNode",
+      "Labels": [],
+      "ExperimentalBuild": false,
+      "ServerVersion": "28.2.2",
+      "Runtimes": {
+        "io.containerd.runc.v2": {
+          "path": "runc",
+          "status": {
+            "org.opencontainers.runtime-spec.features": "{\"ociVersionMin\":\"1.0.0\",\"ociVersionMax\":\"1.2.1\",\"hooks\":[\"prestart\",\"createRuntime\",\"createContainer\",\"startContainer\",\"poststart\",\"poststop\"],\"mountOptions\":[\"async\",\"atime\",\"bind\",\"defaults\",\"dev\",\"diratime\",\"dirsync\",\"exec\",\"iversion\",\"lazytime\",\"loud\",\"mand\",\"noatime\",\"nodev\",\"nodiratime\",\"noexec\",\"noiversion\",\"nolazytime\",\"nomand\",\"norelatime\",\"nostrictatime\",\"nosuid\",\"nosymfollow\",\"private\",\"ratime\",\"rbind\",\"rdev\",\"rdiratime\",\"relatime\",\"remount\",\"rexec\",\"rnoatime\",\"rnodev\",\"rnodiratime\",\"rnoexec\",\"rnorelatime\",\"rnostrictatime\",\"rnosuid\",\"rnosymfollow\",\"ro\",\"rprivate\",\"rrelatime\",\"rro\",\"rrw\",\"rshared\",\"rslave\",\"rstrictatime\",\"rsuid\",\"rsymfollow\",\"runbindable\",\"rw\",\"shared\",\"silent\",\"slave\",\"strictatime\",\"suid\",\"symfollow\",\"sync\",\"tmpcopyup\",\"unbindable\"],\"linux\":{\"namespaces\":[\"cgroup\",\"ipc\",\"mount\",\"network\",\"pid\",\"time\",\"user\",\"uts\"],\"capabilities\":[\"CAP_CHOWN\",\"CAP_DAC_OVERRIDE\",\"CAP_DAC_READ_SEARCH\",\"CAP_FOWNER\",\"CAP_FSETID\",\"CAP_KILL\",\"CAP_SETGID\",\"CAP_SETUID\",\"CAP_SETPCAP\",\"CAP_LINUX_IMMUTABLE\",\"CAP_NET_BIND_SERVICE\",\"CAP_NET_BROADCAST\",\"CAP_NET_ADMIN\",\"CAP_NET_RAW\",\"CAP_IPC_LOCK\",\"CAP_IPC_OWNER\",\"CAP_SYS_MODULE\",\"CAP_SYS_RAWIO\",\"CAP_SYS_CHROOT\",\"CAP_SYS_PTRACE\",\"CAP_SYS_PACCT\",\"CAP_SYS_ADMIN\",\"CAP_SYS_BOOT\",\"CAP_SYS_NICE\",\"CAP_SYS_RESOURCE\",\"CAP_SYS_TIME\",\"CAP_SYS_TTY_CONFIG\",\"CAP_MKNOD\",\"CAP_LEASE\",\"CAP_AUDIT_WRITE\",\"CAP_AUDIT_CONTROL\",\"CAP_SETFCAP\",\"CAP_MAC_OVERRIDE\",\"CAP_MAC_ADMIN\",\"CAP_SYSLOG\",\"CAP_WAKE_ALARM\",\"CAP_BLOCK_SUSPEND\",\"CAP_AUDIT_READ\",\"CAP_PERFMON\",\"CAP_BPF\",\"CAP_CHECKPOINT_RESTORE\"],\"cgroup\":{\"v1\":true,\"v2\":true,\"systemd\":true,\"systemdUser\":true,\"rdma\":true},\"seccomp\":{\"enabled\":true,\"actions\":[\"SCMP_ACT_ALLOW\",\"SCMP_ACT_ERRNO\",\"SCMP_ACT_KILL\",\"SCMP_ACT_KILL_PROCESS\",\"SCMP_ACT_KILL_THREAD\",\"SCMP_ACT_LOG\",\"SCMP_ACT_NOTIFY\",\"SCMP_ACT_TRACE\",\"SCMP_ACT_TRAP\"],\"operators\":[\"SCMP_CMP_EQ\",\"SCMP_CMP_GE\",\"SCMP_CMP_GT\",\"SCMP_CMP_LE\",\"SCMP_CMP_LT\",\"SCMP_CMP_MASKED_EQ\",\"SCMP_CMP_NE\"],\"archs\":[\"SCMP_ARCH_AARCH64\",\"SCMP_ARCH_ARM\",\"SCMP_ARCH_MIPS\",\"SCMP_ARCH_MIPS64\",\"SCMP_ARCH_MIPS64N32\",\"SCMP_ARCH_MIPSEL\",\"SCMP_ARCH_MIPSEL64\",\"SCMP_ARCH_MIPSEL64N32\",\"SCMP_ARCH_PPC\",\"SCMP_ARCH_PPC64\",\"SCMP_ARCH_PPC64LE\",\"SCMP_ARCH_RISCV64\",\"SCMP_ARCH_S390\",\"SCMP_ARCH_S390X\",\"SCMP_ARCH_X32\",\"SCMP_ARCH_X86\",\"SCMP_ARCH_X86_64\"],\"knownFlags\":[\"SECCOMP_FILTER_FLAG_TSYNC\",\"SECCOMP_FILTER_FLAG_SPEC_ALLOW\",\"SECCOMP_FILTER_FLAG_LOG\"],\"supportedFlags\":[\"SECCOMP_FILTER_FLAG_TSYNC\",\"SECCOMP_FILTER_FLAG_SPEC_ALLOW\",\"SECCOMP_FILTER_FLAG_LOG\"]},\"apparmor\":{\"enabled\":true},\"selinux\":{\"enabled\":true},\"intelRdt\":{\"enabled\":true},\"mountExtensions\":{\"idmap\":{\"enabled\":true}}},\"annotations\":{\"io.github.seccomp.libseccomp.version\":\"2.5.5\",\"org.opencontainers.runc.checkpoint.enabled\":\"true\",\"org.opencontainers.runc.commit\":\"\",\"org.opencontainers.runc.version\":\"1.3.3-0ubuntu1~24.04.3\"},\"potentiallyUnsafeConfigAnnotations\":[\"bundle\",\"org.systemd.property.\",\"org.criu.config\"]}"
+          }
+        },
+        "runc": {
+          "path": "runc",
+          "status": {
+            "org.opencontainers.runtime-spec.features": "{\"ociVersionMin\":\"1.0.0\",\"ociVersionMax\":\"1.2.1\",\"hooks\":[\"prestart\",\"createRuntime\",\"createContainer\",\"startContainer\",\"poststart\",\"poststop\"],\"mountOptions\":[\"async\",\"atime\",\"bind\",\"defaults\",\"dev\",\"diratime\",\"dirsync\",\"exec\",\"iversion\",\"lazytime\",\"loud\",\"mand\",\"noatime\",\"nodev\",\"nodiratime\",\"noexec\",\"noiversion\",\"nolazytime\",\"nomand\",\"norelatime\",\"nostrictatime\",\"nosuid\",\"nosymfollow\",\"private\",\"ratime\",\"rbind\",\"rdev\",\"rdiratime\",\"relatime\",\"remount\",\"rexec\",\"rnoatime\",\"rnodev\",\"rnodiratime\",\"rnoexec\",\"rnorelatime\",\"rnostrictatime\",\"rnosuid\",\"rnosymfollow\",\"ro\",\"rprivate\",\"rrelatime\",\"rro\",\"rrw\",\"rshared\",\"rslave\",\"rstrictatime\",\"rsuid\",\"rsymfollow\",\"runbindable\",\"rw\",\"shared\",\"silent\",\"slave\",\"strictatime\",\"suid\",\"symfollow\",\"sync\",\"tmpcopyup\",\"unbindable\"],\"linux\":{\"namespaces\":[\"cgroup\",\"ipc\",\"mount\",\"network\",\"pid\",\"time\",\"user\",\"uts\"],\"capabilities\":[\"CAP_CHOWN\",\"CAP_DAC_OVERRIDE\",\"CAP_DAC_READ_SEARCH\",\"CAP_FOWNER\",\"CAP_FSETID\",\"CAP_KILL\",\"CAP_SETGID\",\"CAP_SETUID\",\"CAP_SETPCAP\",\"CAP_LINUX_IMMUTABLE\",\"CAP_NET_BIND_SERVICE\",\"CAP_NET_BROADCAST\",\"CAP_NET_ADMIN\",\"CAP_NET_RAW\",\"CAP_IPC_LOCK\",\"CAP_IPC_OWNER\",\"CAP_SYS_MODULE\",\"CAP_SYS_RAWIO\",\"CAP_SYS_CHROOT\",\"CAP_SYS_PTRACE\",\"CAP_SYS_PACCT\",\"CAP_SYS_ADMIN\",\"CAP_SYS_BOOT\",\"CAP_SYS_NICE\",\"CAP_SYS_RESOURCE\",\"CAP_SYS_TIME\",\"CAP_SYS_TTY_CONFIG\",\"CAP_MKNOD\",\"CAP_LEASE\",\"CAP_AUDIT_WRITE\",\"CAP_AUDIT_CONTROL\",\"CAP_SETFCAP\",\"CAP_MAC_OVERRIDE\",\"CAP_MAC_ADMIN\",\"CAP_SYSLOG\",\"CAP_WAKE_ALARM\",\"CAP_BLOCK_SUSPEND\",\"CAP_AUDIT_READ\",\"CAP_PERFMON\",\"CAP_BPF\",\"CAP_CHECKPOINT_RESTORE\"],\"cgroup\":{\"v1\":true,\"v2\":true,\"systemd\":true,\"systemdUser\":true,\"rdma\":true},\"seccomp\":{\"enabled\":true,\"actions\":[\"SCMP_ACT_ALLOW\",\"SCMP_ACT_ERRNO\",\"SCMP_ACT_KILL\",\"SCMP_ACT_KILL_PROCESS\",\"SCMP_ACT_KILL_THREAD\",\"SCMP_ACT_LOG\",\"SCMP_ACT_NOTIFY\",\"SCMP_ACT_TRACE\",\"SCMP_ACT_TRAP\"],\"operators\":[\"SCMP_CMP_EQ\",\"SCMP_CMP_GE\",\"SCMP_CMP_GT\",\"SCMP_CMP_LE\",\"SCMP_CMP_LT\",\"SCMP_CMP_MASKED_EQ\",\"SCMP_CMP_NE\"],\"archs\":[\"SCMP_ARCH_AARCH64\",\"SCMP_ARCH_ARM\",\"SCMP_ARCH_MIPS\",\"SCMP_ARCH_MIPS64\",\"SCMP_ARCH_MIPS64N32\",\"SCMP_ARCH_MIPSEL\",\"SCMP_ARCH_MIPSEL64\",\"SCMP_ARCH_MIPSEL64N32\",\"SCMP_ARCH_PPC\",\"SCMP_ARCH_PPC64\",\"SCMP_ARCH_PPC64LE\",\"SCMP_ARCH_RISCV64\",\"SCMP_ARCH_S390\",\"SCMP_ARCH_S390X\",\"SCMP_ARCH_X32\",\"SCMP_ARCH_X86\",\"SCMP_ARCH_X86_64\"],\"knownFlags\":[\"SECCOMP_FILTER_FLAG_TSYNC\",\"SECCOMP_FILTER_FLAG_SPEC_ALLOW\",\"SECCOMP_FILTER_FLAG_LOG\"],\"supportedFlags\":[\"SECCOMP_FILTER_FLAG_TSYNC\",\"SECCOMP_FILTER_FLAG_SPEC_ALLOW\",\"SECCOMP_FILTER_FLAG_LOG\"]},\"apparmor\":{\"enabled\":true},\"selinux\":{\"enabled\":true},\"intelRdt\":{\"enabled\":true},\"mountExtensions\":{\"idmap\":{\"enabled\":true}}},\"annotations\":{\"io.github.seccomp.libseccomp.version\":\"2.5.5\",\"org.opencontainers.runc.checkpoint.enabled\":\"true\",\"org.opencontainers.runc.commit\":\"\",\"org.opencontainers.runc.version\":\"1.3.3-0ubuntu1~24.04.3\"},\"potentiallyUnsafeConfigAnnotations\":[\"bundle\",\"org.systemd.property.\",\"org.criu.config\"]}"
+          }
+        }
+      },
+      "DefaultRuntime": "runc",
+      "Swarm": {
+        "NodeID": "",
+        "NodeAddr": "",
+        "LocalNodeState": "inactive",
+        "ControlAvailable": false,
+        "Error": "",
+        "RemoteManagers": null
+      },
+      "LiveRestoreEnabled": false,
+      "Isolation": "",
+      "InitBinary": "docker-init",
+      "ContainerdCommit": {
+        "ID": ""
+      },
+      "RuncCommit": {
+        "ID": ""
+      },
+      "InitCommit": {
+        "ID": ""
+      },
+      "SecurityOptions": [
+        "name=apparmor",
+        "name=seccomp,profile=builtin",
+        "name=cgroupns"
+      ],
+      "FirewallBackend": {
+        "Driver": "iptables"
+      },
+      "CDISpecDirs": [
+        "/etc/cdi",
+        "/var/run/cdi"
+      ],
+      "Containerd": {
+        "Address": "/run/containerd/containerd.sock",
+        "Namespaces": {
+          "Containers": "moby",
+          "Plugins": "plugins.moby"
+        }
+      },
+      "Warnings": null,
+      "ClientInfo": {
+        "Debug": false,
+        "Version": "28.2.2",
+        "DefaultAPIVersion": "1.50",
+        "GitCommit": "28.2.2-0ubuntu1~24.04.1",
+        "GoVersion": "go1.23.1",
+        "Os": "linux",
+        "Arch": "amd64",
+        "BuildTime": "Wed Sep 10 14:16:39 2025",
+        "Context": "default",
+        "Plugins": [
+          {
+            "SchemaVersion": "0.1.0",
+            "Vendor": "Docker Inc.",
+            "Version": "2.37.1+ds1-0ubuntu2~24.04.1",
+            "ShortDescription": "Docker Compose",
+            "Name": "compose",
+            "Path": "/usr/libexec/docker/cli-plugins/docker-compose"
+          }
+        ],
+        "Warnings": null
+      }
+    },
+    "containers": [],
+    "images": [
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-12-18 12:36:59 -0500 EST",
+        "CreatedSince": "3 days ago",
+        "Digest": "<none>",
+        "ID": "4b54e84a57d1",
+        "Repository": "<none>",
+        "SharedSize": "N/A",
+        "Size": "2.96GB",
+        "Tag": "<none>",
+        "UniqueSize": "N/A",
+        "VirtualSize": "2.96GB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-12-17 19:12:29 -0500 EST",
+        "CreatedSince": "3 days ago",
+        "Digest": "<none>",
+        "ID": "e7b39c54cdec",
+        "Repository": "alpine",
+        "SharedSize": "N/A",
+        "Size": "8.44MB",
+        "Tag": "latest",
+        "UniqueSize": "N/A",
+        "VirtualSize": "8.442MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-12-12 11:20:27 -0500 EST",
+        "CreatedSince": "9 days ago",
+        "Digest": "<none>",
+        "ID": "a3b9c02b5f04",
+        "Repository": "<none>",
+        "SharedSize": "N/A",
+        "Size": "43.2MB",
+        "Tag": "<none>",
+        "UniqueSize": "N/A",
+        "VirtualSize": "43.17MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-12-11 15:19:18 -0500 EST",
+        "CreatedSince": "10 days ago",
+        "Digest": "<none>",
+        "ID": "4bda5de56d63",
+        "Repository": "<none>",
+        "SharedSize": "N/A",
+        "Size": "63MB",
+        "Tag": "<none>",
+        "UniqueSize": "N/A",
+        "VirtualSize": "63.04MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-12-11 15:08:34 -0500 EST",
+        "CreatedSince": "10 days ago",
+        "Digest": "<none>",
+        "ID": "6e1ba96bd6e3",
+        "Repository": "<none>",
+        "SharedSize": "N/A",
+        "Size": "63MB",
+        "Tag": "<none>",
+        "UniqueSize": "N/A",
+        "VirtualSize": "63.04MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-12-04 16:12:40 -0500 EST",
+        "CreatedSince": "2 weeks ago",
+        "Digest": "<none>",
+        "ID": "9992b59c17bf",
+        "Repository": "node",
+        "SharedSize": "N/A",
+        "Size": "135MB",
+        "Tag": "20-alpine",
+        "UniqueSize": "N/A",
+        "VirtualSize": "134.6MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-12-03 04:15:49 -0500 EST",
+        "CreatedSince": "2 weeks ago",
+        "Digest": "<none>",
+        "ID": "ff78d2e4fb60",
+        "Repository": "timescale/timescaledb",
+        "SharedSize": "N/A",
+        "Size": "1.09GB",
+        "Tag": "latest-pg16",
+        "UniqueSize": "N/A",
+        "VirtualSize": "1.09GB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-11-23 18:20:54 -0500 EST",
+        "CreatedSince": "4 weeks ago",
+        "Digest": "<none>",
+        "ID": "34ed7df18f0e",
+        "Repository": "<none>",
+        "SharedSize": "N/A",
+        "Size": "43.2MB",
+        "Tag": "<none>",
+        "UniqueSize": "N/A",
+        "VirtualSize": "43.17MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-11-23 18:20:54 -0500 EST",
+        "CreatedSince": "4 weeks ago",
+        "Digest": "<none>",
+        "ID": "717392795185",
+        "Repository": "<none>",
+        "SharedSize": "N/A",
+        "Size": "43.2MB",
+        "Tag": "<none>",
+        "UniqueSize": "N/A",
+        "VirtualSize": "43.17MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-11-23 14:54:45 -0500 EST",
+        "CreatedSince": "4 weeks ago",
+        "Digest": "<none>",
+        "ID": "19734caadb75",
+        "Repository": "workspace-dashboard",
+        "SharedSize": "N/A",
+        "Size": "178MB",
+        "Tag": "latest",
+        "UniqueSize": "N/A",
+        "VirtualSize": "177.7MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-11-19 16:58:02 -0500 EST",
+        "CreatedSince": "4 weeks ago",
+        "Digest": "<none>",
+        "ID": "f07b93e5de34",
+        "Repository": "portainer/portainer-ce",
+        "SharedSize": "N/A",
+        "Size": "186MB",
+        "Tag": "latest",
+        "UniqueSize": "N/A",
+        "VirtualSize": "185.6MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-11-10 04:32:12 -0500 EST",
+        "CreatedSince": "5 weeks ago",
+        "Digest": "<none>",
+        "ID": "f44751b4226c",
+        "Repository": "dpage/pgadmin4",
+        "SharedSize": "N/A",
+        "Size": "540MB",
+        "Tag": "latest",
+        "UniqueSize": "N/A",
+        "VirtualSize": "539.8MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-10-28 18:11:24 -0400 EDT",
+        "CreatedSince": "7 weeks ago",
+        "Digest": "<none>",
+        "ID": "d4918ca78576",
+        "Repository": "nginx",
+        "SharedSize": "N/A",
+        "Size": "52.8MB",
+        "Tag": "alpine",
+        "UniqueSize": "N/A",
+        "VirtualSize": "52.84MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-10-15 15:06:18 -0400 EDT",
+        "CreatedSince": "2 months ago",
+        "Digest": "<none>",
+        "ID": "8c8deea9ece6",
+        "Repository": "supertypo/simply-kaspa-indexer",
+        "SharedSize": "N/A",
+        "Size": "43.2MB",
+        "Tag": "latest",
+        "UniqueSize": "N/A",
+        "VirtualSize": "43.17MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-09-01 13:09:29 -0400 EDT",
+        "CreatedSince": "3 months ago",
+        "Digest": "<none>",
+        "ID": "51f678a43ceb",
+        "Repository": "kkluster/kasia-indexer",
+        "SharedSize": "N/A",
+        "Size": "45.3MB",
+        "Tag": "main",
+        "UniqueSize": "N/A",
+        "VirtualSize": "45.29MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-07-21 17:40:43 -0400 EDT",
+        "CreatedSince": "5 months ago",
+        "Digest": "<none>",
+        "ID": "1f0107e8f4e8",
+        "Repository": "rust",
+        "SharedSize": "N/A",
+        "Size": "968MB",
+        "Tag": "1.88-alpine",
+        "UniqueSize": "N/A",
+        "VirtualSize": "968.2MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-07-01 13:22:35 -0400 EDT",
+        "CreatedSince": "5 months ago",
+        "Digest": "<none>",
+        "ID": "803b3e235795",
+        "Repository": "kaspanet/rusty-kaspad",
+        "SharedSize": "N/A",
+        "Size": "69.4MB",
+        "Tag": "latest",
+        "UniqueSize": "N/A",
+        "VirtualSize": "69.45MB"
+      },
+      {
+        "Containers": "N/A",
+        "CreatedAt": "2025-03-27 10:23:08 -0400 EDT",
+        "CreatedSince": "8 months ago",
+        "Digest": "<none>",
+        "ID": "ee77c6cd7c18",
+        "Repository": "node",
+        "SharedSize": "N/A",
+        "Size": "127MB",
+        "Tag": "18-alpine",
+        "UniqueSize": "N/A",
+        "VirtualSize": "127MB"
+      }
+    ]
+  },
+  "services": {
+    "composeServices": {
+      "error": "Command failed: docker-compose ps --format json\nTraceback (most recent call last):\n  File \"/usr/bin/docker-compose\", line 33, in <module>\n    sys.exit(load_entry_point('docker-compose==1.29.2', 'console_scripts', 'docker-compose')())\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/bin/docker-compose\", line 25, in importlib_load_entry_point\n    return next(matches).load()\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/importlib/metadata/__init__.py\", line 205, in load\n    module = import_module(match.group('module'))\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/importlib/__init__.py\", line 90, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1387, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1360, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1331, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 995, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"/usr/lib/python3/dist-packages/compose/cli/main.py\", line 9, in <module>\n    from distutils.spawn import find_executable\nModuleNotFoundError: No module named 'distutils'\n"
+    }
+  },
+  "logs": {
+    "kaspa-node": "Error collecting logs: Command failed: docker logs kaspa-node --tail 100\nError response from daemon: No such container: kaspa-node\n",
+    "timescaledb": "Error collecting logs: Command failed: docker logs timescaledb --tail 100\nError response from daemon: No such container: timescaledb\n",
+    "nginx": "Error collecting logs: Command failed: docker logs nginx --tail 100\nError response from daemon: No such container: nginx\n",
+    "wizard": "Error collecting logs: Command failed: docker logs wizard --tail 100\nError response from daemon: No such container: wizard\n",
+    "dashboard": "Error collecting logs: Command failed: docker logs dashboard --tail 100\nError response from daemon: No such container: dashboard\n"
+  },
+  "configuration": {
+    "environment": "Error reading .env: ENOENT: no such file or directory, open '/home/jtmac/Documents/projects/kaspa-aio/.env'",
+    "installation": {
+      "error": "ENOENT: no such file or directory, open '/home/jtmac/Documents/projects/kaspa-aio/installation-config.json'"
+    }
+  },
+  "network": {
+    "interfaces": {
+      "lo": [
+        {
+          "address": "127.0.0.1",
+          "netmask": "255.0.0.0",
+          "family": "IPv4",
+          "mac": "00:00:00:00:00:00",
+          "internal": true,
+          "cidr": "127.0.0.1/8"
+        },
+        {
+          "address": "::1",
+          "netmask": "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+          "family": "IPv6",
+          "mac": "00:00:00:00:00:00",
+          "internal": true,
+          "cidr": "::1/128",
+          "scopeid": 0
+        }
+      ],
+      "enp1s0": [
+        {
+          "address": "192.168.4.54",
+          "netmask": "255.255.252.0",
+          "family": "IPv4",
+          "mac": "b0:41:6f:16:da:19",
+          "internal": false,
+          "cidr": "192.168.4.54/22"
+        },
+        {
+          "address": "2606:9cc0:300:358:a608:b49:d7fd:2b89",
+          "netmask": "ffff:ffff:ffff:ffff::",
+          "family": "IPv6",
+          "mac": "b0:41:6f:16:da:19",
+          "internal": false,
+          "cidr": "2606:9cc0:300:358:a608:b49:d7fd:2b89/64",
+          "scopeid": 0
+        },
+        {
+          "address": "fd0f:72c7:e9e0:1:6460:92b4:776b:6b08",
+          "netmask": "ffff:ffff:ffff:ffff::",
+          "family": "IPv6",
+          "mac": "b0:41:6f:16:da:19",
+          "internal": false,
+          "cidr": "fd0f:72c7:e9e0:1:6460:92b4:776b:6b08/64",
+          "scopeid": 0
+        },
+        {
+          "address": "fd0f:72c7:e9e0:1:45a4:a2d1:cbf5:b5f0",
+          "netmask": "ffff:ffff:ffff:ffff::",
+          "family": "IPv6",
+          "mac": "b0:41:6f:16:da:19",
+          "internal": false,
+          "cidr": "fd0f:72c7:e9e0:1:45a4:a2d1:cbf5:b5f0/64",
+          "scopeid": 0
+        },
+        {
+          "address": "fd0f:72c7:e9e0:1:8e70:ed45:87f2:4fa0",
+          "netmask": "ffff:ffff:ffff:ffff::",
+          "family": "IPv6",
+          "mac": "b0:41:6f:16:da:19",
+          "internal": false,
+          "cidr": "fd0f:72c7:e9e0:1:8e70:ed45:87f2:4fa0/64",
+          "scopeid": 0
+        },
+        {
+          "address": "2606:9cc0:300:358:40d3:a6fd:c1e3:9e49",
+          "netmask": "ffff:ffff:ffff:ffff::",
+          "family": "IPv6",
+          "mac": "b0:41:6f:16:da:19",
+          "internal": false,
+          "cidr": "2606:9cc0:300:358:40d3:a6fd:c1e3:9e49/64",
+          "scopeid": 0
+        },
+        {
+          "address": "2606:9cc0:300:358:211e:27c9:aa13:e310",
+          "netmask": "ffff:ffff:ffff:ffff::",
+          "family": "IPv6",
+          "mac": "b0:41:6f:16:da:19",
+          "internal": false,
+          "cidr": "2606:9cc0:300:358:211e:27c9:aa13:e310/64",
+          "scopeid": 0
+        },
+        {
+          "address": "fe80::dd40:3d91:18fa:972",
+          "netmask": "ffff:ffff:ffff:ffff::",
+          "family": "IPv6",
+          "mac": "b0:41:6f:16:da:19",
+          "internal": false,
+          "cidr": "fe80::dd40:3d91:18fa:972/64",
+          "scopeid": 2
+        }
+      ]
+    },
+    "listeningPorts": "Active Internet connections (only servers)\nProto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    \ntcp        0      0 127.0.0.54:53           0.0.0.0:*               LISTEN      -                   \ntcp        0      0 127.0.0.53:53           0.0.0.0:*               LISTEN      -                   \ntcp        0      0 127.0.0.1:38681         0.0.0.0:*               LISTEN      5349/exe            \ntcp        0      0 127.0.0.1:33035         0.0.0.0:*               LISTEN      -                   \ntcp        0      0 127.0.0.1:631           0.0.0.0:*               LISTEN      -                   \ntcp6       0      0 :::36129                :::*                    LISTEN      557121/node         \ntcp6       0      0 ::1:631                 :::*                    LISTEN      -                   \nudp        0      0 0.0.0.0:46198           0.0.0.0:*                           -                   \nudp        0      0 127.0.0.54:53           0.0.0.0:*                           -                   \nudp        0      0 127.0.0.53:53           0.0.0.0:*                           -                   \nudp        0      0 0.0.0.0:5353            0.0.0.0:*                           -                   \nudp6       0      0 :::5353                 :::*                                -                   \nudp6       0      0 :::41767                :::*                                -                   \n",
+    "dockerNetworks": [
+      {
+        "CreatedAt": "2025-12-20 11:54:28.726600849 -0500 EST",
+        "Driver": "bridge",
+        "ID": "c3f58ae059d6",
+        "IPv4": "true",
+        "IPv6": "false",
+        "Internal": "false",
+        "Labels": "",
+        "Name": "bridge",
+        "Scope": "local"
+      },
+      {
+        "CreatedAt": "2025-11-23 14:50:24.867212484 -0500 EST",
+        "Driver": "host",
+        "ID": "8aff10f802fa",
+        "IPv4": "true",
+        "IPv6": "false",
+        "Internal": "false",
+        "Labels": "",
+        "Name": "host",
+        "Scope": "local"
+      },
+      {
+        "CreatedAt": "2025-11-23 14:50:24.860636539 -0500 EST",
+        "Driver": "null",
+        "ID": "e0dc571d1980",
+        "IPv4": "true",
+        "IPv6": "false",
+        "Internal": "false",
+        "Labels": "",
+        "Name": "none",
+        "Scope": "local"
+      }
+    ]
+  },
+  "errors": []
+}

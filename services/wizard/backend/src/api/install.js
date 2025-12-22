@@ -1,10 +1,12 @@
 const express = require('express');
 const DockerManager = require('../utils/docker-manager');
 const ConfigGenerator = require('../utils/config-generator');
+const InfrastructureValidator = require('../utils/infrastructure-validator');
 
 const router = express.Router();
 const dockerManager = new DockerManager();
 const configGenerator = new ConfigGenerator();
+const infrastructureValidator = new InfrastructureValidator();
 
 // POST /api/install/start - Start installation process
 router.post('/start', async (req, res) => {
@@ -126,7 +128,7 @@ router.post('/deploy', async (req, res) => {
 // POST /api/install/validate - Validate installation
 router.post('/validate', async (req, res) => {
   try {
-    const { profiles } = req.body;
+    const { profiles, includeInfrastructure = false } = req.body;
     
     if (!Array.isArray(profiles)) {
       return res.status(400).json({
@@ -135,7 +137,29 @@ router.post('/validate', async (req, res) => {
       });
     }
     
-    const result = await dockerManager.validateServices(profiles);
+    // Basic service validation
+    const serviceValidation = await dockerManager.validateServices(profiles);
+    
+    const result = {
+      services: serviceValidation,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Include infrastructure validation if requested
+    if (includeInfrastructure) {
+      try {
+        const infrastructureValidation = await infrastructureValidator.validateInfrastructure(profiles);
+        result.infrastructure = infrastructureValidation;
+        result.infrastructureSummary = infrastructureValidator.getValidationSummary(infrastructureValidation);
+      } catch (error) {
+        console.error('Infrastructure validation error:', error);
+        result.infrastructure = {
+          error: 'Infrastructure validation failed',
+          message: error.message
+        };
+      }
+    }
+    
     res.json(result);
   } catch (error) {
     res.status(500).json({

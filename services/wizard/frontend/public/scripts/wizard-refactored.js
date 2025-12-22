@@ -18,6 +18,7 @@ import {
     updateInstallationUI,
     handleInstallationComplete,
     handleInstallationError,
+    handleInfrastructureValidation,
     cancelInstallation as cancelInstall,
     toggleInstallLogs
 } from './modules/install.js';
@@ -103,7 +104,20 @@ function initWebSocket() {
     // Installation error
     wsManager.on('install:error', (data) => {
         console.error('Installation error:', data);
-        handleInstallationError(data);
+        
+        // Use enhanced troubleshooting if available
+        if (window.enhancedTroubleshooting && data.troubleshootingGuide) {
+            window.enhancedTroubleshooting.handleInstallationError(data);
+        } else {
+            // Fallback to original error handling
+            handleInstallationError(data);
+        }
+    });
+    
+    // Infrastructure validation
+    wsManager.on('infrastructure:validation', (data) => {
+        console.log('Infrastructure validation:', data);
+        handleInfrastructureValidation(data);
     });
     
     // Background task events

@@ -5,7 +5,44 @@ const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const fs = require('fs').promises;
-const WebSocket = require('ws');
+const compression = require('compression');
+const helmet = require('helmet');
+
+// Dashboard modules
+const WebSocketManager = require('./lib/WebSocketManager');
+const UpdateBroadcaster = require('./lib/UpdateBroadcaster');
+const AlertManager = require('./lib/AlertManager');
+const ServiceMonitor = require('./lib/ServiceMonitor');
+const ResourceMonitor = require('./lib/ResourceMonitor');
+
+// Security and performance modules
+const { 
+    validators, 
+    handleValidationErrors, 
+    sanitizeRequestBody,
+    isValidServiceName,
+    isValidKaspaAddress 
+} = require('./lib/ValidationMiddleware');
+const { 
+    corsOptions, 
+    rateLimiters, 
+    helmetOptions,
+    validateRequest,
+    securityLogger,
+    securityErrorHandler 
+} = require('./lib/SecurityMiddleware');
+const { 
+    createMaskingMiddleware,
+    sanitizeLogContent,
+    maskConfiguration 
+} = require('./lib/DataMasking');
+const { initializeSSL } = require('./lib/SSLSupport');
+const { 
+    ResponseCache, 
+    RequestQueue, 
+    PerformanceMonitor,
+    compressionOptions 
+} = require('./lib/PerformanceOptimizer');
 
 const execAsync = promisify(exec);
 
@@ -13,21 +50,51 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 const KASPA_NODE_URL = process.env.KASPA_NODE_URL || 'http://kaspa-node:16111';
 
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// Initialize performance monitoring
+const performanceMonitor = new PerformanceMonitor();
+const responseCache = new ResponseCache(30000); // 30 second cache
+const requestQueue = new RequestQueue(10); // Max 10 concurrent requests
+
+// Security middleware
+app.use(helmet(helmetOptions));
+app.use(compression(compressionOptions));
+app.use(cors(corsOptions));
+app.use(validateRequest);
+app.use(securityLogger);
+
+// Rate limiting
+app.use('/api/', rateLimiters.general);
+app.use('/api/services/', rateLimiters.serviceControl);
+app.use('/api/kaspa/wallet', rateLimiters.walletOperations);
+app.use('/api/services/*/logs', rateLimiters.logs);
+
+// Body parsing with size limits
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request sanitization
+app.use(sanitizeRequestBody);
+
+// Static files with caching
+app.use(express.static(path.join(__dirname, 'public'), {
+    maxAge: process.env.NODE_ENV === 'production' ? '1d' : '0',
+    etag: true
+}));
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', responseCache.middleware(60000), (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-// API Routes
-app.get('/api/status', async (req, res) => {
+// API Routes with caching and validation
+app.get('/api/status', responseCache.middleware(5000), async (req, res) => {
+    const startTime = Date.now();
     try {
-        const services = await checkAllServices();
+        const services = await requestQueue.add(() => serviceMonitor.checkAllServices());
+        performanceMonitor.recordAPIRequest('/api/status', Date.now() - startTime, true);
         res.json(services);
     } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/status', Date.now() - startTime, false);
         res.status(500).json({ error: error.message });
     }
 });
@@ -39,7 +106,7 @@ app.get('/api/profiles', async (req, res) => {
         const profiles = new Set(['core']);
         
         dockerServices.forEach((info, serviceName) => {
-            const serviceDef = SERVICE_DEFINITIONS.find(s => s.name === serviceName);
+            const serviceDef = serviceMonitor.serviceDefinitions.find(s => s.name === serviceName);
             if (serviceDef && serviceDef.profile !== 'core') {
                 profiles.add(serviceDef.profile);
             }
@@ -51,91 +118,152 @@ app.get('/api/profiles', async (req, res) => {
     }
 });
 
-// Service management endpoints
-app.post('/api/services/:serviceName/start', async (req, res) => {
-    try {
-        const { serviceName } = req.params;
-        await execAsync(`docker start ${serviceName}`);
-        res.json({ success: true, message: `Service ${serviceName} started` });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+// Service management endpoints with validation
+app.post('/api/services/:serviceName/start', 
+    validators.serviceName,
+    handleValidationErrors,
+    async (req, res) => {
+        const startTime = Date.now();
+        try {
+            const { serviceName } = req.params;
+            
+            // Additional validation
+            if (!isValidServiceName(serviceName)) {
+                return res.status(400).json({ error: 'Invalid service name' });
+            }
+            
+            await execAsync(`docker start ${serviceName}`);
+            performanceMonitor.recordAPIRequest('/api/services/start', Date.now() - startTime, true);
+            res.json({ success: true, message: `Service ${serviceName} started` });
+        } catch (error) {
+            performanceMonitor.recordAPIRequest('/api/services/start', Date.now() - startTime, false);
+            res.status(500).json({ error: error.message });
+        }
     }
-});
+);
 
-app.post('/api/services/:serviceName/stop', async (req, res) => {
-    try {
-        const { serviceName } = req.params;
-        await execAsync(`docker stop ${serviceName}`);
-        res.json({ success: true, message: `Service ${serviceName} stopped` });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+app.post('/api/services/:serviceName/stop', 
+    validators.serviceName,
+    handleValidationErrors,
+    async (req, res) => {
+        const startTime = Date.now();
+        try {
+            const { serviceName } = req.params;
+            
+            if (!isValidServiceName(serviceName)) {
+                return res.status(400).json({ error: 'Invalid service name' });
+            }
+            
+            await execAsync(`docker stop ${serviceName}`);
+            performanceMonitor.recordAPIRequest('/api/services/stop', Date.now() - startTime, true);
+            res.json({ success: true, message: `Service ${serviceName} stopped` });
+        } catch (error) {
+            performanceMonitor.recordAPIRequest('/api/services/stop', Date.now() - startTime, false);
+            res.status(500).json({ error: error.message });
+        }
     }
-});
+);
 
-app.post('/api/services/:serviceName/restart', async (req, res) => {
-    try {
-        const { serviceName } = req.params;
-        await execAsync(`docker restart ${serviceName}`);
-        res.json({ success: true, message: `Service ${serviceName} restarted` });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+app.post('/api/services/:serviceName/restart', 
+    validators.serviceName,
+    handleValidationErrors,
+    async (req, res) => {
+        const startTime = Date.now();
+        try {
+            const { serviceName } = req.params;
+            
+            if (!isValidServiceName(serviceName)) {
+                return res.status(400).json({ error: 'Invalid service name' });
+            }
+            
+            await execAsync(`docker restart ${serviceName}`);
+            performanceMonitor.recordAPIRequest('/api/services/restart', Date.now() - startTime, true);
+            res.json({ success: true, message: `Service ${serviceName} restarted` });
+        } catch (error) {
+            performanceMonitor.recordAPIRequest('/api/services/restart', Date.now() - startTime, false);
+            res.status(500).json({ error: error.message });
+        }
     }
-});
+);
 
-// Get service logs
-app.get('/api/services/:serviceName/logs', async (req, res) => {
-    try {
-        const { serviceName } = req.params;
-        const lines = req.query.lines || 100;
-        const { stdout } = await execAsync(`docker logs --tail=${lines} ${serviceName}`);
-        res.json({ logs: stdout });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+// Get service logs with validation and sanitization
+app.get('/api/services/:serviceName/logs', 
+    validators.serviceName,
+    validators.pagination,
+    validators.logSearch,
+    handleValidationErrors,
+    async (req, res) => {
+        const startTime = Date.now();
+        try {
+            const { serviceName } = req.params;
+            const { lines = 100, search = '' } = req.query;
+            
+            if (!isValidServiceName(serviceName)) {
+                return res.status(400).json({ error: 'Invalid service name' });
+            }
+            
+            const { stdout } = await execAsync(`docker logs --tail=${lines} ${serviceName}`);
+            
+            // Sanitize logs to remove sensitive information
+            let sanitizedLogs = sanitizeLogContent(stdout);
+            
+            // Apply search filter if provided
+            if (search) {
+                const searchRegex = new RegExp(search, 'i');
+                sanitizedLogs = sanitizedLogs
+                    .split('\n')
+                    .filter(line => searchRegex.test(line))
+                    .join('\n');
+            }
+            
+            performanceMonitor.recordAPIRequest('/api/services/logs', Date.now() - startTime, true);
+            res.json({ logs: sanitizedLogs });
+        } catch (error) {
+            performanceMonitor.recordAPIRequest('/api/services/logs', Date.now() - startTime, false);
+            res.status(500).json({ error: error.message });
+        }
     }
-});
+);
 
 // System resource monitoring
 app.get('/api/system/resources', async (req, res) => {
     try {
-        const [cpuInfo, memInfo, diskInfo] = await Promise.all([
-            execAsync("top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d'%' -f1").catch(() => ({ stdout: '0' })),
-            execAsync("free | grep Mem | awk '{print ($3/$2) * 100.0}'").catch(() => ({ stdout: '0' })),
-            execAsync("df -h / | tail -1 | awk '{print $5}' | cut -d'%' -f1").catch(() => ({ stdout: '0' }))
-        ]);
-
-        res.json({
-            cpu: parseFloat(cpuInfo.stdout.trim()) || 0,
-            memory: parseFloat(memInfo.stdout.trim()) || 0,
-            disk: parseFloat(diskInfo.stdout.trim()) || 0,
-            timestamp: new Date().toISOString()
-        });
+        const resources = await resourceMonitor.getSystemResources();
+        res.json(resources);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// Get environment configuration
-app.get('/api/config', async (req, res) => {
-    try {
-        const envPath = '/app/.env';
-        const envContent = await fs.readFile(envPath, 'utf-8');
-        const config = {};
-        
-        envContent.split('\n').forEach(line => {
-            line = line.trim();
-            if (line && !line.startsWith('#')) {
-                const [key, ...valueParts] = line.split('=');
-                if (key) {
-                    config[key.trim()] = valueParts.join('=').trim();
+// Get environment configuration with masking
+app.get('/api/config', 
+    createMaskingMiddleware('config'),
+    async (req, res) => {
+        const startTime = Date.now();
+        try {
+            const envPath = '/app/.env';
+            const envContent = await fs.readFile(envPath, 'utf-8');
+            const config = {};
+            
+            envContent.split('\n').forEach(line => {
+                line = line.trim();
+                if (line && !line.startsWith('#')) {
+                    const [key, ...valueParts] = line.split('=');
+                    if (key) {
+                        config[key.trim()] = valueParts.join('=').trim();
+                    }
                 }
-            }
-        });
-        
-        res.json(config);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+            });
+            
+            // Configuration will be automatically masked by middleware
+            performanceMonitor.recordAPIRequest('/api/config', Date.now() - startTime, true);
+            res.json(config);
+        } catch (error) {
+            performanceMonitor.recordAPIRequest('/api/config', Date.now() - startTime, false);
+            res.status(500).json({ error: error.message });
+        }
     }
-});
+);
 
 // Update environment configuration
 app.post('/api/config', async (req, res) => {
@@ -201,24 +329,119 @@ app.get('/api/kaspa/stats', async (req, res) => {
     }
 });
 
-// Service definitions with profile information
-const SERVICE_DEFINITIONS = [
-    { name: 'kaspa-node', displayName: 'Kaspa Node', url: 'http://kaspa-node:16111', type: 'rpc', profile: 'core' },
-    { name: 'dashboard', displayName: 'Dashboard', url: 'http://dashboard:8080', type: 'http', profile: 'core' },
-    { name: 'nginx', displayName: 'Nginx', url: 'http://nginx:80', type: 'http', profile: 'core' },
-    { name: 'kasia-app', displayName: 'Kasia App', url: 'http://kasia-app:3000', type: 'http', profile: 'prod' },
-    { name: 'kasia-indexer', displayName: 'Kasia Indexer', url: 'http://kasia-indexer:8080', type: 'http', profile: 'explorer' },
-    { name: 'k-social', displayName: 'K Social', url: 'http://k-social:3000', type: 'http', profile: 'prod' },
-    { name: 'k-indexer', displayName: 'K Indexer', url: 'http://k-indexer:8080', type: 'http', profile: 'explorer' },
-    { name: 'simply-kaspa-indexer', displayName: 'Simply Kaspa Indexer', url: 'http://simply-kaspa-indexer:3000', type: 'http', profile: 'explorer' },
-    { name: 'kaspa-stratum', displayName: 'Kaspa Stratum', url: 'http://kaspa-stratum:5555', type: 'tcp', profile: 'mining' },
-    { name: 'indexer-db', displayName: 'Indexer DB', url: 'http://indexer-db:5432', type: 'postgres', profile: 'explorer' },
-    { name: 'archive-db', displayName: 'Archive DB', url: 'http://archive-db:5432', type: 'postgres', profile: 'archive' },
-    { name: 'archive-indexer', displayName: 'Archive Indexer', url: 'http://archive-indexer:3000', type: 'http', profile: 'archive' },
-    { name: 'portainer', displayName: 'Portainer', url: 'http://portainer:9000', type: 'http', profile: 'development' },
-    { name: 'pgadmin', displayName: 'pgAdmin', url: 'http://pgadmin:80', type: 'http', profile: 'development' }
-];
+// Alert management endpoints
+app.get('/api/alerts', (req, res) => {
+    try {
+        const options = {
+            severity: req.query.severity,
+            type: req.query.type,
+            source: req.query.source,
+            unacknowledged: req.query.unacknowledged === 'true',
+            limit: req.query.limit ? parseInt(req.query.limit) : undefined
+        };
+        
+        const alerts = alertManager.getAlertHistory(options);
+        res.json(alerts);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
+app.get('/api/alerts/stats', (req, res) => {
+    try {
+        const stats = alertManager.getStats();
+        res.json(stats);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/alerts/:alertId/acknowledge', (req, res) => {
+    try {
+        const { alertId } = req.params;
+        const success = alertManager.acknowledgeAlert(alertId);
+        
+        if (success) {
+            res.json({ success: true, message: 'Alert acknowledged' });
+        } else {
+            res.status(404).json({ error: 'Alert not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/alerts/thresholds', (req, res) => {
+    try {
+        const thresholds = req.body;
+        alertManager.updateThresholds(thresholds);
+        res.json({ success: true, message: 'Thresholds updated', thresholds: alertManager.alertThresholds });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// WebSocket statistics endpoint
+app.get('/api/websocket/stats', (req, res) => {
+    try {
+        const wsStats = wsManager.getStats();
+        const broadcasterStats = updateBroadcaster.getStats();
+        const alertStats = alertManager.getStats();
+        const performanceStats = performanceMonitor.getStats();
+        const cacheStats = responseCache.getStats();
+        const queueStats = requestQueue.getStats();
+        
+        res.json({
+            websocket: wsStats,
+            broadcaster: broadcasterStats,
+            alerts: alertStats,
+            performance: performanceStats,
+            cache: cacheStats,
+            requestQueue: queueStats
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Performance monitoring endpoint
+app.get('/api/performance/stats', (req, res) => {
+    try {
+        const stats = performanceMonitor.getStats();
+        res.json(stats);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Cache management endpoints
+app.post('/api/cache/clear', (req, res) => {
+    try {
+        responseCache.clear();
+        res.json({ success: true, message: 'Cache cleared' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/cache/stats', (req, res) => {
+    try {
+        const stats = responseCache.getStats();
+        res.json(stats);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add security error handler
+app.use(securityErrorHandler);
+
+// Serve the dashboard HTML
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Helper function to get Docker services
 async function getDockerServices() {
     try {
         const { stdout } = await execAsync('docker ps --format "{{.Names}}\t{{.Status}}\t{{.State}}"');
@@ -234,57 +457,14 @@ async function getDockerServices() {
     }
 }
 
-async function checkAllServices() {
-    const dockerServices = await getDockerServices();
-    
-    const results = await Promise.allSettled(
-        SERVICE_DEFINITIONS.map(async (service) => {
-            const dockerInfo = dockerServices.get(service.name);
-            
-            if (!dockerInfo) {
-                return { 
-                    ...service, 
-                    status: 'stopped', 
-                    state: 'not_running',
-                    lastCheck: new Date().toISOString() 
-                };
-            }
-
-            try {
-                if (service.type === 'rpc') {
-                    await axios.post(service.url, { method: 'ping', params: {} }, { timeout: 5000 });
-                } else if (service.type === 'http') {
-                    await axios.get(`${service.url}/health`, { timeout: 5000 });
-                }
-                return { 
-                    ...service, 
-                    status: 'healthy', 
-                    state: dockerInfo.state,
-                    dockerStatus: dockerInfo.status,
-                    lastCheck: new Date().toISOString() 
-                };
-            } catch (error) {
-                return { 
-                    ...service, 
-                    status: dockerInfo.state === 'running' ? 'unhealthy' : 'stopped',
-                    state: dockerInfo.state,
-                    dockerStatus: dockerInfo.status,
-                    error: error.message, 
-                    lastCheck: new Date().toISOString() 
-                };
-            }
-        })
-    );
-
-    return results.map(result => result.status === 'fulfilled' ? result.value : result.reason);
-}
-
 // Start wizard if needed (called by dashboard frontend)
 app.post('/api/wizard/start', async (req, res) => {
+    const startTime = Date.now();
     try {
         const scriptPath = path.join(__dirname, '../wizard/start-wizard-if-needed.sh');
         const { stdout, stderr } = await execAsync(scriptPath);
         
+        performanceMonitor.recordAPIRequest('/api/wizard/start', Date.now() - startTime, true);
         res.json({
             success: true,
             message: 'Wizard start initiated',
@@ -292,6 +472,7 @@ app.post('/api/wizard/start', async (req, res) => {
             errors: stderr
         });
     } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/wizard/start', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
             error: 'Failed to start wizard',
@@ -300,99 +481,76 @@ app.post('/api/wizard/start', async (req, res) => {
     }
 });
 
-// Serve the dashboard HTML
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Initialize SSL support
+const sslResult = initializeSSL(app, {
+    forceHTTPS: process.env.NODE_ENV === 'production',
+    generateSelfSigned: process.env.NODE_ENV === 'development'
 });
 
-const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Kaspa Dashboard running on port ${PORT}`);
+const server = sslResult.ssl ? sslResult.server : app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Kaspa Dashboard running on ${sslResult.ssl ? 'HTTPS' : 'HTTP'} port ${PORT}`);
 });
 
-// WebSocket server for real-time updates
-const wss = new WebSocket.Server({ server });
+// Initialize monitoring services
+const serviceMonitor = new ServiceMonitor();
+const resourceMonitor = new ResourceMonitor();
+const kaspaNodeClient = new (require('./lib/KaspaNodeClient'))();
 
-wss.on('connection', (ws) => {
-    console.log('WebSocket client connected');
-    
-    // Send initial data
-    sendUpdate(ws);
-    
-    // Set up periodic updates
-    const interval = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-            sendUpdate(ws);
-        }
-    }, 5000); // Update every 5 seconds
-    
-    ws.on('message', async (message) => {
-        try {
-            const data = JSON.parse(message);
-            
-            if (data.type === 'subscribe_logs') {
-                // Stream logs for a specific service
-                const serviceName = data.serviceName;
-                const logStream = exec(`docker logs -f --tail=50 ${serviceName}`);
-                
-                logStream.stdout.on('data', (chunk) => {
-                    if (ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({
-                            type: 'log',
-                            serviceName,
-                            data: chunk.toString()
-                        }));
-                    }
-                });
-                
-                ws.on('close', () => {
-                    logStream.kill();
-                });
-            }
-        } catch (error) {
-            console.error('WebSocket message error:', error);
-        }
-    });
-    
-    ws.on('close', () => {
-        console.log('WebSocket client disconnected');
-        clearInterval(interval);
-    });
+// Initialize WebSocket Manager
+const wsManager = new WebSocketManager(server);
+
+// Initialize Alert Manager
+const alertManager = new AlertManager(wsManager);
+
+// Initialize Update Broadcaster
+const updateBroadcaster = new UpdateBroadcaster(wsManager, serviceMonitor, resourceMonitor);
+updateBroadcaster.start();
+
+// Connect AlertManager to UpdateBroadcaster events
+updateBroadcaster.on('services-broadcasted', ({ services }) => {
+    alertManager.processServiceUpdates(services);
 });
 
-async function sendUpdate(ws) {
+updateBroadcaster.on('resources-broadcasted', ({ resources }) => {
+    alertManager.processResourceUpdates(resources);
+});
+
+// Add sync status monitoring
+setInterval(async () => {
     try {
-        const [services, resources] = await Promise.all([
-            checkAllServices(),
-            getSystemResources()
-        ]);
+        const syncStatus = await kaspaNodeClient.getSyncStatus();
+        alertManager.processSyncStatusUpdates(syncStatus);
         
-        ws.send(JSON.stringify({
-            type: 'update',
-            data: {
-                services,
-                resources,
-                timestamp: new Date().toISOString()
-            }
-        }));
+        // Broadcast sync status updates
+        wsManager.broadcast({
+            type: 'sync_status_update',
+            data: syncStatus,
+            timestamp: new Date().toISOString()
+        });
     } catch (error) {
-        console.error('Failed to send update:', error);
+        console.error('Failed to get sync status:', error);
     }
-}
+}, 30000); // Check every 30 seconds
 
-async function getSystemResources() {
-    try {
-        const [cpuInfo, memInfo, diskInfo] = await Promise.all([
-            execAsync("top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d'%' -f1").catch(() => ({ stdout: '0' })),
-            execAsync("free | grep Mem | awk '{print ($3/$2) * 100.0}'").catch(() => ({ stdout: '0' })),
-            execAsync("df -h / | tail -1 | awk '{print $5}' | cut -d'%' -f1").catch(() => ({ stdout: '0' }))
-        ]);
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('Received SIGTERM, shutting down gracefully...');
+    alertManager.shutdown();
+    updateBroadcaster.shutdown();
+    wsManager.shutdown();
+    server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
+});
 
-        return {
-            cpu: parseFloat(cpuInfo.stdout.trim()) || 0,
-            memory: parseFloat(memInfo.stdout.trim()) || 0,
-            disk: parseFloat(diskInfo.stdout.trim()) || 0
-        };
-    } catch (error) {
-        return { cpu: 0, memory: 0, disk: 0 };
-    }
-}
+process.on('SIGINT', () => {
+    console.log('Received SIGINT, shutting down gracefully...');
+    alertManager.shutdown();
+    updateBroadcaster.shutdown();
+    wsManager.shutdown();
+    server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
+});
