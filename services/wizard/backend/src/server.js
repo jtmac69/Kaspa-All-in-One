@@ -33,6 +33,10 @@ const dashboardIntegrationRouter = require('./api/dashboard-integration');
 const dependencyValidationRouter = require('./api/dependency-validation');
 const infrastructureValidationRouter = require('./api/infrastructure-validation');
 const troubleshootingRouter = require('./api/troubleshooting');
+const configModificationRouter = require('./api/config-modification');
+const configTemplatesRouter = require('./api/config-templates');
+const advancedConfigRouter = require('./api/advanced-config');
+const reconfigurationApiRouter = require('./api/reconfiguration-api-simple');
 
 // Import utilities
 const DockerManager = require('./utils/docker-manager');
@@ -103,6 +107,7 @@ app.use('/api/resource-check', resourceCheckRouter);
 app.use('/api/content', contentRouter);
 app.use('/api/profiles', profilesRouter);
 app.use('/api/config', configRouter);
+app.use('/api/wizard/config', configRouter); // Mount config router under /api/wizard/config for test compatibility
 app.use('/api/install', installRouter);
 app.use('/api/reconfigure', reconfigureRouter); // Reconfigure routes under /api/reconfigure
 app.use('/api/wizard', reconfigureRouter); // Also mount under /api/wizard for current-config and reconfigure endpoints
@@ -123,6 +128,10 @@ app.use('/api/wizard', dashboardIntegrationRouter); // Dashboard integration rou
 app.use('/api/dependencies', dependencyValidationRouter); // Dependency validation routes
 app.use('/api/infrastructure', infrastructureValidationRouter); // Infrastructure validation routes
 app.use('/api/troubleshooting', troubleshootingRouter); // Enhanced troubleshooting routes
+app.use('/api/wizard/config', configModificationRouter); // Configuration modification routes
+app.use('/api/config-templates', configTemplatesRouter); // Configuration templates
+app.use('/api/advanced-config', advancedConfigRouter); // Advanced configuration options
+app.use('/api/wizard', reconfigurationApiRouter); // Reconfiguration API endpoints
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

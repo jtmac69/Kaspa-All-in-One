@@ -353,8 +353,9 @@ runTest('Path with pipe "|" should fail', () => {
 runTest('TimescaleDB data directory should validate', () => {
   const config = {
     TIMESCALEDB_DATA_DIR: '/data/timescaledb',
-    POSTGRES_USER: 'kaspa',
-    POSTGRES_PASSWORD: 'securepassword123'
+    K_SOCIAL_DB_PASSWORD: 'securepassword123',
+    SIMPLY_KASPA_DB_PASSWORD: 'securepassword456',
+    USE_PUBLIC_KASPA_NETWORK: true // Confirm using public network since no local node
   };
   const result = validator.validateConfiguration(config, ['indexer-services']);
   return result.valid === true;
@@ -407,8 +408,8 @@ runTest('Configuration with all profiles should validate', () => {
     KASPA_NETWORK: 'mainnet',
     KASPA_DATA_DIR: '/data/kaspa',
     TIMESCALEDB_DATA_DIR: '/data/timescaledb',
-    POSTGRES_USER: 'kaspa',
-    POSTGRES_PASSWORD: 'securepassword123'
+    K_SOCIAL_DB_PASSWORD: 'securepassword123',
+    SIMPLY_KASPA_DB_PASSWORD: 'securepassword456'
   };
   const result = validator.validateConfiguration(config, ['core', 'indexer-services']);
   return result.valid === true;

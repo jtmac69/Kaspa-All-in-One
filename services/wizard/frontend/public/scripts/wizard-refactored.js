@@ -8,7 +8,7 @@ import { api, WebSocketManager } from './modules/api-client.js';
 import { stateManager } from './modules/state-manager.js';
 import { initNavigation, nextStep, previousStep, goToStep } from './modules/navigation.js';
 import { showNotification, dismissBanner } from './modules/utils.js';
-import { loadConfigurationForm, validateConfiguration, saveConfiguration, initializeProfileSelection, setupDeveloperModeToggle, setupNetworkChangeDetection, setupAdvancedOptionsToggle } from './modules/configure.js';
+import { loadConfigurationForm, validateConfiguration, saveConfiguration, initializeProfileSelection, initializeProfileSelectionWithReconfiguration, setupDeveloperModeToggle, setupNetworkChangeDetection, setupAdvancedOptionsToggle } from './modules/configure.js';
 import { runSystemCheck, showDockerGuide, showComposeGuide, initializeQuiz } from './modules/checklist.js';
 import { runFullSystemCheck, retrySystemCheck } from './modules/system-check.js';
 import { displayConfigurationSummary, validateBeforeInstallation } from './modules/review.js';
@@ -24,6 +24,15 @@ import {
 } from './modules/install.js';
 import { displayValidationResults, runServiceVerification as runValidation } from './modules/complete.js';
 import { checkAndShowResumeDialog, displayBackgroundTaskStatus } from './modules/resume.js';
+import { 
+    initReconfigurationNavigation, 
+    showReconfigurationNavigation, 
+    hideReconfigurationNavigation,
+    updateBreadcrumbs,
+    startOperation,
+    updateOperationProgress,
+    completeOperation
+} from './modules/reconfiguration-navigation.js';
 
 // Initialize WebSocket
 const wsManager = new WebSocketManager();
@@ -209,6 +218,8 @@ function setupEventListeners() {
             setTimeout(() => {
                 import('./modules/configure.js').then(module => {
                     module.setupDeveloperModeToggle();
+                    // Initialize profile selection with reconfiguration support
+                    module.initializeProfileSelectionWithReconfiguration();
                 });
             }, 100);
         }
@@ -339,43 +350,581 @@ async function handleReconfigurationMode(wizardMode) {
     // Update wizard title
     updateWizardTitle('Reconfigure Kaspa All-in-One');
     
-    // Show notification
-    showNotification('Loading existing configuration...', 'info');
+    // Initialize reconfiguration navigation
+    initReconfigurationNavigation();
     
+    // Show reconfiguration navigation
+    showReconfigurationNavigation();
+    
+    // Set initial breadcrumbs
+    updateBreadcrumbs([
+        { id: 'reconfigure-home', title: 'Reconfiguration', description: 'Main reconfiguration options' }
+    ]);
+    
+    // Show reconfiguration landing page
+    await showReconfigurationLanding();
+}
+
+/**
+ * Show reconfiguration landing page
+ */
+async function showReconfigurationLanding() {
+    console.log('Showing reconfiguration landing page');
+    
+    // Show the reconfiguration landing step
+    const landingStep = document.getElementById('step-reconfigure-landing');
+    if (landingStep) {
+        landingStep.style.display = 'block';
+        
+        // Hide other steps
+        document.querySelectorAll('.wizard-step').forEach(step => {
+            if (step.id !== 'step-reconfigure-landing') {
+                step.style.display = 'none';
+            }
+        });
+        
+        // Update progress indicator (hide it for reconfiguration mode)
+        const progressIndicator = document.querySelector('.wizard-progress');
+        if (progressIndicator) {
+            progressIndicator.style.display = 'none';
+        }
+        
+        // Load installation state and profile information
+        await loadReconfigurationData();
+    }
+}
+
+/**
+ * Load reconfiguration data (installation state, profile states, suggestions)
+ */
+async function loadReconfigurationData() {
     try {
-        // Load existing configuration
+        // Show loading state
+        updateInstallationStatus('checking', 'Loading installation details...');
+        
+        // Load profile states
+        const response = await api.get('/wizard/profiles/state');
+        
+        if (response.success) {
+            // Update installation summary
+            updateInstallationSummary(response);
+            
+            // Update profile status overview
+            updateProfileStatusOverview(response.profiles);
+            
+            // Update configuration suggestions
+            updateConfigurationSuggestions(response.suggestions);
+            
+            // Update installation status
+            const statusText = `${response.runningServicesCount} of ${response.totalServicesCount} services running`;
+            const statusType = response.runningServicesCount === response.totalServicesCount ? 'healthy' : 
+                              response.runningServicesCount > 0 ? 'warning' : 'error';
+            updateInstallationStatus(statusType, statusText);
+            
+            // Show installation details
+            const detailsSection = document.getElementById('installation-details');
+            if (detailsSection) {
+                detailsSection.style.display = 'block';
+            }
+            
+            // Show profile status overview if there are profiles
+            if (response.profiles && response.profiles.length > 0) {
+                const overviewSection = document.getElementById('profile-status-overview');
+                if (overviewSection) {
+                    overviewSection.style.display = 'block';
+                }
+            }
+            
+            // Show suggestions if there are any
+            if (response.suggestions && response.suggestions.length > 0) {
+                const suggestionsSection = document.getElementById('configuration-suggestions');
+                if (suggestionsSection) {
+                    suggestionsSection.style.display = 'block';
+                }
+            }
+            
+            // Store data in state for later use
+            stateManager.set('reconfigurationData', response);
+            
+        } else {
+            updateInstallationStatus('error', 'Failed to load installation data');
+            showNotification('Failed to load installation data: ' + response.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error loading reconfiguration data:', error);
+        updateInstallationStatus('error', 'Error loading installation data');
+        showNotification('Error loading installation data', 'error');
+    }
+}
+
+/**
+ * Update installation summary display
+ */
+function updateInstallationSummary(data) {
+    // Update summary text
+    const summaryText = document.getElementById('installation-summary-text');
+    if (summaryText) {
+        const installedCount = data.installedProfiles.length;
+        const totalProfiles = data.profiles.length;
+        summaryText.textContent = `${installedCount} of ${totalProfiles} profiles installed`;
+    }
+    
+    // Update detail values
+    const installationDate = document.getElementById('installation-date');
+    if (installationDate && data.installationDate) {
+        installationDate.textContent = new Date(data.installationDate).toLocaleDateString();
+    }
+    
+    const lastModifiedDate = document.getElementById('last-modified-date');
+    if (lastModifiedDate && data.lastModified) {
+        lastModifiedDate.textContent = new Date(data.lastModified).toLocaleDateString();
+    } else if (lastModifiedDate) {
+        lastModifiedDate.textContent = 'Never';
+    }
+    
+    const runningServicesCount = document.getElementById('running-services-count');
+    if (runningServicesCount) {
+        runningServicesCount.textContent = `${data.runningServicesCount}/${data.totalServicesCount}`;
+    }
+    
+    const installationVersion = document.getElementById('installation-version');
+    if (installationVersion) {
+        installationVersion.textContent = data.version || 'Unknown';
+    }
+}
+
+/**
+ * Update installation status indicator
+ */
+function updateInstallationStatus(type, text) {
+    const statusIndicator = document.querySelector('#installation-status .status-indicator');
+    const statusText = document.querySelector('#installation-status .status-text');
+    
+    if (statusIndicator) {
+        statusIndicator.className = `status-indicator ${type}`;
+    }
+    
+    if (statusText) {
+        statusText.textContent = text;
+    }
+}
+
+/**
+ * Update profile status overview
+ */
+function updateProfileStatusOverview(profileStates) {
+    const grid = document.getElementById('profile-status-grid');
+    if (!grid || !profileStates) return;
+    
+    grid.innerHTML = '';
+    
+    profileStates.forEach(profile => {
+        const card = document.createElement('div');
+        card.className = `profile-status-card ${profile.installationState}`;
+        
+        const statusIcon = getProfileStatusIcon(profile);
+        const statusBadge = getProfileStatusBadge(profile);
+        
+        card.innerHTML = `
+            <div class="profile-status-icon">${statusIcon}</div>
+            <div class="profile-status-content">
+                <div class="profile-status-name">${profile.name}</div>
+                <div class="profile-status-description">${profile.description}</div>
+            </div>
+            <div class="profile-status-badge ${profile.installationState}">
+                ${statusBadge}
+            </div>
+        `;
+        
+        grid.appendChild(card);
+    });
+}
+
+/**
+ * Get profile status icon
+ */
+function getProfileStatusIcon(profile) {
+    const icons = {
+        'core': '⚡',
+        'kaspa-user-applications': '📱',
+        'indexer-services': '🔍',
+        'archive-node': '📚',
+        'mining': '⛏️'
+    };
+    return icons[profile.id] || '⚙️';
+}
+
+/**
+ * Get profile status badge text
+ */
+function getProfileStatusBadge(profile) {
+    switch (profile.installationState) {
+        case 'installed':
+            return profile.status === 'running' ? '✓ Running' : '✓ Installed';
+        case 'partial':
+            return '⚠ Partial';
+        case 'not-installed':
+            return 'Not Installed';
+        default:
+            return 'Unknown';
+    }
+}
+
+/**
+ * Update configuration suggestions
+ */
+function updateConfigurationSuggestions(suggestions) {
+    const list = document.getElementById('suggestions-list');
+    if (!list || !suggestions || suggestions.length === 0) return;
+    
+    list.innerHTML = '';
+    
+    suggestions.forEach(suggestion => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.onclick = () => applySuggestion(suggestion);
+        
+        const priorityIcon = getPriorityIcon(suggestion.priority);
+        
+        item.innerHTML = `
+            <div class="suggestion-icon">${priorityIcon}</div>
+            <div class="suggestion-content">
+                <div class="suggestion-title">${suggestion.title}</div>
+                <div class="suggestion-description">${suggestion.description}</div>
+            </div>
+            <a href="#" class="suggestion-action" onclick="event.stopPropagation(); applySuggestion('${suggestion.id}')">
+                Apply →
+            </a>
+        `;
+        
+        list.appendChild(item);
+    });
+}
+
+/**
+ * Get priority icon for suggestions
+ */
+function getPriorityIcon(priority) {
+    switch (priority) {
+        case 'high': return '🔴';
+        case 'medium': return '🟡';
+        case 'low': return '🟢';
+        default: return '💡';
+    }
+}
+
+/**
+ * Select reconfiguration action
+ */
+function selectReconfigurationAction(action) {
+    // Remove previous selections
+    document.querySelectorAll('.action-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Select current action
+    const actionCard = document.getElementById(`${action}-action`);
+    if (actionCard) {
+        actionCard.classList.add('selected');
+    }
+    
+    // Store selected action
+    stateManager.set('reconfigurationAction', action);
+    
+    // Enable continue button
+    const continueBtn = document.getElementById('reconfigure-continue-btn');
+    if (continueBtn) {
+        continueBtn.disabled = false;
+    }
+}
+
+/**
+ * Proceed with selected reconfiguration action
+ */
+function proceedWithReconfiguration() {
+    const selectedAction = stateManager.get('reconfigurationAction');
+    
+    if (!selectedAction) {
+        showNotification('Please select a reconfiguration option', 'warning');
+        return;
+    }
+    
+    // Store reconfiguration mode context
+    stateManager.set('wizardMode', 'reconfigure');
+    stateManager.set('reconfigurationContext', selectedAction);
+    
+    // Update breadcrumbs based on selected action
+    const actionBreadcrumbs = {
+        'add-profiles': [
+            { id: 'reconfigure-home', title: 'Reconfiguration', description: 'Main reconfiguration options' },
+            { id: 'add-profiles', title: 'Add Profiles', description: 'Select new profiles to install' }
+        ],
+        'modify-config': [
+            { id: 'reconfigure-home', title: 'Reconfiguration', description: 'Main reconfiguration options' },
+            { id: 'modify-config', title: 'Modify Configuration', description: 'Change existing settings' }
+        ],
+        'remove-profiles': [
+            { id: 'reconfigure-home', title: 'Reconfiguration', description: 'Main reconfiguration options' },
+            { id: 'remove-profiles', title: 'Remove Profiles', description: 'Uninstall existing profiles' }
+        ]
+    };
+    
+    updateBreadcrumbs(actionBreadcrumbs[selectedAction]);
+    
+    // Start operation tracking
+    const operationConfigs = {
+        'add-profiles': {
+            id: 'add-profiles-operation',
+            type: 'Profile Addition',
+            title: 'Adding New Profiles',
+            steps: [
+                { title: 'Profile Selection', description: 'Choose profiles to install' },
+                { title: 'Configuration', description: 'Configure new services' },
+                { title: 'Validation', description: 'Validate configuration changes' },
+                { title: 'Installation', description: 'Install and start new services' },
+                { title: 'Verification', description: 'Verify services are running correctly' }
+            ]
+        },
+        'modify-config': {
+            id: 'modify-config-operation',
+            type: 'Configuration Modification',
+            title: 'Modifying Configuration',
+            steps: [
+                { title: 'Load Current Config', description: 'Load existing configuration' },
+                { title: 'Modify Settings', description: 'Update configuration values' },
+                { title: 'Validation', description: 'Validate configuration changes' },
+                { title: 'Apply Changes', description: 'Apply new configuration' },
+                { title: 'Restart Services', description: 'Restart affected services' }
+            ]
+        },
+        'remove-profiles': {
+            id: 'remove-profiles-operation',
+            type: 'Profile Removal',
+            title: 'Removing Profiles',
+            steps: [
+                { title: 'Profile Selection', description: 'Choose profiles to remove' },
+                { title: 'Data Options', description: 'Choose what to do with data' },
+                { title: 'Backup Creation', description: 'Create backup before removal' },
+                { title: 'Service Shutdown', description: 'Stop services gracefully' },
+                { title: 'Cleanup', description: 'Remove services and configuration' }
+            ]
+        }
+    };
+    
+    startOperation(operationConfigs[selectedAction]);
+    
+    switch (selectedAction) {
+        case 'add-profiles':
+            // Go to profile selection with context to show available profiles
+            goToProfileSelection('add');
+            break;
+        case 'modify-config':
+            // Go to configuration step with current config loaded
+            goToConfiguration('modify');
+            break;
+        case 'remove-profiles':
+            // Go to profile selection with context to show installed profiles for removal
+            goToProfileSelection('remove');
+            break;
+        default:
+            showNotification('Unknown reconfiguration action', 'error');
+    }
+}
+
+/**
+ * Go to profile selection with reconfiguration context
+ */
+function goToProfileSelection(context) {
+    // Update progress
+    updateOperationProgress(20, 'Loading profile selection...', 0);
+    
+    // Update breadcrumbs
+    const currentBreadcrumbs = stateManager.get('breadcrumbs') || [];
+    const newBreadcrumbs = [...currentBreadcrumbs];
+    
+    if (context === 'add') {
+        newBreadcrumbs.push({ id: 'profile-selection', title: 'Select Profiles', description: 'Choose profiles to add' });
+    } else if (context === 'remove') {
+        newBreadcrumbs.push({ id: 'profile-selection', title: 'Select Profiles', description: 'Choose profiles to remove' });
+    }
+    
+    updateBreadcrumbs(newBreadcrumbs);
+    
+    // Show profile selection step
+    goToStep(5); // Assuming step 5 is profile selection
+    
+    // Set context for profile selection
+    stateManager.set('profileSelectionContext', context);
+    
+    // Update profile selection UI based on context
+    updateProfileSelectionForReconfiguration(context);
+    
+    // Update progress
+    updateOperationProgress(40, 'Profile selection ready', 0);
+}
+
+/**
+ * Go to configuration with reconfiguration context
+ */
+function goToConfiguration(context) {
+    // Update progress
+    updateOperationProgress(20, 'Loading existing configuration...', 0);
+    
+    // Load existing configuration first
+    loadExistingConfiguration().then(() => {
+        // Update breadcrumbs
+        const currentBreadcrumbs = stateManager.get('breadcrumbs') || [];
+        const newBreadcrumbs = [...currentBreadcrumbs];
+        newBreadcrumbs.push({ id: 'configuration', title: 'Configuration', description: 'Modify service settings' });
+        updateBreadcrumbs(newBreadcrumbs);
+        
+        // Show configuration step
+        goToStep(6); // Assuming step 6 is configuration
+        
+        // Set context for configuration
+        stateManager.set('configurationContext', context);
+        
+        // Update progress
+        updateOperationProgress(40, 'Configuration loaded, ready for modifications', 0);
+    }).catch(error => {
+        console.error('Failed to load configuration:', error);
+        completeOperation(false, 'Failed to load existing configuration');
+    });
+}
+
+/**
+ * Load existing configuration for modification
+ */
+async function loadExistingConfiguration() {
+    try {
         const response = await api.get('/wizard/current-config');
         
         if (response.success) {
-            // Store existing configuration in state
+            // Store existing configuration
             stateManager.set('existingConfig', response.config);
             stateManager.set('existingProfiles', response.profiles);
-            stateManager.set('existingInstallationState', response.installationState);
             
-            // Pre-populate wizard with existing configuration
-            if (response.profiles && response.profiles.length > 0) {
-                stateManager.set('selectedProfiles', response.profiles);
-            }
-            
-            if (response.config) {
-                stateManager.set('configuration', response.config);
-            }
+            // Pre-populate configuration form
+            populateConfigurationForm(response.config);
             
             showNotification('Configuration loaded successfully', 'success');
-            
-            // Start from profile selection step (skip welcome and system check)
-            goToStep(3); // Step 3 is typically profile selection
         } else {
             showNotification('Failed to load configuration: ' + response.error, 'error');
-            // Fall back to initial mode
-            await handleInitialMode(wizardMode);
         }
     } catch (error) {
         console.error('Error loading configuration:', error);
-        showNotification('Failed to load configuration', 'error');
-        // Fall back to initial mode
-        await handleInitialMode(wizardMode);
+        showNotification('Error loading configuration', 'error');
     }
+}
+
+/**
+ * Update profile selection UI for reconfiguration context
+ */
+function updateProfileSelectionForReconfiguration(context) {
+    // The new implementation handles this in initializeProfileSelectionWithReconfiguration
+    // This function is kept for backward compatibility
+    console.log('Profile selection context updated:', context);
+}
+
+/**
+ * Update profile cards with installation state indicators
+ */
+function updateProfileCardsForReconfiguration(context, reconfigData) {
+    const profileCards = document.querySelectorAll('.profile-card');
+    
+    profileCards.forEach(card => {
+        const profileId = card.dataset.profile;
+        const profileState = reconfigData.profiles.find(p => p.id === profileId);
+        
+        if (profileState) {
+            // Add installation state class
+            card.classList.add(`profile-${profileState.installationState}`);
+            
+            // Add installation state indicator
+            let indicator = card.querySelector('.profile-installation-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.className = 'profile-installation-indicator';
+                card.appendChild(indicator);
+            }
+            
+            // Update indicator based on context and state
+            if (context === 'add' && profileState.installationState === 'installed') {
+                indicator.innerHTML = '<span class="installed-badge">✓ Installed</span>';
+                card.classList.add('profile-disabled');
+            } else if (context === 'remove' && profileState.installationState === 'not-installed') {
+                indicator.innerHTML = '<span class="not-installed-badge">Not Installed</span>';
+                card.classList.add('profile-disabled');
+            } else if (profileState.installationState === 'installed') {
+                indicator.innerHTML = '<span class="installed-badge">✓ Installed</span>';
+            } else if (profileState.installationState === 'partial') {
+                indicator.innerHTML = '<span class="partial-badge">⚠ Partial</span>';
+            }
+        }
+    });
+}
+
+/**
+ * Apply a configuration suggestion
+ */
+function applySuggestion(suggestionId) {
+    const reconfigData = stateManager.get('reconfigurationData');
+    if (!reconfigData || !reconfigData.suggestions) return;
+    
+    const suggestion = reconfigData.suggestions.find(s => s.id === suggestionId);
+    if (!suggestion) return;
+    
+    // Store suggestion context
+    stateManager.set('appliedSuggestion', suggestion);
+    
+    // Apply the suggestion based on its action
+    switch (suggestion.action) {
+        case 'add-profiles':
+            selectReconfigurationAction('add-profiles');
+            proceedWithReconfiguration();
+            break;
+        case 'modify-config':
+            selectReconfigurationAction('modify-config');
+            proceedWithReconfiguration();
+            break;
+        default:
+            showNotification('Suggestion applied', 'success');
+    }
+}
+
+/**
+ * Go to initial installation mode
+ */
+function goToInitialMode() {
+    // Clear reconfiguration state
+    stateManager.remove('reconfigurationData');
+    stateManager.remove('reconfigurationAction');
+    stateManager.remove('reconfigurationContext');
+    
+    // Show progress indicator again
+    const progressIndicator = document.querySelector('.wizard-progress');
+    if (progressIndicator) {
+        progressIndicator.style.display = 'block';
+    }
+    
+    // Go to welcome step
+    goToStep(1);
+    
+    // Update title
+    updateWizardTitle('Kaspa All-in-One Installation Wizard');
+}
+
+/**
+ * Handle reconfiguration mode
+ */
+async function handleReconfigurationMode(wizardMode) {
+    console.log('Handling reconfiguration mode');
+    
+    // Update wizard title
+    updateWizardTitle('Reconfigure Kaspa All-in-One');
+    
+    // Show reconfiguration landing page
+    await showReconfigurationLanding();
 }
 
 /**

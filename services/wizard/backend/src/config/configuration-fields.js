@@ -189,6 +189,25 @@ const PROFILE_CONFIG_FIELDS = {
 
   'kaspa-user-applications': [
     {
+      key: 'INDEXER_CONNECTION_MODE',
+      label: 'Indexer Connection Mode',
+      type: 'select',
+      defaultValue: 'auto',
+      required: true,
+      options: ['auto', 'local', 'public', 'mixed'],
+      validation: [
+        {
+          type: 'enum',
+          values: ['auto', 'local', 'public', 'mixed'],
+          message: 'Must be one of: auto, local, public, mixed'
+        }
+      ],
+      tooltip: 'How applications connect to indexers: auto (detect local), local (force local), public (force public), mixed (per-service configuration)',
+      category: 'basic',
+      group: 'indexer-endpoints',
+      visibleForProfiles: ['kaspa-user-applications']
+    },
+    {
       key: 'REMOTE_KASIA_INDEXER_URL',
       label: 'Kasia Indexer URL',
       type: 'text',
@@ -205,6 +224,26 @@ const PROFILE_CONFIG_FIELDS = {
       category: 'basic',
       group: 'indexer-endpoints',
       visibleForProfiles: ['kaspa-user-applications']
+    },
+    {
+      key: 'KASIA_INDEXER_CONNECTION',
+      label: 'Kasia Indexer Connection',
+      type: 'select',
+      defaultValue: 'auto',
+      required: false,
+      options: ['auto', 'local', 'public'],
+      validation: [
+        {
+          type: 'enum',
+          values: ['auto', 'local', 'public'],
+          message: 'Must be one of: auto, local, public'
+        }
+      ],
+      tooltip: 'Connection preference for Kasia indexer (only visible in mixed mode)',
+      category: 'advanced',
+      group: 'indexer-endpoints',
+      visibleForProfiles: ['kaspa-user-applications'],
+      dependsOn: { field: 'INDEXER_CONNECTION_MODE', value: 'mixed' }
     },
     {
       key: 'REMOTE_KSOCIAL_INDEXER_URL',
@@ -225,6 +264,26 @@ const PROFILE_CONFIG_FIELDS = {
       visibleForProfiles: ['kaspa-user-applications']
     },
     {
+      key: 'KSOCIAL_INDEXER_CONNECTION',
+      label: 'K-Social Indexer Connection',
+      type: 'select',
+      defaultValue: 'auto',
+      required: false,
+      options: ['auto', 'local', 'public'],
+      validation: [
+        {
+          type: 'enum',
+          values: ['auto', 'local', 'public'],
+          message: 'Must be one of: auto, local, public'
+        }
+      ],
+      tooltip: 'Connection preference for K-Social indexer (only visible in mixed mode)',
+      category: 'advanced',
+      group: 'indexer-endpoints',
+      visibleForProfiles: ['kaspa-user-applications'],
+      dependsOn: { field: 'INDEXER_CONNECTION_MODE', value: 'mixed' }
+    },
+    {
       key: 'REMOTE_KASPA_NODE_WBORSH_URL',
       label: 'Kaspa Node WebSocket URL',
       type: 'text',
@@ -241,6 +300,26 @@ const PROFILE_CONFIG_FIELDS = {
       category: 'basic',
       group: 'indexer-endpoints',
       visibleForProfiles: ['kaspa-user-applications']
+    },
+    {
+      key: 'KASPA_NODE_CONNECTION',
+      label: 'Kaspa Node Connection',
+      type: 'select',
+      defaultValue: 'auto',
+      required: false,
+      options: ['auto', 'local', 'public'],
+      validation: [
+        {
+          type: 'enum',
+          values: ['auto', 'local', 'public'],
+          message: 'Must be one of: auto, local, public'
+        }
+      ],
+      tooltip: 'Connection preference for Kaspa node (only visible in mixed mode)',
+      category: 'advanced',
+      group: 'indexer-endpoints',
+      visibleForProfiles: ['kaspa-user-applications'],
+      dependsOn: { field: 'INDEXER_CONNECTION_MODE', value: 'mixed' }
     }
   ],
 
@@ -358,6 +437,226 @@ const PROFILE_CONFIG_FIELDS = {
       visibleForProfiles: ['core', 'archive-node']
     },
     {
+      key: 'WALLET_ENABLED',
+      label: 'Enable Wallet',
+      type: 'boolean',
+      defaultValue: false,
+      required: false,
+      validation: [],
+      tooltip: 'Enable wallet functionality for this installation',
+      category: 'basic',
+      group: 'wallet',
+      visibleForProfiles: ['core', 'archive-node', 'mining']
+    },
+    {
+      key: 'WALLET_MODE',
+      label: 'Wallet Mode',
+      type: 'select',
+      defaultValue: 'create',
+      required: false,
+      options: ['create', 'import', 'existing'],
+      validation: [
+        {
+          type: 'enum',
+          values: ['create', 'import', 'existing'],
+          message: 'Must be one of: create, import, existing'
+        }
+      ],
+      tooltip: 'How to set up the wallet: create new, import from seed, or use existing',
+      category: 'basic',
+      group: 'wallet',
+      visibleForProfiles: ['core', 'archive-node', 'mining'],
+      dependsOn: { field: 'WALLET_ENABLED', value: true }
+    },
+    {
+      key: 'WALLET_SEED_PHRASE',
+      label: 'Wallet Seed Phrase',
+      type: 'textarea',
+      defaultValue: '',
+      required: false,
+      validation: [
+        {
+          type: 'pattern',
+          pattern: /^(\w+\s+){11}\w+$|^(\w+\s+){23}\w+$/,
+          message: 'Must be a valid 12 or 24 word seed phrase'
+        }
+      ],
+      tooltip: 'Enter your 12 or 24 word seed phrase (only for import mode)',
+      category: 'basic',
+      group: 'wallet',
+      visibleForProfiles: ['core', 'archive-node', 'mining'],
+      dependsOn: { field: 'WALLET_MODE', value: 'import' }
+    },
+    {
+      key: 'WALLET_PASSWORD',
+      label: 'Wallet Password',
+      type: 'password',
+      defaultValue: '',
+      required: false,
+      validation: [
+        {
+          type: 'walletPassword',
+          message: 'Wallet password must meet security requirements'
+        }
+      ],
+      tooltip: 'Password to encrypt the wallet (leave empty for no password)',
+      category: 'basic',
+      group: 'wallet',
+      visibleForProfiles: ['core', 'archive-node', 'mining'],
+      dependsOn: { field: 'WALLET_ENABLED', value: true }
+    },
+    {
+      key: 'WALLET_FILE',
+      label: 'Wallet File',
+      type: 'file',
+      defaultValue: '',
+      required: false,
+      validation: [
+        {
+          type: 'pattern',
+          pattern: /\.(json|dat|wallet)$/i,
+          message: 'Must be a valid wallet file (.json, .dat, or .wallet)'
+        }
+      ],
+      tooltip: 'Upload wallet file for import (only for import mode)',
+      category: 'basic',
+      group: 'wallet',
+      visibleForProfiles: ['core', 'archive-node', 'mining'],
+      dependsOn: { field: 'WALLET_MODE', value: 'import' }
+    },
+    {
+      key: 'WALLET_PRIVATE_KEY',
+      label: 'Private Key',
+      type: 'password',
+      defaultValue: '',
+      required: false,
+      validation: [
+        {
+          type: 'pattern',
+          pattern: /^[0-9a-fA-F]{64}$/,
+          message: 'Must be a 64-character hexadecimal private key'
+        }
+      ],
+      tooltip: 'Private key for wallet import (alternative to seed phrase)',
+      category: 'advanced',
+      group: 'wallet',
+      visibleForProfiles: ['core', 'archive-node', 'mining'],
+      dependsOn: { field: 'WALLET_MODE', value: 'import' }
+    },
+    {
+      key: 'WALLET_PATH',
+      label: 'Wallet Path',
+      type: 'text',
+      defaultValue: '/data/wallet',
+      required: false,
+      validation: [
+        {
+          type: 'path',
+          message: 'Must be a valid path'
+        }
+      ],
+      tooltip: 'Container path for wallet data storage',
+      category: 'advanced',
+      group: 'wallet',
+      visibleForProfiles: ['core', 'archive-node', 'mining'],
+      dependsOn: { field: 'WALLET_ENABLED', value: true }
+    },
+    {
+      key: 'MINING_ADDRESS',
+      label: 'Mining Address',
+      type: 'text',
+      defaultValue: '',
+      required: true,
+      validation: [
+        {
+          type: 'kaspaAddress',
+          message: 'Must be a valid Kaspa address'
+        }
+      ],
+      tooltip: 'Kaspa address to receive mining rewards',
+      category: 'basic',
+      group: 'wallet',
+      visibleForProfiles: ['mining']
+    },
+    {
+      key: 'KASIA_INDEXER_URL',
+      label: 'Kasia Indexer URL',
+      type: 'text',
+      defaultValue: '',
+      required: false,
+      validation: [
+        {
+          type: 'url',
+          protocols: ['http', 'https'],
+          message: 'Must be a valid HTTP or HTTPS URL'
+        }
+      ],
+      tooltip: 'Custom URL for Kasia indexer (for mixed indexer configurations)',
+      category: 'advanced',
+      group: 'indexer-endpoints',
+      visibleForProfiles: ['kaspa-user-applications']
+    },
+    {
+      key: 'K_INDEXER_URL',
+      label: 'K-Indexer URL',
+      type: 'text',
+      defaultValue: '',
+      required: false,
+      validation: [
+        {
+          type: 'url',
+          protocols: ['http', 'https'],
+          message: 'Must be a valid HTTP or HTTPS URL'
+        }
+      ],
+      tooltip: 'Custom URL for K-Indexer (for mixed indexer configurations)',
+      category: 'advanced',
+      group: 'indexer-endpoints',
+      visibleForProfiles: ['kaspa-user-applications']
+    },
+    {
+      key: 'SIMPLY_KASPA_INDEXER_URL',
+      label: 'Simply Kaspa Indexer URL',
+      type: 'text',
+      defaultValue: '',
+      required: false,
+      validation: [
+        {
+          type: 'url',
+          protocols: ['http', 'https'],
+          message: 'Must be a valid HTTP or HTTPS URL'
+        }
+      ],
+      tooltip: 'Custom URL for Simply Kaspa Indexer (for mixed indexer configurations)',
+      category: 'advanced',
+      group: 'indexer-endpoints',
+      visibleForProfiles: ['kaspa-user-applications']
+    },
+    {
+      key: 'USE_PUBLIC_KASPA_NETWORK',
+      label: 'Use Public Kaspa Network',
+      type: 'boolean',
+      defaultValue: false,
+      required: false,
+      validation: [],
+      tooltip: 'Allow indexer services to connect to public Kaspa network when no local node is available',
+      category: 'advanced',
+      group: 'network',
+      visibleForProfiles: ['indexer-services']
+    },
+    {
+      key: 'MIXED_INDEXER_CONFIRMED',
+      label: 'Mixed Indexer Configuration Confirmed',
+      type: 'boolean',
+      defaultValue: false,
+      required: false,
+      validation: [],
+      tooltip: 'Confirmation that mixed indexer configuration (some local, some public) is intentional',
+      category: 'advanced',
+      group: 'indexer-endpoints',
+      visibleForProfiles: ['kaspa-user-applications']
+    },
+    {
       key: 'CUSTOM_ENV_VARS',
       label: 'Custom Environment Variables',
       type: 'textarea',
@@ -368,6 +667,25 @@ const PROFILE_CONFIG_FIELDS = {
       category: 'advanced',
       group: 'advanced',
       // Available for all profiles - advanced users may need custom env vars for any service
+      visibleForProfiles: ['core', 'archive-node', 'kaspa-user-applications', 'indexer-services', 'mining']
+    },
+    {
+      key: 'CONFIGURATION_TEMPLATE',
+      label: 'Configuration Template',
+      type: 'select',
+      defaultValue: 'custom',
+      required: false,
+      options: ['custom', 'home-node', 'public-node', 'developer', 'mining-rig', 'full-stack'],
+      validation: [
+        {
+          type: 'enum',
+          values: ['custom', 'home-node', 'public-node', 'developer', 'mining-rig', 'full-stack'],
+          message: 'Must be a valid template'
+        }
+      ],
+      tooltip: 'Pre-configured template to apply (will override current settings)',
+      category: 'advanced',
+      group: 'templates',
       visibleForProfiles: ['core', 'archive-node', 'kaspa-user-applications', 'indexer-services', 'mining']
     }
   ]
@@ -425,12 +743,26 @@ const FIELD_GROUPS = {
     icon: 'database',
     order: 4
   },
+  wallet: {
+    id: 'wallet',
+    label: 'Wallet & Mining',
+    description: 'Wallet configuration and mining settings',
+    icon: 'wallet',
+    order: 5
+  },
+  templates: {
+    id: 'templates',
+    label: 'Configuration Templates',
+    description: 'Pre-configured templates and presets',
+    icon: 'template',
+    order: 6
+  },
   advanced: {
     id: 'advanced',
     label: 'Advanced Settings',
     description: 'Additional configuration options',
     icon: 'settings',
-    order: 5
+    order: 7
   }
 };
 

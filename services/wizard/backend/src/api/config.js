@@ -12,7 +12,12 @@ const configValidator = new ConfigurationValidator();
 // POST /api/config/validate - Validate configuration (enhanced for task 4.1)
 router.post('/validate', async (req, res) => {
   try {
-    const { config, profiles, previousConfig } = req.body;
+    let { config, profiles, previousConfig, environment } = req.body;
+    
+    // Handle different request formats for backward compatibility
+    if (!config && environment) {
+      config = environment; // Support legacy format
+    }
     
     if (!config || !Array.isArray(profiles)) {
       return res.status(400).json({
@@ -21,14 +26,8 @@ router.post('/validate', async (req, res) => {
       });
     }
     
-    // Use the comprehensive validator (task 4.1)
-    const result = configValidator.validateConfiguration(config, profiles);
-    
-    // Add network change warnings if previous config provided (task 4.1)
-    if (previousConfig) {
-      const networkWarnings = configValidator.validateNetworkChange(config, previousConfig);
-      result.warnings.push(...networkWarnings);
-    }
+    // Use the comprehensive validator with previousConfig support (task 10.4)
+    const result = configValidator.validateConfiguration(config, profiles, previousConfig);
     
     // Add validation summary (task 4.1)
     const summary = configValidator.getValidationSummary(config, profiles);
@@ -289,14 +288,9 @@ router.post('/validate-complete', (req, res) => {
         message: 'config object and profiles array are required'
       });
     }
-    
-    const result = configValidator.validateConfiguration(config, profiles);
-    
-    // Add network change warnings if previous config provided
-    if (previousConfig) {
-      const networkWarnings = configValidator.validateNetworkChange(config, previousConfig);
-      result.warnings.push(...networkWarnings);
-    }
+
+    // Use the comprehensive validator with previousConfig support (task 10.4)
+    const result = configValidator.validateConfiguration(config, profiles, previousConfig);
     
     const summary = configValidator.getValidationSummary(config, profiles);
     

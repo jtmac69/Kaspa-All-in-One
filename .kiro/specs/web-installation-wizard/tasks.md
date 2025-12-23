@@ -250,13 +250,13 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Implement Kaspa gradient themes and visual elements
   - _Requirements: 9.1, 9.2, 9.3, 9.4_
 
-- [ ] 8. Implement Reconfiguration Mode Features
+- [x] 8. Implement Reconfiguration Mode Features
   - Add reconfiguration mode entry point and navigation
   - Implement profile state detection and display
   - Add profile management workflows (add, remove, modify)
   - _Requirements: 16, 17, 18_
 
-- [ ] 8.1 Create Reconfiguration Mode Landing Page
+- [x] 8.1 Create Reconfiguration Mode Landing Page
   - Add /reconfigure route with dedicated landing page
   - Display explanation of reconfiguration options
   - Show "Currently Installed" vs "Available to Add" profile sections
@@ -265,7 +265,7 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Implement navigation to profile selection with mode context
   - _Requirements: 16.1, 16.2, 16.3, 16.4_
 
-- [ ] 8.2 Implement Profile State Detection System
+- [x] 8.2 Implement Profile State Detection System
   - Create ProfileStateManager class to detect installed profiles
   - Check docker-compose.yml for active services
   - Check .env file for profile-specific configurations
@@ -274,7 +274,7 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Cache profile state with periodic refresh
   - _Requirements: 16.5, 16.6, 17.1, 17.2_
 
-- [ ] 8.3 Enhance Profile Selection for Reconfiguration Mode
+- [x] 8.3 Enhance Profile Selection for Reconfiguration Mode
   - Update profile selection page to show installation status
   - Add separate sections for "Currently Installed" and "Available to Add"
   - Implement different visual styling for installed profiles
@@ -283,7 +283,7 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Add confirmation dialogs for removal operations
   - _Requirements: 16.7, 16.8, 17.3, 17.4, 17.5_
 
-- [ ] 8.4 Implement Profile Addition Workflow
+- [x] 8.4 Implement Profile Addition Workflow
   - Allow selection of new profiles to add to existing installation
   - Show integration options with existing profiles
   - Configure indexer connections (local node vs public network)
@@ -292,7 +292,7 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Implement service integration testing
   - _Requirements: 17.6, 17.7, 17.8, 18.1, 18.2_
 
-- [ ] 8.5 Implement Profile Removal Workflow
+- [x] 8.5 Implement Profile Removal Workflow
   - Add profile removal confirmation with impact explanation
   - Offer data retention vs deletion options
   - Show dependent services that will be affected
@@ -301,8 +301,9 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Update docker-compose.yml to remove services
   - Create backup before removal operations
   - _Requirements: 17.9, 17.10, 17.11, 17.12, 18.3, 18.4_
+  - **Status: COMPLETED** ✅
 
-- [ ] 8.6 Implement Configuration Modification Workflow
+- [x] 8.6 Implement Configuration Modification Workflow
   - Allow modification of existing profile configurations
   - Pre-populate forms with current configuration values
   - Show configuration change impact and required restarts
@@ -312,7 +313,7 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Apply changes with minimal service disruption
   - _Requirements: 17.13, 17.14, 17.15, 18.5, 18.6, 18.7, 18.8_
 
-- [ ] 8.7 Implement Advanced Configuration Options
+- [x] 8.7 Implement Advanced Configuration Options
   - Add indexer connection flexibility (mixed local/public)
   - Support partial indexer configurations
   - Allow switching between indexer endpoints
@@ -321,7 +322,7 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Implement configuration templates and presets
   - _Requirements: 18.9, 18.10, 18.11, 18.12_
 
-- [ ] 8.8 Add Reconfiguration Mode Navigation and UX
+- [x] 8.8 Add Reconfiguration Mode Navigation and UX
   - Update main navigation to include reconfiguration entry
   - Add breadcrumb navigation for reconfiguration flows
   - Implement progress indicators for multi-step operations
@@ -330,7 +331,7 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Add operation history and rollback options
   - _Requirements: 16.9, 17.16, 18.13_
 
-- [ ] 8.9 Implement Reconfiguration API Endpoints
+- [x] 8.9 Implement Reconfiguration API Endpoints
   - Add GET /api/wizard/profiles/status endpoint
   - Add POST /api/wizard/profiles/add endpoint
   - Add DELETE /api/wizard/profiles/remove endpoint
@@ -340,7 +341,7 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Implement operation progress tracking
   - _Requirements: 16.10, 17.17, 18.14_
 
-- [ ] 8.10 Write Tests for Reconfiguration Mode
+- [x] 8.10 Write Tests for Reconfiguration Mode
   - Test profile state detection accuracy
   - Test reconfiguration landing page display
   - Test profile addition with existing installations
@@ -351,7 +352,54 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Test operation rollback and recovery
   - _Requirements: All reconfiguration requirements_
 
-- [ ] 9. Checkpoint - Ensure all tests pass
+- [ ] 10. Fix Critical Reconfiguration Gaps
+  - Address test failures and missing functionality identified in Task 8.10
+  - Standardize API responses and complete validation logic
+  - _Requirements: 4.2, 4.6, 4.7, 16.1-16.6, 17.1-17.3, 18.1_
+
+- [x] 10.1 Standardize Profile State API Responses
+  - Fix `/api/wizard/profiles/state` response format to match test expectations
+  - Implement `/api/wizard/profiles/grouped` with correct structure (installed vs available)
+  - Update ProfileStateManager to return consistent format across all endpoints
+  - Add comprehensive response format tests
+  - Ensure profile state includes: id, name, status, services, dependencies
+  - _Requirements: 16.1-16.6, 17.1-17.2_
+
+- [x] 10.2 Implement Installation State Endpoint
+  - Create `/api/wizard/installation-state` endpoint
+  - Return installation summary with installed profiles and their status
+  - Include service health status and last modified timestamp
+  - Return available reconfiguration actions based on current state
+  - Provide system resource usage and capacity information
+  - _Requirements: 16.1-16.4, 18.1_
+
+- [x] 10.3 Enhance Configuration Validation
+  - Extend `/api/config/validate` to handle all validation scenarios
+  - Add port configuration validation (range, conflicts, availability)
+  - Add mixed indexer configuration validation (local + public combinations)
+  - Add wallet creation validation (password strength, path validation)
+  - Add wallet import validation (file format, key validation)
+  - Add mining wallet validation (address format, node connectivity)
+  - Return specific, actionable error messages for each validation type
+  - _Requirements: 4.2, 4.6, 17.1-17.3_
+
+- [x] 10.4 Fix Network Change Warning Logic
+  - Fix network change detection in configuration validation
+  - Ensure warnings trigger when switching between mainnet and testnet
+  - Add validation to prevent network changes with existing data
+  - Add tests for mainnet/testnet change scenarios
+  - Display clear warning about data incompatibility
+  - _Requirements: 4.7_
+
+- [x] 10.5 Re-run Reconfiguration Tests and Verify
+  - Run `test-reconfiguration-mode.js` to verify fixes
+  - Verify all critical tests pass (target: 85%+ success rate)
+  - Document any remaining failures with justification
+  - Update test expectations if API contracts changed
+  - Create test report showing before/after comparison
+  - _Requirements: All reconfiguration requirements_
+
+- [x] 11. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Implementation Notes

@@ -43,6 +43,21 @@ class DockerManager {
   }
 
   /**
+   * Check if Docker is available and running
+   * @returns {Promise<boolean>} True if Docker is available
+   */
+  async isDockerAvailable() {
+    try {
+      // Try to ping Docker daemon
+      await this.docker.ping();
+      return true;
+    } catch (error) {
+      console.warn('Docker not available:', error.message);
+      return false;
+    }
+  }
+
+  /**
    * Get container names that will be created for the given profiles
    * Used to remove conflicting containers from other projects before starting
    * @param {string[]} profiles - Array of wizard profile names
@@ -458,6 +473,104 @@ class DockerManager {
       return { success: true, output: { stdout, stderr } };
     } catch (error) {
       return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Remove specific services and optionally their data
+   * @param {string[]} serviceNames - Array of service names to remove
+   * @param {Object} options - Removal options
+   * @param {boolean} options.removeData - Whether to remove associated volumes/data
+   * @returns {Promise<Object>} Removal result
+   */
+  async removeServices(serviceNames, options = {}) {
+    try {
+      const { removeData = false } = options;
+      const results = [];
+
+      // Stop and remove containers for each service
+      for (const serviceName of serviceNames) {
+        try {
+          // Stop the service
+          const stopCmd = `cd ${this.projectRoot} && docker compose stop ${serviceName}`;
+          await execAsync(stopCmd);
+
+          // Remove the container
+          const rmCmd = `cd ${this.projectRoot} && docker compose rm -f ${serviceName}`;
+          await execAsync(rmCmd);
+
+          results.push({
+            service: serviceName,
+            success: true,
+            action: 'removed'
+          });
+
+        } catch (error) {
+          // Service might not exist, which is okay for removal
+          if (error.message.includes('No such service') || error.message.includes('not found')) {
+            results.push({
+              service: serviceName,
+              success: true,
+              action: 'not_found',
+              message: 'Service was not running'
+            });
+          } else {
+            results.push({
+              service: serviceName,
+              success: false,
+              error: error.message
+            });
+          }
+        }
+      }
+
+      // Remove volumes if requested
+      if (removeData) {
+        for (const serviceName of serviceNames) {
+          try {
+            // Remove named volumes associated with the service
+            const volumeName = `all-in-one_${serviceName}-data`;
+            const volumeCmd = `docker volume rm ${volumeName} 2>/dev/null || true`;
+            await execAsync(volumeCmd);
+
+            results.push({
+              service: serviceName,
+              success: true,
+              action: 'volume_removed'
+            });
+
+          } catch (error) {
+            // Volume might not exist, which is okay
+            results.push({
+              service: serviceName,
+              success: true,
+              action: 'volume_not_found',
+              message: 'No volume to remove'
+            });
+          }
+        }
+      }
+
+      const allSuccessful = results.every(r => r.success);
+
+      return {
+        success: allSuccessful,
+        results,
+        summary: {
+          total: serviceNames.length,
+          removed: results.filter(r => r.action === 'removed').length,
+          not_found: results.filter(r => r.action === 'not_found').length,
+          failed: results.filter(r => !r.success).length,
+          volumes_removed: removeData ? results.filter(r => r.action === 'volume_removed').length : 0
+        }
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        results: []
+      };
     }
   }
 }

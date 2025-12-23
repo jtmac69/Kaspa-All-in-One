@@ -1,26 +1,24 @@
-/**
- * Backup Manager
- * Comprehensive configuration backup system for wizard reconfiguration and updates
- * Creates timestamped backups of all configuration files
- */
-
 const fs = require('fs').promises;
 const path = require('path');
+const { exec } = require('child_process');
+const { promisify } = require('util');
 
+const execAsync = promisify(exec);
+
+/**
+ * Backup Manager
+ * Handles creation and management of configuration backups
+ * Requirements: 7.4, 13.4, 17.12, 18.4
+ */
 class BackupManager {
   constructor() {
-    // Use PROJECT_ROOT env var, or go up 5 levels from backend/src/utils to project root
-    // Path: backend/src/utils -> backend/src -> backend -> wizard -> services -> project root
     this.projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
     this.backupDir = path.join(this.projectRoot, '.kaspa-backups');
-    this.maxBackups = 20; // Keep last 20 backups
-    
-    console.log(`BackupManager initialized with project root: ${this.projectRoot}`);
-    console.log(`Backup directory: ${this.backupDir}`);
   }
 
   /**
    * Initialize backup directory
+   * @returns {Promise<Object>} Initialization result
    */
   async initialize() {
     try {
@@ -32,54 +30,30 @@ class BackupManager {
   }
 
   /**
-   * Create comprehensive backup of current configuration
-   * Backs up to .kaspa-backups/[timestamp]/
+   * Create a backup of current configuration
+   * @param {string} reason - Reason for backup
+   * @param {Object} metadata - Additional metadata
+   * @returns {Promise<Object>} Backup result
    */
   async createBackup(reason = 'Manual backup', metadata = {}) {
     try {
       await this.initialize();
       
       const timestamp = Date.now();
-      const backupPath = path.join(this.backupDir, timestamp.toString());
+      const backupId = `${timestamp}`;
+      const backupPath = path.join(this.backupDir, backupId);
       
       // Create backup directory
       await fs.mkdir(backupPath, { recursive: true });
       
       const backedUpFiles = [];
-      const errors = [];
+      let totalSize = 0;
       
       // Files to backup
       const filesToBackup = [
-        { 
-          src: '.env', 
-          dest: '.env',
-          required: false,
-          description: 'Environment configuration'
-        },
-        { 
-          src: 'docker-compose.yml', 
-          dest: 'docker-compose.yml',
-          required: false,
-          description: 'Docker Compose configuration'
-        },
-        { 
-          src: 'docker-compose.override.yml', 
-          dest: 'docker-compose.override.yml',
-          required: false,
-          description: 'Docker Compose overrides'
-        },
-        { 
-          src: '.kaspa-aio/installation-state.json', 
-          dest: 'installation-state.json',
-          required: false,
-          description: 'Installation state'
-        },
-        { 
-          src: '.kaspa-aio/wizard-state.json', 
-          dest: 'wizard-state.json',
-          required: false,
-          description: 'Wizard state'
-        }
+        { src: '.env', dest: '.env' },
+        { src: 'docker-compose.yml', dest: 'docker-compose.yml' },
+        { src: '.kaspa-aio/installation-state.json', dest: 'installation-state.json' }
       ];
       
       // Backup each file
@@ -88,42 +62,30 @@ class BackupManager {
         const destPath = path.join(backupPath, file.dest);
         
         try {
-          await fs.access(srcPath);
+          const stats = await fs.stat(srcPath);
           await fs.copyFile(srcPath, destPath);
           
-          // Get file stats
-          const stats = await fs.stat(srcPath);
-          
           backedUpFiles.push({
-            file: file.src,
-            description: file.description,
+            file: file.dest,
             size: stats.size,
-            sizeMB: (stats.size / 1024 / 1024).toFixed(2)
+            originalPath: file.src
           });
+          totalSize += stats.size;
         } catch (error) {
-          if (file.required) {
-            errors.push({ 
-              file: file.src, 
-              error: error.message,
-              description: file.description
-            });
-          }
+          console.warn(`Could not backup ${file.src}:`, error.message);
         }
       }
       
       // Create backup metadata
       const backupMetadata = {
-        backupId: timestamp.toString(),
-        timestamp,
-        date: new Date(timestamp).toISOString(),
+        backupId,
+        timestamp: new Date().toISOString(),
+        date: new Date().toLocaleString(),
         reason,
+        metadata,
         files: backedUpFiles,
-        errors: errors.length > 0 ? errors : undefined,
-        metadata: {
-          ...metadata,
-          createdBy: 'wizard-backup-manager',
-          version: '1.0.0'
-        }
+        totalSize,
+        totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2)
       };
       
       await fs.writeFile(
@@ -131,21 +93,19 @@ class BackupManager {
         JSON.stringify(backupMetadata, null, 2)
       );
       
-      // Cleanup old backups
-      await this.cleanupOldBackups();
-      
       return {
         success: true,
-        backupId: timestamp.toString(),
+        backupId,
         backupPath,
-        timestamp,
-        date: new Date(timestamp).toISOString(),
+        timestamp: backupMetadata.timestamp,
+        date: backupMetadata.date,
         backedUpFiles,
-        errors: errors.length > 0 ? errors : undefined,
-        totalSize: backedUpFiles.reduce((sum, f) => sum + f.size, 0),
-        totalSizeMB: backedUpFiles.reduce((sum, f) => sum + parseFloat(f.sizeMB), 0).toFixed(2)
+        totalSize,
+        totalSizeMB: backupMetadata.totalSizeMB
       };
+      
     } catch (error) {
+      console.error('Error creating backup:', error);
       return {
         success: false,
         error: error.message
@@ -155,144 +115,71 @@ class BackupManager {
 
   /**
    * List all available backups
+   * @param {number} limit - Maximum number of backups to return
+   * @returns {Promise<Object>} List of backups
    */
   async listBackups(limit = 20) {
     try {
-      await this.initialize();
+      const backups = [];
       
-      // Read backup directory
-      const entries = await fs.readdir(this.backupDir);
-      
-      // Filter for timestamp directories
-      const backupDirs = entries.filter(entry => /^\d+$/.test(entry));
-      
-      // Sort by timestamp (newest first)
-      backupDirs.sort((a, b) => parseInt(b) - parseInt(a));
-      
-      // Limit results
-      const limitedDirs = backupDirs.slice(0, limit);
-      
-      // Load metadata for each backup
-      const backups = await Promise.all(limitedDirs.map(async (dir) => {
-        const backupPath = path.join(this.backupDir, dir);
-        const metadataPath = path.join(backupPath, 'backup-metadata.json');
-        
-        try {
-          const metadataContent = await fs.readFile(metadataPath, 'utf8');
-          const metadata = JSON.parse(metadataContent);
-          
-          // Calculate backup size
-          const files = await fs.readdir(backupPath);
-          let totalSize = 0;
-          
-          for (const file of files) {
-            try {
-              const filePath = path.join(backupPath, file);
-              const stats = await fs.stat(filePath);
-              if (stats.isFile()) {
-                totalSize += stats.size;
-              }
-            } catch (error) {
-              // Ignore errors
-            }
-          }
-          
-          return {
-            backupId: dir,
-            timestamp: parseInt(dir),
-            date: metadata.date,
-            reason: metadata.reason,
-            files: metadata.files,
-            fileCount: metadata.files.length,
-            totalSize,
-            totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
-            age: this.getAge(metadata.date),
-            backupPath,
-            canRestore: metadata.files.length > 0
-          };
-        } catch (error) {
-          // Metadata file doesn't exist or is corrupted
-          return {
-            backupId: dir,
-            timestamp: parseInt(dir),
-            date: new Date(parseInt(dir)).toISOString(),
-            reason: 'Unknown',
-            files: [],
-            fileCount: 0,
-            totalSize: 0,
-            totalSizeMB: '0.00',
-            age: this.getAge(new Date(parseInt(dir)).toISOString()),
-            backupPath,
-            canRestore: false,
-            error: 'Metadata not found'
-          };
-        }
-      }));
-      
-      return {
-        success: true,
-        backups,
-        total: backupDirs.length,
-        showing: backups.length
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-        backups: []
-      };
-    }
-  }
-
-  /**
-   * Get backup details by ID
-   */
-  async getBackup(backupId) {
-    try {
-      const backupPath = path.join(this.backupDir, backupId);
-      const metadataPath = path.join(backupPath, 'backup-metadata.json');
-      
-      // Verify backup exists
+      // Check if backup directory exists
       try {
-        await fs.access(backupPath);
+        await fs.access(this.backupDir);
       } catch (error) {
-        return {
-          success: false,
-          error: 'Backup not found'
-        };
+        return { success: true, backups: [], total: 0, showing: 0 };
       }
       
-      // Load metadata
-      const metadataContent = await fs.readFile(metadataPath, 'utf8');
-      const metadata = JSON.parse(metadataContent);
+      const entries = await fs.readdir(this.backupDir, { withFileTypes: true });
       
-      // Get file details
-      const files = await fs.readdir(backupPath);
-      const fileDetails = await Promise.all(files.map(async (file) => {
-        const filePath = path.join(backupPath, file);
-        try {
-          const stats = await fs.stat(filePath);
-          return {
-            name: file,
-            size: stats.size,
-            sizeMB: (stats.size / 1024 / 1024).toFixed(2),
-            modified: stats.mtime.toISOString()
-          };
-        } catch (error) {
-          return null;
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const metadataPath = path.join(this.backupDir, entry.name, 'backup-metadata.json');
+          try {
+            const metadataContent = await fs.readFile(metadataPath, 'utf8');
+            const metadata = JSON.parse(metadataContent);
+            
+            // Calculate age
+            const backupDate = new Date(metadata.timestamp);
+            const now = new Date();
+            const ageMs = now - backupDate;
+            const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+            const ageHours = Math.floor((ageMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            
+            let age;
+            if (ageDays > 0) {
+              age = `${ageDays} day${ageDays > 1 ? 's' : ''} ago`;
+            } else if (ageHours > 0) {
+              age = `${ageHours} hour${ageHours > 1 ? 's' : ''} ago`;
+            } else {
+              age = 'Less than 1 hour ago';
+            }
+            
+            backups.push({
+              ...metadata,
+              age
+            });
+          } catch (error) {
+            console.warn(`Failed to read backup metadata for ${entry.name}:`, error.message);
+          }
         }
-      }));
+      }
+      
+      // Sort by timestamp (newest first)
+      backups.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      const total = backups.length;
+      const showing = Math.min(limit, total);
+      const limitedBackups = backups.slice(0, limit);
       
       return {
         success: true,
-        backup: {
-          ...metadata,
-          backupPath,
-          age: this.getAge(metadata.date),
-          fileDetails: fileDetails.filter(f => f !== null)
-        }
+        backups: limitedBackups,
+        total,
+        showing
       };
+      
     } catch (error) {
+      console.error('Error listing backups:', error);
       return {
         success: false,
         error: error.message
@@ -301,99 +188,105 @@ class BackupManager {
   }
 
   /**
-   * Restore configuration from backup
+   * Get backup details
+   * @param {string} backupId - Backup ID
+   * @returns {Promise<Object>} Backup details
    */
-  async restoreBackup(backupId, options = {}) {
+  async getBackup(backupId) {
     try {
-      const { 
-        createBackupBeforeRestore = true,
-        restoreFiles = ['all'] // or specific files: ['.env', 'docker-compose.yml']
-      } = options;
-      
       const backupPath = path.join(this.backupDir, backupId);
       const metadataPath = path.join(backupPath, 'backup-metadata.json');
       
-      // Verify backup exists
+      const metadataContent = await fs.readFile(metadataPath, 'utf8');
+      const metadata = JSON.parse(metadataContent);
+      
+      return {
+        success: true,
+        backup: metadata
+      };
+      
+    } catch (error) {
+      return {
+        success: false,
+        error: `Backup ${backupId} not found: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Restore a backup
+   * @param {string} backupId - Backup ID to restore
+   * @param {Object} options - Restore options
+   * @returns {Promise<Object>} Restore result
+   */
+  async restoreBackup(backupId, options = {}) {
+    try {
+      const { createBackupBeforeRestore = true, restoreFiles = ['all'] } = options;
+      
+      const backupPath = path.join(this.backupDir, backupId);
+      
+      // Check if backup exists
       try {
         await fs.access(backupPath);
       } catch (error) {
         return {
           success: false,
-          error: 'Backup not found'
+          error: `Backup ${backupId} not found`
         };
       }
       
-      // Load backup metadata
-      const metadataContent = await fs.readFile(metadataPath, 'utf8');
-      const metadata = JSON.parse(metadataContent);
-      
-      // Create backup of current state before restoring
       let preRestoreBackup = null;
+      
+      // Create backup before restore if requested
       if (createBackupBeforeRestore) {
-        const backupResult = await this.createBackup(
-          `Pre-restore backup (restoring from ${backupId})`,
-          { restoringFrom: backupId }
+        const preRestoreResult = await this.createBackup(
+          `Pre-restore backup before restoring ${backupId}`,
+          { preRestore: true, restoringFrom: backupId }
         );
         
-        if (backupResult.success) {
-          preRestoreBackup = backupResult.backupId;
+        if (preRestoreResult.success) {
+          preRestoreBackup = preRestoreResult.backupId;
         }
       }
       
-      // Determine which files to restore
-      const filesToRestore = restoreFiles.includes('all') 
-        ? metadata.files.map(f => f.file)
-        : restoreFiles;
-      
       const restoredFiles = [];
-      const errors = [];
       
-      // File mapping (backup filename -> destination path)
-      const fileMapping = {
-        '.env': '.env',
-        'docker-compose.yml': 'docker-compose.yml',
-        'docker-compose.override.yml': 'docker-compose.override.yml',
-        'installation-state.json': '.kaspa-aio/installation-state.json',
-        'wizard-state.json': '.kaspa-aio/wizard-state.json'
-      };
+      // Files to restore
+      const filesToRestore = [
+        { src: '.env', dest: '.env' },
+        { src: 'docker-compose.yml', dest: 'docker-compose.yml' },
+        { src: 'installation-state.json', dest: '.kaspa-aio/installation-state.json' }
+      ];
       
       // Restore each file
       for (const file of filesToRestore) {
-        const backupFilePath = path.join(backupPath, path.basename(file));
-        const destPath = path.join(this.projectRoot, fileMapping[path.basename(file)] || file);
-        
-        try {
-          // Verify backup file exists
-          await fs.access(backupFilePath);
+        if (restoreFiles.includes('all') || restoreFiles.includes(file.src)) {
+          const srcPath = path.join(backupPath, file.src);
+          const destPath = path.join(this.projectRoot, file.dest);
           
-          // Ensure destination directory exists
-          await fs.mkdir(path.dirname(destPath), { recursive: true });
-          
-          // Restore file
-          await fs.copyFile(backupFilePath, destPath);
-          
-          restoredFiles.push(file);
-        } catch (error) {
-          errors.push({
-            file,
-            error: error.message
-          });
+          try {
+            // Ensure destination directory exists
+            await fs.mkdir(path.dirname(destPath), { recursive: true });
+            await fs.copyFile(srcPath, destPath);
+            restoredFiles.push(file.dest);
+          } catch (error) {
+            console.warn(`Failed to restore ${file.src}:`, error.message);
+          }
         }
       }
       
       return {
-        success: errors.length === 0,
+        success: true,
+        message: `Backup ${backupId} restored successfully`,
         backupId,
-        restoredFrom: metadata.date,
+        restoredFrom: backupId,
         restoredFiles,
-        errors: errors.length > 0 ? errors : undefined,
         preRestoreBackup,
-        requiresRestart: true,
-        message: errors.length === 0 
-          ? 'Configuration restored successfully'
-          : 'Configuration partially restored with errors'
+        requiresRestart: true
       };
+      
     } catch (error) {
+      console.error('Error restoring backup:', error);
       return {
         success: false,
         error: error.message
@@ -403,30 +296,34 @@ class BackupManager {
 
   /**
    * Delete a backup
+   * @param {string} backupId - Backup ID to delete
+   * @returns {Promise<Object>} Deletion result
    */
   async deleteBackup(backupId) {
     try {
       const backupPath = path.join(this.backupDir, backupId);
       
-      // Verify backup exists
+      // Check if backup exists
       try {
         await fs.access(backupPath);
       } catch (error) {
         return {
           success: false,
-          error: 'Backup not found'
+          error: `Backup ${backupId} not found`
         };
       }
       
-      // Delete backup directory
+      // Remove backup directory
       await fs.rm(backupPath, { recursive: true, force: true });
       
       return {
         success: true,
-        backupId,
-        message: 'Backup deleted successfully'
+        message: `Backup ${backupId} deleted successfully`,
+        backupId
       };
+      
     } catch (error) {
+      console.error('Error deleting backup:', error);
       return {
         success: false,
         error: error.message
@@ -435,78 +332,48 @@ class BackupManager {
   }
 
   /**
-   * Cleanup old backups (keep only maxBackups most recent)
-   */
-  async cleanupOldBackups() {
-    try {
-      const entries = await fs.readdir(this.backupDir);
-      
-      // Filter for timestamp directories
-      const backupDirs = entries.filter(entry => /^\d+$/.test(entry));
-      
-      // Sort by timestamp (oldest first)
-      backupDirs.sort((a, b) => parseInt(a) - parseInt(b));
-      
-      // Delete old backups if we exceed maxBackups
-      if (backupDirs.length > this.maxBackups) {
-        const toDelete = backupDirs.slice(0, backupDirs.length - this.maxBackups);
-        
-        for (const dir of toDelete) {
-          const backupPath = path.join(this.backupDir, dir);
-          try {
-            await fs.rm(backupPath, { recursive: true, force: true });
-          } catch (error) {
-            console.error(`Failed to delete old backup ${dir}:`, error);
-          }
-        }
-        
-        return {
-          success: true,
-          deleted: toDelete.length,
-          remaining: this.maxBackups
-        };
-      }
-      
-      return {
-        success: true,
-        deleted: 0,
-        remaining: backupDirs.length
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
-  /**
-   * Get storage usage for backups
+   * Get storage usage information
+   * @returns {Promise<Object>} Storage usage details
    */
   async getStorageUsage() {
     try {
-      await this.initialize();
-      
-      const entries = await fs.readdir(this.backupDir);
-      const backupDirs = entries.filter(entry => /^\d+$/.test(entry));
-      
       let totalSize = 0;
       let fileCount = 0;
+      let backupCount = 0;
       
-      for (const dir of backupDirs) {
-        const backupPath = path.join(this.backupDir, dir);
-        const files = await fs.readdir(backupPath);
-        
-        for (const file of files) {
+      // Check if backup directory exists
+      try {
+        await fs.access(this.backupDir);
+      } catch (error) {
+        return {
+          success: true,
+          totalSize: 0,
+          totalSizeMB: 0,
+          totalSizeGB: 0,
+          fileCount: 0,
+          backupCount: 0,
+          backupDir: this.backupDir
+        };
+      }
+      
+      const entries = await fs.readdir(this.backupDir, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          backupCount++;
+          const backupPath = path.join(this.backupDir, entry.name);
+          
+          // Get size of backup directory
           try {
-            const filePath = path.join(backupPath, file);
-            const stats = await fs.stat(filePath);
-            if (stats.isFile()) {
-              totalSize += stats.size;
-              fileCount++;
-            }
+            const { stdout } = await execAsync(`du -sb ${backupPath}`);
+            const size = parseInt(stdout.split('\t')[0]);
+            totalSize += size;
+            
+            // Count files in backup
+            const files = await fs.readdir(backupPath);
+            fileCount += files.length;
           } catch (error) {
-            // Ignore errors
+            console.warn(`Failed to get size for backup ${entry.name}:`, error.message);
           }
         }
       }
@@ -514,13 +381,15 @@ class BackupManager {
       return {
         success: true,
         totalSize,
-        totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
-        totalSizeGB: (totalSize / 1024 / 1024 / 1024).toFixed(2),
+        totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
+        totalSizeGB: (totalSize / (1024 * 1024 * 1024)).toFixed(2),
         fileCount,
-        backupCount: backupDirs.length,
+        backupCount,
         backupDir: this.backupDir
       };
+      
     } catch (error) {
+      console.error('Error getting storage usage:', error);
       return {
         success: false,
         error: error.message
@@ -530,58 +399,80 @@ class BackupManager {
 
   /**
    * Compare two backups
+   * @param {string} backupId1 - First backup ID
+   * @param {string} backupId2 - Second backup ID
+   * @returns {Promise<Object>} Comparison result
    */
   async compareBackups(backupId1, backupId2) {
     try {
-      const backup1 = await this.getBackup(backupId1);
-      const backup2 = await this.getBackup(backupId2);
+      const backup1Result = await this.getBackup(backupId1);
+      const backup2Result = await this.getBackup(backupId2);
       
-      if (!backup1.success || !backup2.success) {
-        return {
-          success: false,
-          error: 'One or both backups not found'
-        };
+      if (!backup1Result.success) {
+        return { success: false, error: `Backup ${backupId1} not found` };
       }
       
-      // Load .env files from both backups
-      const env1Path = path.join(this.backupDir, backupId1, '.env');
-      const env2Path = path.join(this.backupDir, backupId2, '.env');
-      
-      let config1 = {};
-      let config2 = {};
-      
-      try {
-        const env1Content = await fs.readFile(env1Path, 'utf8');
-        config1 = this.parseEnvFile(env1Content);
-      } catch (error) {
-        // .env not in backup1
+      if (!backup2Result.success) {
+        return { success: false, error: `Backup ${backupId2} not found` };
       }
       
-      try {
-        const env2Content = await fs.readFile(env2Path, 'utf8');
-        config2 = this.parseEnvFile(env2Content);
-      } catch (error) {
-        // .env not in backup2
+      const backup1 = backup1Result.backup;
+      const backup2 = backup2Result.backup;
+      
+      // Simple comparison based on metadata
+      const differences = {
+        added: [],
+        removed: [],
+        changed: []
+      };
+      
+      // Compare file lists
+      const files1 = backup1.files.map(f => f.file);
+      const files2 = backup2.files.map(f => f.file);
+      
+      // Find added files (in backup2 but not backup1)
+      for (const file of files2) {
+        if (!files1.includes(file)) {
+          differences.added.push(file);
+        }
       }
       
-      // Calculate differences
-      const differences = this.findDifferences(config1, config2);
+      // Find removed files (in backup1 but not backup2)
+      for (const file of files1) {
+        if (!files2.includes(file)) {
+          differences.removed.push(file);
+        }
+      }
+      
+      // Find changed files (different sizes)
+      for (const file1 of backup1.files) {
+        const file2 = backup2.files.find(f => f.file === file1.file);
+        if (file2 && file1.size !== file2.size) {
+          differences.changed.push({
+            file: file1.file,
+            oldSize: file1.size,
+            newSize: file2.size
+          });
+        }
+      }
       
       return {
         success: true,
         backup1: {
-          backupId: backupId1,
-          date: backup1.backup.date,
-          reason: backup1.backup.reason
+          backupId: backup1.backupId,
+          date: backup1.date,
+          reason: backup1.reason
         },
         backup2: {
-          backupId: backupId2,
-          date: backup2.backup.date,
-          reason: backup2.backup.reason
+          backupId: backup2.backupId,
+          date: backup2.date,
+          reason: backup2.reason
         },
         differences
       };
+      
     } catch (error) {
+      console.error('Error comparing backups:', error);
       return {
         success: false,
         error: error.message
@@ -590,119 +481,80 @@ class BackupManager {
   }
 
   /**
-   * Parse .env file content
+   * Clean up old backups (keep last 10)
+   * @returns {Promise<Object>} Cleanup result
    */
-  parseEnvFile(content) {
-    const config = {};
-    const lines = content.split('\n');
-    
-    for (const line of lines) {
-      const trimmed = line.trim();
+  async cleanupOldBackups() {
+    try {
+      const listResult = await this.listBackups(1000); // Get all backups
       
-      // Skip comments and empty lines
-      if (!trimmed || trimmed.startsWith('#')) {
-        continue;
+      if (!listResult.success) {
+        return { success: false, error: listResult.error };
       }
       
-      // Parse key=value
-      const match = trimmed.match(/^([^=]+)=(.*)$/);
-      if (match) {
-        const key = match[1].trim();
-        let value = match[2].trim();
-        
-        // Remove quotes if present
-        if ((value.startsWith('"') && value.endsWith('"')) ||
-            (value.startsWith("'") && value.endsWith("'"))) {
-          value = value.slice(1, -1);
+      const backups = listResult.backups;
+      const keepCount = 10;
+      
+      if (backups.length <= keepCount) {
+        return {
+          success: true,
+          deleted: 0,
+          remaining: backups.length
+        };
+      }
+      
+      // Delete old backups (keep newest 10)
+      const toDelete = backups.slice(keepCount);
+      let deleted = 0;
+      
+      for (const backup of toDelete) {
+        const deleteResult = await this.deleteBackup(backup.backupId);
+        if (deleteResult.success) {
+          deleted++;
         }
-        
-        config[key] = value;
       }
+      
+      return {
+        success: true,
+        deleted,
+        remaining: backups.length - deleted
+      };
+      
+    } catch (error) {
+      console.error('Error cleaning up old backups:', error);
+      return {
+        success: false,
+        error: error.message
+      };
     }
-    
-    return config;
   }
 
   /**
-   * Find differences between two configurations
-   */
-  findDifferences(config1, config2) {
-    const differences = {
-      added: [],
-      removed: [],
-      changed: []
-    };
-    
-    const keys1 = Object.keys(config1);
-    const keys2 = Object.keys(config2);
-    
-    // Find added keys
-    for (const key of keys2) {
-      if (!keys1.includes(key)) {
-        differences.added.push({
-          key,
-          value: config2[key]
-        });
-      }
-    }
-    
-    // Find removed keys
-    for (const key of keys1) {
-      if (!keys2.includes(key)) {
-        differences.removed.push({
-          key,
-          value: config1[key]
-        });
-      }
-    }
-    
-    // Find changed keys
-    for (const key of keys1) {
-      if (keys2.includes(key) && config1[key] !== config2[key]) {
-        differences.changed.push({
-          key,
-          oldValue: config1[key],
-          newValue: config2[key]
-        });
-      }
-    }
-    
-    return differences;
-  }
-
-  /**
-   * Get age of timestamp in human-readable format
-   */
-  getAge(timestamp) {
-    const now = new Date();
-    const then = new Date(timestamp);
-    const diffMs = now - then;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    
-    const diffMonths = Math.floor(diffDays / 30);
-    return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
-  }
-
-  /**
-   * Clean up all backups
+   * Delete all backups
+   * @returns {Promise<Object>} Cleanup result
    */
   async cleanupAll() {
     try {
-      // Remove backup directory
+      // Check if backup directory exists
+      try {
+        await fs.access(this.backupDir);
+      } catch (error) {
+        return {
+          success: true,
+          message: 'No backups to delete'
+        };
+      }
+      
+      // Remove entire backup directory
       await fs.rm(this.backupDir, { recursive: true, force: true });
       
       return {
         success: true,
-        message: 'All backups cleaned up'
+        message: 'All backups deleted successfully'
       };
+      
     } catch (error) {
+      console.error('Error deleting all backups:', error);
       return {
         success: false,
         error: error.message

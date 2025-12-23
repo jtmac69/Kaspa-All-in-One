@@ -140,6 +140,141 @@
                 </div>
             </div>
 
+            <!-- Step 1.5: Reconfiguration Landing (only shown in reconfiguration mode) -->
+            <div class="wizard-step" id="step-reconfigure-landing" style="display: none;">
+                <div class="step-header">
+                    <h2 class="step-title">Reconfigure Your Installation</h2>
+                    <p class="step-description">
+                        Modify your existing Kaspa All-in-One installation by adding profiles, changing settings, or removing services.
+                    </p>
+                </div>
+
+                <!-- Current Installation Summary -->
+                <div class="current-installation-summary">
+                    <div class="summary-header">
+                        <div class="summary-icon">📊</div>
+                        <div class="summary-content">
+                            <h3 class="summary-title">Current Installation 
+                                <span class="help-icon" data-tooltip="Overview of your current Kaspa installation including installed profiles, running services, and last modification date">❓</span>
+                            </h3>
+                            <p class="summary-subtitle" id="installation-summary-text">Loading installation details...</p>
+                        </div>
+                        <div class="summary-status" id="installation-status">
+                            <div class="status-indicator checking"></div>
+                            <span class="status-text">Checking...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-details" id="installation-details" style="display: none;">
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Installed:</span>
+                                <span class="detail-value" id="installation-date">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Last Modified:</span>
+                                <span class="detail-value" id="last-modified-date">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Running Services:</span>
+                                <span class="detail-value" id="running-services-count">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Version:</span>
+                                <span class="detail-value" id="installation-version">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reconfiguration Options -->
+                <div class="reconfiguration-options">
+                    <h3 class="options-title">What would you like to do?</h3>
+                    <p class="options-description">Choose from the options below to modify your installation:</p>
+                    
+                    <div class="reconfiguration-actions">
+                        <div class="action-card" id="add-profiles-action" onclick="selectReconfigurationAction('add-profiles')" 
+                             data-tooltip="Add new services to your existing installation. This will expand your Kaspa ecosystem with additional functionality like indexers, mining, or archive nodes.">
+                            <div class="action-icon">➕</div>
+                            <div class="action-content">
+                                <h4 class="action-title">Add New Profiles</h4>
+                                <p class="action-description">Install additional services to expand your Kaspa ecosystem</p>
+                                <div class="action-examples">
+                                    <span class="example-tag">+ Indexer Services</span>
+                                    <span class="example-tag">+ Mining Profile</span>
+                                    <span class="example-tag">+ Archive Node</span>
+                                </div>
+                            </div>
+                            <div class="action-arrow">→</div>
+                        </div>
+                        
+                        <div class="action-card" id="modify-config-action" onclick="selectReconfigurationAction('modify-config')"
+                             data-tooltip="Modify settings for your existing services. Change ports, network configuration, data directories, or other service parameters without reinstalling.">
+                            <div class="action-icon">⚙️</div>
+                            <div class="action-content">
+                                <h4 class="action-title">Modify Configuration</h4>
+                                <p class="action-description">Change settings for your existing services</p>
+                                <div class="action-examples">
+                                    <span class="example-tag">Port Settings</span>
+                                    <span class="example-tag">Network Config</span>
+                                    <span class="example-tag">Data Directories</span>
+                                </div>
+                            </div>
+                            <div class="action-arrow">→</div>
+                        </div>
+                        
+                        <div class="action-card" id="remove-profiles-action" onclick="selectReconfigurationAction('remove-profiles')"
+                             data-tooltip="Remove services you no longer need. You can choose to keep or delete associated data. A backup will be created before removal.">
+                            <div class="action-icon">🗑️</div>
+                            <div class="action-content">
+                                <h4 class="action-title">Remove Profiles</h4>
+                                <p class="action-description">Uninstall services you no longer need</p>
+                                <div class="action-examples">
+                                    <span class="example-tag">Stop Services</span>
+                                    <span class="example-tag">Remove Data</span>
+                                    <span class="example-tag">Clean Config</span>
+                                </div>
+                            </div>
+                            <div class="action-arrow">→</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Status Overview -->
+                <div class="profile-status-overview" id="profile-status-overview" style="display: none;">
+                    <h3 class="overview-title">Profile Status 
+                        <span class="help-icon" data-tooltip="Current status of all available profiles. Green indicates installed and running, yellow indicates partially installed, and gray indicates not installed.">❓</span>
+                    </h3>
+                    <div class="profile-status-grid" id="profile-status-grid">
+                        <!-- Profile status cards will be populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Configuration Suggestions -->
+                <div class="configuration-suggestions" id="configuration-suggestions" style="display: none;">
+                    <h3 class="suggestions-title">💡 Suggestions 
+                        <span class="help-icon" data-tooltip="Intelligent recommendations based on your current setup and usage patterns. These suggestions can help optimize your installation.">❓</span>
+                    </h3>
+                    <p class="suggestions-description">Based on your current setup, here are some recommendations:</p>
+                    <div class="suggestions-list" id="suggestions-list">
+                        <!-- Suggestions will be populated dynamically -->
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn-secondary" onclick="goToInitialMode()" 
+                            data-tooltip="Start a fresh installation instead of modifying the existing one. This will clear all current settings.">
+                        <span class="btn-icon">←</span>
+                        Fresh Installation
+                    </button>
+                    <button class="btn-primary" onclick="proceedWithReconfiguration()" id="reconfigure-continue-btn" disabled
+                            data-tooltip="Continue with the selected reconfiguration option. You must select an option above first.">
+                        Continue
+                        <span class="btn-icon">→</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Step 2: Pre-Installation Checklist -->
             <div class="wizard-step" id="step-checklist">
                 <div class="step-header">
@@ -487,10 +622,23 @@
             <!-- Step 4: Profile Selection -->
             <div class="wizard-step" id="step-profiles">
                 <div class="step-header">
-                    <h2 class="step-title">Select Your Deployment Profile</h2>
-                    <p class="step-description">
+                    <h2 class="step-title" id="profile-selection-title">Select Your Deployment Profile</h2>
+                    <p class="step-description" id="profile-selection-description">
                         Choose which services you want to run. You can select multiple profiles.
                     </p>
+                </div>
+
+                <!-- Reconfiguration Mode Context -->
+                <div id="reconfiguration-context" class="reconfiguration-context" style="display: none;">
+                    <div class="context-card">
+                        <div class="context-icon" id="reconfiguration-context-icon">⚙️</div>
+                        <div class="context-content">
+                            <h3 class="context-title" id="reconfiguration-context-title">Modify Your Installation</h3>
+                            <p class="context-description" id="reconfiguration-context-description">
+                                You can add new profiles, modify existing ones, or remove profiles you no longer need.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Dependency Warning Container -->
@@ -570,7 +718,559 @@
                     </div>
                 </div>
                 
-                <div class="profile-grid">
+                <!-- Profile Sections Container -->
+                <div id="profile-sections-container">
+                    
+                    <!-- Currently Installed Profiles Section (Reconfiguration Mode Only) -->
+                    <div id="installed-profiles-section" class="profile-section" style="display: none;">
+                        <div class="section-header">
+                            <div class="section-icon">✅</div>
+                            <div class="section-title-content">
+                                <h3 class="section-title">Currently Installed</h3>
+                                <p class="section-description">These profiles are already installed and running on your system</p>
+                            </div>
+                            <div class="section-status" id="installed-profiles-status">
+                                <span class="status-count" id="installed-count">0</span>
+                                <span class="status-label">installed</span>
+                            </div>
+                        </div>
+                        <div class="profile-grid" id="installed-profiles-grid">
+                            <!-- Installed profiles will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Available Profiles Section -->
+                    <div id="available-profiles-section" class="profile-section">
+                        <div class="section-header" id="available-section-header">
+                            <div class="section-icon">📦</div>
+                            <div class="section-title-content">
+                                <h3 class="section-title" id="available-section-title">Available Profiles</h3>
+                                <p class="section-description" id="available-section-description">Choose from these profiles to customize your Kaspa installation</p>
+                            </div>
+                            <div class="section-actions">
+                                <button class="btn-primary btn-small" id="add-profile-btn" onclick="openProfileAdditionDialog()" style="display: none;">
+                                    ➕ Add Profile
+                                </button>
+                            </div>
+                            <div class="section-status" id="available-profiles-status">
+                                <span class="status-count" id="available-count">5</span>
+                                <span class="status-label">available</span>
+                            </div>
+                        </div>
+                        <div class="profile-grid" id="available-profiles-grid">
+                            <!-- Available profiles will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Default Profile Grid (Initial Installation Mode) -->
+                    <div class="profile-grid" id="default-profile-grid">
+                        <!-- Core Profile -->
+                        <div class="profile-card" data-profile="core">
+                            <div class="profile-installation-status" style="display: none;">
+                                <div class="installation-badge installed">
+                                    <span class="badge-icon">✓</span>
+                                    <span class="badge-text">Installed</span>
+                                </div>
+                                <div class="installation-info">
+                                    <div class="installation-detail">
+                                        <span class="detail-label">Status:</span>
+                                        <span class="detail-value status-running">Running</span>
+                                    </div>
+                                    <div class="installation-detail">
+                                        <span class="detail-label">Services:</span>
+                                        <span class="detail-value">3/3</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="profile-badge essential">Essential</div>
+                            <div class="profile-icon">
+                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                    <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="3"/>
+                                    <circle cx="24" cy="24" r="8" fill="currentColor"/>
+                                </svg>
+                            </div>
+                            <h3 class="profile-title">Core Profile</h3>
+                            <p class="profile-description">
+                                Kaspa node (public/private) with optional wallet
+                            </p>
+                            <div class="profile-startup-order">
+                                <span class="startup-badge">Startup Order: 1</span>
+                            </div>
+                            <div class="profile-services">
+                                <span class="service-tag">kaspa-node</span>
+                                <span class="service-tag">wallet</span>
+                                <span class="service-tag">dashboard</span>
+                                <span class="service-tag">nginx</span>
+                            </div>
+                            <div class="profile-resources">
+                                <div class="resource-item">
+                                    <span class="resource-label">CPU:</span>
+                                    <span class="resource-value">2 cores</span>
+                                </div>
+                                <div class="resource-item">
+                                    <span class="resource-label">RAM:</span>
+                                    <span class="resource-value">4 GB</span>
+                                </div>
+                                <div class="resource-item">
+                                    <span class="resource-label">Disk:</span>
+                                    <span class="resource-value">100 GB</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Profile Actions (Reconfiguration Mode) -->
+                            <div class="profile-actions" style="display: none;">
+                                <div class="action-buttons">
+                                    <button class="btn-action btn-modify" onclick="modifyProfile('core')">
+                                        <span class="btn-icon">⚙️</span>
+                                        <span class="btn-text">Modify</span>
+                                    </button>
+                                    <button class="btn-action btn-remove" onclick="removeProfile('core')">
+                                        <span class="btn-icon">🗑️</span>
+                                        <span class="btn-text">Remove</span>
+                                    </button>
+                                </div>
+                                <div class="action-warnings" id="core-warnings" style="display: none;">
+                                    <!-- Dependency warnings will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Kaspa User Applications Profile -->
+                        <div class="profile-card" data-profile="kaspa-user-applications">
+                            <div class="profile-installation-status" style="display: none;">
+                                <div class="installation-badge installed">
+                                    <span class="badge-icon">✓</span>
+                                    <span class="badge-text">Installed</span>
+                                </div>
+                                <div class="installation-info">
+                                    <div class="installation-detail">
+                                        <span class="detail-label">Status:</span>
+                                        <span class="detail-value status-running">Running</span>
+                                    </div>
+                                    <div class="installation-detail">
+                                        <span class="detail-label">Services:</span>
+                                        <span class="detail-value">3/3</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="profile-badge popular">Popular</div>
+                            <div class="profile-icon">
+                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                    <rect x="8" y="8" width="32" height="32" rx="4" stroke="currentColor" stroke-width="3"/>
+                                    <path d="M16 24 L24 32 L32 16" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <h3 class="profile-title">Kaspa User Applications</h3>
+                            <p class="profile-description">
+                                User-facing apps (Kasia, K-Social, Kaspa Explorer)
+                            </p>
+                            <div class="profile-startup-order">
+                                <span class="startup-badge">Startup Order: 3</span>
+                            </div>
+                            <div class="profile-services">
+                                <span class="service-tag">kasia-app</span>
+                                <span class="service-tag">k-social-app</span>
+                                <span class="service-tag">kaspa-explorer</span>
+                            </div>
+                            <div class="profile-resources">
+                                <div class="resource-item">
+                                    <span class="resource-label">CPU:</span>
+                                    <span class="resource-value">2 cores</span>
+                                </div>
+                                <div class="resource-item">
+                                    <span class="resource-label">RAM:</span>
+                                    <span class="resource-value">4 GB</span>
+                                </div>
+                                <div class="resource-item">
+                                    <span class="resource-label">Disk:</span>
+                                    <span class="resource-value">50 GB</span>
+                                </div>
+                            </div>
+                            <div class="profile-note">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M8 4 L8 8 L11 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                <span>Can use public or local indexers</span>
+                            </div>
+                            
+                            <!-- Profile Actions (Reconfiguration Mode) -->
+                            <div class="profile-actions" style="display: none;">
+                                <div class="action-buttons">
+                                    <button class="btn-action btn-modify" onclick="modifyProfile('kaspa-user-applications')">
+                                        <span class="btn-icon">⚙️</span>
+                                        <span class="btn-text">Modify</span>
+                                    </button>
+                                    <button class="btn-action btn-remove" onclick="removeProfile('kaspa-user-applications')">
+                                        <span class="btn-icon">🗑️</span>
+                                        <span class="btn-text">Remove</span>
+                                    </button>
+                                </div>
+                                <div class="action-warnings" id="kaspa-user-applications-warnings" style="display: none;">
+                                    <!-- Dependency warnings will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Indexer Services Profile -->
+                        <div class="profile-card" data-profile="indexer-services">
+                            <div class="profile-installation-status" style="display: none;">
+                                <div class="installation-badge installed">
+                                    <span class="badge-icon">✓</span>
+                                    <span class="badge-text">Installed</span>
+                                </div>
+                                <div class="installation-info">
+                                    <div class="installation-detail">
+                                        <span class="detail-label">Status:</span>
+                                        <span class="detail-value status-running">Running</span>
+                                    </div>
+                                    <div class="installation-detail">
+                                        <span class="detail-label">Services:</span>
+                                        <span class="detail-value">4/4</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="profile-badge advanced">Advanced</div>
+                            <div class="profile-icon">
+                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                    <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="3"/>
+                                    <circle cx="24" cy="24" r="3" fill="currentColor"/>
+                                    <line x1="24" y1="4" x2="24" y2="12" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                                    <line x1="24" y1="36" x2="24" y2="44" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                                    <line x1="4" y1="24" x2="12" y2="24" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                                    <line x1="36" y1="24" x2="44" y2="24" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <h3 class="profile-title">Indexer Services</h3>
+                            <p class="profile-description">
+                                Local indexers (Kasia, K-Indexer, Simply-Kaspa)
+                            </p>
+                            <div class="profile-startup-order">
+                                <span class="startup-badge">Startup Order: 2</span>
+                            </div>
+                            <div class="profile-services">
+                                <span class="service-tag">timescaledb</span>
+                                <span class="service-tag">kasia-indexer</span>
+                                <span class="service-tag">k-indexer</span>
+                                <span class="service-tag">simply-kaspa-indexer</span>
+                            </div>
+                            <div class="profile-resources">
+                                <div class="resource-item">
+                                    <span class="resource-label">CPU:</span>
+                                    <span class="resource-value">4 cores</span>
+                                </div>
+                                <div class="resource-item">
+                                    <span class="resource-label">RAM:</span>
+                                    <span class="resource-value">8 GB</span>
+                                </div>
+                                <div class="resource-item">
+                                    <span class="resource-label">Disk:</span>
+                                    <span class="resource-value">500 GB</span>
+                                </div>
+                            </div>
+                            <div class="profile-note">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M8 4 L8 8 L11 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                <span>Shared TimescaleDB with separate databases</span>
+                            </div>
+                            
+                            <!-- Profile Actions (Reconfiguration Mode) -->
+                            <div class="profile-actions" style="display: none;">
+                                <div class="action-buttons">
+                                    <button class="btn-action btn-modify" onclick="modifyProfile('indexer-services')">
+                                        <span class="btn-icon">⚙️</span>
+                                        <span class="btn-text">Modify</span>
+                                    </button>
+                                    <button class="btn-action btn-remove" onclick="removeProfile('indexer-services')">
+                                        <span class="btn-icon">🗑️</span>
+                                        <span class="btn-text">Remove</span>
+                                    </button>
+                                </div>
+                                <div class="action-warnings" id="indexer-services-warnings" style="display: none;">
+                                    <!-- Dependency warnings will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Archive Node Profile -->
+                        <div class="profile-card" data-profile="archive-node">
+                            <div class="profile-installation-status" style="display: none;">
+                                <div class="installation-badge installed">
+                                    <span class="badge-icon">✓</span>
+                                    <span class="badge-text">Installed</span>
+                                </div>
+                                <div class="installation-info">
+                                    <div class="installation-detail">
+                                        <span class="detail-label">Status:</span>
+                                        <span class="detail-value status-running">Running</span>
+                                    </div>
+                                    <div class="installation-detail">
+                                        <span class="detail-label">Services:</span>
+                                        <span class="detail-value">1/1</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="profile-badge storage">Storage</div>
+                            <div class="profile-icon">
+                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                    <rect x="8" y="12" width="32" height="8" rx="2" stroke="currentColor" stroke-width="3"/>
+                                    <rect x="8" y="24" width="32" height="8" rx="2" stroke="currentColor" stroke-width="3"/>
+                                    <rect x="8" y="36" width="32" height="8" rx="2" stroke="currentColor" stroke-width="3"/>
+                                </svg>
+                            </div>
+                            <h3 class="profile-title">Archive Node Profile</h3>
+                            <p class="profile-description">
+                                Non-pruning Kaspa node for complete blockchain history
+                            </p>
+                            <div class="profile-startup-order">
+                                <span class="startup-badge">Startup Order: 1</span>
+                            </div>
+                            <div class="profile-services">
+                                <span class="service-tag">kaspa-archive-node</span>
+                            </div>
+                            <div class="profile-resources">
+                                <div class="resource-item">
+                                    <span class="resource-label">CPU:</span>
+                                    <span class="resource-value">8 cores</span>
+                                </div>
+                                <div class="resource-item">
+                                    <span class="resource-label">RAM:</span>
+                                    <span class="resource-value">16 GB</span>
+                                </div>
+                                <div class="resource-item">
+                                    <span class="resource-label">Disk:</span>
+                                    <span class="resource-value">1000 GB</span>
+                                </div>
+                            </div>
+                            <div class="profile-note warning">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M8 3 L8 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <circle cx="8" cy="12" r="1" fill="currentColor"/>
+                                    <path d="M8 1 L15 14 L1 14 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                </svg>
+                                <span>Conflicts with Core Profile</span>
+                            </div>
+                            
+                            <!-- Profile Actions (Reconfiguration Mode) -->
+                            <div class="profile-actions" style="display: none;">
+                                <div class="action-buttons">
+                                    <button class="btn-action btn-modify" onclick="modifyProfile('archive-node')">
+                                        <span class="btn-icon">⚙️</span>
+                                        <span class="btn-text">Modify</span>
+                                    </button>
+                                    <button class="btn-action btn-remove" onclick="removeProfile('archive-node')">
+                                        <span class="btn-icon">🗑️</span>
+                                        <span class="btn-text">Remove</span>
+                                    </button>
+                                </div>
+                                <div class="action-warnings" id="archive-node-warnings" style="display: none;">
+                                    <!-- Dependency warnings will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Mining Profile -->
+                        <div class="profile-card" data-profile="mining">
+                            <div class="profile-installation-status" style="display: none;">
+                                <div class="installation-badge installed">
+                                    <span class="badge-icon">✓</span>
+                                    <span class="badge-text">Installed</span>
+                                </div>
+                                <div class="installation-info">
+                                    <div class="installation-detail">
+                                        <span class="detail-label">Status:</span>
+                                        <span class="detail-value status-running">Running</span>
+                                    </div>
+                                    <div class="installation-detail">
+                                        <span class="detail-label">Services:</span>
+                                        <span class="detail-value">1/1</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="profile-badge mining">Mining</div>
+                            <div class="profile-icon">
+                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                    <path d="M24 8 L32 20 L24 24 L16 20 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+                                    <path d="M24 24 L32 20 L32 32 L24 40 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+                                    <path d="M24 24 L16 20 L16 32 L24 40 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <h3 class="profile-title">Mining Profile</h3>
+                            <p class="profile-description">
+                                Local mining stratum pointed to local Kaspa node
+                            </p>
+                            <div class="profile-startup-order">
+                                <span class="startup-badge">Startup Order: 3</span>
+                            </div>
+                            <div class="profile-services">
+                                <span class="service-tag">kaspa-stratum</span>
+                            </div>
+                            <div class="profile-resources">
+                                <div class="resource-item">
+                                    <span class="resource-label">CPU:</span>
+                                    <span class="resource-value">2 cores</span>
+                                </div>
+                                <div class="resource-item">
+                                    <span class="resource-label">RAM:</span>
+                                    <span class="resource-value">2 GB</span>
+                                </div>
+                                <div class="resource-item">
+                                    <span class="resource-label">Disk:</span>
+                                    <span class="resource-value">10 GB</span>
+                                </div>
+                            </div>
+                            <div class="profile-note prerequisite">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M8 3 L8 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <circle cx="8" cy="12" r="1" fill="currentColor"/>
+                                    <path d="M8 1 L15 14 L1 14 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                </svg>
+                                <span>Requires Core or Archive Node Profile</span>
+                            </div>
+                            
+                            <!-- Profile Actions (Reconfiguration Mode) -->
+                            <div class="profile-actions" style="display: none;">
+                                <div class="action-buttons">
+                                    <button class="btn-action btn-modify" onclick="modifyProfile('mining')">
+                                        <span class="btn-icon">⚙️</span>
+                                        <span class="btn-text">Modify</span>
+                                    </button>
+                                    <button class="btn-action btn-remove" onclick="removeProfile('mining')">
+                                        <span class="btn-icon">🗑️</span>
+                                        <span class="btn-text">Remove</span>
+                                    </button>
+                                </div>
+                                <div class="action-warnings" id="mining-warnings" style="display: none;">
+                                    <!-- Dependency warnings will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Profile Removal Confirmation Dialog -->
+                <div id="profile-removal-dialog" class="modal-overlay" style="display: none;">
+                    <div class="modal-dialog">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Remove Profile</h3>
+                            <button class="modal-close" onclick="closeProfileRemovalDialog()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="removal-warning">
+                                <div class="warning-icon">⚠️</div>
+                                <div class="warning-content">
+                                    <h4 class="warning-title">Are you sure you want to remove this profile?</h4>
+                                    <p class="warning-message" id="removal-warning-message">
+                                        This action will stop and remove the selected services.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="removal-details">
+                                <h4 class="details-title">Profile Details</h4>
+                                <div class="profile-summary" id="removal-profile-summary">
+                                    <!-- Profile details will be populated here -->
+                                </div>
+                            </div>
+                            
+                            <div class="removal-impact" id="removal-impact" style="display: none;">
+                                <h4 class="impact-title">Impact on Other Services</h4>
+                                <div class="impact-warnings" id="removal-impact-warnings">
+                                    <!-- Impact warnings will be populated here -->
+                                </div>
+                            </div>
+                            
+                            <div class="data-options">
+                                <h4 class="options-title">Data Handling</h4>
+                                <div class="data-option">
+                                    <label class="radio-label">
+                                        <input type="radio" name="data-handling" value="keep" checked>
+                                        <span class="radio-custom"></span>
+                                        <span class="radio-text">Keep data for potential reinstallation</span>
+                                    </label>
+                                    <p class="option-description">Service data will be preserved in Docker volumes</p>
+                                </div>
+                                <div class="data-option">
+                                    <label class="radio-label">
+                                        <input type="radio" name="data-handling" value="remove">
+                                        <span class="radio-custom"></span>
+                                        <span class="radio-text">Remove all data permanently</span>
+                                    </label>
+                                    <p class="option-description">All service data and volumes will be deleted</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-secondary" onclick="closeProfileRemovalDialog()">Cancel</button>
+                            <button class="btn-danger" onclick="confirmProfileRemoval()" id="confirm-removal-btn">
+                                Remove Profile
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Addition Dialog -->
+                <div id="profile-addition-dialog" class="modal-overlay" style="display: none;">
+                    <div class="modal-dialog">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Add New Profile</h3>
+                            <button class="modal-close" onclick="closeProfileAdditionDialog()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <!-- Profile Selection -->
+                            <div class="addition-section">
+                                <h4>Select Profile to Add</h4>
+                                <div id="addition-profile-selection" class="profile-selection-grid">
+                                    <!-- Available profiles will be populated here -->
+                                </div>
+                            </div>
+
+                            <!-- Integration Options -->
+                            <div id="integration-options-section" class="addition-section" style="display: none;">
+                                <h4>Integration Options</h4>
+                                <div id="integration-options-content">
+                                    <!-- Integration options will be populated here -->
+                                </div>
+                            </div>
+
+                            <!-- Resource Impact -->
+                            <div id="resource-impact-section" class="addition-section" style="display: none;">
+                                <h4>Resource Impact</h4>
+                                <div id="resource-impact-content" class="resource-impact-grid">
+                                    <!-- Resource impact will be populated here -->
+                                </div>
+                            </div>
+
+                            <!-- Service Dependencies -->
+                            <div id="service-dependencies-section" class="addition-section" style="display: none;">
+                                <h4>Service Dependencies</h4>
+                                <div id="service-dependencies-content">
+                                    <!-- Service dependencies will be populated here -->
+                                </div>
+                            </div>
+
+                            <!-- Validation Messages -->
+                            <div id="addition-validation-messages" class="validation-messages" style="display: none;">
+                                <!-- Validation messages will be populated here -->
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-secondary" onclick="closeProfileAdditionDialog()">Cancel</button>
+                            <button class="btn-primary" onclick="confirmProfileAddition()" id="confirm-addition-btn" disabled>
+                                Add Profile
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                     <!-- Core Profile -->
                     <div class="profile-card" data-profile="core">
                         <div class="profile-badge essential">Essential</div>
@@ -1487,6 +2187,9 @@
                     <button class="btn-footer btn-known-issues" onclick="window.open('/KNOWN_ISSUES.md', '_blank')">
                         📋 View Known Issues
                     </button>
+                    <button class="btn-footer btn-donate" onclick="window.open('https://kas.coffee/jtmac58', '_blank')">
+                        ☕ Buy me a Koffee
+                    </button>
                 </div>
                 <div class="footer-links">
                     <a href="https://kaspa.org" target="_blank">kaspa.org</a>
@@ -1801,6 +2504,7 @@
     <script type="module" src="/scripts/wizard-refactored.js?v=4"></script>
     <script type="module" src="/scripts/modules/template-selection.js?v=1"></script>
     <script type="module" src="/scripts/modules/enhanced-troubleshooting.js?v=1"></script>
+    <script type="module" src="/scripts/modules/profile-addition.js?v=1"></script>
     <script src="/scripts/glossary.js?v=4"></script>
     
     <!-- Rollback UI Helper Functions -->
