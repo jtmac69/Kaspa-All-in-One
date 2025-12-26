@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Handling Test - Kaspa Wizard</title>
+    <link rel="stylesheet" href="/styles/wizard.css">
+    <link rel="stylesheet" href="/styles/components/install.css">
+    <style>
+        body {
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-controls {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .test-button {
+            margin: 5px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .test-button.primary {
+            background: #3498db;
+            color: white;
+        }
+        .test-button.danger {
+            background: #e74c3c;
+            color: white;
+        }
+        .test-button.warning {
+            background: #f39c12;
+            color: white;
+        }
+        .test-button.success {
+            background: #27ae60;
+            color: white;
+        }
+        .install-progress {
+            margin-top: 20px;
+        }
+        .progress-bar-container {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        #install-progress-bar {
+            height: 100%;
+            background: #3498db;
+            transition: width 0.5s ease-in-out;
+        }
+        #install-progress-percentage {
+            text-align: center;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .install-status {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        #install-status-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        #install-status-message {
+            color: #7f8c8d;
+        }
+        .install-steps {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .install-step {
+            padding: 15px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .install-step-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .install-step-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .install-step-status {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+        .install-logs {
+            margin-top: 20px;
+        }
+        .install-logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #2c3e50;
+            color: white;
+            border-radius: 6px 6px 0 0;
+        }
+        #install-logs-content {
+            display: none;
+        }
+        #install-logs-text {
+            height: 200px;
+            overflow-y: auto;
+            padding: 15px;
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border-radius: 0 0 6px 6px;
+            white-space: pre-wrap;
+        }
+        .test-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+        }
+        .test-info h3 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        .test-info ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .test-info li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Error Handling Test</h1>
+        <p>Test the installation error handling and recovery functionality.</p>
+
+        <div class="test-controls">
+            <h3>Simulate Errors:</h3>
+            <button class="test-button danger" onclick="simulateConfigError()">Config Error</button>
+            <button class="test-button danger" onclick="simulatePullError()">Pull Error</button>
+            <button class="test-button danger" onclick="simulateBuildError()">Build Error</button>
+            <button class="test-button danger" onclick="simulateDeployError()">Deploy Error</button>
+            <button class="test-button danger" onclick="simulateValidateError()">Validate Error</button>
+            <button class="test-button warning" onclick="simulateNetworkError()">Network Error</button>
+            <button class="test-button warning" onclick="simulatePermissionError()">Permission Error</button>
+            <button class="test-button warning" onclick="simulateDiskError()">Disk Error</button>
+            
+            <h3 style="margin-top: 20px;">Test Recovery:</h3>
+            <button class="test-button success" onclick="testRetry()">Test Retry</button>
+            <button class="test-button primary" onclick="testShowLogs()">Test Show Logs</button>
+            <button class="test-button primary" onclick="testExportDiagnostics()">Test Export Diagnostics</button>
+            <button class="test-button primary" onclick="testGoBack()">Test Go Back</button>
+            <button class="test-button primary" onclick="testStartOver()">Test Start Over</button>
+        </div>
+
+        <div class="install-progress">
+            <div class="progress-bar-container">
+                <div id="install-progress-bar" style="width: 0%"></div>
+            </div>
+            <div id="install-progress-percentage">0%</div>
+
+            <div class="install-status">
+                <div id="install-status-title">Ready to Test</div>
+                <div id="install-status-message">Click a button above to simulate an error</div>
+            </div>
+
+            <div class="install-steps">
+                <div class="install-step pending" data-step="env">
+                    <div class="install-step-icon">⏳</div>
+                    <div class="install-step-name">Environment</div>
+                    <div class="install-step-status">Pending</div>
+                </div>
+                <div class="install-step pending" data-step="pull">
+                    <div class="install-step-icon">⏳</div>
+                    <div class="install-step-name">Pull Images</div>
+                    <div class="install-step-status">Pending</div>
+                </div>
+                <div class="install-step pending" data-step="start">
+                    <div class="install-step-icon">⏳</div>
+                    <div class="install-step-name">Start Services</div>
+                    <div class="install-step-status">Pending</div>
+                </div>
+                <div class="install-step pending" data-step="health">
+                    <div class="install-step-icon">⏳</div>
+                    <div class="install-step-name">Health Check</div>
+                    <div class="install-step-status">Pending</div>
+                </div>
+            </div>
+
+            <!-- Error panel will be inserted here by displayErrorRecovery -->
+
+            <div class="install-logs">
+                <div class="install-logs-header">
+                    <span>📋 Installation Logs</span>
+                    <button class="test-button primary" onclick="toggleInstallLogs()">
+                        <span id="logs-toggle-text">Show Details</span>
+                    </button>
+                </div>
+                <div id="install-logs-content">
+                    <div id="install-logs-text">Waiting for installation to start...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-info">
+            <h3>📝 Test Scenarios</h3>
+            <ul>
+                <li><strong>Config Error:</strong> Simulates configuration validation failure</li>
+                <li><strong>Pull Error:</strong> Simulates Docker image pull failure</li>
+                <li><strong>Build Error:</strong> Simulates service build failure</li>
+                <li><strong>Deploy Error:</strong> Simulates service deployment failure</li>
+                <li><strong>Validate Error:</strong> Simulates health check failure</li>
+                <li><strong>Network Error:</strong> Simulates network connectivity issues</li>
+                <li><strong>Permission Error:</strong> Simulates permission denied errors</li>
+                <li><strong>Disk Error:</strong> Simulates insufficient disk space</li>
+            </ul>
+            <h3 style="margin-top: 15px;">✅ Expected Behavior</h3>
+            <ul>
+                <li>Error panel appears with detailed information</li>
+                <li>Failed step is marked with red X</li>
+                <li>Progress bar turns red</li>
+                <li>Stage-specific troubleshooting suggestions appear</li>
+                <li>Recovery options are displayed (Retry, Show Logs, Export, Go Back, Start Over)</li>
+                <li>Error details are logged</li>
+                <li>Retry clears error and restarts installation</li>
+                <li>Export creates downloadable diagnostic file</li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="module">
+        import { stateManager } from '/scripts/modules/state-manager.js';
+        import { 
+            handleInstallationError,
+            retryInstallation,
+            showInstallationLogs,
+            exportDiagnostics,
+            goBackFromError,
+            startOverFromError,
+            toggleInstallLogs
+        } from '/scripts/modules/install.js';
+
+        // Make functions globally available
+        window.stateManager = stateManager;
+        window.handleInstallationError = handleInstallationError;
+        window.retryInstallation = retryInstallation;
+        window.showInstallationLogs = showInstallationLogs;
+        window.exportDiagnostics = exportDiagnostics;
+        window.goBackFromError = goBackFromError;
+        window.startOverFromError = startOverFromError;
+        window.toggleInstallLogs = toggleInstallLogs;
+
+        // Mock navigation functions
+        window.previousStep = () => console.log('Navigate to previous step');
+        window.goToStep = (step) => console.log('Navigate to step:', step);
+
+        // Simulate different error scenarios
+        window.simulateConfigError = () => {
+            handleInstallationError({
+                stage: 'config',
+                message: 'Configuration validation failed',
+                errors: [
+                    'External IP address is invalid',
+                    'Password must be at least 8 characters',
+                    'Port 8080 is already in use'
+                ]
+            });
+        };
+
+        window.simulatePullError = () => {
+            handleInstallationError({
+                stage: 'pull',
+                message: 'Failed to pull Docker images',
+                error: 'Network timeout while downloading kaspad:latest',
+                results: [
+                    { image: 'kaspad:latest', success: false, error: 'Network timeout' },
+                    { image: 'postgres:15', success: true },
+                    { image: 'nginx:alpine', success: false, error: 'Rate limit exceeded' }
+                ]
+            });
+        };
+
+        window.simulateBuildError = () => {
+            handleInstallationError({
+                stage: 'build',
+                message: 'Service build failed',
+                error: 'Build failed for service: dashboard',
+                results: [
+                    { service: 'dashboard', success: false, error: 'npm install failed' },
+                    { service: 'wizard', success: true }
+                ]
+            });
+        };
+
+        window.simulateDeployError = () => {
+            handleInstallationError({
+                stage: 'deploy',
+                message: 'Failed to start services',
+                error: 'Port 16110 is already in use by another process'
+            });
+        };
+
+        window.simulateValidateError = () => {
+            handleInstallationError({
+                stage: 'validate',
+                message: 'Health check failed',
+                error: 'Service kaspad is not responding after 30 seconds'
+            });
+        };
+
+        window.simulateNetworkError = () => {
+            handleInstallationError({
+                stage: 'pull',
+                message: 'Network connection failed',
+                error: 'Unable to connect to Docker Hub. Please check your internet connection and try again.'
+            });
+        };
+
+        window.simulatePermissionError = () => {
+            handleInstallationError({
+                stage: 'config',
+                message: 'Permission denied',
+                error: 'Cannot write to /var/lib/docker. Please check file permissions and ensure Docker has necessary access.'
+            });
+        };
+
+        window.simulateDiskError = () => {
+            handleInstallationError({
+                stage: 'pull',
+                message: 'Insufficient disk space',
+                error: 'Not enough disk space available. Need 50GB, only 10GB free. Please free up disk space and try again.'
+            });
+        };
+
+        // Test recovery functions
+        window.testRetry = () => {
+            console.log('Testing retry functionality...');
+            retryInstallation();
+        };
+
+        window.testShowLogs = () => {
+            console.log('Testing show logs functionality...');
+            showInstallationLogs();
+        };
+
+        window.testExportDiagnostics = () => {
+            console.log('Testing export diagnostics functionality...');
+            // Set up some test data
+            stateManager.set('configuration', {
+                externalIp: '192.168.1.100',
+                publicNode: true
+            });
+            stateManager.set('selectedProfiles', ['core', 'explorer']);
+            exportDiagnostics();
+        };
+
+        window.testGoBack = () => {
+            console.log('Testing go back functionality...');
+            goBackFromError();
+        };
+
+        window.testStartOver = () => {
+            console.log('Testing start over functionality...');
+            startOverFromError();
+        };
+
+        console.log('Error handling test page loaded');
+        console.log('Available functions:', {
+            simulateConfigError: typeof window.simulateConfigError,
+            simulatePullError: typeof window.simulatePullError,
+            handleInstallationError: typeof window.handleInstallationError,
+            retryInstallation: typeof window.retryInstallation
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Display Test</title>
+    <link rel="stylesheet" href="/styles/wizard.css">
+    <style>
+        body {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--background);
+        }
+        .test-controls {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+        .test-controls h2 {
+            margin-top: 0;
+            color: var(--text-primary);
+        }
+        .test-button {
+            margin: 5px;
+            padding: 10px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .test-button:hover {
+            opacity: 0.9;
+        }
+        .test-info {
+            background: rgba(70, 130, 180, 0.1);
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid var(--primary);
+        }
+        .test-info strong {
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <h1>Enhanced Profile Display Test</h1>
+    
+    <div class="test-info">
+        <strong>Test Instructions:</strong>
+        <ol>
+            <li>Click the test scenario buttons below to populate state with different profile combinations</li>
+            <li>Click "Display Review" to render the profile cards</li>
+            <li>Verify that each profile shows: name, description, services list, and resource requirements</li>
+            <li>Check that multiple profiles are displayed with separators</li>
+        </ol>
+    </div>
+    
+    <div class="test-controls">
+        <h2>Test Scenarios</h2>
+        <button class="test-button" onclick="testSingleProfile()">Single Profile (Core)</button>
+        <button class="test-button" onclick="testTwoProfiles()">Two Profiles (Core + Explorer)</button>
+        <button class="test-button" onclick="testThreeProfiles()">Three Profiles (Core + Explorer + Mining)</button>
+        <button class="test-button" onclick="testAllProfiles()">All Profiles</button>
+        <button class="test-button" onclick="clearState()">Clear State</button>
+        <br><br>
+        <button class="test-button" onclick="displayReview()" style="background: #2196F3;">Display Review</button>
+    </div>
+    
+    <!-- Review Step -->
+    <div class="wizard-step active" id="step-review">
+        <div class="step-header">
+            <h2 class="step-title">Review Your Configuration</h2>
+            <p class="step-description">
+                Verify your selections before installation
+            </p>
+        </div>
+        
+        <div class="review-sections">
+            <div class="review-section">
+                <h3 class="review-section-title">Selected Profiles</h3>
+                <div class="review-content">
+                    <div id="review-profiles" style="width: 100%;">
+                        Not loaded yet
+                    </div>
+                </div>
+            </div>
+            
+            <div class="review-section">
+                <h3 class="review-section-title">Summary</h3>
+                <div class="review-content">
+                    <div class="review-item">
+                        <span class="review-label">Total Services:</span>
+                        <span class="review-value" id="review-service-count">Not loaded</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="review-section">
+                <h3 class="review-section-title">Combined Resource Requirements</h3>
+                <div class="review-content">
+                    <div class="review-item">
+                        <span class="review-label">CPU:</span>
+                        <span class="review-value" id="review-cpu">Not loaded</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">RAM:</span>
+                        <span class="review-value" id="review-ram">Not loaded</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Disk:</span>
+                        <span class="review-value" id="review-disk">Not loaded</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="review-section">
+                <h3 class="review-section-title">Network Configuration</h3>
+                <div class="review-content">
+                    <div class="review-item">
+                        <span class="review-label">External IP:</span>
+                        <span class="review-value" id="review-external-ip">Not loaded</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Public Node:</span>
+                        <span class="review-value" id="review-public-node">Not loaded</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { stateManager } from '/scripts/modules/state-manager.js';
+        import { displayConfigurationSummary } from '/scripts/modules/review.js';
+        
+        // Make functions available globally
+        window.stateManager = stateManager;
+        window.displayReview = displayConfigurationSummary;
+        
+        // Test scenarios
+        window.testSingleProfile = () => {
+            console.log('Test: Single Profile (Core)');
+            stateManager.set('selectedProfiles', ['core']);
+            stateManager.set('configuration', {
+                externalIp: '192.168.1.100',
+                publicNode: false
+            });
+            alert('Loaded: Core profile');
+        };
+        
+        window.testTwoProfiles = () => {
+            console.log('Test: Two Profiles (Core + Explorer)');
+            stateManager.set('selectedProfiles', ['core', 'explorer']);
+            stateManager.set('configuration', {
+                externalIp: '',
+                publicNode: true
+            });
+            alert('Loaded: Core + Explorer profiles');
+        };
+        
+        window.testThreeProfiles = () => {
+            console.log('Test: Three Profiles (Core + Explorer + Mining)');
+            stateManager.set('selectedProfiles', ['core', 'explorer', 'mining']);
+            stateManager.set('configuration', {
+                externalIp: '10.0.0.50',
+                publicNode: true
+            });
+            alert('Loaded: Core + Explorer + Mining profiles');
+        };
+        
+        window.testAllProfiles = () => {
+            console.log('Test: All Profiles');
+            stateManager.set('selectedProfiles', ['core', 'core-remote', 'core-local', 'prod', 'explorer', 'archive', 'mining', 'dev']);
+            stateManager.set('configuration', {
+                externalIp: '203.0.113.42',
+                publicNode: true
+            });
+            alert('Loaded: All 8 profiles');
+        };
+        
+        window.clearState = () => {
+            stateManager.reset();
+            document.getElementById('review-profiles').textContent = 'Not loaded yet';
+            document.getElementById('review-service-count').textContent = 'Not loaded';
+            document.getElementById('review-cpu').textContent = 'Not loaded';
+            document.getElementById('review-ram').textContent = 'Not loaded';
+            document.getElementById('review-disk').textContent = 'Not loaded';
+            document.getElementById('review-external-ip').textContent = 'Not loaded';
+            document.getElementById('review-public-node').textContent = 'Not loaded';
+            alert('State cleared');
+        };
+        
+        console.log('Enhanced profile display test page loaded');
+    </script>
+</body>
+</html>

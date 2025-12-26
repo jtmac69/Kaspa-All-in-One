@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Validation Test</title>
+    <link rel="stylesheet" href="public/styles/wizard.css">
+    <style>
+        body {
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+        }
+        .test-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+        }
+        .test-result.success {
+            background: var(--success-light);
+            color: #000;
+        }
+        .test-result.error {
+            background: var(--error-light);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Form Validation Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: IP Address Validation</h2>
+        <div class="form-group">
+            <label for="test-ip" class="form-label">External IP Address</label>
+            <input type="text" id="test-ip" class="form-input" placeholder="Enter IP address" />
+        </div>
+        <button class="btn-primary" onclick="testIPValidation()">Test IP Validation</button>
+        <div id="ip-result" class="test-result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Password Validation</h2>
+        <div class="form-group">
+            <label for="test-password" class="form-label">Database Password</label>
+            <input type="password" id="test-password" class="form-input" placeholder="Enter password" />
+        </div>
+        <button class="btn-primary" onclick="testPasswordValidation()">Test Password Validation</button>
+        <div id="password-result" class="test-result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Custom Environment Variables Validation</h2>
+        <div class="form-group">
+            <label for="test-env" class="form-label">Custom Environment Variables</label>
+            <textarea id="test-env" class="form-textarea" rows="6" placeholder="KEY=value"></textarea>
+        </div>
+        <button class="btn-primary" onclick="testEnvValidation()">Test Env Validation</button>
+        <div id="env-result" class="test-result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 4: Full Form Validation</h2>
+        <div class="config-sections">
+            <div class="config-section">
+                <h3 class="config-section-title">Network Configuration</h3>
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="external-ip" class="form-label">External IP Address</label>
+                        <input type="text" id="external-ip" class="form-input" placeholder="Auto-detect" />
+                    </div>
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <h3 class="config-section-title">Database Configuration</h3>
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="db-password" class="form-label">Database Password</label>
+                        <input type="password" id="db-password" class="form-input" placeholder="Auto-generated" />
+                    </div>
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <h3 class="config-section-title">Advanced Options</h3>
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="custom-env" class="form-label">Custom Environment Variables</label>
+                        <textarea id="custom-env" class="form-textarea" rows="6" placeholder="KEY=value"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="btn-primary" onclick="testFullValidation()">Test Full Validation</button>
+        <div id="full-result" class="test-result" style="display: none;"></div>
+    </div>
+    
+    <script type="module">
+        import { setupFormValidation } from './public/scripts/modules/configure.js';
+        import { stateManager } from './public/scripts/modules/state-manager.js';
+        
+        // Set up validation on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            setupFormValidation();
+            console.log('Form validation initialized');
+            
+            // Set selected profiles for testing
+            stateManager.set('selectedProfiles', ['explorer', 'prod']);
+        });
+        
+        // Test functions
+        window.testIPValidation = async function() {
+            const input = document.getElementById('test-ip');
+            const result = document.getElementById('ip-result');
+            
+            // Trigger blur event to validate
+            input.dispatchEvent(new Event('blur'));
+            
+            setTimeout(() => {
+                const hasError = input.classList.contains('field-error');
+                result.style.display = 'block';
+                result.className = 'test-result ' + (hasError ? 'error' : 'success');
+                result.textContent = hasError ? 
+                    'FAIL: Invalid IP address detected' : 
+                    'PASS: Valid IP address or empty (optional)';
+            }, 100);
+        };
+        
+        window.testPasswordValidation = function() {
+            const input = document.getElementById('test-password');
+            const result = document.getElementById('password-result');
+            
+            // Trigger blur event to validate
+            input.dispatchEvent(new Event('blur'));
+            
+            setTimeout(() => {
+                const hasError = input.classList.contains('field-error');
+                result.style.display = 'block';
+                result.className = 'test-result ' + (hasError ? 'error' : 'success');
+                result.textContent = hasError ? 
+                    'FAIL: Password too short (min 16 chars)' : 
+                    'PASS: Password meets requirements';
+            }, 100);
+        };
+        
+        window.testEnvValidation = function() {
+            const input = document.getElementById('test-env');
+            const result = document.getElementById('env-result');
+            
+            // Trigger blur event to validate
+            input.dispatchEvent(new Event('blur'));
+            
+            setTimeout(() => {
+                const hasError = input.classList.contains('field-error');
+                result.style.display = 'block';
+                result.className = 'test-result ' + (hasError ? 'error' : 'success');
+                result.textContent = hasError ? 
+                    'FAIL: Invalid environment variable format' : 
+                    'PASS: Valid environment variable format';
+            }, 100);
+        };
+        
+        window.testFullValidation = async function() {
+            const { validateConfiguration } = await import('./public/scripts/modules/configure.js');
+            const result = document.getElementById('full-result');
+            
+            try {
+                const isValid = await validateConfiguration();
+                result.style.display = 'block';
+                result.className = 'test-result ' + (isValid ? 'success' : 'error');
+                result.textContent = isValid ? 
+                    'PASS: All fields validated successfully' : 
+                    'FAIL: Validation errors found (check console)';
+            } catch (error) {
+                result.style.display = 'block';
+                result.className = 'test-result error';
+                result.textContent = 'ERROR: ' + error.message;
+            }
+        };
+    </script>
+</body>
+</html>

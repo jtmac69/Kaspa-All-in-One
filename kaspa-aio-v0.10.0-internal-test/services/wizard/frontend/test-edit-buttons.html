@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Edit Buttons Test</title>
+    <style>
+        :root {
+            --primary: #4682b4;
+            --surface: #ffffff;
+            --border: #e0e0e0;
+            --border-light: #f0f0f0;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --warning: #f5a623;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-6: 24px;
+            --space-8: 32px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: var(--text-primary);
+        }
+
+        .test-controls {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .test-controls button {
+            margin: 5px;
+            padding: 10px 20px;
+            border: 1px solid var(--primary);
+            background: white;
+            color: var(--primary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .test-controls button:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .review-sections {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-6);
+            margin-bottom: var(--space-8);
+        }
+
+        .review-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: var(--space-6);
+        }
+
+        .review-section.warning {
+            border-color: var(--warning);
+            background: rgba(245, 166, 35, 0.05);
+            display: flex;
+            gap: var(--space-4);
+        }
+
+        .review-section-title {
+            font-size: 18px;
+            margin-bottom: var(--space-4);
+            color: var(--text-primary);
+            display: inline-block;
+        }
+
+        .review-edit-btn {
+            float: right;
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--primary);
+            background: transparent;
+            border: 1px solid var(--primary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: -2px;
+        }
+
+        .review-edit-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(70, 130, 180, 0.2);
+        }
+
+        .review-edit-btn:active {
+            transform: translateY(0);
+        }
+
+        .review-content {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+            clear: both;
+        }
+
+        .review-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-3) 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .review-item:last-child {
+            border-bottom: none;
+        }
+
+        .review-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .review-value {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .review-warning-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .review-warning-content {
+            flex: 1;
+        }
+
+        .review-warning-title {
+            font-size: 16px;
+            margin-bottom: var(--space-2);
+            color: var(--warning);
+        }
+
+        .review-warning-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .review-warning-list li {
+            font-size: 14px;
+            color: var(--text-secondary);
+            padding-left: var(--space-4);
+            position: relative;
+            margin-bottom: var(--space-2);
+        }
+
+        .review-profile-card {
+            background: #f9f9f9;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: var(--space-4);
+            margin-bottom: var(--space-3);
+        }
+
+        .review-profile-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .review-profile-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-3);
+        }
+
+        .review-profile-services {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-family: 'Courier New', monospace;
+            margin-bottom: var(--space-3);
+        }
+
+        .review-profile-resources {
+            display: flex;
+            gap: var(--space-4);
+        }
+
+        .resource-item {
+            font-size: 12px;
+            padding: 4px 8px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        .review-profile-separator {
+            height: 1px;
+            background: var(--border-light);
+            margin: var(--space-4) 0;
+        }
+
+        .log {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-left: 3px solid var(--primary);
+            padding-left: 10px;
+        }
+
+        .log-entry.success {
+            border-left-color: #4caf50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .log-entry.error {
+            border-left-color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Review Edit Buttons Test</h1>
+        
+        <div class="test-controls">
+            <h3>Test Controls</h3>
+            <button onclick="testAddEditButtons()">Add Edit Buttons</button>
+            <button onclick="testRemoveEditButtons()">Remove Edit Buttons</button>
+            <button onclick="testEditButtonClick('profiles')">Test Profile Edit</button>
+            <button onclick="testEditButtonClick('configure')">Test Config Edit</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+
+        <div class="review-sections">
+            <div class="review-section">
+                <h3 class="review-section-title">Selected Profiles</h3>
+                <div class="review-content">
+                    <div id="review-profiles">
+                        <div class="review-profile-card">
+                            <div class="review-profile-header">
+                                <strong>Core</strong>
+                            </div>
+                            <div class="review-profile-description">
+                                Essential services (Dashboard, Nginx)
+                            </div>
+                            <div class="review-profile-services">
+                                Services: dashboard, nginx
+                            </div>
+                            <div class="review-profile-resources">
+                                <span class="resource-item">CPU: 1 core</span>
+                                <span class="resource-item">RAM: 1 GB</span>
+                                <span class="resource-item">Disk: 1 GB</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Total Services:</span>
+                        <span class="review-value" id="review-service-count">2 services</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="review-section">
+                <h3 class="review-section-title">Resource Requirements</h3>
+                <div class="review-content">
+                    <div class="review-item">
+                        <span class="review-label">CPU:</span>
+                        <span class="review-value" id="review-cpu">1 core</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">RAM:</span>
+                        <span class="review-value" id="review-ram">1 GB</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Disk:</span>
+                        <span class="review-value" id="review-disk">1 GB</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="review-section">
+                <h3 class="review-section-title">Network Configuration</h3>
+                <div class="review-content">
+                    <div class="review-item">
+                        <span class="review-label">External IP:</span>
+                        <span class="review-value" id="review-external-ip">Auto-detect</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Public Node:</span>
+                        <span class="review-value" id="review-public-node">Disabled</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="review-section warning">
+                <div class="review-warning-icon">⚠️</div>
+                <div class="review-warning-content">
+                    <h4 class="review-warning-title">Before You Continue</h4>
+                    <ul class="review-warning-list">
+                        <li>Ensure you have sufficient disk space available</li>
+                        <li>Initial blockchain sync may take several hours</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="log" id="log">
+            <strong>Test Log:</strong>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function clearLog() {
+            const logEl = document.getElementById('log');
+            logEl.innerHTML = '<strong>Test Log:</strong>';
+            log('Log cleared');
+        }
+
+        function testAddEditButtons() {
+            log('Adding edit buttons...');
+            
+            const reviewSections = document.querySelectorAll('.review-section');
+            let addedCount = 0;
+            
+            reviewSections.forEach((section) => {
+                if (section.classList.contains('warning')) {
+                    log('Skipping warning section', 'info');
+                    return;
+                }
+                
+                if (section.querySelector('.review-edit-btn')) {
+                    log('Edit button already exists in section', 'info');
+                    return;
+                }
+                
+                const titleElement = section.querySelector('.review-section-title');
+                if (!titleElement) {
+                    log('No title element found', 'error');
+                    return;
+                }
+                
+                const title = titleElement.textContent.trim();
+                let targetStep = null;
+                let buttonText = 'Edit';
+                
+                if (title.includes('Profile')) {
+                    targetStep = 'profiles';
+                    buttonText = 'Edit Profiles';
+                } else if (title.includes('Network') || title.includes('Configuration')) {
+                    targetStep = 'configure';
+                    buttonText = 'Edit Configuration';
+                }
+                
+                if (targetStep) {
+                    const editButton = document.createElement('button');
+                    editButton.className = 'review-edit-btn';
+                    editButton.textContent = buttonText;
+                    editButton.setAttribute('data-target-step', targetStep);
+                    editButton.onclick = () => {
+                        log(`Edit button clicked for step: ${targetStep}`, 'success');
+                        alert(`Would navigate to step: ${targetStep}`);
+                    };
+                    
+                    titleElement.parentNode.insertBefore(editButton, titleElement.nextSibling);
+                    addedCount++;
+                    log(`Added "${buttonText}" button to "${title}" section`, 'success');
+                }
+            });
+            
+            log(`Total edit buttons added: ${addedCount}`, 'success');
+        }
+
+        function testRemoveEditButtons() {
+            log('Removing edit buttons...');
+            const buttons = document.querySelectorAll('.review-edit-btn');
+            buttons.forEach(btn => btn.remove());
+            log(`Removed ${buttons.length} edit buttons`, 'success');
+        }
+
+        function testEditButtonClick(targetStep) {
+            log(`Testing edit button click for step: ${targetStep}`);
+            const button = document.querySelector(`[data-target-step="${targetStep}"]`);
+            if (button) {
+                button.click();
+            } else {
+                log(`No edit button found for step: ${targetStep}`, 'error');
+            }
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            log('Page loaded');
+            log('Click "Add Edit Buttons" to test functionality');
+        });
+    </script>
+</body>
+</html>

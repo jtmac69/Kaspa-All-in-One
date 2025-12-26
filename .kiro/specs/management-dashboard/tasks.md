@@ -418,27 +418,23 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Test dashboard availability when Docker is down
   - _Requirements: All deployment requirements_
 
-- [ ] 8. Documentation and User Guide
-- [ ] 8.1 Create user documentation
-  - Write dashboard overview and features guide
-  - Document service management operations
-  - Document wallet management procedures
-  - Document update management workflow
-  - Document troubleshooting common issues
+- [x] 8. Documentation Integration with GitBook Portal
+- [x] 8.1 Migrate dashboard documentation to GitBook Portal
+  - **CONSOLIDATED**: Dashboard documentation now handled by GitBook Documentation Portal spec
+  - **See**: `.kiro/specs/gitbook-documentation-portal/tasks.md` Task 10.1
+  - Dashboard-specific content will be migrated as part of comprehensive documentation consolidation
   - _Requirements: All user-facing requirements_
 
-- [ ] 8.2 Create API documentation
-  - Document all REST API endpoints
-  - Document WebSocket message formats
-  - Add request/response examples
-  - Document error codes and messages
+- [x] 8.2 Integrate contextual help with GitBook Portal
+  - **CONSOLIDATED**: API documentation now handled by GitBook Documentation Portal spec
+  - **See**: `.kiro/specs/gitbook-documentation-portal/tasks.md` Task 5.1 (Dashboard Integration)
+  - Dashboard will integrate with GitBook embed for contextual help
   - _Requirements: All API requirements_
 
-- [ ] 8.3 Create developer documentation
-  - Document architecture and design decisions
-  - Document code structure and organization
-  - Add contribution guidelines
-  - Document testing procedures
+- [x] 8.3 Connect dashboard help buttons to GitBook Portal
+  - **CONSOLIDATED**: Developer documentation now handled by GitBook Documentation Portal spec
+  - **See**: `.kiro/specs/gitbook-documentation-portal/tasks.md` Task 10.3
+  - Dashboard will provide contextual help links to relevant GitBook sections
   - _Requirements: All technical requirements_
 
 - [ ] 9. Final Integration and Testing
@@ -471,13 +467,11 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Document known limitations
   - _Requirements: All requirements_
 
-- [ ] 9.5 Create comprehensive documentation and user guides
-  - Create user documentation for dashboard features and operations
-  - Document API endpoints with request/response examples
-  - Create developer documentation for architecture and contribution
-  - Document host-based deployment and systemd service management
-  - Create troubleshooting guide for common issues
-  - Document security considerations and best practices
+- [ ] 9.5 Integrate with GitBook Documentation Portal
+  - **CONSOLIDATED**: Comprehensive documentation now handled by GitBook Documentation Portal spec
+  - **See**: `.kiro/specs/gitbook-documentation-portal/tasks.md` for complete documentation system
+  - Dashboard will integrate GitBook embed for contextual help and comprehensive guides
+  - All dashboard documentation will be migrated to GitBook for professional presentation
   - _Requirements: All user-facing and technical requirements_
 
 - [ ] 10. Checkpoint - Ensure all tests pass

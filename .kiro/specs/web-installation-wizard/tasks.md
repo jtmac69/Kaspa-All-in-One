@@ -194,27 +194,17 @@ This implementation plan adds profile-specific configuration options to the wiza
   - Verify docker-compose.yml uses correct ports and network
   - _Requirements: 3.9, 3.10, 3.11, 7.1_
 
-- [x] 7. Documentation Updates
-  - Update TESTING.md to reflect new configuration options
-  - Update user documentation
-  - Add configuration examples
-  - _Requirements: All_
-
-- [x] 7.1 Update TESTING.md Core Profile test
-  - Update Step 4: Configuration section
-  - Document network selection option
-  - Document port configuration modal
-  - Document data directory configuration in advanced options
-  - Add test cases for port validation
-  - Add test cases for network change warning
+- [ ] 7. Documentation Integration with GitBook Portal
+- [ ] 7.1 Migrate wizard documentation to GitBook Portal
+  - **CONSOLIDATED**: TESTING.md updates now handled by GitBook Documentation Portal spec
+  - **See**: `.kiro/specs/gitbook-documentation-portal/tasks.md` Task 10.1
+  - All wizard documentation will be migrated to GitBook for comprehensive user guides
   - _Requirements: 3.9, 3.10, 3.11, 4.7_
 
-- [x] 7.2 Create configuration guide
-  - Document all available configuration options
-  - Explain basic vs advanced options
-  - Provide examples for common scenarios
-  - Document port configuration best practices
-  - Explain mainnet vs testnet differences
+- [ ] 7.2 Integrate wizard help with GitBook Portal
+  - **CONSOLIDATED**: Configuration guide now handled by GitBook Documentation Portal spec
+  - **See**: `.kiro/specs/gitbook-documentation-portal/tasks.md` Task 4.2 (Wizard Integration)
+  - Wizard will integrate GitBook embed for contextual help during installation
   - _Requirements: 3.12_
 
 - [x] 8.11 Implement Infrastructure Validation System

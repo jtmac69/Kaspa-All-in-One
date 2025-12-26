@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaspa All-in-One Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <div class="container">
+        <header role="banner">
+            <h1>⚡ Kaspa All-in-One Dashboard</h1>
+            <nav class="header-controls" role="navigation" aria-label="Dashboard controls">
+                <label for="profile-filter" class="sr-only">Filter services by profile</label>
+                <select id="profile-filter" class="profile-selector" aria-label="Filter services by profile">
+                    <option value="all">All Services</option>
+                </select>
+                <button id="updates-btn" class="btn-icon" title="Check for updates" aria-label="Check for updates" onclick="dashboard.openUpdatesModal()">
+                    ⬆️
+                    <span class="update-badge" id="update-badge" style="display: none;" aria-live="polite">0</span>
+                </button>
+                <button id="config-btn" class="btn-icon" title="Configuration settings" aria-label="Open configuration settings">⚙️</button>
+                <div class="status-indicator" id="connection-status" role="status" aria-live="polite">
+                    <span class="dot" aria-hidden="true"></span>
+                    <span class="text">Connecting...</span>
+                </div>
+            </nav>
+        </header>
+
+        <main role="main" id="main-content">
+            <!-- Overview Cards -->
+            <section class="overview" aria-labelledby="overview-heading">
+                <h2 id="overview-heading" class="sr-only">System Overview</h2>
+                <article class="card kaspa-stats" role="region" aria-labelledby="kaspa-network-heading">
+                    <h2 id="kaspa-network-heading">Kaspa Network</h2>
+                    <div class="stats-grid" role="list" aria-label="Network statistics">
+                        <div class="stat" role="listitem">
+                            <span class="label">Block Height</span>
+                            <span class="value" id="block-height" aria-live="polite">-</span>
+                        </div>
+                        <div class="stat" role="listitem">
+                            <span class="label">Network Hash Rate</span>
+                            <span class="value" id="hash-rate" aria-live="polite">-</span>
+                        </div>
+                        <div class="stat" role="listitem">
+                            <span class="label">Difficulty</span>
+                            <span class="value" id="difficulty" aria-live="polite">-</span>
+                        </div>
+                        <div class="stat" role="listitem">
+                            <span class="label">Peers</span>
+                            <span class="value" id="peer-count" aria-live="polite">-</span>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="card node-info" role="region" aria-labelledby="node-status-heading">
+                    <h2 id="node-status-heading">Local Node Status</h2>
+                    <div class="node-status" id="node-status">
+                        <div class="sync-status-container" id="sync-container">
+                            <div class="sync-header">
+                                <span class="sync-label">Sync Status</span>
+                                <span class="sync-value" id="sync-status" aria-live="polite">Checking...</span>
+                            </div>
+                            <div class="sync-progress-bar" id="sync-progress-container" style="display: none;" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Synchronization progress">
+                                <div class="progress-bar">
+                                    <div class="progress sync-progress" id="sync-progress"></div>
+                                </div>
+                                <div class="sync-details">
+                                    <span id="sync-percentage" aria-live="polite">0%</span>
+                                    <span id="sync-eta" aria-live="polite">Calculating...</span>
+                                </div>
+                            </div>
+                            <div class="sync-notification" id="sync-notification" style="display: none;" role="alert">
+                                <span class="notification-icon" aria-hidden="true">⚠️</span>
+                                <span class="notification-text">Node is not synchronized with the network</span>
+                            </div>
+                        </div>
+                        
+                        <div class="node-stats-grid" role="list" aria-label="Node statistics">
+                            <div class="status-item" role="listitem">
+                                <span class="label">Block Height</span>
+                                <div class="value-container">
+                                    <span class="value" id="current-height" aria-live="polite">-</span>
+                                    <span class="network-height">/ <span id="network-height" aria-live="polite">-</span></span>
+                                </div>
+                            </div>
+                            <div class="status-item" role="listitem">
+                                <span class="label">Peers</span>
+                                <span class="value" id="peer-count-node" aria-live="polite">-</span>
+                            </div>
+                            <div class="status-item" role="listitem">
+                                <span class="label">Version</span>
+                                <span class="value" id="node-version" aria-live="polite">-</span>
+                            </div>
+                            <div class="status-item" role="listitem">
+                                <span class="label">Uptime</span>
+                                <span class="value" id="uptime" aria-live="polite">-</span>
+                            </div>
+                        </div>
+                        
+                        <div class="network-stats" id="network-stats" role="list" aria-label="Network statistics">
+                            <div class="stat-row" role="listitem">
+                                <span class="label">Network Hash Rate:</span>
+                                <span class="value" id="network-hashrate" aria-live="polite">-</span>
+                            </div>
+                            <div class="stat-row" role="listitem">
+                                <span class="label">Difficulty:</span>
+                                <span class="value" id="network-difficulty" aria-live="polite">-</span>
+                            </div>
+                            <div class="stat-row" role="listitem">
+                                <span class="label">Mempool Size:</span>
+                                <span class="value" id="mempool-size" aria-live="polite">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- Services Status -->
+            <section class="services" aria-labelledby="services-heading">
+                <div class="services-header">
+                    <h2 id="services-heading">Services Status</h2>
+                    <div class="services-controls" role="toolbar" aria-label="Service controls">
+                        <button id="toggle-view" class="btn-small" onclick="dashboard.toggleServiceView()" aria-label="Toggle service view layout">
+                            📊 Toggle View
+                        </button>
+                        <button id="refresh-services" class="btn-small" onclick="dashboard.refreshServices()" aria-label="Refresh service status">
+                            🔄 Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="services-container" id="services-grid" role="region" aria-live="polite" aria-label="Service status cards">
+                    <!-- Services will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Application Access Panel -->
+            <section class="applications" aria-labelledby="applications-heading">
+                <h2 id="applications-heading">Application Access</h2>
+                <div class="applications-grid" id="applications-grid" role="region" aria-label="Available applications">
+                    <!-- Applications will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Wallet Management -->
+            <section class="wallet" id="wallet-section" style="display: none;" aria-labelledby="wallet-heading">
+                <h2 id="wallet-heading">Wallet Management</h2>
+                <div class="wallet-container" id="wallet-container" role="region" aria-label="Wallet management interface">
+                    <!-- Wallet content will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="actions" aria-labelledby="actions-heading">
+                <h2 id="actions-heading">Quick Actions</h2>
+                <div class="actions-grid" role="toolbar" aria-label="System actions">
+                    <button class="action-btn" onclick="restartAllServices()" aria-label="Restart all services">
+                        🔄 Restart All Services
+                    </button>
+                    <button class="action-btn" onclick="updateServices()" aria-label="Update all services">
+                        ⬆️ Update Services
+                    </button>
+                    <button class="action-btn" onclick="backupData()" aria-label="Create system backup">
+                        💾 Backup Data
+                    </button>
+                </div>
+            </section>
+
+            <!-- System Resources -->
+            <section class="resources" aria-labelledby="resources-heading">
+                <div class="resources-header">
+                    <h2 id="resources-heading">System Resources</h2>
+                    <div class="resource-controls" role="toolbar" aria-label="Resource monitoring controls">
+                        <button id="monitoring-status" class="btn-small monitoring-indicator" onclick="dashboard.toggleResourceMonitoring()" aria-label="Toggle resource monitoring">
+                            🔴 Monitoring: Off
+                        </button>
+                        <button class="btn-small" onclick="dashboard.quickResourceCheck()" aria-label="Perform quick resource check">
+                            🔍 Quick Check
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="resource-overview" id="resource-overview">
+                    <div class="system-status" id="system-status" role="status" aria-live="polite">
+                        <span class="status-text">System Status: Normal</span>
+                        <button id="emergency-stop" class="btn-emergency" onclick="dashboard.emergencyStop()" style="display: none;" aria-label="Emergency stop all services">
+                            🚨 Emergency Stop
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="resource-cards" role="list" aria-label="System resource usage">
+                    <article class="resource-card" role="listitem">
+                        <div class="resource-header">
+                            <h3>CPU Usage</h3>
+                            <span class="resource-value" id="cpu-text" aria-live="polite">-</span>
+                        </div>
+                        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="CPU usage percentage">
+                            <div class="progress" id="cpu-progress"></div>
+                        </div>
+                        <div class="resource-details">
+                            <span class="load-average" id="load-average" aria-live="polite">Load: -</span>
+                            <span class="threshold-indicator" id="cpu-threshold" aria-live="polite"></span>
+                        </div>
+                    </article>
+                    
+                    <article class="resource-card" role="listitem">
+                        <div class="resource-header">
+                            <h3>Memory Usage</h3>
+                            <span class="resource-value" id="memory-text" aria-live="polite">-</span>
+                        </div>
+                        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Memory usage percentage">
+                            <div class="progress" id="memory-progress"></div>
+                        </div>
+                        <div class="resource-details">
+                            <span class="memory-info" id="memory-info" aria-live="polite">- / -</span>
+                            <span class="threshold-indicator" id="memory-threshold" aria-live="polite"></span>
+                        </div>
+                    </article>
+                    
+                    <article class="resource-card" role="listitem">
+                        <div class="resource-header">
+                            <h3>Disk Usage</h3>
+                            <span class="resource-value" id="disk-text" aria-live="polite">-</span>
+                        </div>
+                        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Disk usage percentage">
+                            <div class="progress" id="disk-progress"></div>
+                        </div>
+                        <div class="resource-details">
+                            <span class="disk-info" id="disk-info" aria-live="polite">- / -</span>
+                            <span class="threshold-indicator" id="disk-threshold" aria-live="polite"></span>
+                        </div>
+                    </article>
+                    
+                    <article class="resource-card" role="listitem">
+                        <div class="resource-header">
+                            <h3>System Info</h3>
+                            <span class="uptime-value" id="system-uptime" aria-live="polite">-</span>
+                        </div>
+                        <div class="system-metrics">
+                            <div class="metric-row">
+                                <span class="metric-label">Containers:</span>
+                                <span class="metric-value" id="container-count" aria-live="polite">-</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Docker Limits:</span>
+                                <button class="btn-small" onclick="dashboard.showDockerLimits()" aria-label="View Docker container resource limits">View</button>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+                
+                <!-- Per-service resource usage -->
+                <div class="service-resources" id="service-resources" style="display: none;" role="region" aria-labelledby="service-resources-heading">
+                    <h3 id="service-resources-heading">Per-Service Resource Usage</h3>
+                    <div class="service-resource-grid" id="service-resource-grid" role="list" aria-label="Service resource usage">
+                        <!-- Service resources will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Resource trend graphs -->
+                <div class="resource-trends" id="resource-trends" style="display: none;" role="region" aria-labelledby="resource-trends-heading">
+                    <h3 id="resource-trends-heading">Resource Trends (Last Hour)</h3>
+                    <div class="trend-charts">
+                        <canvas id="cpu-trend-chart" width="400" height="200" aria-label="CPU usage trend chart"></canvas>
+                        <canvas id="memory-trend-chart" width="400" height="200" aria-label="Memory usage trend chart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Modal for logs -->
+        <div id="logs-modal" class="modal" role="dialog" aria-labelledby="logs-title" aria-hidden="true">
+            <div class="modal-content">
+                <button class="close" onclick="closeLogs()" aria-label="Close logs modal">&times;</button>
+                <h2 id="logs-title">Service Logs</h2>
+                <div class="logs-container">
+                    <pre id="logs-content" role="log" aria-live="polite" aria-label="Service log output">Loading logs...</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for configuration -->
+        <div id="config-modal" class="modal" role="dialog" aria-labelledby="config-title" aria-hidden="true">
+            <div class="modal-content">
+                <button class="close" onclick="dashboard.closeConfigModal()" aria-label="Close configuration modal">&times;</button>
+                <h2 id="config-title">Configuration</h2>
+                <div id="config-form" class="config-form" role="form" aria-label="System configuration form">
+                    Loading configuration...
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for updates -->
+        <div id="updates-modal" class="modal" role="dialog" aria-labelledby="updates-title" aria-hidden="true">
+            <div class="modal-content updates-modal-content">
+                <button class="close" onclick="dashboard.closeUpdatesModal()" aria-label="Close updates modal">&times;</button>
+                <h2 id="updates-title">System Updates</h2>
+                <div class="updates-container">
+                    <div class="updates-header">
+                        <div class="updates-summary" id="updates-summary" role="status" aria-live="polite">
+                            <span class="summary-text">Checking for updates...</span>
+                            <button class="btn-small" onclick="dashboard.checkForUpdates()" aria-label="Check for updates now">
+                                🔄 Check Now
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="updates-content" id="updates-content" role="region" aria-label="Available updates">
+                        <!-- Updates will be populated by JavaScript -->
+                    </div>
+                    
+                    <div class="updates-history" role="region" aria-labelledby="update-history-heading">
+                        <h3 id="update-history-heading">Update History</h3>
+                        <div class="history-list" id="update-history" role="list" aria-label="Update history">
+                            <!-- History will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="dashboard-footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <span class="footer-text">⚡ Kaspa All-in-One Dashboard</span>
+            </div>
+            <div class="footer-actions">
+                <button class="btn-footer btn-report-bug" onclick="window.open('https://github.com/kaspa-kcoin/kaspa-all-in-one/issues/new?template=bug_report.md', '_blank')">
+                    🐛 Report Bug
+                </button>
+                <button class="btn-footer btn-suggest-feature" onclick="window.open('https://github.com/kaspa-kcoin/kaspa-all-in-one/issues/new?template=feature_request.md', '_blank')">
+                    💡 Suggest Feature
+                </button>
+                <button class="btn-footer btn-donate" onclick="window.open('https://kas.coffee/jtmac58', '_blank')">
+                    ☕ Buy me a Koffee
+                </button>
+            </div>
+            <div class="footer-links">
+                <a href="https://kaspa.org" target="_blank">kaspa.org</a>
+                <a href="https://github.com/kaspanet" target="_blank">GitHub</a>
+                <a href="https://discord.com/invite/ssB46MXzRU" target="_blank">Discord</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

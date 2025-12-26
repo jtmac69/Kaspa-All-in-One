@@ -661,15 +661,11 @@
   - Display indexer-specific metrics in dashboard (API requests, database size, sync status)
   - _Requirements: 6.1, 6.4_
 
-- [ ] 7.3 Integrate documentation and help system into dashboard
-  - Create embedded documentation viewer in dashboard (markdown rendering)
-  - Add contextual help system with tooltips and guided tours
-  - Implement searchable documentation with keyword indexing
-  - Create quick reference cards for common tasks
-  - Add links to external resources (GitHub, community forums, video tutorials)
-  - Implement "Help" button on each dashboard section with relevant docs
-  - Create interactive troubleshooting wizard (symptom → diagnosis → solution)
-  - Add FAQ section with expandable answers
+- [ ] 7.3 Integrate documentation and help system with GitBook Portal
+  - **CONSOLIDATED**: Documentation integration now handled by GitBook Documentation Portal spec
+  - **See**: `.kiro/specs/gitbook-documentation-portal/tasks.md` Task 5.1 (Dashboard Integration)
+  - Dashboard will integrate GitBook embed for contextual help and comprehensive documentation
+  - All existing documentation will be migrated to GitBook for professional presentation
   - _Requirements: 4.1, 4.2, 4.3_
 
 - [ ] 7.4 Implement service restart and reconfiguration from dashboard
@@ -712,11 +708,10 @@
 
 ## Phase 8: Documentation and User Experience Completion 📋 PLANNED
 
-- [ ] 8. Complete troubleshooting and maintenance documentation
-  - Document common installation and operation issues with step-by-step solutions
-  - Create diagnostic procedures for service failures and performance issues
-  - Build comprehensive FAQ section with community-driven content
-  - Add maintenance schedules and automated update procedures
+- [ ] 8. Documentation Integration with GitBook Portal
+  - **CONSOLIDATED**: Troubleshooting and maintenance documentation now handled by GitBook Documentation Portal spec
+  - **See**: `.kiro/specs/gitbook-documentation-portal/tasks.md` for comprehensive documentation system
+  - All project documentation will be migrated to GitBook for professional presentation and searchability
   - _Requirements: 4.3, 4.4_
 
 - [ ] 8.1 Implement user onboarding enhancements
