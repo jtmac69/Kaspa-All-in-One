@@ -21,7 +21,16 @@ jest.mock('fs', () => ({
     stat: jest.fn(),
     copyFile: jest.fn(),
     unlink: jest.fn()
-  }
+  },
+  // Add synchronous fs methods
+  existsSync: jest.fn(),
+  readFileSync: jest.fn(),
+  writeFileSync: jest.fn(),
+  statSync: jest.fn(),
+  mkdirSync: jest.fn(),
+  readdirSync: jest.fn(),
+  copyFileSync: jest.fn(),
+  unlinkSync: jest.fn()
 }));
 
 // Mock axios for HTTP requests

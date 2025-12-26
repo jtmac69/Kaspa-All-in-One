@@ -318,15 +318,15 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Test responsive breakpoints
   - _Requirements: 12.x_
 
-- [ ] 6. Integrate with Installation Wizard
-- [ ] 6.1 Implement wizard launch mechanism
+- [x] 6. Integrate with Installation Wizard
+- [x] 6.1 Implement wizard launch mechanism
   - Add POST /api/wizard/launch endpoint
   - Implement current configuration export
   - Add wizard process spawning on host
   - Implement wizard URL return
   - _Requirements: 9.1, 9.2_
 
-- [ ] 6.4 Enhance wizard launch mechanism for reconfiguration mode
+- [x] 6.2 Enhance wizard launch mechanism for reconfiguration mode
   - Update POST /api/wizard/launch endpoint to support reconfiguration mode
   - Implement current configuration analysis and export
   - Add configuration suggestion generation before wizard launch
@@ -335,14 +335,7 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Implement wizard URL return with mode parameters
   - _Requirements: 9.1, 9.2, 9.8, 9.9, 17.1, 17.2_
 
-- [ ] 6.5 Implement wizard completion handling
-  - Add wizard status polling
-  - Implement configuration reload after wizard completion
-  - Add service restart for changed services
-  - Display success notification
-  - _Requirements: 9.4, 9.5_
-
-- [ ] 6.5 Implement wizard completion handling
+- [x] 6.3 Implement wizard completion handling
   - Add wizard status polling with reconfiguration awareness
   - Implement configuration reload after wizard completion
   - Add selective service restart for changed services only
@@ -351,13 +344,7 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Refresh dashboard state after reconfiguration
   - _Requirements: 9.4, 9.5, 9.6, 9.7_
 
-- [ ] 6.6 Implement configuration synchronization
-  - Add configuration change detection
-  - Implement automatic dashboard refresh
-  - Add configuration history tracking
-  - _Requirements: 9.6, 9.7_
-
-- [ ] 6.6 Implement configuration synchronization
+- [x] 6.4 Implement configuration synchronization
   - Add configuration change detection with diff analysis
   - Implement automatic dashboard refresh after configuration changes
   - Add configuration history tracking with change attribution
@@ -365,14 +352,14 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Add configuration rollback capability
   - _Requirements: 9.6, 9.7_
 
-- [ ] 6.7 Implement resource monitoring integration with wizard
+- [x] 6.5 Implement resource monitoring integration with wizard
   - Add automatic resource monitoring startup for indexer-services profile
   - Implement resource monitoring configuration in wizard completion
   - Add resource monitoring status to wizard completion summary
   - Add option to enable/disable automatic resource monitoring
   - _Requirements: 17.1, 17.2, 17.3, 17.4, 17.5, 17.6, 17.7, 17.8_
 
-- [ ] 6.8 Write integration tests for wizard interaction
+- [x] 6.6 Write integration tests for wizard interaction
   - Test wizard launch from dashboard
   - Test configuration passing to wizard
   - Test dashboard refresh after reconfiguration
@@ -383,7 +370,7 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - _Requirements: 9.x, 17.x_
 
 - [ ] 7. Host-Based Deployment Configuration
-- [ ] 7.1 Create installation script for host-based deployment
+- [x] 7.1 Create installation script for host-based deployment
   - Check and install Node.js if needed
   - Install npm dependencies
   - Create systemd service file
@@ -391,7 +378,7 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Verify installation success
   - _Requirements: All deployment requirements_
 
-- [ ] 7.2 Create systemd service configuration
+- [x] 7.2 Create systemd service configuration
   - Define service unit file with proper dependencies
   - Configure environment variables
   - Set up auto-restart on failure
@@ -399,28 +386,30 @@ This document outlines the implementation tasks for the Management Dashboard, or
   - Add service management commands documentation
   - _Requirements: All deployment requirements_
 
-- [ ] 7.3 Update Nginx container configuration for host proxy
-  - Configure upstream to host.docker.internal:8080
-  - Add fallback to 172.17.0.1:8080 for Linux
-  - Add WebSocket support with proper headers
-  - Add security headers
-  - Configure SSL/TLS if enabled
-  - _Requirements: 13.1_
+- [x] 7.3 Update Nginx container configuration for Kaspa applications only
+  - Remove dashboard proxy configuration (dashboard runs directly on host:8080)
+  - Remove wizard proxy configuration (wizard runs directly on host:3000)
+  - Add service selection landing page with links to all services
+  - Maintain proxy configuration for containerized Kaspa applications only
+  - Add enhanced security headers for container services
+  - Configure SSL/TLS for container services if enabled
+  - _Requirements: 13.1, Simplified Architecture_
 
-- [ ] 7.4 Create uninstall and update scripts
+- [x] 7.4 Create uninstall and update scripts
   - Create uninstall script to remove service and files
   - Create update script to pull latest code and restart
   - Add backup before update functionality
   - _Requirements: All deployment requirements_
 
-- [ ] 7.5 Create environment variable documentation
+- [x] 7.5 Create environment variable documentation
   - Document all required variables
   - Document optional variables with defaults
   - Add configuration examples
   - Document systemd environment configuration
   - _Requirements: All configuration requirements_
 
-- [ ] 7.6 Write deployment tests
+- [x] 7.6 Write deployment tests 
+  - Prior to the items below, review the KASPA_ALL_IN_ONE_COMPREHENSIVE_KNOWLEDGE_BASe.md
   - Test installation script on clean system
   - Test systemd service startup and management
   - Test Nginx proxy to host dashboard

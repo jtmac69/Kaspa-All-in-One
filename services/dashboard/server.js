@@ -14,6 +14,8 @@ const UpdateBroadcaster = require('./lib/UpdateBroadcaster');
 const AlertManager = require('./lib/AlertManager');
 const ServiceMonitor = require('./lib/ServiceMonitor');
 const ResourceMonitor = require('./lib/ResourceMonitor');
+const WizardIntegration = require('./lib/WizardIntegration');
+const ConfigurationSynchronizer = require('./lib/ConfigurationSynchronizer');
 
 // Security and performance modules
 const { 
@@ -481,6 +483,305 @@ app.post('/api/wizard/start', async (req, res) => {
     }
 });
 
+// Launch wizard with configuration context (new enhanced endpoint)
+app.post('/api/wizard/launch', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const { mode = 'reconfiguration', context = {} } = req.body;
+        
+        const result = await wizardIntegration.launchWizard({ mode, context });
+        
+        performanceMonitor.recordAPIRequest('/api/wizard/launch', Date.now() - startTime, true);
+        res.json(result);
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/wizard/launch', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to launch wizard',
+            message: error.message
+        });
+    }
+});
+
+// Get current configuration for wizard
+app.get('/api/wizard/config', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const config = await wizardIntegration.exportCurrentConfiguration();
+        
+        performanceMonitor.recordAPIRequest('/api/wizard/config', Date.now() - startTime, true);
+        res.json(config);
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/wizard/config', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to export configuration',
+            message: error.message
+        });
+    }
+});
+
+// Get configuration suggestions
+app.get('/api/wizard/suggestions', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const suggestions = await wizardIntegration.generateConfigurationSuggestions();
+        
+        performanceMonitor.recordAPIRequest('/api/wizard/suggestions', Date.now() - startTime, true);
+        res.json(suggestions);
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/wizard/suggestions', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to generate suggestions',
+            message: error.message
+        });
+    }
+});
+
+// Get resource monitoring status
+app.get('/api/wizard/monitoring/status', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const status = await wizardIntegration.getResourceMonitoringStatus();
+        
+        performanceMonitor.recordAPIRequest('/api/wizard/monitoring/status', Date.now() - startTime, true);
+        res.json(status);
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/wizard/monitoring/status', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get monitoring status',
+            message: error.message
+        });
+    }
+});
+
+// Start resource monitoring manually
+app.post('/api/wizard/monitoring/start', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const result = await wizardIntegration.startResourceMonitoring();
+        
+        performanceMonitor.recordAPIRequest('/api/wizard/monitoring/start', Date.now() - startTime, true);
+        res.json(result);
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/wizard/monitoring/start', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to start monitoring',
+            message: error.message
+        });
+    }
+});
+
+// Poll wizard status
+app.get('/api/wizard/status/:sessionId', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const { sessionId } = req.params;
+        const status = await wizardIntegration.pollWizardStatus(sessionId);
+        
+        performanceMonitor.recordAPIRequest('/api/wizard/status', Date.now() - startTime, true);
+        res.json(status);
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/wizard/status', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get wizard status',
+            message: error.message
+        });
+    }
+});
+
+// Start wizard status polling
+app.post('/api/wizard/poll/:sessionId', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const { sessionId } = req.params;
+        const { interval, timeout } = req.body;
+        
+        // Start polling in background and return immediately
+        wizardIntegration.startWizardStatusPolling(sessionId, {
+            interval: interval || 2000,
+            timeout: timeout || 300000,
+            onUpdate: (status) => {
+                // Broadcast status updates via WebSocket
+                wsManager.broadcast({
+                    type: 'wizard_status_update',
+                    sessionId,
+                    data: status,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        }).then((finalStatus) => {
+            // Broadcast completion
+            wsManager.broadcast({
+                type: 'wizard_completed',
+                sessionId,
+                data: finalStatus,
+                timestamp: new Date().toISOString()
+            });
+        }).catch((error) => {
+            // Broadcast error
+            wsManager.broadcast({
+                type: 'wizard_error',
+                sessionId,
+                error: error.message,
+                timestamp: new Date().toISOString()
+            });
+        });
+        
+        performanceMonitor.recordAPIRequest('/api/wizard/poll', Date.now() - startTime, true);
+        res.json({
+            success: true,
+            message: 'Wizard status polling started',
+            sessionId
+        });
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/wizard/poll', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to start wizard polling',
+            message: error.message
+        });
+    }
+});
+
+// Handle wizard completion
+app.post('/api/wizard/completion', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const completionData = req.body;
+        const result = await wizardIntegration.handleWizardCompletion(completionData);
+        
+        performanceMonitor.recordAPIRequest('/api/wizard/completion', Date.now() - startTime, true);
+        res.json(result);
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/wizard/completion', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to handle wizard completion',
+            message: error.message
+        });
+    }
+});
+
+// Configuration synchronization endpoints
+app.get('/api/config/history', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const { limit, since, changeType } = req.query;
+        const history = configSynchronizer.getConfigurationHistory({
+            limit: limit ? parseInt(limit) : undefined,
+            since,
+            changeType
+        });
+        
+        performanceMonitor.recordAPIRequest('/api/config/history', Date.now() - startTime, true);
+        res.json(history);
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/config/history', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get configuration history',
+            message: error.message
+        });
+    }
+});
+
+app.post('/api/config/validate', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const validation = await configSynchronizer.validateConfiguration();
+        
+        performanceMonitor.recordAPIRequest('/api/config/validate', Date.now() - startTime, true);
+        res.json(validation);
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/config/validate', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to validate configuration',
+            message: error.message
+        });
+    }
+});
+
+app.post('/api/config/rollback/:changeId', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const { changeId } = req.params;
+        const result = await configSynchronizer.rollbackConfiguration(changeId);
+        
+        performanceMonitor.recordAPIRequest('/api/config/rollback', Date.now() - startTime, true);
+        res.json(result);
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/config/rollback', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to rollback configuration',
+            message: error.message
+        });
+    }
+});
+
+app.get('/api/config/sync/status', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const status = configSynchronizer.getStatus();
+        
+        performanceMonitor.recordAPIRequest('/api/config/sync/status', Date.now() - startTime, true);
+        res.json(status);
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/config/sync/status', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get sync status',
+            message: error.message
+        });
+    }
+});
+
+app.post('/api/config/sync/start', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        configSynchronizer.startMonitoring();
+        
+        performanceMonitor.recordAPIRequest('/api/config/sync/start', Date.now() - startTime, true);
+        res.json({
+            success: true,
+            message: 'Configuration synchronization started'
+        });
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/config/sync/start', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to start configuration sync',
+            message: error.message
+        });
+    }
+});
+
+app.post('/api/config/sync/stop', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        configSynchronizer.stopMonitoring();
+        
+        performanceMonitor.recordAPIRequest('/api/config/sync/stop', Date.now() - startTime, true);
+        res.json({
+            success: true,
+            message: 'Configuration synchronization stopped'
+        });
+    } catch (error) {
+        performanceMonitor.recordAPIRequest('/api/config/sync/stop', Date.now() - startTime, false);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to stop configuration sync',
+            message: error.message
+        });
+    }
+});
+
 // Initialize SSL support
 const sslResult = initializeSSL(app, {
     forceHTTPS: process.env.NODE_ENV === 'production',
@@ -495,6 +796,8 @@ const server = sslResult.ssl ? sslResult.server : app.listen(PORT, '0.0.0.0', ()
 const serviceMonitor = new ServiceMonitor();
 const resourceMonitor = new ResourceMonitor();
 const kaspaNodeClient = new (require('./lib/KaspaNodeClient'))();
+const wizardIntegration = new WizardIntegration();
+const configSynchronizer = new ConfigurationSynchronizer();
 
 // Initialize WebSocket Manager
 const wsManager = new WebSocketManager(server);
@@ -505,6 +808,34 @@ const alertManager = new AlertManager(wsManager);
 // Initialize Update Broadcaster
 const updateBroadcaster = new UpdateBroadcaster(wsManager, serviceMonitor, resourceMonitor);
 updateBroadcaster.start();
+
+// Initialize Configuration Synchronizer with WebSocket integration
+configSynchronizer.onConfigurationChanged = (changes, diffAnalysis) => {
+    // Broadcast configuration changes via WebSocket
+    wsManager.broadcast({
+        type: 'configuration_changed',
+        data: {
+            changes,
+            diffAnalysis,
+            timestamp: new Date().toISOString()
+        }
+    });
+};
+
+configSynchronizer.onDashboardRefreshNeeded = (changes, diffAnalysis) => {
+    // Broadcast dashboard refresh request
+    wsManager.broadcast({
+        type: 'dashboard_refresh_needed',
+        data: {
+            changes,
+            diffAnalysis,
+            timestamp: new Date().toISOString()
+        }
+    });
+};
+
+// Start configuration monitoring
+configSynchronizer.startMonitoring();
 
 // Connect AlertManager to UpdateBroadcaster events
 updateBroadcaster.on('services-broadcasted', ({ services }) => {
@@ -535,6 +866,7 @@ setInterval(async () => {
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
     console.log('Received SIGTERM, shutting down gracefully...');
+    configSynchronizer.shutdown();
     alertManager.shutdown();
     updateBroadcaster.shutdown();
     wsManager.shutdown();
@@ -546,6 +878,7 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
     console.log('Received SIGINT, shutting down gracefully...');
+    configSynchronizer.shutdown();
     alertManager.shutdown();
     updateBroadcaster.shutdown();
     wsManager.shutdown();
