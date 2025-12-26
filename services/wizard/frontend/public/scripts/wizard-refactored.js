@@ -915,19 +915,6 @@ function goToInitialMode() {
 }
 
 /**
- * Handle reconfiguration mode
- */
-async function handleReconfigurationMode(wizardMode) {
-    console.log('Handling reconfiguration mode');
-    
-    // Update wizard title
-    updateWizardTitle('Reconfigure Kaspa All-in-One');
-    
-    // Show reconfiguration landing page
-    await showReconfigurationLanding();
-}
-
-/**
  * Handle update mode
  */
 async function handleUpdateMode(wizardMode) {

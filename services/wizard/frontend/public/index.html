@@ -2505,7 +2505,17 @@
     <script type="module" src="/scripts/modules/template-selection.js?v=1"></script>
     <script type="module" src="/scripts/modules/enhanced-troubleshooting.js?v=1"></script>
     <script type="module" src="/scripts/modules/profile-addition.js?v=1"></script>
+    <script type="module" src="/scripts/modules/navigation.js?v=1"></script>
     <script src="/scripts/glossary.js?v=4"></script>
+    
+    <!-- Global Navigation Functions -->
+    <script type="module">
+        import { nextStep as moduleNextStep, previousStep as modulePreviousStep } from '/scripts/modules/navigation.js?v=1';
+        
+        // Make navigation functions globally available
+        window.nextStep = moduleNextStep;
+        window.previousStep = modulePreviousStep;
+    </script>
     
     <!-- Rollback UI Helper Functions -->
     <script>
