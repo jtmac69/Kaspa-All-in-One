@@ -1,0 +1,209 @@
+/* ============================================================================
+   Responsive Height Adjustments - Enhanced Compact Spacing System
+   ============================================================================ */
+
+/* Height-constrained displays - Apply compact spacing */
+@media (max-height: 800px) {
+  :root {
+    /* Override spacing variables with compact values */
+    --space-4: var(--space-compact-4);
+    --space-5: var(--space-compact-5);
+    --space-6: var(--space-compact-6);
+    --space-8: var(--space-compact-6);
+    --space-10: var(--space-compact-6);
+    --space-12: var(--space-compact-6);
+  }
+  
+  .wizard-container {
+    padding: var(--space-compact-3);
+  }
+  
+  .wizard-progress {
+    padding: var(--space-compact-3);
+    margin-bottom: var(--space-compact-3);
+  }
+  
+  .wizard-content {
+    padding: var(--space-compact-4);
+    margin-bottom: var(--space-compact-3);
+  }
+  
+  .step-header {
+    margin-bottom: var(--space-compact-3);
+  }
+}
+
+@media (max-height: 600px) {
+  :root {
+    /* Emergency compact mode for very small heights */
+    --space-4: var(--space-compact-3);
+    --space-5: var(--space-compact-4);
+    --space-6: var(--space-compact-5);
+    --space-8: var(--space-compact-5);
+    --space-10: var(--space-compact-5);
+    --space-12: var(--space-compact-5);
+  }
+  
+  .wizard-container {
+    padding: var(--space-compact-2);
+  }
+  
+  .wizard-progress {
+    padding: var(--space-compact-2);
+    margin-bottom: var(--space-compact-2);
+  }
+  
+  .wizard-content {
+    padding: var(--space-compact-3);
+    margin-bottom: var(--space-compact-2);
+  }
+  
+  .step-header {
+    margin-bottom: var(--space-compact-2);
+  }
+}
+
+/* For smaller viewport heights, make everything more compact */
+@media (max-height: 900px) {
+  .wizard-container {
+    padding: var(--space-3);
+  }
+  
+  .wizard-progress {
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+  
+  .progress-step {
+    min-width: 60px;
+  }
+  
+  .step-number {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .step-label {
+    font-size: 10px;
+  }
+  
+  .wizard-content {
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
+  }
+  
+  .step-header {
+    margin-bottom: var(--space-4);
+  }
+  
+  .step-title {
+    font-size: 20px;
+    margin-bottom: var(--space-2);
+  }
+  
+  .step-description {
+    font-size: 13px;
+  }
+}
+
+/* ============================================================================
+   Zoom-Responsive Scaling - Adjusts spacing based on zoom level
+   ============================================================================ */
+
+/* Medium zoom levels - Slightly reduce spacing */
+@media (min-resolution: 1.5dppx) {
+  :root {
+    --space-compact-4: 10px;
+    --space-compact-5: 14px;
+    --space-compact-6: 18px;
+  }
+}
+
+/* High zoom levels - More compact spacing */
+@media (min-resolution: 2dppx) {
+  :root {
+    --space-compact-4: 8px;
+    --space-compact-5: 12px;
+    --space-compact-6: 16px;
+  }
+}
+
+/* CSS Feature Detection Fallbacks */
+@supports not (position: sticky) {
+  .wizard-footer {
+    position: fixed;
+    bottom: 0;
+  }
+  
+  .wizard-content {
+    padding-bottom: 80px; /* Account for fixed footer */
+  }
+}
+
+@supports not (display: grid) {
+  .config-sections {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* ============================================================================
+   Mobile and Tablet Responsive Design
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  /* Enhanced responsive typography scaling */
+  :root {
+    --text-xs: 11px;
+    --text-sm: 13px;
+    --text-base: 14px;
+    --text-h4: 18px;
+    --text-h3: 20px;
+    --text-h2: 24px;
+    --text-h1: 28px;
+  }
+  
+  .wizard-container {
+    padding: var(--space-2);
+  }
+  
+  .wizard-progress {
+    padding: var(--space-3);
+  }
+  
+  .progress-steps {
+    padding: var(--space-1) 0;
+  }
+  
+  .progress-step {
+    min-width: 60px;
+    gap: var(--space-1);
+  }
+  
+  .step-number {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+  
+  .step-label {
+    font-size: 9px;
+  }
+  
+  .wizard-content {
+    padding: var(--space-3);
+  }
+  
+  .step-header {
+    margin-bottom: var(--space-3);
+  }
+  
+  .step-title {
+    font-size: 20px;
+  }
+  
+  .step-description {
+    font-size: 13px;
+  }
+}

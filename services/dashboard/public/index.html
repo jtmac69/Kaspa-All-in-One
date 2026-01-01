@@ -17,7 +17,7 @@
                 <select id="profile-filter" class="profile-selector" aria-label="Filter services by profile">
                     <option value="all">All Services</option>
                 </select>
-                <button id="updates-btn" class="btn-icon" title="Check for updates" aria-label="Check for updates" onclick="dashboard.openUpdatesModal()">
+                <button id="updates-btn" class="btn-icon" title="Check for updates" aria-label="Check for updates">
                     ⬆️
                     <span class="update-badge" id="update-badge" style="display: none;" aria-live="polite">0</span>
                 </button>
@@ -123,10 +123,10 @@
                 <div class="services-header">
                     <h2 id="services-heading">Services Status</h2>
                     <div class="services-controls" role="toolbar" aria-label="Service controls">
-                        <button id="toggle-view" class="btn-small" onclick="dashboard.toggleServiceView()" aria-label="Toggle service view layout">
+                        <button id="toggle-view" class="btn-small" aria-label="Toggle service view layout">
                             📊 Toggle View
                         </button>
-                        <button id="refresh-services" class="btn-small" onclick="dashboard.refreshServices()" aria-label="Refresh service status">
+                        <button id="refresh-services" class="btn-small" aria-label="Refresh service status">
                             🔄 Refresh
                         </button>
                     </div>
@@ -156,13 +156,13 @@
             <section class="actions" aria-labelledby="actions-heading">
                 <h2 id="actions-heading">Quick Actions</h2>
                 <div class="actions-grid" role="toolbar" aria-label="System actions">
-                    <button class="action-btn" onclick="restartAllServices()" aria-label="Restart all services">
+                    <button class="action-btn" id="restart-all-btn" aria-label="Restart all services">
                         🔄 Restart All Services
                     </button>
-                    <button class="action-btn" onclick="updateServices()" aria-label="Update all services">
+                    <button class="action-btn" id="update-services-btn" aria-label="Update all services">
                         ⬆️ Update Services
                     </button>
-                    <button class="action-btn" onclick="backupData()" aria-label="Create system backup">
+                    <button class="action-btn" id="backup-data-btn" aria-label="Create system backup">
                         💾 Backup Data
                     </button>
                 </div>
@@ -173,10 +173,10 @@
                 <div class="resources-header">
                     <h2 id="resources-heading">System Resources</h2>
                     <div class="resource-controls" role="toolbar" aria-label="Resource monitoring controls">
-                        <button id="monitoring-status" class="btn-small monitoring-indicator" onclick="dashboard.toggleResourceMonitoring()" aria-label="Toggle resource monitoring">
+                        <button id="monitoring-status" class="btn-small monitoring-indicator" aria-label="Toggle resource monitoring">
                             🔴 Monitoring: Off
                         </button>
-                        <button class="btn-small" onclick="dashboard.quickResourceCheck()" aria-label="Perform quick resource check">
+                        <button id="quick-check-btn" class="btn-small" aria-label="Perform quick resource check">
                             🔍 Quick Check
                         </button>
                     </div>
@@ -185,7 +185,7 @@
                 <div class="resource-overview" id="resource-overview">
                     <div class="system-status" id="system-status" role="status" aria-live="polite">
                         <span class="status-text">System Status: Normal</span>
-                        <button id="emergency-stop" class="btn-emergency" onclick="dashboard.emergencyStop()" style="display: none;" aria-label="Emergency stop all services">
+                        <button id="emergency-stop" class="btn-emergency" style="display: none;" aria-label="Emergency stop all services">
                             🚨 Emergency Stop
                         </button>
                     </div>
@@ -246,7 +246,7 @@
                             </div>
                             <div class="metric-row">
                                 <span class="metric-label">Docker Limits:</span>
-                                <button class="btn-small" onclick="dashboard.showDockerLimits()" aria-label="View Docker container resource limits">View</button>
+                                <button id="docker-limits-btn" class="btn-small" aria-label="View Docker container resource limits">View</button>
                             </div>
                         </div>
                     </article>
@@ -274,7 +274,7 @@
         <!-- Modal for logs -->
         <div id="logs-modal" class="modal" role="dialog" aria-labelledby="logs-title" aria-hidden="true">
             <div class="modal-content">
-                <button class="close" onclick="closeLogs()" aria-label="Close logs modal">&times;</button>
+                <button class="close" id="close-logs-btn" aria-label="Close logs modal">&times;</button>
                 <h2 id="logs-title">Service Logs</h2>
                 <div class="logs-container">
                     <pre id="logs-content" role="log" aria-live="polite" aria-label="Service log output">Loading logs...</pre>
@@ -285,7 +285,7 @@
         <!-- Modal for configuration -->
         <div id="config-modal" class="modal" role="dialog" aria-labelledby="config-title" aria-hidden="true">
             <div class="modal-content">
-                <button class="close" onclick="dashboard.closeConfigModal()" aria-label="Close configuration modal">&times;</button>
+                <button class="close" id="close-config-btn" aria-label="Close configuration modal">&times;</button>
                 <h2 id="config-title">Configuration</h2>
                 <div id="config-form" class="config-form" role="form" aria-label="System configuration form">
                     Loading configuration...
@@ -296,13 +296,13 @@
         <!-- Modal for updates -->
         <div id="updates-modal" class="modal" role="dialog" aria-labelledby="updates-title" aria-hidden="true">
             <div class="modal-content updates-modal-content">
-                <button class="close" onclick="dashboard.closeUpdatesModal()" aria-label="Close updates modal">&times;</button>
+                <button class="close" id="close-updates-btn" aria-label="Close updates modal">&times;</button>
                 <h2 id="updates-title">System Updates</h2>
                 <div class="updates-container">
                     <div class="updates-header">
                         <div class="updates-summary" id="updates-summary" role="status" aria-live="polite">
                             <span class="summary-text">Checking for updates...</span>
-                            <button class="btn-small" onclick="dashboard.checkForUpdates()" aria-label="Check for updates now">
+                            <button id="check-updates-btn" class="btn-small" aria-label="Check for updates now">
                                 🔄 Check Now
                             </button>
                         </div>
@@ -330,13 +330,13 @@
                 <span class="footer-text">⚡ Kaspa All-in-One Dashboard</span>
             </div>
             <div class="footer-actions">
-                <button class="btn-footer btn-report-bug" onclick="window.open('https://github.com/kaspa-kcoin/kaspa-all-in-one/issues/new?template=bug_report.md', '_blank')">
+                <button class="btn-footer btn-report-bug" id="report-bug-btn">
                     🐛 Report Bug
                 </button>
-                <button class="btn-footer btn-suggest-feature" onclick="window.open('https://github.com/kaspa-kcoin/kaspa-all-in-one/issues/new?template=feature_request.md', '_blank')">
+                <button class="btn-footer btn-suggest-feature" id="suggest-feature-btn">
                     💡 Suggest Feature
                 </button>
-                <button class="btn-footer btn-donate" onclick="window.open('https://kas.coffee/jtmac58', '_blank')">
+                <button class="btn-footer btn-donate" id="donate-btn">
                     ☕ Buy me a Koffee
                 </button>
             </div>
@@ -348,6 +348,6 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script type="module" src="scripts/dashboard.js"></script>
 </body>
 </html>

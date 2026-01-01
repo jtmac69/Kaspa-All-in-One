@@ -8,8 +8,9 @@ const execAsync = promisify(exec);
 
 class BackupManager {
     constructor() {
-        this.backupDir = '/app/data/backups';
-        this.diagnosticDir = '/app/data/diagnostics';
+        const dataDir = process.env.DATA_DIR || './data';
+        this.backupDir = `${dataDir}/backups`;
+        this.diagnosticDir = `${dataDir}/diagnostics`;
         this.maxBackupAge = 30 * 24 * 60 * 60 * 1000; // 30 days
         this.maxBackupCount = 10; // Keep max 10 backups
         

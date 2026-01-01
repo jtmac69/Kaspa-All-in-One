@@ -46,11 +46,12 @@
                     <div class="step-label">Templates</div>
                 </div>
                 <div class="progress-line"></div>
-                <div class="progress-step" data-step="5">
+                <!-- Profiles step - only shown when in custom mode -->
+                <div class="progress-step optional-step" data-step="5" id="profiles-progress-step" style="display: none;">
                     <div class="step-number">5</div>
                     <div class="step-label">Profiles</div>
                 </div>
-                <div class="progress-line"></div>
+                <div class="progress-line optional-line" id="profiles-progress-line" style="display: none;"></div>
                 <div class="progress-step" data-step="6">
                     <div class="step-number">6</div>
                     <div class="step-label">Configure</div>
@@ -77,7 +78,7 @@
         <div class="test-release-banner" id="test-release-banner">
             <div class="banner-icon">⚠️</div>
             <div class="banner-content">
-                <strong>Test Release v0.9.0</strong>
+                <strong>Test Release v0.10.0</strong>
                 <p>This is a pre-release version for testing purposes. 
                    <a href="/KNOWN_ISSUES.md" target="_blank">Known Issues</a> | 
                    <a href="https://github.com/kaspa-kcoin/kaspa-all-in-one/issues" target="_blank">Report Bug</a>
@@ -551,30 +552,38 @@
                         <div class="check-status">Checking</div>
                     </div>
                 </div>
-                
-                <div class="step-actions">
-                    <button class="btn-secondary" onclick="previousStep()">
-                        <span class="btn-icon">←</span>
-                        Back
-                    </button>
-                    <button class="btn-primary" onclick="nextStep()" disabled>
-                        Continue
-                        <span class="btn-icon">→</span>
-                    </button>
-                </div>
             </div>
 
             <!-- Step 3: Template Selection -->
             <div class="wizard-step" id="step-templates">
                 <div class="step-header">
-                    <h2 class="step-title">Choose a Template</h2>
+                    <h2 class="step-title">Choose Your Setup Method</h2>
                     <p class="step-description">
-                        Start with a pre-configured template or build your own custom setup.
+                        Select a pre-configured template for quick setup, or build a custom configuration.
                     </p>
                 </div>
 
+                <!-- Setup Method Selector -->
+                <div class="setup-method-selector">
+                    <div class="method-card recommended" id="template-method-card">
+                        <div class="method-icon">🚀</div>
+                        <div class="method-content">
+                            <h3>Use a Template</h3>
+                            <p>Quick setup with pre-configured options</p>
+                            <div class="method-badge">Recommended</div>
+                        </div>
+                    </div>
+                    <div class="method-card" id="custom-method-card">
+                        <div class="method-icon">⚙️</div>
+                        <div class="method-content">
+                            <h3>Build Custom</h3>
+                            <p>Advanced configuration with manual selection</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Template Categories -->
-                <div class="template-categories">
+                <div class="template-categories" id="template-categories">
                     <div class="category-tabs">
                         <button class="category-tab active" data-category="all">All Templates</button>
                         <button class="category-tab" data-category="beginner">Beginner</button>
@@ -589,13 +598,37 @@
                     <!-- Templates will be loaded dynamically -->
                 </div>
 
-                <!-- Custom Template Option -->
-                <div class="custom-template-section">
-                    <div class="custom-template-card">
-                        <div class="custom-template-icon">⚙️</div>
-                        <h3>Build Custom Setup</h3>
-                        <p>Select individual profiles and configure them manually</p>
-                        <button class="btn-secondary" id="build-custom-btn">Build Custom</button>
+                <!-- Enhanced Custom Template Option -->
+                <div class="custom-template-section" id="custom-template-section" style="display: none;">
+                    <div class="custom-template-card enhanced">
+                        <div class="custom-template-header">
+                            <div class="custom-template-icon">⚙️</div>
+                            <h3>Advanced: Build Custom Setup</h3>
+                            <div class="custom-template-badge">For Experienced Users</div>
+                        </div>
+                        <div class="custom-template-content">
+                            <p>Select individual services and configure them manually. This gives you complete control over your Kaspa installation.</p>
+                            <div class="custom-template-features">
+                                <div class="feature-item">
+                                    <span class="feature-icon">🎯</span>
+                                    <span class="feature-text">Choose specific services</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">⚙️</span>
+                                    <span class="feature-text">Manual configuration</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">🔧</span>
+                                    <span class="feature-text">Advanced options</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="custom-template-actions">
+                            <button class="btn-secondary" id="build-custom-btn">
+                                Build Custom Setup
+                                <span class="btn-icon">→</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -616,6 +649,15 @@
                             <button class="btn-primary" id="apply-template-btn">Use This Template</button>
                         </div>
                     </div>
+                </div>
+                
+                <!-- Navigation buttons for template step -->
+                <div class="step-actions">
+                    <button class="btn-secondary" onclick="previousStep()">
+                        <span class="btn-icon">←</span>
+                        Back
+                    </button>
+                    <!-- No Continue button - templates handle their own navigation -->
                 </div>
             </div>
 
@@ -1270,310 +1312,7 @@
                         </div>
                     </div>
                 </div>
-
-                    <!-- Core Profile -->
-                    <div class="profile-card" data-profile="core">
-                        <div class="profile-badge essential">Essential</div>
-                        <div class="profile-icon">
-                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                                <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="3"/>
-                                <circle cx="24" cy="24" r="8" fill="currentColor"/>
-                            </svg>
-                        </div>
-                        <h3 class="profile-title">Core Profile</h3>
-                        <p class="profile-description">
-                            Kaspa node (public/private) with optional wallet
-                        </p>
-                        <div class="profile-startup-order">
-                            <span class="startup-badge">Startup Order: 1</span>
-                        </div>
-                        <div class="profile-services">
-                            <span class="service-tag">kaspa-node</span>
-                            <span class="service-tag">wallet</span>
-                            <span class="service-tag">dashboard</span>
-                            <span class="service-tag">nginx</span>
-                        </div>
-                        <div class="profile-resources">
-                            <div class="resource-item">
-                                <span class="resource-label">CPU:</span>
-                                <span class="resource-value">2 cores</span>
-                            </div>
-                            <div class="resource-item">
-                                <span class="resource-label">RAM:</span>
-                                <span class="resource-value">4 GB</span>
-                            </div>
-                            <div class="resource-item">
-                                <span class="resource-label">Disk:</span>
-                                <span class="resource-value">100 GB</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Kaspa User Applications Profile -->
-                    <div class="profile-card" data-profile="kaspa-user-applications">
-                        <div class="profile-badge popular">Popular</div>
-                        <div class="profile-icon">
-                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                                <rect x="8" y="8" width="32" height="32" rx="4" stroke="currentColor" stroke-width="3"/>
-                                <path d="M16 24 L24 32 L32 16" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <h3 class="profile-title">Kaspa User Applications</h3>
-                        <p class="profile-description">
-                            User-facing apps (Kasia, K-Social, Kaspa Explorer)
-                        </p>
-                        <div class="profile-startup-order">
-                            <span class="startup-badge">Startup Order: 3</span>
-                        </div>
-                        <div class="profile-services">
-                            <span class="service-tag">kasia-app</span>
-                            <span class="service-tag">k-social-app</span>
-                            <span class="service-tag">kaspa-explorer</span>
-                        </div>
-                        <div class="profile-resources">
-                            <div class="resource-item">
-                                <span class="resource-label">CPU:</span>
-                                <span class="resource-value">2 cores</span>
-                            </div>
-                            <div class="resource-item">
-                                <span class="resource-label">RAM:</span>
-                                <span class="resource-value">4 GB</span>
-                            </div>
-                            <div class="resource-item">
-                                <span class="resource-label">Disk:</span>
-                                <span class="resource-value">50 GB</span>
-                            </div>
-                        </div>
-                        <div class="profile-note">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="2"/>
-                                <path d="M8 4 L8 8 L11 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                            <span>Can use public or local indexers</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Indexer Services Profile -->
-                    <div class="profile-card" data-profile="indexer-services">
-                        <div class="profile-badge advanced">Advanced</div>
-                        <div class="profile-icon">
-                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                                <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="3"/>
-                                <circle cx="24" cy="24" r="3" fill="currentColor"/>
-                                <line x1="24" y1="4" x2="24" y2="12" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-                                <line x1="24" y1="36" x2="24" y2="44" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-                                <line x1="4" y1="24" x2="12" y2="24" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-                                <line x1="36" y1="24" x2="44" y2="24" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <h3 class="profile-title">Indexer Services</h3>
-                        <p class="profile-description">
-                            Local indexers (Kasia, K-Indexer, Simply-Kaspa)
-                        </p>
-                        <div class="profile-startup-order">
-                            <span class="startup-badge">Startup Order: 2</span>
-                        </div>
-                        <div class="profile-services">
-                            <span class="service-tag">timescaledb</span>
-                            <span class="service-tag">kasia-indexer</span>
-                            <span class="service-tag">k-indexer</span>
-                            <span class="service-tag">simply-kaspa-indexer</span>
-                        </div>
-                        <div class="profile-resources">
-                            <div class="resource-item">
-                                <span class="resource-label">CPU:</span>
-                                <span class="resource-value">4 cores</span>
-                            </div>
-                            <div class="resource-item">
-                                <span class="resource-label">RAM:</span>
-                                <span class="resource-value">8 GB</span>
-                            </div>
-                            <div class="resource-item">
-                                <span class="resource-label">Disk:</span>
-                                <span class="resource-value">500 GB</span>
-                            </div>
-                        </div>
-                        <div class="profile-note">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="2"/>
-                                <path d="M8 4 L8 8 L11 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                            <span>Shared TimescaleDB with separate databases</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Archive Node Profile -->
-                    <div class="profile-card" data-profile="archive-node">
-                        <div class="profile-badge storage">Storage</div>
-                        <div class="profile-icon">
-                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                                <rect x="8" y="12" width="32" height="8" rx="2" stroke="currentColor" stroke-width="3"/>
-                                <rect x="8" y="24" width="32" height="8" rx="2" stroke="currentColor" stroke-width="3"/>
-                                <rect x="8" y="36" width="32" height="8" rx="2" stroke="currentColor" stroke-width="3"/>
-                            </svg>
-                        </div>
-                        <h3 class="profile-title">Archive Node Profile</h3>
-                        <p class="profile-description">
-                            Non-pruning Kaspa node for complete blockchain history
-                        </p>
-                        <div class="profile-startup-order">
-                            <span class="startup-badge">Startup Order: 1</span>
-                        </div>
-                        <div class="profile-services">
-                            <span class="service-tag">kaspa-archive-node</span>
-                        </div>
-                        <div class="profile-resources">
-                            <div class="resource-item">
-                                <span class="resource-label">CPU:</span>
-                                <span class="resource-value">8 cores</span>
-                            </div>
-                            <div class="resource-item">
-                                <span class="resource-label">RAM:</span>
-                                <span class="resource-value">16 GB</span>
-                            </div>
-                            <div class="resource-item">
-                                <span class="resource-label">Disk:</span>
-                                <span class="resource-value">1000 GB</span>
-                            </div>
-                        </div>
-                        <div class="profile-note warning">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M8 3 L8 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                <circle cx="8" cy="12" r="1" fill="currentColor"/>
-                                <path d="M8 1 L15 14 L1 14 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                            </svg>
-                            <span>Conflicts with Core Profile</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Mining Profile -->
-                    <div class="profile-card" data-profile="mining">
-                        <div class="profile-badge mining">Mining</div>
-                        <div class="profile-icon">
-                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                                <path d="M24 8 L32 20 L24 24 L16 20 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
-                                <path d="M24 24 L32 20 L32 32 L24 40 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
-                                <path d="M24 24 L16 20 L16 32 L24 40 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <h3 class="profile-title">Mining Profile</h3>
-                        <p class="profile-description">
-                            Local mining stratum pointed to local Kaspa node
-                        </p>
-                        <div class="profile-startup-order">
-                            <span class="startup-badge">Startup Order: 3</span>
-                        </div>
-                        <div class="profile-services">
-                            <span class="service-tag">kaspa-stratum</span>
-                        </div>
-                        <div class="profile-resources">
-                            <div class="resource-item">
-                                <span class="resource-label">CPU:</span>
-                                <span class="resource-value">2 cores</span>
-                            </div>
-                            <div class="resource-item">
-                                <span class="resource-label">RAM:</span>
-                                <span class="resource-value">2 GB</span>
-                            </div>
-                            <div class="resource-item">
-                                <span class="resource-label">Disk:</span>
-                                <span class="resource-value">10 GB</span>
-                            </div>
-                        </div>
-                        <div class="profile-note prerequisite">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M8 3 L8 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                <circle cx="8" cy="12" r="1" fill="currentColor"/>
-                                <path d="M8 1 L15 14 L1 14 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                            </svg>
-                            <span>Requires Core or Archive Node Profile</span>
-                        </div>
-                    </div>
-                </div>
                 
-                <!-- Developer Mode Toggle -->
-                <div class="developer-mode-section">
-                    <div class="developer-mode-card">
-                        <div class="developer-mode-header">
-                            <div class="developer-mode-icon">
-                                <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-                                    <path d="M16 16 L8 24 L16 32" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path d="M32 16 L40 24 L32 32" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <line x1="28" y1="12" x2="20" y2="36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-                                </svg>
-                            </div>
-                            <div class="developer-mode-title-section">
-                                <h3 class="developer-mode-title">Developer Mode</h3>
-                                <p class="developer-mode-subtitle">Add development tools to your selected profiles</p>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="developer-mode-toggle">
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="developer-mode-content" id="developer-mode-details" style="display: none;">
-                            <p class="developer-mode-description">
-                                Developer Mode adds inspection tools and debugging features to your installation:
-                            </p>
-                            <ul class="developer-mode-features">
-                                <li>
-                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                        <path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
-                                    </svg>
-                                    <span><strong>Debug Logging:</strong> Verbose logs for troubleshooting (LOG_LEVEL=debug)</span>
-                                </li>
-                                <li>
-                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                        <path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
-                                    </svg>
-                                    <span><strong>Portainer:</strong> Docker container management UI (port 9000)</span>
-                                </li>
-                                <li>
-                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                        <path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
-                                    </svg>
-                                    <span><strong>pgAdmin:</strong> PostgreSQL database management (port 5050)</span>
-                                </li>
-                                <li>
-                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                        <path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
-                                    </svg>
-                                    <span><strong>Exposed Ports:</strong> Additional service ports for direct access</span>
-                                </li>
-                                <li>
-                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                        <path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
-                                    </svg>
-                                    <span><strong>Log Access:</strong> Direct access to service logs</span>
-                                </li>
-                            </ul>
-                            <div class="developer-mode-warning">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                    <path d="M10 6 L10 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                    <circle cx="10" cy="14" r="1" fill="currentColor"/>
-                                    <path d="M10 2 L18 16 L2 16 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                                </svg>
-                                <span>Developer Mode increases resource usage and exposes additional ports. Only enable for development environments.</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="step-actions">
-                    <button class="btn-secondary" onclick="previousStep()">
-                        <span class="btn-icon">←</span>
-                        Back
-                    </button>
-                    <button class="btn-primary" onclick="nextStep()">
-                        Continue
-                        <span class="btn-icon">→</span>
-                    </button>
-                </div>
             </div>
 
             <!-- Step 4: Configure -->
@@ -2164,6 +1903,87 @@
             
         </main>
 
+        <!-- Navigation Footer - Fixed at bottom -->
+        <div class="wizard-navigation-footer" id="wizard-navigation-footer">
+            <!-- Developer Mode Section -->
+            <div class="developer-mode-section" id="global-developer-mode-section" style="display: none;">
+                <div class="developer-mode-card">
+                    <div class="developer-mode-header">
+                        <div class="developer-mode-icon">
+                            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+                                <path d="M16 16 L8 24 L16 32" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M32 16 L40 24 L32 32" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="28" y1="12" x2="20" y2="36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="developer-mode-title-section">
+                            <h3 class="developer-mode-title">Developer Mode</h3>
+                            <p class="developer-mode-subtitle">Add development tools to your selected profiles</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="developer-mode-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="developer-mode-content" id="developer-mode-details" style="display: none;">
+                        <p class="developer-mode-description">
+                            Developer Mode adds inspection tools and debugging features to your installation:
+                        </p>
+                        <ul class="developer-mode-features">
+                            <li>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span><strong>Debug Logging:</strong> Verbose logs for troubleshooting (LOG_LEVEL=debug)</span>
+                            </li>
+                            <li>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span><strong>Portainer:</strong> Docker container management UI (port 9000)</span>
+                            </li>
+                            <li>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span><strong>pgAdmin:</strong> PostgreSQL database management (port 5050)</span>
+                            </li>
+                            <li>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span><strong>Exposed Ports:</strong> Additional service ports for direct access</span>
+                            </li>
+                            <li>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span><strong>Log Access:</strong> Direct access to service logs</span>
+                            </li>
+                        </ul>
+                        <div class="developer-mode-warning">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M10 6 L10 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <circle cx="10" cy="14" r="1" fill="currentColor"/>
+                                <path d="M10 2 L18 16 L2 16 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                            </svg>
+                            <span>Developer Mode increases resource usage and exposes additional ports. Only enable for development environments.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step Actions Container -->
+            <div class="step-actions" id="global-step-actions">
+                <!-- Navigation buttons will be dynamically inserted here -->
+            </div>
+        </div>
+
         <!-- Footer -->
         <footer class="wizard-footer">
             <div class="footer-content">
@@ -2502,15 +2322,15 @@
     <!-- Scripts -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script type="module" src="/scripts/wizard-refactored.js?v=4"></script>
-    <script type="module" src="/scripts/modules/template-selection.js?v=1"></script>
+    <script type="module" src="/scripts/modules/template-selection.js?v=10"></script>
     <script type="module" src="/scripts/modules/enhanced-troubleshooting.js?v=1"></script>
     <script type="module" src="/scripts/modules/profile-addition.js?v=1"></script>
-    <script type="module" src="/scripts/modules/navigation.js?v=1"></script>
+    <script type="module" src="/scripts/modules/navigation.js?v=7"></script>
     <script src="/scripts/glossary.js?v=4"></script>
     
     <!-- Global Navigation Functions -->
     <script type="module">
-        import { nextStep as moduleNextStep, previousStep as modulePreviousStep } from '/scripts/modules/navigation.js?v=1';
+        import { nextStep as moduleNextStep, previousStep as modulePreviousStep } from '/scripts/modules/navigation.js?v=7';
         
         // Make navigation functions globally available
         window.nextStep = moduleNextStep;

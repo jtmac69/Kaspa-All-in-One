@@ -209,4 +209,100 @@ router.post('/stop', async (req, res) => {
   }
 });
 
+// POST /api/install/prepare - Prepare template configurations for installation (task 6.2)
+router.post('/prepare', async (req, res) => {
+  try {
+    const { config, profiles } = req.body;
+    
+    if (!config || !Array.isArray(profiles) || profiles.length === 0) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'config object and profiles array are required'
+      });
+    }
+    
+    // Validate configuration
+    const validation = await configGenerator.validateConfig(config);
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: 'Invalid configuration',
+        errors: validation.errors
+      });
+    }
+    
+    // Check if this is a template-based configuration
+    const isTemplateConfig = config.appliedTemplate !== undefined;
+    
+    // Prepare installation metadata
+    const installationMetadata = {
+      profiles,
+      config: validation.config,
+      isTemplateConfig,
+      templateId: config.appliedTemplate || null,
+      preparedAt: new Date().toISOString(),
+      installationId: `install_${Date.now()}`
+    };
+    
+    // Validate that all required services are available for the profiles
+    const requiredServices = getRequiredServicesForProfiles(profiles);
+    const serviceValidation = await validateServicesAvailability(requiredServices);
+    
+    if (!serviceValidation.allAvailable) {
+      return res.status(400).json({
+        error: 'Service validation failed',
+        message: 'Some required services are not available',
+        missingServices: serviceValidation.missing,
+        availableServices: serviceValidation.available
+      });
+    }
+    
+    res.json({
+      success: true,
+      installationMetadata,
+      requiredServices,
+      message: 'Installation preparation completed successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to prepare installation',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Get required services for profiles
+ */
+function getRequiredServicesForProfiles(profiles) {
+  const serviceMap = {
+    'core': ['kaspa-node'],
+    'kaspa-user-applications': ['kasia-app', 'k-social-app', 'kaspa-explorer'],
+    'indexer-services': ['timescaledb', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
+    'archive-node': ['kaspa-archive-node'],
+    'mining': ['kaspa-stratum']
+  };
+  
+  const services = [];
+  profiles.forEach(profile => {
+    if (serviceMap[profile]) {
+      services.push(...serviceMap[profile]);
+    }
+  });
+  
+  return [...new Set(services)]; // Remove duplicates
+}
+
+/**
+ * Validate services availability
+ */
+async function validateServicesAvailability(requiredServices) {
+  // For now, assume all services are available
+  // In a real implementation, this would check Docker images, service definitions, etc.
+  return {
+    allAvailable: true,
+    available: requiredServices,
+    missing: []
+  };
+}
+
 module.exports = router;

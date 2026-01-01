@@ -100,7 +100,7 @@
   --font-semibold: 600;
   --font-bold: 700;
   
-  /* Spacing System - Consistent Scale */
+  /* Spacing System - Optimized for better screen utilization */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -110,8 +110,8 @@
   --space-8: 32px;
   --space-10: 40px;
   --space-12: 48px;
-  --space-16: 64px;
-  --space-20: 80px;
+  --space-16: 48px; /* Reduced from 64px for better screen utilization */
+  --space-20: 64px; /* Reduced from 80px for better screen utilization */
   
   /* Transitions - Smooth Animations */
   --transition-fast: 150ms ease;
@@ -436,12 +436,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .wizard-step {
-  display: none;
+  display: none !important;
   animation: fadeIn 300ms ease;
 }
 
 .wizard-step.active {
-  display: block;
+  display: block !important;
+}
+
+/* Ensure no multiple active steps */
+.wizard-step:not(.active) {
+  display: none !important;
 }
 
 @keyframes fadeIn {
@@ -461,7 +466,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .hero {
   text-align: center;
-  padding: var(--space-16) var(--space-6);
+  padding: var(--space-12) var(--space-6); /* Reduced from space-16 for better screen utilization */
   background: var(--gradient-hero);
   border-radius: var(--radius-lg);
   margin-bottom: var(--space-6);
@@ -741,7 +746,7 @@ h1, h2, h3, h4, h5, h6 {
    ============================================================================ */
 
 .step-header {
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-4); /* Reduced from space-5 for better screen utilization */
   text-align: center;
 }
 
@@ -8192,6 +8197,46 @@ input:checked + .toggle-slider:before {
 .developer-mode-warning svg {
   flex-shrink: 0;
   color: var(--warning);
+}
+
+/* AGGRESSIVE FIX: Hide all developer mode sections except on profiles step */
+.wizard-step:not(#step-profiles) .developer-mode-section {
+  display: none !important;
+}
+
+/* AGGRESSIVE FIX: Hide duplicate step-actions - only show first one per step */
+.wizard-step .step-actions:not(:first-of-type) {
+  display: none !important;
+}
+
+/* Ensure welcome step only shows the hero button, no step-actions at all */
+#step-welcome .step-actions {
+  display: none !important;
+}
+
+/* Screen utilization optimizations - reduce excessive white space */
+.wizard-content {
+  padding: var(--space-4) var(--space-6); /* Reduced padding for better screen utilization */
+}
+
+/* Reduce checklist item spacing */
+.checklist-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3); /* Reduced from space-4 */
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+/* Optimize "What to Expect" section spacing */
+.what-to-expect {
+  margin: var(--space-4) 0; /* Reduced margin */
+}
+
+/* Reduce profile card spacing */
+.profile-grid {
+  gap: var(--space-4); /* Ensure consistent reduced spacing */
 }
 
 /* Step Actions */

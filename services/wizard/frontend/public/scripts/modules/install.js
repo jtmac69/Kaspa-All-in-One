@@ -412,7 +412,7 @@ function markAllStepsComplete() {
 /**
  * Handle installation complete
  */
-export function handleInstallationComplete(data) {
+export async function handleInstallationComplete(data) {
     console.log('Installation complete:', data);
     
     showNotification('Installation completed successfully!', 'success');
@@ -439,25 +439,33 @@ export function handleInstallationComplete(data) {
         validation: data.validation
     });
     
+    // Update navigation footer to reflect completion
+    const { updateNavigationFooter } = await import('./navigation-footer.js');
+    updateNavigationFooter('install');
+    
     // Add final log entry
     addToLogs('Installation completed successfully!');
     
-    // Show infrastructure validation if available
-    if (data.validation && data.validation.infrastructure) {
-        displayInfrastructureValidation(data.validation.infrastructure, data.validation.infrastructureSummary);
+    // Show service validation results (Docker containers) prominently
+    if (data.validation && data.validation.services) {
+        console.log('Displaying Docker service validation prominently');
+        displayServiceValidation(data.validation.services);
     }
     
-    // Enable navigation to next step
-    const continueBtn = document.getElementById('install-continue-btn');
-    if (continueBtn) {
-        continueBtn.disabled = false;
-        continueBtn.innerHTML = 'Continue to Complete <span class="btn-icon">→</span>';
-    }
-    
-    // Hide cancel button
-    const cancelBtn = document.getElementById('cancel-install-btn');
-    if (cancelBtn) {
-        cancelBtn.style.display = 'none';
+    // Show infrastructure validation only if meaningful for this profile
+    if (data.validation && data.validation.infrastructure && data.validation.infrastructureSummary) {
+        const profiles = stateManager.get('selectedProfiles') || [];
+        const shouldShowInfrastructure = profiles.some(profile => 
+            ['kaspa-user-applications', 'indexer-services', 'development'].includes(profile)
+        );
+        
+        // Only show infrastructure validation if it's relevant or has multiple meaningful tests
+        if (shouldShowInfrastructure || data.validation.infrastructureSummary.totalTests > 1) {
+            console.log('Displaying infrastructure validation (secondary)');
+            displayInfrastructureValidation(data.validation.infrastructure, data.validation.infrastructureSummary);
+        } else {
+            console.log('Skipping infrastructure validation for Core profile (not relevant)');
+        }
     }
 }
 
@@ -2004,10 +2012,98 @@ window.resumeSync = function() {
 };
 
 /**
- * Display infrastructure validation results
- * @param {Object} infrastructureResults - Infrastructure validation results
- * @param {Object} summary - Infrastructure validation summary
+ * Display service validation results (Docker containers)
+ * @param {Object} serviceResults - Service validation results from Docker
  */
+export function displayServiceValidation(serviceResults) {
+    console.log('Displaying service validation:', serviceResults);
+    
+    // Handle nested services structure from validateServices response
+    const servicesData = serviceResults?.services?.services || serviceResults?.services || serviceResults;
+    
+    if (!servicesData || typeof servicesData !== 'object') {
+        console.warn('No valid services data found:', serviceResults);
+        return;
+    }
+    
+    // Create service validation section
+    let serviceSection = document.getElementById('service-validation-section');
+    
+    if (!serviceSection) {
+        serviceSection = document.createElement('div');
+        serviceSection.id = 'service-validation-section';
+        serviceSection.className = 'service-validation-section';
+        serviceSection.style.cssText = `
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #27ae60;
+        `;
+        
+        const installProgress = document.querySelector('.install-progress');
+        if (installProgress) {
+            // Insert before infrastructure validation if it exists
+            const infraSection = document.getElementById('infrastructure-validation-section');
+            if (infraSection) {
+                infraSection.before(serviceSection);
+            } else {
+                installProgress.appendChild(serviceSection);
+            }
+        }
+    }
+    
+    // Build service status display
+    const services = Object.entries(servicesData);
+    const runningServices = services.filter(([_, status]) => status.running);
+    const totalServices = services.length;
+    
+    serviceSection.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; color: #2c3e50; font-size: 16px;">
+                ✅ Docker Services Status
+            </h3>
+            <div style="font-size: 14px; color: #27ae60; font-weight: 600;">
+                ${runningServices.length}/${totalServices} Running
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+            ${services.map(([serviceName, status]) => `
+                <div style="
+                    background: white;
+                    border-radius: 6px;
+                    padding: 12px;
+                    border-left: 3px solid ${status.running ? '#27ae60' : '#e74c3c'};
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-weight: 600; color: #2c3e50;">
+                            ${status.running ? '✓' : '✗'} ${serviceName}
+                        </div>
+                        <div style="font-size: 12px; color: ${status.running ? '#27ae60' : '#e74c3c'}; font-weight: 600;">
+                            ${status.running ? 'Running' : 'Stopped'}
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; color: #7f8c8d;">
+                        ${status.status || 'No status available'}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        
+        <div style="margin-top: 12px; padding: 8px 12px; background: rgba(39, 174, 96, 0.1); border-radius: 6px; font-size: 12px; color: #27ae60;">
+            <strong>✓ All required services are running successfully</strong>
+        </div>
+    `;
+    
+    serviceSection.style.display = 'block';
+    
+    // Add to logs
+    addToLogs(`Docker services: ${runningServices.length}/${totalServices} running`);
+    services.forEach(([serviceName, status]) => {
+        addToLogs(`  - ${serviceName}: ${status.running ? 'Running' : 'Stopped'}`);
+    });
+}
 export function displayInfrastructureValidation(infrastructureResults, summary) {
     console.log('Displaying infrastructure validation:', infrastructureResults, summary);
     

@@ -16,7 +16,8 @@
  * Context reduction: ~17% smaller + much more targeted reading
  */
 
-const EnhancedProfileManager = require('./profile');
+// Use the basic ProfileManager directly to avoid circular references
+const ProfileManager = require('./profile/ProfileManager');
 
-// Export the enhanced profile manager for backward compatibility
-module.exports = EnhancedProfileManager;
+// Export the basic profile manager for backward compatibility
+module.exports = ProfileManager;

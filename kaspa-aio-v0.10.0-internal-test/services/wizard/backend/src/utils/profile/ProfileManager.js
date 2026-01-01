@@ -157,13 +157,99 @@ class ProfileManager {
     };
 
     this.templates = {
+      'beginner-setup': {
+        id: 'beginner-setup',
+        name: 'Beginner Setup',
+        description: 'Simple setup for new users',
+        longDescription: 'Perfect for users who want to get started quickly with Kaspa applications without running their own node.',
+        profiles: ['kaspa-user-applications'],
+        category: 'beginner',
+        useCase: 'personal',
+        estimatedSetupTime: '5 minutes',
+        syncTime: 'Not required',
+        icon: '🚀',
+        config: {
+          INDEXER_CHOICE: 'public',
+          KASIA_APP_PORT: 3002,
+          KSOCIAL_APP_PORT: 3003,
+          EXPLORER_PORT: 3008
+        },
+        resources: {
+          minMemory: 4,
+          minCpu: 2,
+          minDisk: 50,
+          recommendedMemory: 8,
+          recommendedCpu: 4,
+          recommendedDisk: 200
+        },
+        features: [
+          'Easy setup',
+          'User applications',
+          'Public indexers',
+          'No node required'
+        ],
+        benefits: [
+          'Quick start',
+          'No complex configuration',
+          'Low resource usage',
+          'Immediate access'
+        ],
+        customizable: true,
+        tags: ['beginner', 'personal', 'applications', 'public']
+      },
+      'full-node': {
+        id: 'full-node',
+        name: 'Full Node',
+        description: 'Complete Kaspa node with all services',
+        longDescription: 'Complete Kaspa setup with local node and indexers for maximum performance and privacy.',
+        profiles: ['core', 'kaspa-user-applications', 'indexer-services'],
+        category: 'advanced',
+        useCase: 'advanced',
+        estimatedSetupTime: '15 minutes',
+        syncTime: '2-4 hours',
+        icon: '⚡',
+        config: {
+          PUBLIC_NODE: 'false',
+          ENABLE_MONITORING: 'true',
+          KASPA_NODE_RPC_PORT: 16110,
+          KASPA_NODE_P2P_PORT: 16111,
+          KASPA_NETWORK: 'mainnet',
+          POSTGRES_USER: 'kaspa_user',
+          TIMESCALEDB_PORT: 5432,
+          KASIA_APP_PORT: 3002,
+          KSOCIAL_APP_PORT: 3003,
+          EXPLORER_PORT: 3008
+        },
+        resources: {
+          minMemory: 16,
+          minCpu: 4,
+          minDisk: 500,
+          recommendedMemory: 32,
+          recommendedCpu: 8,
+          recommendedDisk: 2000
+        },
+        features: [
+          'Full node',
+          'Local indexers',
+          'All applications',
+          'Complete privacy'
+        ],
+        benefits: [
+          'Complete control',
+          'Best performance',
+          'Full privacy',
+          'Network support'
+        ],
+        customizable: true,
+        tags: ['advanced', 'node', 'indexers', 'applications']
+      },
       'home-node': {
         id: 'home-node',
         name: 'Home Node',
         description: 'Basic Kaspa node for personal use - perfect for learning and development',
         longDescription: 'A simple setup with just the Kaspa node running locally. Ideal for developers, enthusiasts, or anyone wanting to support the network without public exposure.',
         profiles: ['core'],
-        category: 'beginner',
+        category: 'intermediate',
         useCase: 'personal',
         estimatedSetupTime: '10-15 minutes',
         syncTime: '2-4 hours',
@@ -196,7 +282,7 @@ class ProfileManager {
           'No external dependencies'
         ],
         customizable: true,
-        tags: ['beginner', 'personal', 'node', 'wallet']
+        tags: ['intermediate', 'personal', 'node', 'wallet']
       },
       'public-node': {
         id: 'public-node',
@@ -204,7 +290,7 @@ class ProfileManager {
         description: 'Public-facing Kaspa node with indexer services for community use',
         longDescription: 'A robust setup that provides public access to your Kaspa node and indexer services. Perfect for contributing to the ecosystem by providing reliable infrastructure.',
         profiles: ['core', 'indexer-services'],
-        category: 'intermediate',
+        category: 'advanced',
         useCase: 'community',
         estimatedSetupTime: '20-30 minutes',
         syncTime: '4-8 hours',
@@ -241,7 +327,7 @@ class ProfileManager {
           'Enhanced data availability'
         ],
         customizable: true,
-        tags: ['intermediate', 'public', 'indexers', 'community']
+        tags: ['advanced', 'public', 'indexers', 'community']
       },
       'developer-setup': {
         id: 'developer-setup',
@@ -294,54 +380,49 @@ class ProfileManager {
         customizable: true,
         tags: ['advanced', 'development', 'debugging', 'testnet']
       },
-      'full-stack': {
-        id: 'full-stack',
-        name: 'Full Stack',
-        description: 'Complete production deployment with all services and applications',
-        longDescription: 'The ultimate Kaspa deployment including node, indexers, and all user applications. Perfect for organizations wanting to provide comprehensive Kaspa services.',
-        profiles: ['core', 'kaspa-user-applications', 'indexer-services'],
+      'mining-setup': {
+        id: 'mining-setup',
+        name: 'Mining Setup',
+        description: 'Kaspa node with mining stratum for solo mining',
+        longDescription: 'Complete mining setup with local Kaspa node and stratum server. Perfect for solo miners who want full control over their mining operation.',
+        profiles: ['core', 'mining'],
         category: 'advanced',
-        useCase: 'production',
-        estimatedSetupTime: '45-60 minutes',
-        syncTime: '4-8 hours',
-        icon: '🚀',
+        useCase: 'mining',
+        estimatedSetupTime: '20-30 minutes',
+        syncTime: '2-4 hours',
+        icon: '⛏️',
         config: {
-          PUBLIC_NODE: 'true',
+          PUBLIC_NODE: 'false',
           ENABLE_MONITORING: 'true',
-          ENABLE_SSL: 'true',
           KASPA_NODE_RPC_PORT: 16110,
           KASPA_NODE_P2P_PORT: 16111,
           KASPA_NETWORK: 'mainnet',
-          POSTGRES_USER: 'kaspa_user',
-          TIMESCALEDB_PORT: 5432,
-          KASIA_APP_PORT: 3002,
-          KSOCIAL_APP_PORT: 3003,
-          EXPLORER_PORT: 3008
+          STRATUM_PORT: 5555,
+          MINING_ADDRESS: '',
+          POOL_MODE: 'false'
         },
         resources: {
-          minMemory: 16,
-          minCpu: 8,
-          minDisk: 650,
-          recommendedMemory: 32,
-          recommendedCpu: 16,
-          recommendedDisk: 2500
+          minMemory: 6,
+          minCpu: 4,
+          minDisk: 110,
+          recommendedMemory: 12,
+          recommendedCpu: 8,
+          recommendedDisk: 550
         },
         features: [
-          'Public Kaspa node',
-          'All user applications',
-          'Local indexer services',
-          'SSL/TLS encryption',
-          'Production monitoring',
-          'Load balancing ready'
+          'Local Kaspa node',
+          'Mining stratum server',
+          'Solo mining support',
+          'Mining monitoring'
         ],
         benefits: [
-          'Complete Kaspa ecosystem',
-          'Maximum functionality',
-          'Production-ready setup',
-          'Comprehensive user experience'
+          'Full mining control',
+          'No pool fees',
+          'Direct block rewards',
+          'Mining privacy'
         ],
         customizable: true,
-        tags: ['advanced', 'production', 'complete', 'applications']
+        tags: ['advanced', 'mining', 'stratum', 'solo']
       }
     };
 
@@ -418,6 +499,248 @@ class ProfileManager {
       }
       return a.name.localeCompare(b.name);
     });
+  }
+
+  // Template-related methods (direct implementation to avoid circular references)
+  getTemplatesByCategory(category) {
+    return Object.values(this.templates).filter(template => 
+      template.category === category
+    );
+  }
+
+  getTemplatesByUseCase(useCase) {
+    return Object.values(this.templates).filter(template => 
+      template.useCase === useCase
+    );
+  }
+
+  searchTemplatesByTags(tags) {
+    return Object.values(this.templates).filter(template => 
+      template.tags && template.tags.some(tag => tags.includes(tag))
+    );
+  }
+
+  applyTemplate(templateId, baseConfig = {}) {
+    const template = this.templates[templateId];
+    if (!template) {
+      throw new Error(`Template '${templateId}' not found`);
+    }
+
+    // Merge template config with base config (template takes precedence)
+    const mergedConfig = { ...baseConfig, ...template.config };
+
+    // Apply developer mode if template specifies it
+    if (template.developerMode) {
+      return this.applyDeveloperMode(mergedConfig, true);
+    }
+
+    return mergedConfig;
+  }
+
+  validateTemplate(templateId) {
+    const template = this.templates[templateId];
+    if (!template) {
+      return {
+        valid: false,
+        errors: [`Template '${templateId}' not found`]
+      };
+    }
+
+    const errors = [];
+    const warnings = [];
+
+    // Validate that all profiles in template exist
+    for (const profileId of template.profiles) {
+      if (!this.profiles[profileId]) {
+        errors.push(`Template references unknown profile: ${profileId}`);
+      }
+    }
+
+    // Basic profile conflict checking
+    if (errors.length === 0) {
+      const conflicts = this.checkProfileConflicts(template.profiles);
+      if (conflicts.length > 0) {
+        errors.push(...conflicts.map(c => `Profile conflict: ${c.profile1} conflicts with ${c.profile2}`));
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+      warnings,
+      template
+    };
+  }
+
+  getTemplateRecommendations(systemResources, useCase) {
+    const templates = Object.values(this.templates);
+    const recommendations = [];
+
+    for (const template of templates) {
+      let score = 0;
+      let suitability = 'suitable';
+      const reasons = [];
+
+      // Check resource compatibility
+      if (systemResources.memory >= template.resources.recommendedMemory) {
+        score += 3;
+        reasons.push('Meets recommended memory requirements');
+      } else if (systemResources.memory >= template.resources.minMemory) {
+        score += 1;
+        reasons.push('Meets minimum memory requirements');
+      } else {
+        suitability = 'insufficient';
+        reasons.push(`Requires ${template.resources.minMemory}GB RAM (you have ${systemResources.memory}GB)`);
+      }
+
+      if (systemResources.cpu >= template.resources.recommendedCpu) {
+        score += 2;
+      } else if (systemResources.cpu >= template.resources.minCpu) {
+        score += 1;
+      }
+
+      if (systemResources.disk >= template.resources.recommendedDisk) {
+        score += 2;
+      } else if (systemResources.disk >= template.resources.minDisk) {
+        score += 1;
+      }
+
+      // Use case matching
+      if (template.useCase === useCase) {
+        score += 5;
+        reasons.push('Perfect match for your use case');
+      }
+
+      // Category bonus for beginners
+      if (useCase === 'personal' && template.category === 'beginner') {
+        score += 2;
+        reasons.push('Beginner-friendly');
+      }
+
+      recommendations.push({
+        template,
+        score,
+        suitability,
+        reasons,
+        recommended: score >= 5 && suitability === 'suitable'
+      });
+    }
+
+    // Sort by score (highest first)
+    return recommendations.sort((a, b) => b.score - a.score);
+  }
+
+  createCustomTemplate(templateData) {
+    const { id, name, description, profiles, config, metadata = {} } = templateData;
+
+    // Validate required fields
+    if (!id || !name || !description || !profiles || !config) {
+      throw new Error('Missing required template fields: id, name, description, profiles, config');
+    }
+
+    // Validate profiles exist
+    for (const profileId of profiles) {
+      if (!this.profiles[profileId]) {
+        throw new Error(`Unknown profile: ${profileId}`);
+      }
+    }
+
+    // Calculate resources based on selected profiles
+    const resources = this.calculateResourceRequirements(profiles);
+
+    const template = {
+      id,
+      name,
+      description,
+      longDescription: metadata.longDescription || description,
+      profiles,
+      category: metadata.category || 'custom',
+      useCase: metadata.useCase || 'custom',
+      estimatedSetupTime: metadata.estimatedSetupTime || 'Variable',
+      syncTime: metadata.syncTime || 'Variable',
+      icon: metadata.icon || '⚙️',
+      config,
+      resources,
+      features: metadata.features || [],
+      benefits: metadata.benefits || [],
+      customizable: true,
+      custom: true,
+      createdAt: new Date().toISOString(),
+      tags: metadata.tags || ['custom']
+    };
+
+    return template;
+  }
+
+  saveCustomTemplate(template) {
+    if (!template.id) {
+      throw new Error('Template must have an ID');
+    }
+
+    this.templates[template.id] = template;
+    return true;
+  }
+
+  deleteCustomTemplate(templateId) {
+    const template = this.templates[templateId];
+    if (!template) {
+      throw new Error(`Template '${templateId}' not found`);
+    }
+
+    if (!template.custom) {
+      throw new Error('Cannot delete built-in templates');
+    }
+
+    delete this.templates[templateId];
+    return true;
+  }
+
+  // Helper methods
+  checkProfileConflicts(profileIds) {
+    const conflicts = [];
+    
+    for (const profileId of profileIds) {
+      const profile = this.profiles[profileId];
+      if (!profile) continue;
+      
+      for (const conflictId of profile.conflicts || []) {
+        if (profileIds.includes(conflictId)) {
+          conflicts.push({ profile1: profileId, profile2: conflictId });
+        }
+      }
+    }
+    
+    return conflicts;
+  }
+
+  calculateResourceRequirements(profileIds) {
+    let minMemory = 0;
+    let minCpu = 0;
+    let minDisk = 0;
+    let recommendedMemory = 0;
+    let recommendedCpu = 0;
+    let recommendedDisk = 0;
+
+    for (const profileId of profileIds) {
+      const profile = this.profiles[profileId];
+      if (!profile) continue;
+
+      minMemory += profile.resources.minMemory;
+      minCpu = Math.max(minCpu, profile.resources.minCpu);
+      minDisk += profile.resources.minDisk;
+      recommendedMemory += profile.resources.recommendedMemory;
+      recommendedCpu = Math.max(recommendedCpu, profile.resources.recommendedCpu);
+      recommendedDisk += profile.resources.recommendedDisk;
+    }
+
+    return {
+      minMemory,
+      minCpu,
+      minDisk,
+      recommendedMemory,
+      recommendedCpu,
+      recommendedDisk
+    };
   }
 
   // Developer mode features

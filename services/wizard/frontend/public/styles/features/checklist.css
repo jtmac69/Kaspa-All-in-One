@@ -1,0 +1,39 @@
+/* ============================================================================
+   Checklist Styles
+   ============================================================================ */
+
+/* This file will contain all checklist-related styles */
+/* TODO: Extract checklist styles from main wizard.css */
+
+.check-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  transition: all var(--transition-base);
+}
+
+.check-item.pass {
+  border-color: var(--success);
+  background: rgba(126, 211, 33, 0.05);
+}
+
+.check-item.warning {
+  border-color: var(--warning);
+  background: rgba(245, 166, 35, 0.05);
+}
+
+.check-item.fail {
+  border-color: var(--error);
+  background: rgba(208, 2, 27, 0.05);
+}

@@ -1,0 +1,173 @@
+/* ============================================================================
+   Legacy Compatibility - Temporary during CSS refactoring transition
+   ============================================================================ */
+
+/* This file contains any legacy styles that haven't been moved to the new 
+   modular structure yet. It should be gradually emptied as we complete 
+   the refactoring process. */
+
+/* Test Release Banner - Temporary location */
+.test-release-banner {
+  background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+  color: white;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(255, 165, 0, 0.3);
+  position: relative;
+  animation: slideDown 300ms ease;
+}
+
+.test-release-banner.dismissed {
+  display: none;
+}
+
+.test-release-banner .banner-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.test-release-banner .banner-content {
+  flex: 1;
+}
+
+.test-release-banner .banner-content strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+.test-release-banner .banner-content p {
+  margin: 0;
+  font-size: 11px;
+  opacity: 0.95;
+  line-height: 1.4;
+}
+
+.test-release-banner .banner-content a {
+  color: white;
+  text-decoration: underline;
+  transition: opacity var(--transition-base);
+}
+
+.test-release-banner .banner-content a:hover {
+  opacity: 0.8;
+}
+
+.test-release-banner .banner-dismiss {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 18px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
+}
+
+.test-release-banner .banner-dismiss:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.test-release-banner .banner-dismiss:active {
+  transform: scale(0.95);
+}
+
+/* Setup Method Selector - Temporary location */
+.setup-method-selector {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  justify-content: center;
+}
+
+.method-card {
+  flex: 1;
+  max-width: 300px;
+  padding: var(--space-4);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  position: relative;
+  text-align: center;
+}
+
+.method-card:hover {
+  border-color: var(--kaspa-blue);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-kaspa);
+}
+
+.method-card.active {
+  border-color: var(--kaspa-blue);
+  background: linear-gradient(135deg, rgba(112, 199, 186, 0.15), rgba(70, 130, 180, 0.15));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-kaspa);
+}
+
+/* Footer - Temporary location */
+.wizard-footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: var(--space-4);
+  text-align: center;
+  margin-top: auto;
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.footer-links {
+  display: flex;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  transition: color var(--transition-base);
+}
+
+.footer-links a:hover {
+  color: var(--kaspa-blue);
+}
+
+.footer-branding {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+/* Links - Temporary location */
+a {
+  color: var(--kaspa-blue);
+  text-decoration: none;
+  transition: color var(--transition-base);
+}
+
+a:hover {
+  color: var(--kaspa-dark);
+  text-decoration: underline;
+}

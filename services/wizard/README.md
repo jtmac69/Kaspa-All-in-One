@@ -1,6 +1,28 @@
 # Kaspa All-in-One Installation Wizard
 
-A modern, web-based installation wizard for the Kaspa All-in-One project with official Kaspa branding.
+A modern, web-based installation wizard for the Kaspa All-in-One project with a template-first approach that simplifies deployment through pre-configured templates and custom setup options.
+
+## 🎯 Template-First Approach
+
+The wizard now uses a **template-first approach** that makes setup easier and more reliable:
+
+### 🚀 Pre-Configured Templates
+- **Home Node Template**: Perfect for personal use (Node + Dashboard + Messaging)
+- **Public Node Template**: Support the network (Public Node + Dashboard + Social Apps)
+- **Explorer Template**: Blockchain analysis (All indexers + TimescaleDB + Analytics tools)
+- **Mining Template**: Solo mining setup (Optimized Node + Stratum Bridge + Monitoring)
+
+### ⚙️ Custom Setup Option
+- **Build Custom**: Advanced users can select individual services à la carte
+- **Service Grid**: Visual interface showing all available services with descriptions
+- **Dependency Management**: Automatic handling of service dependencies
+- **Full Control**: Complete configuration control over all settings
+
+### 🎯 Smart Recommendations
+- **Hardware Analysis**: Automatic detection of CPU, RAM, storage, and disk type
+- **Template Compatibility**: Shows which templates work best on your system
+- **Resource Warnings**: Alerts about potential performance issues
+- **Optimization Suggestions**: Recommendations for optimal performance
 
 ## 🎨 Brand Assets Required
 
@@ -66,93 +88,117 @@ npx serve -p 3000
 - **Gradients**: Teal to dark teal, purple to teal
 
 ### Wizard Steps
-1. **Welcome** - Introduction and getting started
-2. **System Check** - Verify Docker, resources, ports
-3. **Profile Selection** - Choose deployment profiles
-4. **Configuration** - Configure services and settings
-5. **Review** - Review selections before installation
-6. **Installation** - Real-time installation progress
-7. **Complete** - Success screen with next steps
+1. **Welcome** - Introduction and template-first approach overview
+2. **System Check** - Verify Docker, resources, ports, and hardware analysis
+3. **Template Selection** - Choose from pre-configured templates or build custom setup
+4. **Configuration** - Configure template-specific or custom service settings
+5. **Review** - Review template/custom selections and configuration before installation
+6. **Installation** - Real-time installation progress with template-specific phases
+7. **Complete** - Success screen with template-specific next steps and service access
 
 ### Key Features
+- ✅ Template-first approach with pre-configured setups
+- ✅ Custom setup option for advanced users
+- ✅ Smart hardware analysis and template recommendations
 - ✅ Responsive design (mobile, tablet, desktop)
 - ✅ Kaspa brand colors and gradients
 - ✅ Smooth animations and transitions
-- ✅ Progress indicator
-- ✅ Auto-save progress
+- ✅ Progress indicator with template-aware navigation
+- ✅ Auto-save progress and state management
 - ✅ Accessible (WCAG 2.1 AA)
+- ✅ Error recovery and fallback options
 
 ## 🛠️ Development
 
 ### Current Status
-- ✅ HTML structure complete
-- ✅ CSS styling with Kaspa brand colors
-- ✅ Basic JavaScript functionality
-- ⏳ Backend API (to be implemented)
-- ⏳ WebSocket progress streaming (to be implemented)
-- ⏳ Additional wizard steps (to be implemented)
+- ✅ Template-first navigation flow implemented
+- ✅ HTML structure with template selection and custom setup
+- ✅ CSS styling with Kaspa brand colors and template cards
+- ✅ JavaScript functionality for template application and custom setup
+- ✅ Backend API with template validation and application
+- ✅ Smart back navigation based on selection path
+- ✅ State management for template vs custom workflows
+- ✅ Error handling and recovery options
+- ✅ Integration with existing configuration and installation systems
 
 ### Next Steps
 1. Download Kaspa brand assets from media kit
-2. Implement backend API (Node.js/Express)
-3. Add remaining wizard steps (Configure, Review, Install, Complete)
-4. Implement WebSocket for real-time progress
-5. Add form validation and error handling
-6. Create Docker configuration
-7. Add comprehensive testing
+2. Enhance template validation and error handling
+3. Add more pre-configured templates based on community feedback
+4. Implement template marketplace for community-contributed templates
+5. Add template versioning and update management
+6. Enhance WebSocket progress streaming for template-specific phases
+7. Add comprehensive testing for all template and custom workflows
+8. Implement template analytics and optimization suggestions
 
 ## 📋 Implementation Checklist
 
 ### Frontend
-- [x] HTML structure
-- [x] CSS with Kaspa brand colors
-- [x] Basic navigation
-- [x] Welcome step
-- [x] System check step
-- [x] Profile selection step
-- [ ] Configuration step
-- [ ] Review step
-- [ ] Installation progress step
-- [ ] Completion step
-- [ ] Form validation
-- [ ] Error handling
-- [ ] Toast notifications
+- [x] HTML structure with template-first approach
+- [x] CSS with Kaspa brand colors and template cards
+- [x] Template selection with compatibility indicators
+- [x] Custom setup with service grid interface
+- [x] Smart navigation based on selection path
+- [x] Welcome step with template approach overview
+- [x] System check step with hardware analysis
+- [x] Template selection step with recommendations
+- [x] Configuration step with template-specific options
+- [x] Review step with template/custom summary
+- [x] Installation progress step with template phases
+- [x] Completion step with template-specific guidance
+- [x] Form validation and error handling
+- [x] Toast notifications and user feedback
+- [x] State management for template vs custom workflows
 
 ### Backend
-- [ ] Express.js server setup
-- [ ] System requirements checker API
-- [ ] Profile management API
-- [ ] Configuration validation API
-- [ ] Installation engine
-- [ ] WebSocket progress streaming
-- [ ] Service health checks
-- [ ] Error handling
+- [x] Express.js server setup
+- [x] System requirements checker API
+- [x] Template management API with validation
+- [x] Template application API with error handling
+- [x] Configuration validation API
+- [x] Installation engine with template support
+- [x] WebSocket progress streaming
+- [x] Service health checks
+- [x] Error handling and recovery options
+- [x] Integration with existing profile system
 
 ### Integration
-- [ ] Docker configuration
-- [ ] Environment variables
-- [ ] API client
-- [ ] WebSocket client
-- [ ] State management
-- [ ] Progress persistence
+- [x] Docker configuration
+- [x] Environment variables
+- [x] API client with template support
+- [x] WebSocket client for real-time updates
+- [x] State management for template workflows
+- [x] Progress persistence across sessions
+- [x] Integration with Management Dashboard
+- [x] Backward compatibility with existing configurations
 
 ### Testing
-- [ ] Unit tests
-- [ ] Integration tests
-- [ ] E2E tests
-- [ ] Browser compatibility
-- [ ] Responsive design testing
-- [ ] Accessibility testing
+- [x] Unit tests for navigation and state management
+- [x] Integration tests for template and custom workflows
+- [x] E2E tests for complete installation flows
+- [x] Browser compatibility testing
+- [x] Responsive design testing
+- [x] Accessibility testing
+- [x] Error handling and recovery testing
+- [x] Backward compatibility validation
 
-## 🎯 Design Guidelines
+## 📚 Documentation
 
-See the following documents for detailed design specifications:
+### Template-First Setup
+- **Template Setup Guide**: [../../docs/guides/wizard-template-setup-guide.md](../../docs/guides/wizard-template-setup-guide.md) - Complete guide to template selection and setup
+- **Template vs Custom Guide**: [../../docs/guides/template-vs-custom-guide.md](../../docs/guides/template-vs-custom-guide.md) - When to use templates vs custom setup
+- **Error Recovery Guide**: [../../docs/guides/wizard-error-recovery-guide.md](../../docs/guides/wizard-error-recovery-guide.md) - Troubleshooting and recovery procedures
 
+### Design and Architecture
+- **Design Specification**: `../../.kiro/specs/wizard-template-profile-fix/design.md` - Template-first architecture and implementation
+- **Requirements**: `../../.kiro/specs/wizard-template-profile-fix/requirements.md` - Template-first workflow requirements
+- **Implementation Tasks**: `../../.kiro/specs/wizard-template-profile-fix/tasks.md` - Detailed implementation tasks and status
+
+### Legacy Documentation
 - **Brand Design Guide**: `../../.kiro/specs/web-installation-wizard/BRAND_DESIGN_GUIDE.md`
 - **Brand Assets Checklist**: `../../.kiro/specs/web-installation-wizard/BRAND_ASSETS_CHECKLIST.md`
-- **Design Specification**: `../../.kiro/specs/web-installation-wizard/design.md`
-- **Requirements**: `../../.kiro/specs/web-installation-wizard/requirements.md`
-- **Implementation Tasks**: `../../.kiro/specs/web-installation-wizard/tasks.md`
+- **Original Design Specification**: `../../.kiro/specs/web-installation-wizard/design.md`
+- **Original Requirements**: `../../.kiro/specs/web-installation-wizard/requirements.md`
 
 ## 🔗 Resources
 

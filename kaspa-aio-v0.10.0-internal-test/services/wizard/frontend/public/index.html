@@ -77,7 +77,7 @@
         <div class="test-release-banner" id="test-release-banner">
             <div class="banner-icon">⚠️</div>
             <div class="banner-content">
-                <strong>Test Release v0.9.0</strong>
+                <strong>Test Release v0.10.0</strong>
                 <p>This is a pre-release version for testing purposes. 
                    <a href="/KNOWN_ISSUES.md" target="_blank">Known Issues</a> | 
                    <a href="https://github.com/kaspa-kcoin/kaspa-all-in-one/issues" target="_blank">Report Bug</a>
@@ -2502,10 +2502,20 @@
     <!-- Scripts -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script type="module" src="/scripts/wizard-refactored.js?v=4"></script>
-    <script type="module" src="/scripts/modules/template-selection.js?v=1"></script>
+    <script type="module" src="/scripts/modules/template-selection.js?v=3"></script>
     <script type="module" src="/scripts/modules/enhanced-troubleshooting.js?v=1"></script>
     <script type="module" src="/scripts/modules/profile-addition.js?v=1"></script>
+    <script type="module" src="/scripts/modules/navigation.js?v=1"></script>
     <script src="/scripts/glossary.js?v=4"></script>
+    
+    <!-- Global Navigation Functions -->
+    <script type="module">
+        import { nextStep as moduleNextStep, previousStep as modulePreviousStep } from '/scripts/modules/navigation.js?v=1';
+        
+        // Make navigation functions globally available
+        window.nextStep = moduleNextStep;
+        window.previousStep = modulePreviousStep;
+    </script>
     
     <!-- Rollback UI Helper Functions -->
     <script>

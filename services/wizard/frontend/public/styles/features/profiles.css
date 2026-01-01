@@ -1,0 +1,37 @@
+/* ============================================================================
+   Profile Cards - Enhanced Kaspa Brand Styling
+   ============================================================================ */
+
+/* This file will contain all profile-related styles */
+/* TODO: Extract profile card styles from main wizard.css */
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-6);
+  margin-bottom: var(--space-10);
+}
+
+.profile-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-card:hover {
+  border-color: var(--kaspa-blue);
+  box-shadow: var(--shadow-kaspa);
+  transform: translateY(-4px);
+}
+
+.profile-card.selected {
+  border-color: var(--kaspa-blue);
+  background: var(--kaspa-pale);
+  box-shadow: var(--shadow-kaspa);
+  transform: translateY(-2px);
+}

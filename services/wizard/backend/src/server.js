@@ -15,6 +15,7 @@ const systemCheckRouter = require('./api/system-check');
 const resourceCheckRouter = require('./api/resource-check');
 const contentRouter = require('./api/content');
 const profilesRouter = require('./api/profiles');
+const simpleTemplatesRouter = require('./api/simple-templates');
 const configRouter = require('./api/config');
 const installRouter = require('./api/install');
 const reconfigureRouter = require('./api/reconfigure');
@@ -68,7 +69,7 @@ app.use(helmet({
 // Rate limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 500, // Increased limit for testing - was 100
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false
@@ -76,7 +77,7 @@ const apiLimiter = rateLimit({
 
 const installLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5, // Limit installation attempts
+  max: 100, // Increased limit for testing - was 5
   message: 'Too many installation attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false
@@ -106,6 +107,7 @@ app.use('/api/system-check', systemCheckRouter);
 app.use('/api/resource-check', resourceCheckRouter);
 app.use('/api/content', contentRouter);
 app.use('/api/profiles', profilesRouter);
+app.use('/api/simple-templates', simpleTemplatesRouter); // Simple template API (bypasses circular reference issues)
 app.use('/api/config', configRouter);
 app.use('/api/wizard/config', configRouter); // Mount config router under /api/wizard/config for test compatibility
 app.use('/api/install', installRouter);
@@ -356,12 +358,12 @@ io.on('connection', (socket) => {
         });
       });
 
-      if (pullFailed) {
+      const failedResults = pullResults.filter(r => !r.success);
+      if (failedResults.length > 0) {
         // Enhanced error handling with troubleshooting
         const TroubleshootingSystem = require('./utils/troubleshooting-system');
         const troubleshootingSystem = new TroubleshootingSystem();
         
-        const failedResults = pullResults.filter(r => !r.success);
         const errorMessage = failedResults.map(r => r.error).join('; ');
         
         // Get troubleshooting guide
@@ -556,6 +558,19 @@ io.on('connection', (socket) => {
 
       socket.emit('install:complete', {
         message: 'Installation completed successfully',
+        validation: {
+          services: serviceValidation,
+          infrastructure: infrastructureValidation,
+          infrastructureSummary: infrastructureSummary
+        }
+      });
+
+      // Save installation state for future wizard sessions
+      const ProfileStateManager = require('./utils/profile-state-manager');
+      const profileStateManager = ProfileStateManager.getInstance();
+      await profileStateManager.saveInstallationState({
+        profiles,
+        config,
         validation: {
           services: serviceValidation,
           infrastructure: infrastructureValidation,

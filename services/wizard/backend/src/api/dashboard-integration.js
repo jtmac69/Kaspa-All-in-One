@@ -632,6 +632,82 @@ router.post('/ensure-running', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/dashboard/start
+ * Start the dashboard service
+ */
+router.post('/start', async (req, res) => {
+  try {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    
+    // Check if dashboard is already running
+    try {
+      const checkResponse = await fetch('http://localhost:8080', { 
+        method: 'HEAD',
+        signal: AbortSignal.timeout(2000)
+      });
+      
+      // Dashboard is already running
+      return res.json({
+        success: true,
+        alreadyRunning: true,
+        message: 'Dashboard is already running',
+        url: 'http://localhost:8080'
+      });
+      
+    } catch (checkError) {
+      // Dashboard is not running, start it
+    }
+    
+    // Get project root
+    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
+    const dashboardPath = path.join(projectRoot, 'services/dashboard');
+    
+    // Start dashboard service in background
+    // Use nohup to keep it running after this process ends
+    const startCommand = `cd ${dashboardPath} && nohup npm start > /dev/null 2>&1 &`;
+    
+    await execAsync(startCommand);
+    
+    // Wait a moment for dashboard to start
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Verify dashboard started
+    try {
+      const verifyResponse = await fetch('http://localhost:8080', { 
+        method: 'HEAD',
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      res.json({
+        success: true,
+        started: true,
+        message: 'Dashboard started successfully',
+        url: 'http://localhost:8080'
+      });
+      
+    } catch (verifyError) {
+      res.json({
+        success: false,
+        error: 'Dashboard started but not responding',
+        message: 'Dashboard service was started but is not responding yet. Please wait a moment and try again.',
+        url: 'http://localhost:8080'
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error starting dashboard:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to start dashboard',
+      message: error.message,
+      hint: 'You can start the dashboard manually by running: npm start in services/dashboard'
+    });
+  }
+});
+
 // Periodic cleanup of expired tokens (every 5 minutes)
 setInterval(() => {
   cleanupExpiredTokens();

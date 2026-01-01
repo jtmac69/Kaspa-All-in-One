@@ -9,8 +9,9 @@ const execAsync = promisify(exec);
 class UpdateMonitor {
     constructor() {
         this.checkInterval = 24 * 60 * 60 * 1000; // 24 hours
-        this.updateHistoryFile = '/app/data/update-history.json';
-        this.lastCheckFile = '/app/data/last-update-check.json';
+        const dataDir = process.env.DATA_DIR || './data';
+        this.updateHistoryFile = `${dataDir}/update-history.json`;
+        this.lastCheckFile = `${dataDir}/last-update-check.json`;
         this.githubApiBase = 'https://api.github.com';
         this.timeout = 10000; // 10 seconds
         
@@ -32,7 +33,8 @@ class UpdateMonitor {
 
     async ensureDataDirectory() {
         try {
-            await fs.mkdir('/app/data', { recursive: true });
+            const dataDir = process.env.DATA_DIR || './data';
+            await fs.mkdir(dataDir, { recursive: true });
         } catch (error) {
             console.warn('Failed to create data directory:', error.message);
         }

@@ -100,7 +100,7 @@
   --font-semibold: 600;
   --font-bold: 700;
   
-  /* Spacing System - Consistent Scale */
+  /* Spacing System - Optimized for better screen utilization */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -110,8 +110,21 @@
   --space-8: 32px;
   --space-10: 40px;
   --space-12: 48px;
-  --space-16: 64px;
-  --space-20: 80px;
+  --space-16: 48px; /* Reduced from 64px for better screen utilization */
+  --space-20: 64px; /* Reduced from 80px for better screen utilization */
+  
+  /* Compact Spacing System - For improved vertical space utilization */
+  --space-compact-1: 2px;
+  --space-compact-2: 4px;
+  --space-compact-3: 8px;
+  --space-compact-4: 12px;
+  --space-compact-5: 16px;
+  --space-compact-6: 20px;
+  
+  /* Responsive Spacing - Scales with viewport for optimal space usage */
+  --space-responsive-sm: clamp(8px, 2vw, 16px);
+  --space-responsive-md: clamp(12px, 3vw, 24px);
+  --space-responsive-lg: clamp(16px, 4vw, 32px);
   
   /* Transitions - Smooth Animations */
   --transition-fast: 150ms ease;
@@ -135,7 +148,6 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 50%;
-}
 }
 
 /* ============================================================================
@@ -171,10 +183,12 @@ h1, h2, h3, h4, h5, h6 {
 .wizard-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--space-4);
-  min-height: 100vh;
+  padding: var(--space-compact-4);
+  height: 100vh;
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* Prevent page scrolling */
 }
 
 /* ============================================================================
@@ -184,10 +198,11 @@ h1, h2, h3, h4, h5, h6 {
 .wizard-progress {
   background: var(--surface);
   border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  margin-bottom: var(--space-4);
+  padding: var(--space-compact-4);
+  margin-bottom: var(--space-compact-4);
   box-shadow: var(--shadow-md);
   border: 1px solid rgba(112, 199, 186, 0.1);
+  flex-shrink: 0; /* Don't shrink */
 }
 
 .progress-steps {
@@ -296,6 +311,247 @@ h1, h2, h3, h4, h5, h6 {
   100% { transform: translateX(300%); }
 }
 
+/* Optional Step Styling */
+.progress-step.optional-step {
+  opacity: 0.3;
+  transition: all var(--transition-base);
+}
+
+.progress-step.optional-step.visible {
+  opacity: 0.7;
+}
+
+.progress-step.optional-step.active {
+  opacity: 1;
+}
+
+.progress-step.optional-step .step-label::after {
+  content: ' (Advanced)';
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-weight: var(--font-normal);
+}
+
+.progress-line.optional-line {
+  opacity: 0.3;
+  transition: all var(--transition-base);
+}
+
+.progress-line.optional-line.visible {
+  opacity: 0.7;
+}
+
+/* ============================================================================
+   Setup Method Selector
+   ============================================================================ */
+
+.setup-method-selector {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  justify-content: center;
+}
+
+.method-card {
+  flex: 1;
+  max-width: 300px;
+  padding: var(--space-4);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  position: relative;
+  text-align: center;
+}
+
+.method-card:hover {
+  border-color: var(--kaspa-blue);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-kaspa);
+}
+
+.method-card.active {
+  border-color: var(--kaspa-blue);
+  background: linear-gradient(135deg, rgba(112, 199, 186, 0.15), rgba(70, 130, 180, 0.15));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-kaspa);
+}
+
+.method-card.recommended {
+  border-color: var(--kaspa-blue);
+  background: linear-gradient(135deg, rgba(112, 199, 186, 0.1), rgba(70, 130, 180, 0.1));
+}
+
+.method-card.recommended::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-lg);
+  z-index: -1;
+  opacity: 0.3;
+}
+
+.method-icon {
+  font-size: 2.5rem;
+  margin-bottom: var(--space-2);
+}
+
+.method-content h3 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.method-content p {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.method-badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  background: var(--gradient-primary);
+  color: white;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================================
+   Enhanced Custom Template Section
+   ============================================================================ */
+
+.custom-template-section {
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+}
+
+.custom-template-card.enhanced {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  transition: all var(--transition-base);
+}
+
+.custom-template-card.enhanced:hover {
+  border-color: var(--kaspa-blue);
+  box-shadow: var(--shadow-kaspa);
+}
+
+.custom-template-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.custom-template-header .custom-template-icon {
+  font-size: 2rem;
+  color: var(--kaspa-blue);
+}
+
+.custom-template-header h3 {
+  flex: 1;
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.custom-template-badge {
+  padding: var(--space-1) var(--space-2);
+  background: var(--warning);
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.custom-template-content p {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--space-4);
+}
+
+.custom-template-features {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.custom-template-features .feature-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 150px;
+}
+
+.custom-template-features .feature-icon {
+  font-size: var(--text-lg);
+  color: var(--kaspa-blue);
+}
+
+.custom-template-features .feature-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-medium);
+}
+
+.custom-template-actions {
+  text-align: center;
+}
+
+.custom-template-actions .btn-secondary {
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+}
+
+/* ============================================================================
+   Template Grid Enhancements
+   ============================================================================ */
+
+.template-grid {
+  margin-top: var(--space-4);
+}
+
+/* Responsive Design for Setup Method Selector */
+@media (max-width: 768px) {
+  .setup-method-selector {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  
+  .method-card {
+    max-width: none;
+  }
+  
+  .custom-template-features {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  
+  .custom-template-features .feature-item {
+    min-width: auto;
+  }
+}
+
 /* ============================================================================
    Test Release Banner
    ============================================================================ */
@@ -312,6 +568,7 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 2px 8px rgba(255, 165, 0, 0.3);
   position: relative;
   animation: slideDown 300ms ease;
+  flex-shrink: 0; /* Don't shrink */
 }
 
 @keyframes slideDown {
@@ -430,18 +687,42 @@ h1, h2, h3, h4, h5, h6 {
   flex: 1;
   background: var(--surface);
   border-radius: 8px;
-  padding: var(--space-5);
+  padding: var(--space-responsive-md);
   box-shadow: var(--shadow-lg);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-compact-4);
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Critical for flexbox scrolling */
+  overflow: hidden; /* Container doesn't scroll, content inside does */
 }
 
 .wizard-step {
-  display: none;
+  display: none !important;
   animation: fadeIn 300ms ease;
+  flex-direction: column;
+  min-height: 0; /* Critical for flexbox scrolling */
 }
 
 .wizard-step.active {
-  display: block;
+  display: flex !important;
+  flex: 1;
+  overflow-y: auto; /* Step content scrolls */
+  padding-bottom: var(--space-4); /* Space at bottom of scrollable content */
+}
+
+/* Ensure no multiple active steps */
+.wizard-step:not(.active) {
+  display: none !important;
+}
+
+/* Step content wrapper - scrollable */
+.wizard-step > *:not(.step-actions):not(.developer-mode-section) {
+  flex-shrink: 0;
+}
+
+/* Make the main content area scrollable if needed */
+.wizard-step {
+  overflow-y: auto;
 }
 
 @keyframes fadeIn {
@@ -461,10 +742,10 @@ h1, h2, h3, h4, h5, h6 {
 
 .hero {
   text-align: center;
-  padding: var(--space-16) var(--space-6);
+  padding: var(--space-responsive-lg) var(--space-compact-6); /* Use responsive and compact spacing */
   background: var(--gradient-hero);
   border-radius: var(--radius-lg);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-compact-6);
   position: relative;
   overflow: hidden;
 }
@@ -741,7 +1022,7 @@ h1, h2, h3, h4, h5, h6 {
    ============================================================================ */
 
 .step-header {
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-compact-4); /* Reduced from space-5 for better screen utilization */
   text-align: center;
 }
 
@@ -1105,15 +1386,15 @@ h1, h2, h3, h4, h5, h6 {
    ============================================================================ */
 
 .developer-mode-section {
-  margin-top: var(--space-8);
-  margin-bottom: var(--space-6);
+  margin-top: var(--space-compact-5);
+  margin-bottom: var(--space-compact-4);
 }
 
 .developer-mode-card {
   background: var(--surface);
   border: 2px solid var(--border);
   border-radius: 12px;
-  padding: var(--space-6);
+  padding: var(--space-compact-5);
   transition: all var(--transition-base);
 }
 
@@ -1288,9 +1569,11 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-top: var(--space-5);
-  padding-top: var(--space-4);
+  margin-top: auto; /* Push to bottom */
+  padding-top: var(--space-compact-4);
   border-top: 1px solid var(--border);
+  flex-shrink: 0; /* Don't shrink */
+  background: var(--surface);
 }
 
 /* ============================================================================
@@ -1769,11 +2052,46 @@ h1, h2, h3, h4, h5, h6 {
    Footer
    ============================================================================ */
 
+/* ============================================================================
+   Navigation Footer - Fixed at bottom with developer mode and step actions
+   ============================================================================ */
+
+.wizard-navigation-footer {
+  background: var(--surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--space-compact-3) var(--space-6);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  border-top: 2px solid var(--border);
+  flex-shrink: 0; /* Don't shrink */
+  z-index: 100;
+}
+
+.wizard-navigation-footer .developer-mode-section {
+  margin-bottom: var(--space-compact-4);
+}
+
+.wizard-navigation-footer .step-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0; /* Remove default padding */
+  margin: 0; /* Remove default margin */
+}
+
+/* Navigation footer visibility is controlled by JavaScript in navigation-footer.js */
+/* The footer is hidden on welcome and complete steps via JS */
+
+/* ============================================================================
+   Footer
+   ============================================================================ */
+
 .wizard-footer {
   background: var(--surface);
   border-radius: 12px;
-  padding: var(--space-5);
+  padding: var(--space-3);
   box-shadow: var(--shadow-sm);
+  flex-shrink: 0; /* Don't shrink */
 }
 
 .footer-content {
@@ -1890,34 +2208,34 @@ h1, h2, h3, h4, h5, h6 {
 .config-sections {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
-  margin-bottom: var(--space-8);
+  gap: var(--space-compact-5);
+  margin-bottom: var(--space-compact-6);
 }
 
 .config-section {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: var(--space-6);
+  padding: var(--space-compact-4);
 }
 
 .config-section-title {
   font-size: 20px;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-compact-3);
   color: var(--text-primary);
 }
 
 .config-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-compact-4);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-compact-4);
 }
 
 .form-label {
@@ -8040,15 +8358,15 @@ button[onclick*="showGlossary"]:hover {
 
 /* Developer Mode Section */
 .developer-mode-section {
-  margin-top: var(--space-8);
-  margin-bottom: var(--space-6);
+  margin-top: var(--space-compact-5);
+  margin-bottom: var(--space-compact-4);
 }
 
 .developer-mode-card {
   background: var(--surface);
   border: 2px solid var(--border);
   border-radius: 12px;
-  padding: var(--space-6);
+  padding: var(--space-compact-5);
   transition: all var(--transition-base);
 }
 
@@ -8192,6 +8510,52 @@ input:checked + .toggle-slider:before {
 .developer-mode-warning svg {
   flex-shrink: 0;
   color: var(--warning);
+}
+
+/* AGGRESSIVE FIX: Hide all developer mode sections inside wizard steps - we use the global navigation footer now */
+.wizard-step .developer-mode-section {
+  display: none !important;
+}
+
+/* AGGRESSIVE FIX: Hide duplicate step-actions - only show first one per step */
+.wizard-step .step-actions:not(:first-of-type) {
+  display: none !important;
+}
+
+/* Hide ALL in-step navigation - we use the global navigation footer now */
+.wizard-step .step-actions {
+  display: none !important;
+}
+
+/* Hide step-actions on steps that have their own custom navigation */
+#step-welcome .step-actions,
+#step-templates .step-actions {
+  display: none !important;
+}
+
+/* Screen utilization optimizations - reduce excessive white space */
+.wizard-content {
+  padding: var(--space-4) var(--space-6); /* Reduced padding for better screen utilization */
+}
+
+/* Reduce checklist item spacing */
+.checklist-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3); /* Reduced from space-4 */
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+/* Optimize "What to Expect" section spacing */
+.what-to-expect {
+  margin: var(--space-4) 0; /* Reduced margin */
+}
+
+/* Reduce profile card spacing */
+.profile-grid {
+  gap: var(--space-4); /* Ensure consistent reduced spacing */
 }
 
 /* Step Actions */
@@ -9221,8 +9585,69 @@ input:checked + .toggle-slider:before {
 }
 
 /* ============================================================================
-   Responsive Height Adjustments
+   Responsive Height Adjustments - Enhanced Compact Spacing System
    ============================================================================ */
+
+/* Height-constrained displays - Apply compact spacing */
+@media (max-height: 800px) {
+  :root {
+    /* Override spacing variables with compact values */
+    --space-4: var(--space-compact-4);
+    --space-5: var(--space-compact-5);
+    --space-6: var(--space-compact-6);
+    --space-8: var(--space-compact-6);
+    --space-10: var(--space-compact-6);
+    --space-12: var(--space-compact-6);
+  }
+  
+  .wizard-container {
+    padding: var(--space-compact-3);
+  }
+  
+  .wizard-progress {
+    padding: var(--space-compact-3);
+    margin-bottom: var(--space-compact-3);
+  }
+  
+  .wizard-content {
+    padding: var(--space-compact-4);
+    margin-bottom: var(--space-compact-3);
+  }
+  
+  .step-header {
+    margin-bottom: var(--space-compact-3);
+  }
+}
+
+@media (max-height: 600px) {
+  :root {
+    /* Emergency compact mode for very small heights */
+    --space-4: var(--space-compact-3);
+    --space-5: var(--space-compact-4);
+    --space-6: var(--space-compact-5);
+    --space-8: var(--space-compact-5);
+    --space-10: var(--space-compact-5);
+    --space-12: var(--space-compact-5);
+  }
+  
+  .wizard-container {
+    padding: var(--space-compact-2);
+  }
+  
+  .wizard-progress {
+    padding: var(--space-compact-2);
+    margin-bottom: var(--space-compact-2);
+  }
+  
+  .wizard-content {
+    padding: var(--space-compact-3);
+    margin-bottom: var(--space-compact-2);
+  }
+  
+  .step-header {
+    margin-bottom: var(--space-compact-2);
+  }
+}
 
 /* For smaller viewport heights, make everything more compact */
 @media (max-height: 900px) {
@@ -9479,6 +9904,47 @@ input:checked + .toggle-slider:before {
   .btn-secondary {
     padding: 8px 16px;
     font-size: 13px;
+  }
+}
+
+/* ============================================================================
+   Zoom-Responsive Scaling - Adjusts spacing based on zoom level
+   ============================================================================ */
+
+/* Medium zoom levels - Slightly reduce spacing */
+@media (min-resolution: 1.5dppx) {
+  :root {
+    --space-compact-4: 10px;
+    --space-compact-5: 14px;
+    --space-compact-6: 18px;
+  }
+}
+
+/* High zoom levels - More compact spacing */
+@media (min-resolution: 2dppx) {
+  :root {
+    --space-compact-4: 8px;
+    --space-compact-5: 12px;
+    --space-compact-6: 16px;
+  }
+}
+
+/* CSS Feature Detection Fallbacks */
+@supports not (position: sticky) {
+  .wizard-footer {
+    position: fixed;
+    bottom: 0;
+  }
+  
+  .wizard-content {
+    padding-bottom: 80px; /* Account for fixed footer */
+  }
+}
+
+@supports not (display: grid) {
+  .config-sections {
+    display: flex;
+    flex-direction: column;
   }
 }
 
@@ -10196,7 +10662,6 @@ input:checked + .toggle-slider:before {
   font-size: 48px;
   margin-bottom: var(--space-4);
   opacity: 0.5;
-}
 }
 
 /* ============================================================================

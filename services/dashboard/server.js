@@ -1,3 +1,6 @@
+// Load environment variables
+require('dotenv').config();
+
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
@@ -311,7 +314,12 @@ app.get('/api/kaspa/info', async (req, res) => {
         });
         res.json(response.data);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to connect to Kaspa node' });
+        // Return graceful JSON response instead of 500 error
+        res.json({ 
+            error: 'Kaspa node not available',
+            available: false,
+            message: 'Kaspa node is not running or not accessible'
+        });
     }
 });
 
@@ -327,7 +335,41 @@ app.get('/api/kaspa/stats', async (req, res) => {
             network: networkInfo.data
         });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to get Kaspa stats' });
+        // Return graceful JSON response instead of 500 error
+        res.json({ 
+            error: 'Kaspa node not available',
+            available: false,
+            message: 'Kaspa node is not running or not accessible'
+        });
+    }
+});
+
+// Wallet API endpoints (placeholder implementation)
+app.get('/api/kaspa/wallet', async (req, res) => {
+    try {
+        // For now, return a placeholder response since wallet functionality 
+        // is not yet implemented in the Kaspa node setup
+        res.json({
+            error: 'Wallet functionality not available',
+            message: 'Wallet features are not currently configured in this installation',
+            available: false
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get wallet info' });
+    }
+});
+
+// Updates API endpoint (placeholder implementation)
+app.get('/api/updates/available', async (req, res) => {
+    try {
+        // For now, return empty updates since update checking is not implemented
+        res.json({
+            updates: [],
+            lastChecked: new Date().toISOString(),
+            message: 'Update checking not yet implemented'
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to check for updates' });
     }
 });
 

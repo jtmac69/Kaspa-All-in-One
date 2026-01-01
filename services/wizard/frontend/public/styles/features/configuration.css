@@ -1,0 +1,18 @@
+/* ============================================================================
+   Configuration Forms
+   ============================================================================ */
+
+/* This file will contain all configuration-related styles */
+/* TODO: Extract configuration form styles from main wizard.css */
+
+.config-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact-5);
+  margin-bottom: var(--space-compact-6);
+}
+
+.config-section {
+  padding: var(--space-compact-4);
+  margin-bottom: 0; /* Remove individual margins */
+}

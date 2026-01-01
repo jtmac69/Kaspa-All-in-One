@@ -71,16 +71,16 @@ The script will automatically:
 ### Step 3: Follow the Wizard
 The wizard will guide you through:
 1. **System Check** - Verifies your system is ready
-2. **Profile Selection** - Choose what to install (we recommend starting with "Core Profile")
-3. **Configuration** - Set up your preferences
+2. **Template Selection** - Choose from pre-configured setups (recommended) or build custom
+3. **Configuration** - Set up your preferences based on your template
 4. **Installation** - Watch real-time progress
 5. **Verification** - Confirm everything works
 
 ### Step 4: Test Scenarios
 Pick one or more scenarios from [TESTING.md](TESTING.md):
-- **Scenario 1**: Core Profile (15 min) - Perfect for first-time testers
-- **Scenario 2**: Kaspa User Applications (20 min)
-- **Scenario 3**: Indexer Services (30 min)
+- **Scenario 1**: Home Node Template (15 min) - Perfect for first-time testers
+- **Scenario 2**: Public Node Template (20 min)
+- **Scenario 3**: Custom Setup (30 min) - Advanced users
 - **Scenario 4**: Error Handling (15 min)
 - **Scenario 5**: Reconfiguration (20 min)
 
@@ -100,81 +100,96 @@ A comprehensive Docker-based solution for running a complete Kaspa blockchain ec
 
 ## ✨ What's New
 
-- **🎯 Web Installation Wizard** - Interactive guided setup with real-time progress tracking
-- **🔍 Smart Resource Detection** - Automatic hardware analysis and profile recommendations
+- **🎯 Template-First Installation** - Choose from pre-configured templates (Home Node, Public Node, etc.) or build custom setups
+- **🔍 Smart Resource Detection** - Automatic hardware analysis and template recommendations
 - **🛡️ Safety System** - Built-in warnings, confirmations, and automatic backups
 - **🚑 Auto-Remediation** - Automatic fixes for common installation issues
 - **📊 Diagnostic Tools** - Comprehensive system diagnostics and help system
 - **🌐 Multi-OS Support** - Ubuntu, Debian, CentOS, macOS, and Windows (WSL2)
+- **📱 Management Dashboard** - Host-based service monitoring and management interface
 
 ## 🚀 Components Included
 
 ### Core Infrastructure (Always Active)
 - **Kaspa Node** - Full Kaspa network node with RPC API and public P2P access
-- **Management Dashboard** - Web-based service management and monitoring interface
+- **Management Dashboard** - Host-based web interface for service monitoring and management
 - **Nginx Reverse Proxy** - Load balancing, SSL termination, and security headers
 
-### Production Profile (`prod`) - User Applications
-- **Kasia Messaging App** - Decentralized messaging platform ([K-Kluster/Kasia](https://github.com/K-Kluster/Kasia))
-  - Note: First build takes 5-10 minutes (compiles from source for security)
-- **K Social App** - Decentralized social media platform ([thesheepcat/K](https://github.com/thesheepcat/K))
+### Available Templates
 
-### Explorer Profile (`explorer`) - Data Indexing Services
-- **Kasia Indexer** - Message indexing with file-based storage (RocksDB) ([K-Kluster/kasia-indexer](https://github.com/K-Kluster/kasia-indexer))
-- **K Social Indexer** - Social content indexing with TimescaleDB (Rust) ([thesheepcat/K-indexer](https://github.com/thesheepcat/K-indexer))
-- **Simply Kaspa Indexer** - General blockchain indexing with TimescaleDB ([supertypo/simply-kaspa-indexer](https://github.com/supertypo/simply-kaspa-indexer))
-- **Shared TimescaleDB** - Time-series optimized PostgreSQL for K-Social and Simply Kaspa indexers
+#### Home Node Template
+**Perfect for personal use and learning**
+- Kaspa Node (core blockchain functionality)
+- Management Dashboard (monitoring and control)
+- Kasia Messaging App (decentralized messaging)
+- **Requirements**: 4GB RAM, 100GB storage
 
-### Archive Profile (`archive`) - Long-term Data Storage
-- **Archive Indexer** - Historical data preservation and analysis
-- **Archive Database** - Separate PostgreSQL instance for long-term storage with partitioning
+#### Public Node Template  
+**For supporting the Kaspa network**
+- Kaspa Node with public P2P access
+- Management Dashboard
+- K Social App (decentralized social platform)
+- **Requirements**: 8GB RAM, 250GB storage
 
-### Mining Profile (`mining`) - Mining Operations
-- **Kaspa Mining Stratum** - Solo mining stratum bridge ([aglov413/kaspa-stratum-bridge](https://github.com/aglov413/kaspa-stratum-bridge))
+#### Explorer Template
+**For blockchain data analysis**
+- All Home Node components
+- Blockchain indexers (Kasia, K-Social, Simply Kaspa)
+- TimescaleDB for time-series data
+- **Requirements**: 16GB RAM, 500GB storage
 
-### Development Profile (`development`) - Development Tools
-- **Portainer** - Container management and monitoring interface
-- **pgAdmin** - Database administration and query interface
+#### Mining Template
+**For solo mining operations**
+- Kaspa Node optimized for mining
+- Kaspa Stratum Bridge
+- Management Dashboard
+- **Requirements**: 8GB RAM, 100GB storage
+
+#### Custom Setup
+**For advanced users who want full control**
+- Choose individual services à la carte
+- Mix and match any combination of services
+- Full configuration control
 
 ## 💻 Hardware Requirements
 
 The installation wizard automatically detects your hardware and recommends the best profile for your system.
 
-### Minimum Requirements (Core Profile)
+### Minimum Requirements (Home Node Template)
 - **CPU**: 2+ cores
 - **RAM**: 4GB
 - **Storage**: 100GB available
 - **Network**: Stable internet connection
 - **Disk Type**: HDD acceptable (SSD recommended)
 
-**What you can run**: Kaspa node, management dashboard
+**What you get**: Kaspa node, management dashboard, messaging app
 
-### Recommended Configuration (Production Profile)
+### Recommended Configuration (Public Node Template)
 - **CPU**: 4+ cores
 - **RAM**: 8GB
 - **Storage**: 250GB available (SSD recommended)
 - **Network**: 100Mbps+ internet
 - **Disk Type**: SSD strongly recommended
 
-**What you can run**: Node, dashboard, Kasia app, K-Social app
+**What you get**: Public node, dashboard, messaging and social apps
 
-### Optimal Configuration (Explorer Profile)
+### Optimal Configuration (Explorer Template)
 - **CPU**: 8+ cores
 - **RAM**: 16GB+
 - **Storage**: 500GB+ available (NVMe SSD recommended)
 - **Network**: Gigabit ethernet
 - **Disk Type**: NVMe SSD for best performance
 
-**What you can run**: Everything including blockchain indexers with TimescaleDB
+**What you get**: Everything including blockchain indexers with TimescaleDB
 
-### High-End Configuration (Archive Profile)
+### High-End Configuration (Custom Setup)
 - **CPU**: 8+ cores (16+ threads)
 - **RAM**: 32GB+
 - **Storage**: 1TB+ available (NVMe SSD required)
 - **Network**: Gigabit ethernet
 - **Disk Type**: NVMe SSD required
 
-**What you can run**: Full archive node with long-term data retention
+**What you get**: Any combination of services you choose
 
 ### Example Hardware
 
@@ -183,16 +198,16 @@ The installation wizard automatically detects your hardware and recommends the b
 - CPU: AMD Ryzen 5 5560U (6 cores)
 - RAM: 16GB DDR4
 - Storage: 500GB NVMe SSD
-- **Best for**: Core or Production profiles
+- **Best for**: Home Node or Public Node templates
 
 **Recommended Option (~$400-500)**
 - Mini PC: Beelink SER7 7735HS
 - CPU: AMD Ryzen 7 7735HS (8 cores, 16 threads)
 - RAM: 32GB DDR5
 - Storage: 1TB NVMe SSD
-- **Best for**: Explorer or Archive profiles
+- **Best for**: Explorer template or custom setups
 
-**Note**: The installation wizard will analyze your hardware and provide specific recommendations with compatibility ratings (Optimal, Recommended, Possible, Not Recommended).
+**Note**: The installation wizard will analyze your hardware and provide specific template recommendations with compatibility ratings (Optimal, Recommended, Possible, Not Recommended).
 
 ## 🐧 Supported Operating Systems
 
@@ -287,39 +302,33 @@ The installation wizard will check all of these for you automatically!
 
 ## 🎛️ Management
 
-### Profile-Based Deployment
-Choose the components you need based on your hardware and requirements:
+### Template-Based Deployment
+The system now uses templates for easier deployment. Choose from pre-configured templates or create custom setups:
 
 ```bash
-# Core services only (node + dashboard)
-./scripts/manage.sh start
+# Deploy using templates (recommended)
+./scripts/manage.sh start --template home-node      # Home Node template
+./scripts/manage.sh start --template public-node   # Public Node template  
+./scripts/manage.sh start --template explorer      # Explorer template
+./scripts/manage.sh start --template mining        # Mining template
 
-# Production applications (messaging + social)
-./scripts/manage.sh start -p prod
-
-# Data indexing services
-./scripts/manage.sh start -p explorer
-
-# Complete setup (all profiles)
-./scripts/manage.sh start -p prod -p explorer -p development
-
-# Mining operation
-./scripts/manage.sh start -p mining
+# Legacy profile-based deployment (still supported)
+./scripts/manage.sh start -p prod -p explorer      # Multiple profiles
 ```
 
 ### Management Commands
 ```bash
-# Profile management
-./scripts/manage.sh profiles              # List all available profiles
-./scripts/manage.sh start -p prod         # Start production profile
-./scripts/manage.sh status -p explorer    # Check explorer services
-./scripts/manage.sh logs -p development   # View development tools logs
+# Template management
+./scripts/manage.sh templates                     # List available templates
+./scripts/manage.sh start --template home-node   # Deploy template
+./scripts/manage.sh status --template explorer   # Check template services
+./scripts/manage.sh logs --template public-node  # View template logs
 
 # Service management
-./scripts/manage.sh start kaspa-node      # Start specific service
-./scripts/manage.sh health                # Run comprehensive health check
-./scripts/manage.sh backup                # Create data backup
-./scripts/manage.sh update                # Update all services
+./scripts/manage.sh start kaspa-node             # Start specific service
+./scripts/manage.sh health                       # Run comprehensive health check
+./scripts/manage.sh backup                       # Create data backup
+./scripts/manage.sh update                       # Update all services
 ```
 
 ### Web Interfaces
@@ -328,34 +337,41 @@ Choose the components you need based on your hardware and requirements:
 Access at: `http://localhost:3000` (when wizard profile is active)
 
 Features:
-- 🎯 Interactive guided installation
+- 🎯 Template-first guided installation
 - 📊 Real-time system requirements checking
-- 🔍 Smart profile recommendations
-- ⚙️ Visual configuration builder
+- 🔍 Smart template recommendations based on hardware
+- ⚙️ Visual template selection with compatibility ratings
 - 📈 Live installation progress tracking
-- ✅ Post-installation verification
-- 🆘 Built-in help and troubleshooting
+- ✅ Post-installation verification and service health checks
+- 🆘 Built-in help system and troubleshooting guides
 
 #### Management Dashboard
-Access at: `http://localhost:8080`
+Access at: `http://localhost:8080` (host-based service)
 
 Features:
-- 📊 Real-time service monitoring across all profiles
+- 📊 Real-time service monitoring across all templates
 - 🌐 Kaspa network statistics and node status
 - 💻 System resource usage and performance metrics
-- 🎛️ Profile-specific service controls and logs
+- 🎛️ Template-specific service controls and logs
 - 🔌 Public node accessibility status
 - 🔄 Service restart and reconfiguration
+- 🚀 Integration with Installation Wizard for easy reconfiguration
 
 ## 🎯 Installation Wizard Features
 
-The web-based installation wizard makes setup easy for everyone, from beginners to experts.
+The web-based installation wizard makes setup easy for everyone, from beginners to experts, with a template-first approach that simplifies configuration.
+
+### Template-First Setup
+- **Pre-Configured Templates**: Choose from Home Node, Public Node, Explorer, or Mining templates
+- **Smart Recommendations**: Wizard analyzes your hardware and suggests the best template
+- **Custom Setup Option**: Advanced users can select individual services à la carte
+- **One-Click Application**: Templates automatically configure all necessary services
 
 ### Smart System Detection
 - **Automatic Hardware Analysis**: Detects CPU, RAM, disk space, and disk type
 - **OS Detection**: Identifies your operating system and provides tailored instructions
-- **Resource Recommendations**: Suggests optimal profiles based on your hardware
-- **Compatibility Ratings**: Shows which profiles will work best on your system
+- **Template Compatibility**: Shows which templates will work best on your system
+- **Resource Warnings**: Alerts you to potential performance issues
 
 ### Guided Installation Process
 
@@ -363,7 +379,7 @@ The web-based installation wizard makes setup easy for everyone, from beginners 
 - System requirements verification
 - Docker installation status
 - Port availability checking
-- "Help Me Choose" quiz for profile selection
+- "Help Me Choose" quiz for template selection
 
 **Step 2: System Check**
 - Docker and Docker Compose verification
@@ -371,37 +387,35 @@ The web-based installation wizard makes setup easy for everyone, from beginners 
 - Network connectivity testing
 - Automatic issue detection
 
-**Step 3: Profile Selection**
-- Visual profile cards with descriptions
-- Resource requirements for each profile
-- Compatibility indicators
-- Multiple profile selection support
+**Step 3: Template Selection**
+- Visual template cards with descriptions and requirements
+- Hardware compatibility indicators for each template
+- "Build Custom" option for advanced users
+- Template preview showing included services
 
 **Step 4: Configuration**
-- Smart defaults based on your system
-- Visual configuration forms
-- Real-time validation
-- External IP detection
-- Secure password generation
+- Template-specific configuration options
+- Smart defaults based on your template and system
+- Visual configuration forms with real-time validation
+- External IP detection and secure password generation
 
 **Step 5: Review**
-- Configuration summary
-- Profile overview
+- Template and configuration summary
+- Service overview with resource estimates
 - Estimated installation time
-- Final confirmation
+- Final confirmation before installation
 
 **Step 6: Installation**
-- Real-time progress tracking
-- Phase-by-phase updates
-- Detailed status messages
+- Real-time progress tracking with template-specific phases
+- Phase-by-phase updates showing service deployment
+- Detailed status messages and error handling
 - WebSocket-based live updates
 
 **Step 7: Completion**
-- Installation verification
-- Service health checks
-- Interactive post-installation tour
-- Quick start guide
-- Access to all services
+- Installation verification and service health checks
+- Template-specific post-installation tour
+- Quick start guide for your chosen template
+- Direct access links to all deployed services
 
 ### Built-In Help System
 
@@ -583,14 +597,20 @@ REMOTE_KASPA_NODE_URL=http://192.168.1.100:16111
 - **Public Node Setup**: [docs/public-node-setup.md](docs/public-node-setup.md) - Network configuration guide
 
 ### Installation Wizard
+- **Template-First Setup Guide**: [docs/guides/wizard-template-setup-guide.md](docs/guides/wizard-template-setup-guide.md) - Complete template selection and setup guide
 - **Wizard Overview**: [services/wizard/README.md](services/wizard/README.md) - Complete wizard features and usage
-- **Resource Checker**: [services/wizard/RESOURCE_CHECKER_QUICK_REFERENCE.md](services/wizard/RESOURCE_CHECKER_QUICK_REFERENCE.md) - Hardware detection and recommendations
-- **Plain Language Guide**: [PLAIN_LANGUAGE_STYLE_GUIDE.md](PLAIN_LANGUAGE_STYLE_GUIDE.md) - Content writing standards
-- **Installation Guides**: [services/wizard/INSTALLATION_GUIDES_QUICK_REFERENCE.md](docs/quick-references/INSTALLATION_GUIDES_QUICK_REFERENCE.md) - OS-specific installation help
-- **Error Remediation**: [services/wizard/ERROR_REMEDIATION_QUICK_REFERENCE.md](docs/quick-references/ERROR_REMEDIATION_QUICK_REFERENCE.md) - Automatic error fixing
-- **Safety System**: [services/wizard/SAFETY_SYSTEM_QUICK_REFERENCE.md](docs/quick-references/SAFETY_SYSTEM_QUICK_REFERENCE.md) - Warnings and confirmations
+- **Template vs Custom Setup**: [docs/guides/template-vs-custom-guide.md](docs/guides/template-vs-custom-guide.md) - When to use templates vs custom setup
+- **Error Recovery Procedures**: [docs/guides/wizard-error-recovery-guide.md](docs/guides/wizard-error-recovery-guide.md) - Troubleshooting template and installation issues
+- **Resource Checker**: [docs/quick-references/RESOURCE_CHECKER_QUICK_REFERENCE.md](docs/quick-references/RESOURCE_CHECKER_QUICK_REFERENCE.md) - Hardware detection and template recommendations
+- **Installation Guides**: [docs/quick-references/INSTALLATION_GUIDES_QUICK_REFERENCE.md](docs/quick-references/INSTALLATION_GUIDES_QUICK_REFERENCE.md) - OS-specific installation help
+- **Safety System**: [docs/quick-references/SAFETY_SYSTEM_QUICK_REFERENCE.md](docs/quick-references/SAFETY_SYSTEM_QUICK_REFERENCE.md) - Warnings and confirmations
 - **Diagnostic Help**: [services/wizard/DIAGNOSTIC_HELP_QUICK_REFERENCE.md](services/wizard/DIAGNOSTIC_HELP_QUICK_REFERENCE.md) - Troubleshooting and diagnostics
-- **Post-Installation Tour**: [services/wizard/POST_INSTALLATION_TOUR_QUICK_REFERENCE.md](docs/quick-references/POST_INSTALLATION_TOUR_QUICK_REFERENCE.md) - Getting started guide
+
+### Management Dashboard
+- **Dashboard Overview**: [services/dashboard/README.md](services/dashboard/README.md) - Complete dashboard features and template-aware management
+- **Host-Based Deployment**: [services/dashboard/DEPLOYMENT.md](services/dashboard/DEPLOYMENT.md) - Installation and deployment guide
+- **Service Management**: [services/dashboard/SERVICE_MANAGEMENT.md](services/dashboard/SERVICE_MANAGEMENT.md) - Dashboard service management
+- **Environment Configuration**: [services/dashboard/ENVIRONMENT_VARIABLES.md](services/dashboard/ENVIRONMENT_VARIABLES.md) - Configuration options
 
 ### Architecture and Development
 - **Project Structure**: [PROJECT_STRUCTURE.md](docs/uncategorized/PROJECT_STRUCTURE.md) - Architecture and file organization

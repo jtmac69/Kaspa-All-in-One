@@ -5,6 +5,7 @@
 
 import { stateManager } from './state-manager.js';
 import { buildConfig, isFeatureEnabled } from './build-config.js';
+import { showNotification } from './utils.js';
 
 export const TOTAL_STEPS = 9;
 
@@ -40,6 +41,54 @@ export function getStepNumber(stepId) {
 export async function nextStep() {
     const currentStep = stateManager.get('currentStep');
     const currentStepId = getStepId(currentStep);
+    
+    // Validate checklist before leaving checklist step
+    if (currentStepId === 'checklist') {
+        try {
+            const systemCheckResults = stateManager.get('systemCheckResults');
+            
+            if (!systemCheckResults) {
+                showNotification('Please run system check first', 'warning');
+                return;
+            }
+            
+            // Check if Docker is installed
+            if (!systemCheckResults.docker?.installed) {
+                showNotification(
+                    'Docker is required but not installed. Please install Docker first.',
+                    'error',
+                    5000
+                );
+                return;
+            }
+            
+            // Check if Docker Compose is installed
+            if (!systemCheckResults.dockerCompose?.installed) {
+                showNotification(
+                    'Docker Compose is required but not installed. Please install Docker Compose first.',
+                    'error',
+                    5000
+                );
+                return;
+            }
+            
+            // Warn if resources are insufficient
+            if (!systemCheckResults.resources?.memory?.meetsMinimum || 
+                !systemCheckResults.resources?.cpu?.meetsMinimum) {
+                const proceed = confirm(
+                    'Your system resources are below recommended levels. ' +
+                    'Installation may be slow or fail. Continue anyway?'
+                );
+                if (!proceed) return;
+            }
+            
+            console.log('CHECKLIST: Validation passed, proceeding to next step');
+        } catch (error) {
+            console.error('Failed to validate checklist:', error);
+            showNotification('Failed to validate system check results', 'error');
+            return;
+        }
+    }
     
     // Validate configuration before leaving configure step
     if (currentStepId === 'configure') {
@@ -98,17 +147,35 @@ export function goToStep(stepNumber) {
     
     const currentStep = stateManager.get('currentStep');
     
+    console.log(`=== NAVIGATION: Going from step ${currentStep} to step ${stepNumber} ===`);
+    
     // Hide ALL steps first
-    document.querySelectorAll('.wizard-step').forEach(step => {
+    const allSteps = document.querySelectorAll('.wizard-step');
+    console.log(`NAVIGATION: Found ${allSteps.length} wizard steps`);
+    
+    allSteps.forEach((step, index) => {
+        const wasActive = step.classList.contains('active');
         step.classList.remove('active');
+        if (wasActive) {
+            console.log(`NAVIGATION: Deactivated step: ${step.id}`);
+        }
     });
     
     // Show new step
-    const newStepEl = document.querySelector(`#step-${getStepId(stepNumber)}`);
+    const stepId = getStepId(stepNumber);
+    const newStepEl = document.querySelector(`#step-${stepId}`);
     if (newStepEl) {
         newStepEl.classList.add('active');
+        console.log(`NAVIGATION: Activated step: ${newStepEl.id}`);
     } else {
-        console.error(`Step element not found: #step-${getStepId(stepNumber)}`);
+        console.error(`Step element not found: #step-${stepId}`);
+    }
+    
+    // Verify only one step is active
+    const activeSteps = document.querySelectorAll('.wizard-step.active');
+    console.log(`NAVIGATION: Active steps after navigation: ${activeSteps.length}`);
+    if (activeSteps.length > 1) {
+        console.error('NAVIGATION: Multiple steps are active!', Array.from(activeSteps).map(s => s.id));
     }
     
     // Update state

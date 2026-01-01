@@ -730,6 +730,82 @@ class ProfileStateManager {
       isRefreshing: this.stateCache.isRefreshing
     };
   }
+
+  /**
+   * Save installation state after successful installation
+   * @param {Object} data - Installation data
+   * @param {Array} data.profiles - Installed profiles
+   * @param {Object} data.config - Installation configuration
+   * @param {Object} data.validation - Service validation results
+   * @returns {Promise<Object>} Result object
+   */
+  async saveInstallationState(data) {
+    try {
+      const { profiles, config, validation } = data;
+      
+      // Create installation state object
+      const installationState = {
+        version: '1.0.0',
+        installedAt: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+        phase: 'complete',
+        
+        // Installed profiles
+        profiles: {
+          selected: profiles || [],
+          count: (profiles || []).length
+        },
+        
+        // Configuration summary (don't store sensitive data)
+        configuration: {
+          network: config?.KASPA_NETWORK || 'mainnet',
+          publicNode: config?.PUBLIC_NODE || false,
+          hasIndexers: profiles?.some(p => p === 'indexer-services') || false,
+          hasArchive: profiles?.includes('archive-node') || false,
+          hasMining: profiles?.includes('mining') || false
+        },
+        
+        // Service status
+        services: validation?.services?.services ? 
+          Object.entries(validation.services.services).map(([name, status]) => ({
+            name,
+            running: status.running || false,
+            exists: status.exists || false
+          })) : [],
+        
+        // Summary
+        summary: validation?.services?.summary || {
+          total: 0,
+          running: 0,
+          stopped: 0,
+          missing: 0
+        }
+      };
+      
+      // Ensure directory exists
+      const stateDir = path.join(this.projectRoot, '.kaspa-aio');
+      await fs.mkdir(stateDir, { recursive: true });
+      
+      // Save installation state
+      const statePath = path.join(stateDir, 'installation-state.json');
+      await fs.writeFile(statePath, JSON.stringify(installationState, null, 2));
+      
+      console.log('Installation state saved successfully:', statePath);
+      
+      return {
+        success: true,
+        path: statePath,
+        state: installationState
+      };
+      
+    } catch (error) {
+      console.error('Error saving installation state:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
 }
 
 // Static property to hold singleton instance

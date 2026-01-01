@@ -1,0 +1,16 @@
+/* ============================================================================
+   Template Selection Styles
+   ============================================================================ */
+
+/* This file will contain all template-related styles */
+/* TODO: Extract template selection styles from main wizard.css */
+
+.template-grid {
+  margin-top: var(--space-4);
+}
+
+.custom-template-section {
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+}

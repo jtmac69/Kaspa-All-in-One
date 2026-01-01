@@ -11,7 +11,7 @@ const createRemovalRoutes = require('./removal');
 
 const router = express.Router();
 
-// Initialize managers
+// Initialize managers - use the basic ProfileManager to avoid circular references
 const profileManager = new ProfileManager();
 const dependencyValidator = new DependencyValidator(profileManager);
 

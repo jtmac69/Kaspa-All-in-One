@@ -3212,20 +3212,7 @@ window.togglePasswordVisibility = function(fieldId) {
     }
 };
 
-/**
- * Get profile description for display
- */
-function getProfileDescription(profileId) {
-    const descriptions = {
-        'core': 'Full Kaspa node with RPC and P2P capabilities',
-        'archive-node': 'Archive node with full transaction history',
-        'kaspa-user-applications': 'Web applications for Kaspa ecosystem',
-        'indexer-services': 'Indexing services for blockchain data',
-        'mining': 'Mining pool and stratum server'
-    };
-    
-    return descriptions[profileId] || 'Kaspa service profile';
-}
+// Duplicate function removed - using the first declaration at line 1683
 
 /**
  * Calculate configuration diff

@@ -7,6 +7,7 @@
 import { api, WebSocketManager } from './modules/api-client.js';
 import { stateManager } from './modules/state-manager.js';
 import { initNavigation, nextStep, previousStep, goToStep } from './modules/navigation.js';
+import { initNavigationFooter } from './modules/navigation-footer.js';
 import { showNotification, dismissBanner } from './modules/utils.js';
 import { loadConfigurationForm, validateConfiguration, saveConfiguration, initializeProfileSelection, initializeProfileSelectionWithReconfiguration, setupDeveloperModeToggle, setupNetworkChangeDetection, setupAdvancedOptionsToggle } from './modules/configure.js';
 import { runSystemCheck, showDockerGuide, showComposeGuide, initializeQuiz } from './modules/checklist.js';
@@ -62,6 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Initialize modules
     initNavigation();
+    initNavigationFooter();
     initWebSocket();
     
     // Handle different modes

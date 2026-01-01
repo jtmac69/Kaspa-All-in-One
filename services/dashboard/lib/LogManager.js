@@ -12,7 +12,8 @@ class LogManager extends EventEmitter {
         this.activeStreams = new Map(); // Track active log streams
         this.logCache = new Map(); // Cache recent logs
         this.maxCacheSize = 1000; // Max lines per service
-        this.logDownloadDir = '/app/data/log-downloads';
+        const dataDir = process.env.DATA_DIR || './data';
+        this.logDownloadDir = `${dataDir}/log-downloads`;
         this.severityLevels = {
             'TRACE': { level: 0, color: '#6b7280' },
             'DEBUG': { level: 1, color: '#3b82f6' },

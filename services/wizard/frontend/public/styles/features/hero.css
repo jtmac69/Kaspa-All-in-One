@@ -1,0 +1,141 @@
+/* ============================================================================
+   Hero Section (Welcome Step) - Enhanced Kaspa Branding
+   ============================================================================ */
+
+.hero {
+  text-align: center;
+  padding: var(--space-responsive-lg) var(--space-compact-6); /* Use responsive and compact spacing */
+  background: var(--gradient-hero);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-compact-6);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(112, 199, 186, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 70% 80%, rgba(123, 97, 255, 0.08) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.hero-logo-container {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-logo {
+  width: 240px;
+  max-width: 100%;
+  height: auto;
+  margin-bottom: var(--space-10);
+  filter: drop-shadow(0 4px 12px rgba(112, 199, 186, 0.2));
+  transition: transform var(--transition-base);
+}
+
+.hero-logo:hover {
+  transform: scale(1.05);
+}
+
+.hero-logo-placeholder {
+  margin-bottom: var(--space-10);
+  position: relative;
+  z-index: 1;
+}
+
+.logo-placeholder-text {
+  font-family: var(--font-heading);
+  font-size: 3rem;
+  font-weight: var(--font-bold);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: var(--space-2);
+  letter-spacing: 0.05em;
+}
+
+.logo-placeholder-note {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-1);
+}
+
+.hero-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-h1);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--space-4);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 1;
+  line-height: 1.2;
+}
+
+.hero-subtitle {
+  font-family: var(--font-body);
+  font-size: var(--text-h4);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-10);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  z-index: 1;
+  line-height: 1.5;
+}
+
+.hero-features {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-10);
+  margin-bottom: var(--space-10);
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(112, 199, 186, 0.2);
+  transition: all var(--transition-base);
+  min-width: 120px;
+}
+
+.feature-item:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-kaspa);
+  border-color: var(--kaspa-blue);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.feature-text {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.hero-footer {
+  margin-top: var(--space-10);
+  position: relative;
+  z-index: 1;
+}

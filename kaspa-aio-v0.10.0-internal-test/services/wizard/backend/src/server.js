@@ -15,6 +15,7 @@ const systemCheckRouter = require('./api/system-check');
 const resourceCheckRouter = require('./api/resource-check');
 const contentRouter = require('./api/content');
 const profilesRouter = require('./api/profiles');
+const simpleTemplatesRouter = require('./api/simple-templates');
 const configRouter = require('./api/config');
 const installRouter = require('./api/install');
 const reconfigureRouter = require('./api/reconfigure');
@@ -106,6 +107,7 @@ app.use('/api/system-check', systemCheckRouter);
 app.use('/api/resource-check', resourceCheckRouter);
 app.use('/api/content', contentRouter);
 app.use('/api/profiles', profilesRouter);
+app.use('/api/simple-templates', simpleTemplatesRouter); // Simple template API (bypasses circular reference issues)
 app.use('/api/config', configRouter);
 app.use('/api/wizard/config', configRouter); // Mount config router under /api/wizard/config for test compatibility
 app.use('/api/install', installRouter);

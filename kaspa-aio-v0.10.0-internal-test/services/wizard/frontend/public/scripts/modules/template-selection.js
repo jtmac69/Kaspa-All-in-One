@@ -3,6 +3,8 @@
  * Handles template selection, customization, and application
  */
 
+import { stateManager } from './state-manager.js';
+
 class TemplateSelection {
     constructor() {
         this.templates = [];
@@ -41,14 +43,60 @@ class TemplateSelection {
      * Load templates from the API
      */
     async loadTemplates() {
-        const response = await fetch('/api/profiles/templates/all');
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.message || 'Failed to load templates');
+        try {
+            const response = await fetch('/api/simple-templates/all');
+            
+            if (!response.ok) {
+                // If templates API is not available, use fallback templates
+                console.warn('Templates API not available, using fallback templates');
+                this.templates = this.getFallbackTemplates();
+                return;
+            }
+            
+            const data = await response.json();
+            this.templates = data.templates || data || [];
+        } catch (error) {
+            console.warn('Failed to load templates from API, using fallback:', error);
+            this.templates = this.getFallbackTemplates();
         }
-        
-        this.templates = data.templates;
+    }
+
+    /**
+     * Fallback templates when API is not available
+     */
+    getFallbackTemplates() {
+        return [
+            {
+                id: 'beginner-setup',
+                name: 'Beginner Setup',
+                category: 'beginner',
+                description: 'Simple setup for new users',
+                icon: '🚀',
+                profiles: ['kaspa-user-applications'],
+                resources: { minMemory: 4, minCpu: 2, minDisk: 50 },
+                estimatedSetupTime: '5 minutes',
+                syncTime: 'Not required',
+                features: ['Easy setup', 'User applications', 'Public indexers'],
+                benefits: ['Quick start', 'No complex configuration'],
+                longDescription: 'Perfect for users who want to get started quickly with Kaspa applications.',
+                useCase: 'personal'
+            },
+            {
+                id: 'full-node',
+                name: 'Full Node',
+                category: 'advanced',
+                description: 'Complete Kaspa node with all services',
+                icon: '⚡',
+                profiles: ['core', 'kaspa-user-applications', 'indexer-services'],
+                resources: { minMemory: 16, minCpu: 4, minDisk: 500 },
+                estimatedSetupTime: '15 minutes',
+                syncTime: '2-4 hours',
+                features: ['Full node', 'Local indexers', 'All applications'],
+                benefits: ['Complete control', 'Best performance', 'Full privacy'],
+                longDescription: 'Complete Kaspa setup with local node and indexers for maximum performance.',
+                useCase: 'advanced'
+            }
+        ];
     }
 
     /**
@@ -56,18 +104,28 @@ class TemplateSelection {
      */
     async loadSystemResources() {
         try {
-            const response = await fetch('/api/wizard/system-check');
+            const response = await fetch('/api/system-check/resources');
+            
+            if (!response.ok) {
+                console.warn('System check API not available, using defaults');
+                this.systemResources = { memory: 8, cpu: 4, disk: 100 }; // Default values
+                return;
+            }
+            
             const data = await response.json();
             
-            if (response.ok && data.resources) {
+            if (data.resources) {
                 this.systemResources = {
                     memory: Math.floor(data.resources.memory.total / (1024 * 1024 * 1024)), // Convert to GB
-                    cpu: data.resources.cpu.cores,
+                    cpu: data.resources.cpu.cores || data.resources.cpu.count || 4,
                     disk: Math.floor(data.resources.disk.available / (1024 * 1024 * 1024)) // Convert to GB
                 };
+            } else {
+                this.systemResources = { memory: 8, cpu: 4, disk: 100 }; // Default values
             }
         } catch (error) {
-            console.warn('Could not load system resources:', error);
+            console.warn('Could not load system resources, using defaults:', error);
+            this.systemResources = { memory: 8, cpu: 4, disk: 100 }; // Default values
         }
     }
 
@@ -78,7 +136,7 @@ class TemplateSelection {
         if (!this.systemResources) return;
         
         try {
-            const response = await fetch('/api/profiles/templates/recommendations', {
+            const response = await fetch('/api/simple-templates/recommendations', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -89,15 +147,86 @@ class TemplateSelection {
                 })
             });
             
+            if (!response.ok) {
+                console.warn('Recommendations API not available, using fallback logic');
+                this.generateFallbackRecommendations();
+                return;
+            }
+            
             const data = await response.json();
             
-            if (response.ok) {
+            if (data.recommendations) {
                 this.recommendations = data.recommendations;
                 this.markRecommendedTemplates();
+            } else {
+                this.generateFallbackRecommendations();
             }
         } catch (error) {
-            console.warn('Could not load recommendations:', error);
+            console.warn('Could not load recommendations, using fallback logic:', error);
+            this.generateFallbackRecommendations();
         }
+    }
+
+    /**
+     * Generate fallback recommendations based on system resources
+     */
+    generateFallbackRecommendations() {
+        if (!this.systemResources || !this.templates) return;
+        
+        this.recommendations = [];
+        
+        // Simple recommendation logic
+        this.templates.forEach(template => {
+            const meetsRequirements = 
+                this.systemResources.memory >= template.resources.minMemory &&
+                this.systemResources.cpu >= template.resources.minCpu &&
+                this.systemResources.disk >= template.resources.minDisk;
+            
+            if (meetsRequirements) {
+                this.recommendations.push({
+                    template: template,
+                    recommended: true,
+                    score: this.calculateRecommendationScore(template),
+                    reasons: this.getRecommendationReasons(template)
+                });
+            }
+        });
+        
+        this.markRecommendedTemplates();
+    }
+
+    /**
+     * Calculate recommendation score
+     */
+    calculateRecommendationScore(template) {
+        if (!this.systemResources) return 50;
+        
+        const memoryRatio = this.systemResources.memory / template.resources.minMemory;
+        const cpuRatio = this.systemResources.cpu / template.resources.minCpu;
+        const diskRatio = this.systemResources.disk / template.resources.minDisk;
+        
+        return Math.min(100, Math.floor((memoryRatio + cpuRatio + diskRatio) / 3 * 50));
+    }
+
+    /**
+     * Get recommendation reasons
+     */
+    getRecommendationReasons(template) {
+        const reasons = [];
+        
+        if (template.category === 'beginner') {
+            reasons.push('Easy to set up and configure');
+        }
+        
+        if (template.profiles.includes('kaspa-user-applications')) {
+            reasons.push('Includes user-friendly applications');
+        }
+        
+        if (template.profiles.includes('core')) {
+            reasons.push('Provides full node capabilities');
+        }
+        
+        return reasons;
     }
 
     /**
@@ -541,12 +670,13 @@ function closeTemplateModal() {
     }
 }
 
+// Attach to window for global access
+window.closeTemplateModal = closeTemplateModal;
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.templateSelection = new TemplateSelection();
 });
 
 // Export for module use
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = TemplateSelection;
-}
+export default TemplateSelection;

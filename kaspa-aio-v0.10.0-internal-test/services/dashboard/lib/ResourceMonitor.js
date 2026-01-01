@@ -7,7 +7,9 @@ const execAsync = promisify(exec);
 
 class ResourceMonitor {
     constructor() {
-        this.historyFile = '/app/data/resource-history.json';
+        // Use local data directory for host-based deployment
+        const dataDir = process.env.DATA_DIR || './data';
+        this.historyFile = `${dataDir}/resource-history.json`;
         this.historyRetentionHours = 24;
         this.maxHistoryEntries = 1440; // 24 hours * 60 minutes
         this.alertThresholds = {
@@ -27,7 +29,8 @@ class ResourceMonitor {
 
     async ensureDataDirectory() {
         try {
-            await fs.mkdir('/app/data', { recursive: true });
+            const dataDir = process.env.DATA_DIR || './data';
+            await fs.mkdir(dataDir, { recursive: true });
         } catch (error) {
             console.warn('Failed to create data directory:', error.message);
         }

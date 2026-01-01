@@ -30,12 +30,61 @@ export async function loadConfigurationForm() {
         // Get selected profiles from state
         const selectedProfiles = stateManager.get('selectedProfiles') || [];
         
+        // Check if we're in template mode and template is being applied
+        const templateApplied = stateManager.get('templateApplied');
+        const selectedTemplate = stateManager.get('selectedTemplate');
+        
         if (selectedProfiles.length === 0) {
-            showNotification('Please select at least one profile first', 'warning');
-            return null;
+            // If we're in template mode, wait a bit for template state to be fully applied
+            if (templateApplied || selectedTemplate) {
+                console.log('[CONFIGURE] Template detected but profiles not yet loaded, retrying...');
+                // Wait a short time and retry once
+                await new Promise(resolve => setTimeout(resolve, 100));
+                const retryProfiles = stateManager.get('selectedProfiles') || [];
+                
+                if (retryProfiles.length === 0) {
+                    showNotification('Template configuration is loading, please wait...', 'info');
+                    return null;
+                } else {
+                    console.log('[CONFIGURE] Profiles loaded after retry:', retryProfiles);
+                    // Continue with the retry profiles
+                    return await loadConfigurationFormWithProfiles(retryProfiles);
+                }
+            } else {
+                showNotification('Please select at least one profile first', 'warning');
+                return null;
+            }
         }
         
-        // Request default configuration from API
+        return await loadConfigurationFormWithProfiles(selectedProfiles);
+        
+    } catch (error) {
+        console.error('Failed to load configuration form:', error);
+        showNotification(`Configuration loading failed: ${error.message}`, 'error');
+        return null;
+    }
+}
+
+/**
+ * Load configuration form with specific profiles
+ */
+async function loadConfigurationFormWithProfiles(selectedProfiles) {
+    try {
+        // Check if we already have configuration (from template)
+        let config = stateManager.get('configuration');
+        
+        if (config && Object.keys(config).length > 0) {
+            console.log('[CONFIGURE] Using existing configuration from template:', config);
+            // Use existing configuration (from template) with a small delay to ensure DOM is ready
+            setTimeout(() => {
+                populateConfigurationForm(config);
+                showNotification('Configuration loaded from template', 'success');
+            }, 100);
+            return config;
+        }
+        
+        console.log('[CONFIGURE] No existing configuration, requesting default from API');
+        // Request default configuration from API (for custom profile selection)
         const response = await api.post('/config/default', {
             profiles: selectedProfiles
         });
@@ -46,12 +95,13 @@ export async function loadConfigurationForm() {
         
         // Store configuration in state
         stateManager.set('configuration', response.config);
+        config = response.config;
         
         // Populate form fields
-        populateConfigurationForm(response.config);
+        populateConfigurationForm(config);
         
         showNotification('Configuration loaded successfully', 'success');
-        return response.config;
+        return config;
         
     } catch (error) {
         console.error('Failed to load configuration:', error);
@@ -73,7 +123,10 @@ function populateConfigurationForm(config) {
     // Public node toggle
     const publicNodeToggle = document.getElementById('public-node');
     if (publicNodeToggle) {
-        publicNodeToggle.checked = config.PUBLIC_NODE || false;
+        // Handle both string and boolean values
+        const isPublic = config.PUBLIC_NODE === 'true' || config.PUBLIC_NODE === true;
+        publicNodeToggle.checked = isPublic;
+        console.log('[CONFIGURE] Setting PUBLIC_NODE toggle:', config.PUBLIC_NODE, '→', isPublic);
     }
     
     // K-Social Database password
@@ -152,6 +205,8 @@ function populateConfigurationForm(config) {
  * Update form visibility based on selected profiles
  */
 function updateFormVisibility(profiles) {
+    console.log('[CONFIGURE] Updating form visibility for profiles:', profiles);
+    
     // Network Configuration section - show for core, archive-node, mining
     // Hide for kaspa-user-applications and indexer-services (they don't need external IP or public node toggle)
     // indexer-services connect TO nodes, they don't serve as public nodes
@@ -160,6 +215,9 @@ function updateFormVisibility(profiles) {
         const needsNetwork = profiles.includes('core') || profiles.includes('archive-node') || 
                             profiles.includes('mining');
         networkSection.style.display = needsNetwork ? 'block' : 'none';
+        console.log('[CONFIGURE] Network section display:', needsNetwork ? 'block' : 'none', 'for profiles:', profiles);
+    } else {
+        console.warn('[CONFIGURE] Network section not found in DOM');
     }
     
     // Indexer Endpoints section - show ONLY if kaspa-user-applications profile is selected
@@ -167,6 +225,9 @@ function updateFormVisibility(profiles) {
     if (indexerSection) {
         const needsIndexerEndpoints = profiles.includes('kaspa-user-applications');
         indexerSection.style.display = needsIndexerEndpoints ? 'block' : 'none';
+        console.log('[CONFIGURE] Indexer endpoints section display:', needsIndexerEndpoints ? 'block' : 'none');
+    } else {
+        console.warn('[CONFIGURE] Indexer endpoints section not found in DOM');
     }
     
     // Database section - show ONLY if indexer-services profile is selected
@@ -175,6 +236,9 @@ function updateFormVisibility(profiles) {
     if (dbSection) {
         const needsDatabase = profiles.includes('indexer-services');
         dbSection.style.display = needsDatabase ? 'block' : 'none';
+        console.log('[CONFIGURE] Database section display:', needsDatabase ? 'block' : 'none');
+    } else {
+        console.warn('[CONFIGURE] Database section not found in DOM');
     }
     
     // Kaspa Node Configuration section - show if core or archive-node profiles are selected
@@ -182,6 +246,9 @@ function updateFormVisibility(profiles) {
     if (kaspaNodeSection) {
         const needsKaspaNode = profiles.includes('core') || profiles.includes('archive-node');
         kaspaNodeSection.style.display = needsKaspaNode ? 'block' : 'none';
+        console.log('[CONFIGURE] Kaspa node section display:', needsKaspaNode ? 'block' : 'none');
+    } else {
+        console.warn('[CONFIGURE] Kaspa node section not found in DOM');
     }
     
     // Advanced options data directory fields
@@ -3212,20 +3279,7 @@ window.togglePasswordVisibility = function(fieldId) {
     }
 };
 
-/**
- * Get profile description for display
- */
-function getProfileDescription(profileId) {
-    const descriptions = {
-        'core': 'Full Kaspa node with RPC and P2P capabilities',
-        'archive-node': 'Archive node with full transaction history',
-        'kaspa-user-applications': 'Web applications for Kaspa ecosystem',
-        'indexer-services': 'Indexing services for blockchain data',
-        'mining': 'Mining pool and stratum server'
-    };
-    
-    return descriptions[profileId] || 'Kaspa service profile';
-}
+// Duplicate function removed - using the first declaration at line 1683
 
 /**
  * Calculate configuration diff

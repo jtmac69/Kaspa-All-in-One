@@ -1,0 +1,37 @@
+/* ============================================================================
+   Kaspa All-in-One Installation Wizard Styles - Modular Architecture
+   Using official Kaspa brand colors from https://kaspa.org/media-kit/
+   ============================================================================ */
+
+/* Core Styles - Foundation */
+@import url('./core/variables.css');
+@import url('./core/base.css');
+@import url('./core/layout.css');
+@import url('./core/responsive.css');
+
+/* Component Styles - UI Elements */
+@import url('./components/buttons.css');
+@import url('./components/progress.css');
+@import url('./components/modals.css');
+@import url('./components/forms.css');
+@import url('./components/config-modification.css');
+@import url('./components/reconfiguration-navigation.css');
+@import url('./components/install.css');
+@import url('./components/complete.css');
+
+/* Feature Styles - Wizard Steps and Sections */
+@import url('./features/hero.css');
+@import url('./features/profiles.css');
+@import url('./features/templates.css');
+@import url('./features/configuration.css');
+@import url('./features/review.css');
+@import url('./features/installation.css');
+@import url('./features/completion.css');
+@import url('./features/checklist.css');
+
+/* Utility Styles */
+@import url('./utils/animations.css');
+@import url('./utils/helpers.css');
+
+/* Legacy Compatibility - Temporary during transition */
+@import url('./legacy/compatibility.css');

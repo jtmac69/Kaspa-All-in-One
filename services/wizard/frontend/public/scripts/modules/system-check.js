@@ -7,6 +7,7 @@
 import { api } from './api-client.js';
 import { stateManager } from './state-manager.js';
 import { showNotification } from './utils.js';
+import { setStepButtonEnabled } from './navigation-footer.js';
 
 /**
  * Run full system check
@@ -378,16 +379,10 @@ function getPortsDetails(ports) {
  * Update continue button
  */
 function updateContinueButton(canProceed, message) {
-    const continueButton = document.querySelector('#step-system-check .btn-primary');
-    if (!continueButton) return;
+    // Use the navigation footer function to enable/disable the button
+    setStepButtonEnabled('system-check-continue', canProceed, message || '');
     
-    continueButton.disabled = !canProceed;
-    
-    if (!canProceed && message) {
-        continueButton.title = message;
-    } else {
-        continueButton.title = '';
-    }
+    console.log(`[SYSTEM-CHECK] Continue button ${canProceed ? 'enabled' : 'disabled'}`);
 }
 
 /**

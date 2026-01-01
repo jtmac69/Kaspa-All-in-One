@@ -82,6 +82,9 @@ check_prerequisites() {
 start_wizard() {
   echo -e "${BLUE}Starting Installation Wizard...${NC}"
   
+  # Ensure log directory exists
+  mkdir -p "$TEST_LOG_DIR"
+  
   cd services/wizard/backend
   
   # Install dependencies if needed
@@ -91,7 +94,7 @@ start_wizard() {
   fi
   
   # Start wizard with internal testing mode
-  BUILD_MODE=internal-test nohup node src/server.js > "$TEST_LOG_DIR/wizard.log" 2>&1 &
+  BUILD_MODE=internal-test nohup node src/server.js > "../../../$TEST_LOG_DIR/wizard.log" 2>&1 &
   WIZARD_PID=$!
   echo $WIZARD_PID > "$WIZARD_PID_FILE"
   
@@ -119,7 +122,10 @@ start_wizard() {
 start_dashboard() {
   echo -e "${BLUE}Starting Management Dashboard...${NC}"
   
-  cd services/dashboard/backend
+  # Ensure log directory exists
+  mkdir -p "$TEST_LOG_DIR"
+  
+  cd services/dashboard
   
   # Install dependencies if needed
   if [ ! -d "node_modules" ]; then
@@ -128,11 +134,11 @@ start_dashboard() {
   fi
   
   # Start dashboard with internal testing mode
-  BUILD_MODE=internal-test nohup node src/server.js > "$TEST_LOG_DIR/dashboard.log" 2>&1 &
+  BUILD_MODE=internal-test nohup node server.js > "../../$TEST_LOG_DIR/dashboard.log" 2>&1 &
   DASHBOARD_PID=$!
   echo $DASHBOARD_PID > "$DASHBOARD_PID_FILE"
   
-  cd ../../..
+  cd ../..
   
   # Wait for dashboard to be ready
   echo -e "${BLUE}Waiting for dashboard to start...${NC}"

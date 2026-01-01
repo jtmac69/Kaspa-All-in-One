@@ -597,3 +597,32 @@ export async function getAvailableProfiles(currentProfiles) {
         return [];
     }
 }
+
+/**
+ * Open profile addition dialog
+ */
+export function openProfileAdditionDialog() {
+    const dialog = document.getElementById('profile-addition-dialog');
+    if (dialog) {
+        dialog.style.display = 'block';
+    }
+}
+
+/**
+ * Close profile addition dialog
+ */
+export function closeProfileAdditionDialog() {
+    const dialog = document.getElementById('profile-addition-dialog');
+    if (dialog) {
+        dialog.style.display = 'none';
+    }
+}
+
+/**
+ * Confirm profile addition
+ */
+export function confirmProfileAddition() {
+    // Implementation for confirming profile addition
+    console.log('Profile addition confirmed');
+    closeProfileAdditionDialog();
+}

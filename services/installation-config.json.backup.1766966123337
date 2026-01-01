@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2025-12-28T23:54:53.572Z",
+  "profiles": [
+    "kaspa-user-applications"
+  ],
+  "configuration": {
+    "PUBLIC_NODE": false,
+    "KASPA_NODE_RPC_PORT": 16110,
+    "KASPA_NODE_P2P_PORT": 16111,
+    "KASPA_NETWORK": "mainnet",
+    "KASPA_DATA_DIR": "/data/kaspa",
+    "KASPA_ARCHIVE_DATA_DIR": "/data/kaspa-archive",
+    "TIMESCALEDB_DATA_DIR": "/data/timescaledb",
+    "KASPA_P2P_PORT": 16110,
+    "KASPA_RPC_PORT": 16111,
+    "DASHBOARD_PORT": 3001,
+    "NGINX_HTTP_PORT": 80,
+    "NGINX_HTTPS_PORT": 443,
+    "POSTGRES_USER": "kaspa",
+    "POSTGRES_DB": "kaspa_explorer",
+    "POSTGRES_PORT": 5432,
+    "ARCHIVE_POSTGRES_USER": "kaspa_archive",
+    "ARCHIVE_POSTGRES_DB": "kaspa_archive",
+    "ARCHIVE_POSTGRES_PORT": 5433,
+    "ENABLE_MONITORING": true,
+    "LOG_LEVEL": "info",
+    "ENABLE_SSL": false,
+    "INDEXER_MODE": "full",
+    "STRATUM_PORT": 5555
+  }
+}

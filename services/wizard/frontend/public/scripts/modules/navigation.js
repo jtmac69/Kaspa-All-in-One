@@ -5,6 +5,7 @@
 
 import { stateManager } from './state-manager.js';
 import { buildConfig, isFeatureEnabled } from './build-config.js';
+import { showNotification } from './utils.js';
 
 export const TOTAL_STEPS = 9;
 
@@ -35,15 +36,189 @@ export function getStepNumber(stepId) {
 }
 
 /**
+ * Show the Profiles step in the progress indicator
+ */
+export function showProfilesStep() {
+    const profilesStep = document.getElementById('profiles-progress-step');
+    const profilesLine = document.getElementById('profiles-progress-line');
+    
+    if (profilesStep) {
+        profilesStep.style.display = 'flex';
+        profilesStep.classList.add('visible');
+    }
+    if (profilesLine) {
+        profilesLine.style.display = 'block';
+        profilesLine.classList.add('visible');
+    }
+    
+    console.log('[NAVIGATION] Profiles step shown in progress indicator');
+}
+
+/**
+ * Hide the Profiles step from the progress indicator
+ */
+export function hideProfilesStep() {
+    const profilesStep = document.getElementById('profiles-progress-step');
+    const profilesLine = document.getElementById('profiles-progress-line');
+    
+    if (profilesStep) {
+        profilesStep.style.display = 'none';
+        profilesStep.classList.remove('visible');
+    }
+    if (profilesLine) {
+        profilesLine.style.display = 'none';
+        profilesLine.classList.remove('visible');
+    }
+    
+    console.log('[NAVIGATION] Profiles step hidden from progress indicator');
+}
+
+/**
+ * Update step numbering to reflect template-first flow
+ */
+export function updateStepNumbering() {
+    const navigationPath = stateManager.get('navigationPath');
+    
+    if (navigationPath === 'template') {
+        // Template path: Templates (4) → Configure (6) → Review (7) → Install (8) → Complete (9)
+        hideProfilesStep();
+        updateStepNumbers([1, 2, 3, 4, 6, 7, 8, 9]);
+    } else if (navigationPath === 'custom') {
+        // Custom path: Templates (4) → Profiles (5) → Configure (6) → Review (7) → Install (8) → Complete (9)
+        showProfilesStep();
+        updateStepNumbers([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    } else {
+        // Default: show all steps
+        hideProfilesStep(); // Start with template-first approach
+        updateStepNumbers([1, 2, 3, 4, 6, 7, 8, 9]);
+    }
+}
+
+/**
+ * Update step numbers in the progress indicator
+ */
+function updateStepNumbers(activeSteps) {
+    const progressSteps = document.querySelectorAll('.progress-step');
+    let visibleStepIndex = 0;
+    
+    progressSteps.forEach((step, index) => {
+        const stepNumber = index + 1;
+        const stepElement = step.querySelector('.step-number');
+        
+        if (activeSteps.includes(stepNumber)) {
+            step.style.display = 'flex';
+            if (stepElement) {
+                stepElement.textContent = activeSteps[visibleStepIndex];
+            }
+            visibleStepIndex++;
+        } else if (!step.classList.contains('optional-step')) {
+            step.style.display = 'none';
+        }
+    });
+}
+
+/**
  * Navigate to next step
  */
 export async function nextStep() {
     const currentStep = stateManager.get('currentStep');
     const currentStepId = getStepId(currentStep);
     
+    // Template step handling with path-aware navigation
+    if (currentStepId === 'templates') {
+        const selectedTemplate = stateManager.get('selectedTemplate');
+        const templateApplied = stateManager.get('templateApplied');
+        const navigationPath = stateManager.get('navigationPath');
+        
+        if (selectedTemplate && templateApplied && navigationPath === 'template') {
+            // Template was selected and applied, skip profiles and go directly to configure
+            stateManager.addToHistory(currentStep);
+            updateStepNumbering(); // Update step visibility
+            goToStep(6); // Configure is step 6
+            return;
+        } else if (navigationPath === 'custom') {
+            // User chose "Build Custom", go to profiles step
+            stateManager.addToHistory(currentStep);
+            updateStepNumbering(); // Update step visibility
+            goToStep(5); // Profiles is step 5
+            return;
+        }
+        // If no clear path is set, user must make a selection
+        return;
+    }
+    
+    // Custom profiles step handling
+    if (currentStepId === 'profiles') {
+        const selectedProfiles = stateManager.get('selectedProfiles');
+        if (selectedProfiles && selectedProfiles.length > 0) {
+            stateManager.setNavigationPath('custom');
+            stateManager.addToHistory(currentStep);
+            goToStep(6); // Configuration
+            return;
+        }
+        // If no profiles selected, user must select profiles
+        return;
+    }
+    
+    // Validate checklist before leaving checklist step
+    if (currentStepId === 'checklist') {
+        try {
+            const systemCheckResults = stateManager.get('systemCheckResults');
+            
+            if (!systemCheckResults) {
+                showNotification('Please run system check first', 'warning');
+                return;
+            }
+            
+            // Check if Docker is installed
+            if (!systemCheckResults.docker?.installed) {
+                showNotification(
+                    'Docker is required but not installed. Please install Docker first.',
+                    'error',
+                    5000
+                );
+                return;
+            }
+            
+            // Check if Docker Compose is installed
+            if (!systemCheckResults.dockerCompose?.installed) {
+                showNotification(
+                    'Docker Compose is required but not installed. Please install Docker Compose first.',
+                    'error',
+                    5000
+                );
+                return;
+            }
+            
+            // Warn if resources are insufficient
+            if (!systemCheckResults.resources?.memory?.meetsMinimum || 
+                !systemCheckResults.resources?.cpu?.meetsMinimum) {
+                const proceed = confirm(
+                    'Your system resources are below recommended levels. ' +
+                    'Installation may be slow or fail. Continue anyway?'
+                );
+                if (!proceed) return;
+            }
+            
+            console.log('CHECKLIST: Validation passed, proceeding to next step');
+        } catch (error) {
+            console.error('Failed to validate checklist:', error);
+            showNotification('Failed to validate system check results', 'error');
+            return;
+        }
+    }
+    
     // Validate configuration before leaving configure step
     if (currentStepId === 'configure') {
         try {
+            // Validate state consistency before proceeding
+            const stateValidation = stateManager.validateStateConsistency();
+            if (!stateValidation.valid) {
+                console.error('State consistency validation failed:', stateValidation.errors);
+                showNotification('Configuration state is inconsistent. Please review your selections.', 'error');
+                return;
+            }
+            
             const { validateConfiguration } = await import('./configure.js');
             const isValid = await validateConfiguration();
             if (!isValid) {
@@ -81,8 +256,35 @@ export async function nextStep() {
  */
 export function previousStep() {
     const currentStep = stateManager.get('currentStep');
+    const currentStepId = getStepId(currentStep);
     
-    if (currentStep > 1) {
+    // Smart back navigation from configuration
+    if (currentStepId === 'configure') {
+        const navigationPath = stateManager.get('navigationPath');
+        if (navigationPath === 'template') {
+            goToStep(4); // Back to templates
+        } else if (navigationPath === 'custom') {
+            goToStep(5); // Back to profiles
+        } else {
+            // Fallback to templates if path is unclear
+            goToStep(4);
+        }
+        return;
+    }
+    
+    // Back from profiles to templates
+    if (currentStepId === 'profiles') {
+        goToStep(4); // Back to templates
+        return;
+    }
+    
+    // Default back navigation using history
+    const history = stateManager.get('navigationHistory') || [];
+    if (history.length > 0) {
+        const lastStep = history.pop();
+        stateManager.set('navigationHistory', history);
+        goToStep(lastStep);
+    } else if (currentStep > 1) {
         goToStep(currentStep - 1);
     }
 }
@@ -98,21 +300,42 @@ export function goToStep(stepNumber) {
     
     const currentStep = stateManager.get('currentStep');
     
+    console.log(`=== NAVIGATION: Going from step ${currentStep} (${getStepId(currentStep)}) to step ${stepNumber} (${getStepId(stepNumber)}) ===`);
+    
     // Hide ALL steps first
-    document.querySelectorAll('.wizard-step').forEach(step => {
+    const allSteps = document.querySelectorAll('.wizard-step');
+    console.log(`NAVIGATION: Found ${allSteps.length} wizard steps`);
+    
+    allSteps.forEach((step, index) => {
+        const wasActive = step.classList.contains('active');
         step.classList.remove('active');
+        if (wasActive) {
+            console.log(`NAVIGATION: Deactivated step: ${step.id}`);
+        }
     });
     
     // Show new step
-    const newStepEl = document.querySelector(`#step-${getStepId(stepNumber)}`);
+    const stepId = getStepId(stepNumber);
+    const newStepEl = document.querySelector(`#step-${stepId}`);
     if (newStepEl) {
         newStepEl.classList.add('active');
+        console.log(`NAVIGATION: Activated step: ${newStepEl.id}`);
     } else {
-        console.error(`Step element not found: #step-${getStepId(stepNumber)}`);
+        console.error(`Step element not found: #step-${stepId}`);
+    }
+    
+    // Verify only one step is active
+    const activeSteps = document.querySelectorAll('.wizard-step.active');
+    console.log(`NAVIGATION: Active steps after navigation: ${activeSteps.length}`);
+    if (activeSteps.length > 1) {
+        console.error('NAVIGATION: Multiple steps are active!', Array.from(activeSteps).map(s => s.id));
     }
     
     // Update state
     stateManager.set('currentStep', stepNumber);
+    
+    // Update step numbering based on navigation path
+    updateStepNumbering();
     
     // Update progress indicator
     updateProgressIndicator(stepNumber);
@@ -312,6 +535,10 @@ function enableContinueButton(stepId) {
  */
 export function initNavigation() {
     const currentStep = stateManager.get('currentStep');
+    
+    // Initialize step numbering with template-first approach
+    updateStepNumbering();
+    
     updateProgressIndicator(currentStep);
     
     // Set up navigation button listeners

@@ -12,7 +12,7 @@ import { showNotification } from './utils.js';
  * Run system check and update checklist
  */
 export async function runSystemCheck() {
-    console.log('Running system check...');
+    console.log('=== CHECKLIST: Starting system check ===');
     
     try {
         // Define ports with descriptions
@@ -28,9 +28,25 @@ export async function runSystemCheck() {
         // Get required ports (excluding 3000 since wizard uses it)
         // Updated for Database-Per-Service Architecture: 5433 (k-social-db), 5434 (simply-kaspa-db)
         const requiredPorts = [8080, 16110, 16111, 5433, 5434, 8081];
+        const endpoint = `/system-check?ports=${requiredPorts.join(',')}`;
+        
+        console.log('CHECKLIST: Calling API endpoint:', endpoint);
+        console.log('CHECKLIST: Full URL:', `${window.location.origin}/api${endpoint}`);
         
         // Call backend API
-        const results = await api.get(`/system-check?ports=${requiredPorts.join(',')}`);
+        const results = await api.get(endpoint);
+        
+        console.log('CHECKLIST: API response received:', results);
+        console.log('CHECKLIST: Docker installed?', results.docker?.installed);
+        console.log('CHECKLIST: Compose installed?', results.dockerCompose?.installed);
+        console.log('CHECKLIST: Resources OK?', {
+            cpu: results.resources?.cpu?.meetsMinimum,
+            memory: results.resources?.memory?.meetsMinimum,
+            disk: results.resources?.disk?.meetsMinimum
+        });
+        console.log('CHECKLIST: Ports available?', Object.entries(results.ports || {}).map(
+            ([port, status]) => `${port}: ${status.available}`
+        ));
         
         // Add descriptions to port results
         if (results.ports) {
@@ -39,12 +55,14 @@ export async function runSystemCheck() {
             });
         }
         
-        console.log('System check results:', results);
+        console.log('CHECKLIST: System check results with descriptions:', results);
         
         // Store results in state
         stateManager.set('systemCheckResults', results);
+        console.log('CHECKLIST: Results stored in state manager');
         
         // Update checklist items
+        console.log('CHECKLIST: Updating UI...');
         updateChecklistItem('requirements', results.resources);
         updateChecklistItem('docker', results.docker);
         updateChecklistItem('compose', results.dockerCompose);
@@ -56,10 +74,20 @@ export async function runSystemCheck() {
         // Calculate time estimates
         calculateTimeEstimates(results);
         
+        console.log('=== CHECKLIST: System check complete ===');
         return results;
+        
     } catch (error) {
-        console.error('System check failed:', error);
-        showNotification('System check failed. Please try again.', 'error');
+        console.error('=== CHECKLIST: System check FAILED ===');
+        console.error('CHECKLIST: Error message:', error.message);
+        console.error('CHECKLIST: Error stack:', error.stack);
+        console.error('CHECKLIST: Full error:', error);
+        
+        showNotification(
+            `System check failed: ${error.message}. Check browser console for details.`,
+            'error',
+            5000
+        );
         
         // Show error state
         showChecklistError(error);

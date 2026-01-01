@@ -56,7 +56,9 @@ export async function displayValidationResults() {
         // Display service status list
         if (validationData && validationData.services) {
             console.log('Displaying service status list');
-            displayServiceStatusList(validationData.services);
+            // Handle nested services structure from validateServices response
+            const servicesData = validationData.services.services || validationData.services;
+            displayServiceStatusList(servicesData);
             serviceStatusList.style.display = 'block';
         } else {
             console.warn('No services data in validation response');
@@ -623,12 +625,58 @@ export function showServiceManagementGuide() {
 
 /**
  * Open dashboard in new tab
+ * Checks if dashboard is running and starts it if needed
  */
-export function openDashboard() {
-    // Dashboard is accessible through nginx on port 80
-    const dashboardUrl = 'http://localhost';
-    window.open(dashboardUrl, '_blank');
-    showNotification('Opening dashboard...', 'success');
+export async function openDashboard() {
+    try {
+        // Dashboard runs on port 8080 as a Node service
+        const dashboardUrl = 'http://localhost:8080';
+        
+        // Check if dashboard is accessible
+        showNotification('Checking dashboard status...', 'info');
+        
+        try {
+            const response = await fetch(dashboardUrl, { 
+                method: 'HEAD',
+                mode: 'no-cors' // Avoid CORS issues for simple check
+            });
+            
+            // Dashboard is accessible, open it
+            // Use location.href instead of window.open to avoid pop-up blockers
+            showNotification('Opening dashboard...', 'success');
+            setTimeout(() => {
+                window.location.href = dashboardUrl;
+            }, 1000);
+            
+        } catch (error) {
+            // Dashboard is not running, try to start it
+            showNotification('Dashboard not running. Starting dashboard service...', 'info');
+            
+            try {
+                // Call backend API to start dashboard service
+                const startResponse = await api.post('/wizard/start');
+                
+                if (startResponse.success) {
+                    showNotification('Dashboard started successfully!', 'success');
+                    
+                    // Wait a moment for dashboard to initialize
+                    setTimeout(() => {
+                        window.location.href = dashboardUrl;
+                    }, 2000);
+                } else {
+                    showNotification('Failed to start dashboard. Please start it manually: npm start in services/dashboard', 'error', 10000);
+                }
+                
+            } catch (startError) {
+                console.error('Error starting dashboard:', startError);
+                showNotification('Failed to start dashboard. Please start it manually: npm start in services/dashboard', 'error', 10000);
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error opening dashboard:', error);
+        showNotification('Error opening dashboard', 'error');
+    }
 }
 
 /**

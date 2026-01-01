@@ -32,7 +32,7 @@ class ConfigGenerator {
       NGINX_HTTPS_PORT: Joi.number().integer().min(1).max(65535).default(443),
       
       // Database settings
-      POSTGRES_USER: Joi.string().alphanum().min(3).max(30).default('kaspa'),
+      POSTGRES_USER: Joi.string().pattern(/^[a-zA-Z0-9_]+$/).min(3).max(30).default('kaspa'),
       POSTGRES_PASSWORD: Joi.string().min(16).optional().allow(''),
       POSTGRES_DB: Joi.string().pattern(/^[a-zA-Z0-9_]+$/).min(3).max(30).default('kaspa_explorer'),
       POSTGRES_PORT: Joi.number().integer().min(1024).max(65535).default(5432),

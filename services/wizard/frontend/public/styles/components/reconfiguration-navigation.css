@@ -236,14 +236,14 @@
   text-align: right;
 }
 
-.progress-steps {
+.reconfig-progress-steps {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   margin-bottom: var(--space-5);
 }
 
-.progress-step {
+.reconfig-progress-steps .progress-step {
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -254,18 +254,18 @@
   transition: all var(--transition-base);
 }
 
-.progress-step.completed {
+.reconfig-progress-steps .progress-step.completed {
   background: rgba(126, 211, 33, 0.05);
   border-color: var(--success);
 }
 
-.progress-step.current {
+.reconfig-progress-steps .progress-step.current {
   background: rgba(112, 199, 186, 0.05);
   border-color: var(--kaspa-blue);
   box-shadow: 0 2px 8px rgba(112, 199, 186, 0.2);
 }
 
-.step-number {
+.reconfig-progress-steps .step-number {
   width: 32px;
   height: 32px;
   border-radius: var(--radius-full);
@@ -280,45 +280,45 @@
   transition: all var(--transition-base);
 }
 
-.progress-step.completed .step-number {
+.reconfig-progress-steps .progress-step.completed .step-number {
   background: var(--success);
   color: white;
 }
 
-.progress-step.current .step-number {
+.reconfig-progress-steps .progress-step.current .step-number {
   background: var(--kaspa-blue);
   color: white;
   animation: pulse 2s infinite;
 }
 
-.step-content {
+.reconfig-progress-steps .step-content {
   flex: 1;
 }
 
-.step-title {
+.reconfig-progress-steps .step-title {
   font-size: var(--text-base);
   font-weight: var(--font-semibold);
   margin-bottom: var(--space-1);
   color: var(--text-primary);
 }
 
-.step-description {
+.reconfig-progress-steps .step-description {
   font-size: var(--text-sm);
   color: var(--text-secondary);
   line-height: 1.4;
 }
 
-.step-status {
+.reconfig-progress-steps .step-status {
   font-size: 18px;
   color: var(--text-tertiary);
   flex-shrink: 0;
 }
 
-.progress-step.completed .step-status {
+.reconfig-progress-steps .progress-step.completed .step-status {
   color: var(--success);
 }
 
-.progress-step.current .step-status {
+.reconfig-progress-steps .progress-step.current .step-status {
   color: var(--kaspa-blue);
 }
 
@@ -586,13 +586,13 @@
     padding: var(--space-3);
   }
   
-  .progress-step {
+  .reconfig-progress-steps .progress-step {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-2);
   }
   
-  .step-number {
+  .reconfig-progress-steps .step-number {
     align-self: flex-start;
   }
   

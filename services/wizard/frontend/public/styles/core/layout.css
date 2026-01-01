@@ -1,0 +1,85 @@
+/* ============================================================================
+   Wizard Container
+   ============================================================================ */
+
+.wizard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-compact-4);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================================
+   Main Content
+   ============================================================================ */
+
+.wizard-content {
+  flex: 1;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: var(--space-responsive-md);
+  box-shadow: var(--shadow-lg);
+  margin-bottom: var(--space-compact-4);
+}
+
+.wizard-step {
+  display: none !important;
+  animation: fadeIn 300ms ease;
+}
+
+.wizard-step.active {
+  display: block !important;
+}
+
+/* Ensure no multiple active steps */
+.wizard-step:not(.active) {
+  display: none !important;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
+   Step Header
+   ============================================================================ */
+
+.step-header {
+  margin-bottom: var(--space-compact-4); /* Reduced from space-5 for better screen utilization */
+  text-align: center;
+}
+
+.step-title {
+  font-size: 24px;
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+}
+
+.step-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* ============================================================================
+   Step Actions
+   ============================================================================ */
+
+.step-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}

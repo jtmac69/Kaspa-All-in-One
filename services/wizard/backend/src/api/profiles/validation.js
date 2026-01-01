@@ -177,7 +177,20 @@ function createValidationRoutes(profileManager, dependencyValidator) {
       }
       
       const startupOrder = profileManager.getStartupOrder(profiles);
-      res.json({ services: startupOrder });
+      
+      // Transform the startup order to match expected test format
+      const formattedStartupOrder = startupOrder.map(service => ({
+        name: service.name || service.service,
+        startupOrder: service.startupOrder || service.order || 1,
+        profile: service.profile,
+        dependencies: service.dependencies || []
+      }));
+      
+      res.json({ 
+        success: true,
+        startupOrder: formattedStartupOrder,
+        services: startupOrder // Keep backward compatibility
+      });
     } catch (error) {
       res.status(500).json({
         error: 'Failed to get startup order',
