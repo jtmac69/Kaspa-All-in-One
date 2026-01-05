@@ -1,0 +1,139 @@
+/* ============================================================================
+   Shared CSS Variables - Kaspa All-in-One Design System
+   Based on official Kaspa brand colors from https://kaspa.org/media-kit/
+   Shared between Installation Wizard and Management Dashboard
+   ============================================================================ */
+
+:root {
+  /* Primary Kaspa Brand Colors - Official */
+  --kaspa-blue: #70C7BA;
+  --kaspa-blue-rgb: 112, 199, 186;
+  --kaspa-dark: #49C8B5;
+  --kaspa-dark-rgb: 73, 200, 181;
+  --kaspa-light: #9FE7DC;
+  --kaspa-light-rgb: 159, 231, 220;
+  --kaspa-pale: #E5F7F5;
+  --kaspa-pale-rgb: 229, 247, 245;
+  
+  /* Secondary Accent Colors - Official Kaspa Purple */
+  --kaspa-purple: #7B61FF;
+  --kaspa-purple-rgb: 123, 97, 255;
+  --kaspa-purple-dark: #5B41DF;
+  --kaspa-purple-dark-rgb: 91, 65, 223;
+  --kaspa-purple-light: #9B81FF;
+  --kaspa-purple-light-rgb: 155, 129, 255;
+  
+  /* Status Colors - Accessibility Compliant */
+  --success: #7ED321;
+  --success-rgb: 126, 211, 33;
+  --success-light: #9FE741;
+  --success-dark: #5EB301;
+  --warning: #F5A623;
+  --warning-rgb: 245, 166, 35;
+  --warning-light: #FFB843;
+  --warning-dark: #D58603;
+  --error: #D0021B;
+  --error-rgb: 208, 2, 27;
+  --error-light: #F0223B;
+  --error-dark: #B00015;
+  --info: #70C7BA; /* Use Kaspa Blue for info */
+  --info-rgb: 112, 199, 186;
+  
+  /* Neutral Colors - Light Mode */
+  --background: #F8F9FA;
+  --surface: #FFFFFF;
+  --surface-elevated: #FFFFFF;
+  --text-primary: #1A1A1A;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --text-disabled: #CCCCCC;
+  --border: #E0E0E0;
+  --border-light: #F0F0F0;
+  
+  /* Dark Mode Colors (defined but not active by default) */
+  --background-dark: #0F0F0F;
+  --surface-dark: #1A1A1A;
+  --surface-elevated-dark: #242424;
+  --text-primary-dark: #FFFFFF;
+  --text-secondary-dark: #CCCCCC;
+  --text-tertiary-dark: #999999;
+  --border-dark: #333333;
+  --border-light-dark: #2A2A2A;
+  
+  /* Gradients - Official Kaspa Brand */
+  --gradient-primary: linear-gradient(135deg, #70C7BA 0%, #49C8B5 100%);
+  --gradient-accent: linear-gradient(135deg, #7B61FF 0%, #70C7BA 100%);
+  --gradient-background: linear-gradient(180deg, #FFFFFF 0%, #E5F7F5 100%);
+  --gradient-hero: linear-gradient(135deg, rgba(112, 199, 186, 0.1) 0%, rgba(123, 97, 255, 0.05) 100%);
+  
+  /* Typography - Official Kaspa Fonts */
+  --font-heading: 'Montserrat', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-code: 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
+  
+  /* Font Sizes - Responsive Scale */
+  --text-h1: 2.5rem;    /* 40px */
+  --text-h2: 2rem;      /* 32px */
+  --text-h3: 1.5rem;    /* 24px */
+  --text-h4: 1.25rem;   /* 20px */
+  --text-h5: 1.125rem;  /* 18px */
+  --text-base: 1rem;    /* 16px */
+  --text-sm: 0.875rem;  /* 14px */
+  --text-xs: 0.75rem;   /* 12px */
+  
+  /* Font Weights */
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  
+  /* Spacing System - Optimized for better screen utilization */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 48px; /* Reduced from 64px for better screen utilization */
+  --space-20: 64px; /* Reduced from 80px for better screen utilization */
+  
+  /* Compact Spacing System - For improved vertical space utilization */
+  --space-compact-1: 2px;
+  --space-compact-2: 4px;
+  --space-compact-3: 8px;
+  --space-compact-4: 12px;
+  --space-compact-5: 16px;
+  --space-compact-6: 20px;
+  
+  /* Responsive Spacing - Scales with viewport for optimal space usage */
+  --space-responsive-sm: clamp(8px, 2vw, 16px);
+  --space-responsive-md: clamp(12px, 3vw, 24px);
+  --space-responsive-lg: clamp(16px, 4vw, 32px);
+  
+  /* Transitions - Smooth Animations */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  
+  /* Shadows - Kaspa Brand Themed */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 8px rgba(112, 199, 186, 0.1);
+  --shadow-lg: 0 8px 16px rgba(112, 199, 186, 0.15);
+  --shadow-xl: 0 12px 24px rgba(112, 199, 186, 0.2);
+  --shadow-kaspa: 0 4px 16px rgba(112, 199, 186, 0.3);
+  --shadow-purple: 0 4px 16px rgba(123, 97, 255, 0.3);
+  
+  /* Border Radius - Consistent Rounding */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 50%;
+}

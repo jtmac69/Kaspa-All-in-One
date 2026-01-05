@@ -1,0 +1,115 @@
+{
+  "version": "1.0.0",
+  "installedAt": "1969-12-31T23:59:59.998Z",
+  "lastModified": "2026-01-04T18:19:54.513Z",
+  "phase": "error",
+  "profiles": {
+    "selected": [
+      "management",
+      "core"
+    ],
+    "count": 3
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": true,
+    "hasIndexers": false,
+    "hasArchive": false,
+    "hasMining": false,
+    "kaspaNodePort": 16112
+  },
+  "services": [
+    {
+      "name": "kasia-app",
+      "displayName": null,
+      "profile": "indexer-services",
+      "type": "Wallet",
+      "running": true,
+      "exists": true,
+      "containerName": "`[U)HL:/MV}eG",
+      "ports": [
+        11922
+      ]
+    },
+    {
+      "name": "kaspa-archive-node",
+      "displayName": "fY]I7",
+      "profile": "archive-node",
+      "type": "Proxy",
+      "running": true,
+      "exists": true,
+      "containerName": "5}(C%Fm\"N;)u@FedT",
+      "ports": [
+        16870,
+        29906,
+        47412
+      ]
+    },
+    {
+      "name": "k-social",
+      "displayName": "}RstE",
+      "profile": null,
+      "type": null,
+      "running": true,
+      "exists": false,
+      "containerName": ": DW)NsE'<^SKf6",
+      "ports": [
+        58930,
+        19792,
+        10415
+      ]
+    },
+    {
+      "name": "kaspa-explorer",
+      "displayName": "RuWy7g",
+      "profile": "core",
+      "type": null,
+      "running": true,
+      "exists": true,
+      "containerName": "Vu4h{ Q-",
+      "ports": null
+    },
+    {
+      "name": "wallet",
+      "displayName": "^%M",
+      "profile": "core",
+      "type": null,
+      "running": false,
+      "exists": false,
+      "containerName": ";Y~`qCAZ",
+      "ports": [
+        9828
+      ]
+    },
+    {
+      "name": "kasia-indexer",
+      "displayName": "b.iw\\eF{",
+      "profile": null,
+      "type": "Indexer",
+      "running": true,
+      "exists": true,
+      "containerName": "P]k<A^5Q-:6a-`L",
+      "ports": [
+        48092,
+        8656
+      ]
+    },
+    {
+      "name": "kaspa-nginx",
+      "displayName": "~pnJ RhyFh[",
+      "profile": "mining",
+      "type": null,
+      "running": false,
+      "exists": true,
+      "containerName": "`J[Q81",
+      "ports": null
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "running": 14,
+    "stopped": 13,
+    "missing": 0
+  },
+  "wizardRunning": false
+}

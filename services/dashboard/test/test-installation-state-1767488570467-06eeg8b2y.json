@@ -1,0 +1,40 @@
+{
+  "version": "1.0.0",
+  "installedAt": "1969-12-31T23:59:59.978Z",
+  "lastModified": "2026-01-04T01:02:50.942Z",
+  "phase": "installing",
+  "profiles": {
+    "selected": [
+      "indexer-services",
+      "management"
+    ],
+    "count": 5
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": true,
+    "hasIndexers": true,
+    "hasArchive": false,
+    "hasMining": false,
+    "kaspaNodePort": 16110
+  },
+  "services": [
+    {
+      "name": "kaspa-explorer",
+      "displayName": null,
+      "profile": null,
+      "type": "Wallet",
+      "running": true,
+      "exists": true,
+      "containerName": "\"0$wE_r`a^!g@trN",
+      "ports": null
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "running": 12,
+    "stopped": 12,
+    "missing": 3
+  },
+  "wizardRunning": false
+}

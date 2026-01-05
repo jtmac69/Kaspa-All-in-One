@@ -1,17 +1,64 @@
 const axios = require('axios');
+const PortFallbackService = require('../../shared/lib/port-fallback');
 
 class KaspaNodeClient {
-    constructor(rpcUrl = 'http://kaspa-node:16111') {
-        this.rpcUrl = rpcUrl;
-        this.timeout = 10000; // 10 seconds
+    constructor(options = {}) {
+        // Extract port from legacy rpcUrl if provided
+        const rpcUrl = options.rpcUrl || options || 'http://kaspa-node:16111';
+        let configuredPort = 16111; // default
+        
+        if (typeof rpcUrl === 'string') {
+            const urlMatch = rpcUrl.match(/:(\d+)$/);
+            if (urlMatch) {
+                configuredPort = parseInt(urlMatch[1]);
+            }
+        }
+        
+        // Initialize port fallback service
+        this.portFallback = new PortFallbackService({
+            configuredPort: configuredPort,
+            host: 'kaspa-node',
+            timeout: 5000
+        });
+        
+        this.timeout = 10000; // 10 seconds for RPC calls
         this.networkHeight = null;
         this.lastNetworkHeightUpdate = 0;
         this.networkHeightCacheTime = 60000; // Cache for 1 minute
+        this.currentUrl = null;
+        this.connectionStatus = {
+            connected: false,
+            port: null,
+            lastAttempt: null,
+            error: null
+        };
     }
 
     async makeRpcCall(method, params = {}) {
         try {
-            const response = await axios.post(this.rpcUrl, {
+            // Ensure we have a working connection
+            const connectionResult = await this.portFallback.connect();
+            
+            if (!connectionResult.connected) {
+                this.connectionStatus = {
+                    connected: false,
+                    port: null,
+                    lastAttempt: new Date().toISOString(),
+                    error: connectionResult.error
+                };
+                throw new Error(`Cannot connect to Kaspa node: ${connectionResult.error}`);
+            }
+            
+            // Update connection status
+            this.connectionStatus = {
+                connected: true,
+                port: connectionResult.port,
+                lastAttempt: new Date().toISOString(),
+                error: null
+            };
+            this.currentUrl = connectionResult.url;
+
+            const response = await axios.post(connectionResult.url, {
                 method,
                 params
             }, { 
@@ -28,8 +75,22 @@ class KaspaNodeClient {
             return response.data.result || response.data;
         } catch (error) {
             if (error.code === 'ECONNREFUSED') {
+                // Clear cached port and update status
+                this.portFallback.clearCache();
+                this.connectionStatus = {
+                    connected: false,
+                    port: null,
+                    lastAttempt: new Date().toISOString(),
+                    error: 'Connection refused - service may be down'
+                };
                 throw new Error('Cannot connect to Kaspa node - service may be down');
             } else if (error.code === 'ETIMEDOUT') {
+                this.connectionStatus = {
+                    connected: false,
+                    port: this.connectionStatus.port,
+                    lastAttempt: new Date().toISOString(),
+                    error: 'Request timed out'
+                };
                 throw new Error('Kaspa node request timed out');
             }
             throw error;
@@ -270,6 +331,84 @@ class KaspaNodeClient {
         } catch (error) {
             return false;
         }
+    }
+
+    /**
+     * Get current connection status including port information
+     * @returns {Object} Connection status with port details
+     */
+    getConnectionStatus() {
+        return {
+            ...this.connectionStatus,
+            workingPort: this.portFallback.getWorkingPort(),
+            workingUrl: this.portFallback.getWorkingUrl(),
+            portChain: this.portFallback.getPortChain(),
+            fallbackStatus: this.portFallback.getStatus()
+        };
+    }
+
+    /**
+     * Force reconnection by clearing cache and testing connection
+     * @returns {Promise<Object>} Connection result
+     */
+    async forceReconnect() {
+        this.portFallback.clearCache();
+        const result = await this.portFallback.connect();
+        
+        this.connectionStatus = {
+            connected: result.connected,
+            port: result.port,
+            lastAttempt: new Date().toISOString(),
+            error: result.error || null
+        };
+        
+        if (result.connected) {
+            this.currentUrl = result.url;
+        }
+        
+        return result;
+    }
+
+    /**
+     * Start automatic retry when node becomes unavailable
+     * @param {Function} onReconnect - Callback when connection is restored
+     */
+    startRetry(onReconnect) {
+        this.portFallback.startRetry((result) => {
+            this.connectionStatus = {
+                connected: true,
+                port: result.port,
+                lastAttempt: new Date().toISOString(),
+                error: null
+            };
+            this.currentUrl = result.url;
+            
+            if (onReconnect) {
+                onReconnect(result);
+            }
+        });
+    }
+
+    /**
+     * Stop automatic retry
+     */
+    stopRetry() {
+        this.portFallback.stopRetry();
+    }
+
+    /**
+     * Update configured port from installation state
+     * @param {number} port - New configured port
+     */
+    updateConfiguredPort(port) {
+        this.portFallback.setConfiguredPort(port);
+    }
+
+    /**
+     * Cleanup resources
+     */
+    destroy() {
+        this.portFallback.destroy();
     }
 
     // Format uptime in human-readable format

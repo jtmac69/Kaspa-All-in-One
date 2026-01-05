@@ -5,6 +5,10 @@ const fs = require('fs').promises;
 const path = require('path');
 const StateManager = require('../utils/state-manager');
 const DockerManager = require('../utils/docker-manager');
+const { createResolver } = require('../../../../shared/lib/path-resolver');
+
+// Initialize path resolver for this module
+const resolver = createResolver(__dirname);
 
 const stateManager = new StateManager();
 const dockerManager = new DockerManager();
@@ -79,9 +83,9 @@ function cleanupExpiredTokens() {
  */
 router.get('/reconfigure-link', async (req, res) => {
   try {
-    const projectRoot = process.env.PROJECT_ROOT || '/workspace';
-    const envPath = path.join(projectRoot, '.env');
-    const installationStatePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+    const paths = resolver.getPaths();
+    const envPath = paths.env;
+    const installationStatePath = paths.installationState;
     
     // Check if configuration exists
     let hasConfig = false;
@@ -412,9 +416,9 @@ router.post('/launcher', async (req, res) => {
     
     if (mode === 'reconfigure') {
       // Load current configuration
-      const projectRoot = process.env.PROJECT_ROOT || '/workspace';
-      const envPath = path.join(projectRoot, '.env');
-      const installationStatePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+      const paths = resolver.getPaths();
+      const envPath = paths.env;
+      const installationStatePath = paths.installationState;
       
       try {
         const envContent = await fs.readFile(envPath, 'utf8');

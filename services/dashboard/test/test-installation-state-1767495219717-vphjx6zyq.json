@@ -1,0 +1,103 @@
+{
+  "version": "1.0.0",
+  "installedAt": "+111558-03-20T19:46:50.410Z",
+  "lastModified": "2026-01-04T02:53:39.918Z",
+  "phase": "complete",
+  "profiles": {
+    "selected": [
+      "mining",
+      "management",
+      "core",
+      "kaspa-user-applications"
+    ],
+    "count": 4
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": true,
+    "hasIndexers": false,
+    "hasArchive": false,
+    "hasMining": false,
+    "kaspaNodePort": 16115
+  },
+  "services": [
+    {
+      "name": "kaspa-stratum",
+      "displayName": "imO-",
+      "profile": null,
+      "type": "Application",
+      "running": true,
+      "exists": true,
+      "containerName": "T:Do#E~~)`8xsQT.8",
+      "ports": null
+    },
+    {
+      "name": "pgadmin",
+      "displayName": "sfB+)|[*,H.'",
+      "profile": "mining",
+      "type": "Proxy",
+      "running": true,
+      "exists": false,
+      "containerName": "z_XC)",
+      "ports": [
+        59550,
+        20831,
+        11810
+      ]
+    },
+    {
+      "name": "kaspa-archive-node",
+      "displayName": "J_[",
+      "profile": null,
+      "type": "Wallet",
+      "running": false,
+      "exists": true,
+      "containerName": "vf7O :^EKe*ObvpN^zq",
+      "ports": [
+        5967,
+        28843
+      ]
+    },
+    {
+      "name": "portainer",
+      "displayName": "qeNf ",
+      "profile": null,
+      "type": "Node",
+      "running": false,
+      "exists": false,
+      "containerName": null,
+      "ports": []
+    },
+    {
+      "name": "archive-indexer",
+      "displayName": null,
+      "profile": "indexer-services",
+      "type": "Indexer",
+      "running": false,
+      "exists": true,
+      "containerName": "S}i?3",
+      "ports": [
+        5008,
+        15204,
+        5888
+      ]
+    },
+    {
+      "name": "wallet",
+      "displayName": "Twz,E;aaTg[c%f2*",
+      "profile": "core",
+      "type": "Node",
+      "running": false,
+      "exists": true,
+      "containerName": "+;OaU",
+      "ports": []
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "running": 0,
+    "stopped": 3,
+    "missing": 1
+  },
+  "wizardRunning": false
+}

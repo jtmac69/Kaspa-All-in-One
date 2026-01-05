@@ -73,6 +73,12 @@ export class WebSocketManager {
 
     handleMessage(message) {
         const { type, data } = message;
+        
+        // Log important state change messages
+        if (type === 'configuration_changed' || type === 'dashboard_refresh_needed') {
+            console.log(`WebSocket message: ${type}`, data);
+        }
+        
         this.emit(type, data);
     }
 

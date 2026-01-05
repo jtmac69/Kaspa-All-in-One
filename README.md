@@ -1,4 +1,4 @@
-# ⚠️ TEST RELEASE v0.9.0 ⚠️
+# ⚠️ TEST RELEASE v0.10.0 ⚠️
 
 > **This is a pre-production test release for validation purposes.**  
 > We're looking for testers to help validate the installation wizard and overall system before the v1.0 release.
@@ -12,7 +12,7 @@
 
 **IMPORTANT: This software is not yet ready for production use.**
 
-This test release (v0.9.0) is provided for testing and validation purposes only. By using this software, you acknowledge that:
+This test release (v0.10.0) is provided for testing and validation purposes only. By using this software, you acknowledge that:
 
 - ⚠️ **Not Production-Ready**: This is a pre-release version that may contain bugs, incomplete features, or unexpected behavior
 - 🔧 **Active Development**: Features and configurations may change significantly before the v1.0 release

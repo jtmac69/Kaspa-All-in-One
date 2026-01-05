@@ -1,0 +1,113 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-10-25T15:09:19.900Z",
+  "lastModified": "2026-01-05T19:56:34.789Z",
+  "phase": "installing",
+  "profiles": {
+    "selected": [
+      "mining",
+      "kaspa-user-applications"
+    ],
+    "count": 5
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": true,
+    "hasIndexers": false,
+    "hasArchive": true,
+    "hasMining": true,
+    "kaspaNodePort": 16114
+  },
+  "services": [
+    {
+      "name": "0sy9m",
+      "displayName": "0]W$G:",
+      "profile": "archive",
+      "running": true,
+      "exists": true,
+      "containerName": ">$p(T@GofF?4$",
+      "ports": [
+        49753
+      ]
+    },
+    {
+      "name": "b3k8",
+      "displayName": "2#l^Q$fEi",
+      "profile": "archive",
+      "running": false,
+      "exists": false,
+      "containerName": "GB%\"~h",
+      "ports": [
+        39866,
+        25585,
+        56169
+      ]
+    },
+    {
+      "name": "tpvv2",
+      "displayName": "Bze?OKA.GB_={6",
+      "profile": "mining",
+      "running": true,
+      "exists": false,
+      "containerName": "sKu}QD5VsQ(b\\s",
+      "ports": [
+        21808,
+        59429,
+        43819
+      ]
+    },
+    {
+      "name": "8xc",
+      "displayName": "B.\\*}<]r*@h",
+      "profile": "mining",
+      "running": true,
+      "exists": false,
+      "containerName": "bAD.U#6#Vtq",
+      "ports": [
+        34253
+      ]
+    },
+    {
+      "name": "x3k",
+      "displayName": "adqz`~q}-R;.Kug+",
+      "profile": "archive",
+      "running": true,
+      "exists": false,
+      "containerName": "-+:./E0#{nqSS5<Jr;",
+      "ports": [
+        23424,
+        33465,
+        54923
+      ]
+    },
+    {
+      "name": "nwz",
+      "displayName": "$X{xA",
+      "profile": "core",
+      "running": false,
+      "exists": true,
+      "containerName": "nnr!rpDoMt&8J/yEu",
+      "ports": []
+    },
+    {
+      "name": "k6w",
+      "displayName": "o$!A`D3}`X",
+      "profile": "archive",
+      "running": true,
+      "exists": false,
+      "containerName": null,
+      "ports": [
+        61113,
+        65400,
+        44091
+      ]
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "running": 10,
+    "stopped": 8,
+    "missing": 2
+  },
+  "wizardRunning": false
+}

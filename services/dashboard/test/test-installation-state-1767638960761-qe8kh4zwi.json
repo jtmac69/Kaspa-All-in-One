@@ -1,0 +1,113 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-08-15T00:39:36.078Z",
+  "lastModified": "2026-01-05T18:49:20.938Z",
+  "phase": "pending",
+  "profiles": {
+    "selected": [
+      "mining",
+      "management",
+      "core",
+      "kaspa-user-applications",
+      "archive-node"
+    ],
+    "count": 3
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": false,
+    "hasIndexers": true,
+    "hasArchive": false,
+    "hasMining": true,
+    "kaspaNodePort": 16112
+  },
+  "services": [
+    {
+      "name": "archive-indexer",
+      "displayName": "v5?fmBdqBxm",
+      "profile": "archive-node",
+      "type": "Database",
+      "running": false,
+      "exists": true,
+      "containerName": ";WOR%n'N^};G",
+      "ports": null
+    },
+    {
+      "name": "kaspa-nginx",
+      "displayName": null,
+      "profile": null,
+      "type": "Database",
+      "running": true,
+      "exists": false,
+      "containerName": "2za\"'1I_j;g(u",
+      "ports": []
+    },
+    {
+      "name": "kaspa-archive-node",
+      "displayName": "QU%/2G^QzB\"-",
+      "profile": "indexer-services",
+      "type": "Management",
+      "running": false,
+      "exists": false,
+      "containerName": "gIM\"-Tig&iz",
+      "ports": [
+        65520
+      ]
+    },
+    {
+      "name": "k-indexer",
+      "displayName": "^\"xjO",
+      "profile": "kaspa-user-applications",
+      "type": "Proxy",
+      "running": false,
+      "exists": true,
+      "containerName": "~m>V'lS",
+      "ports": []
+    },
+    {
+      "name": "wallet",
+      "displayName": null,
+      "profile": null,
+      "type": "Proxy",
+      "running": true,
+      "exists": true,
+      "containerName": "z$RO>'!0= /7\\0qDMWF",
+      "ports": [
+        51378,
+        32186,
+        12087
+      ]
+    },
+    {
+      "name": "kaspa-stratum",
+      "displayName": null,
+      "profile": "management",
+      "type": "Management",
+      "running": false,
+      "exists": false,
+      "containerName": "\"tc3s$J",
+      "ports": [
+        33584,
+        12625,
+        32574
+      ]
+    },
+    {
+      "name": "portainer",
+      "displayName": "x1:+d$",
+      "profile": "core",
+      "type": null,
+      "running": true,
+      "exists": true,
+      "containerName": null,
+      "ports": null
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "running": 3,
+    "stopped": 0,
+    "missing": 3
+  },
+  "wizardRunning": true
+}

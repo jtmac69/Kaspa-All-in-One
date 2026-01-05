@@ -72,20 +72,20 @@ Current issues identified through testing:
 7. THE Dashboard SHALL re-attempt port detection every 30 seconds when node is unavailable
 8. WHEN the node becomes available, THE Dashboard SHALL update status within 5 seconds
 
-### Requirement 4: Profile-Based Service Display
+### Requirement 4: Service-Based Display and Filtering
 
-**User Story:** As a user, I want to see only the services I've installed, organized by profile, so that the Dashboard isn't cluttered with irrelevant information.
+**User Story:** As a user, I want to see only the services I've installed, with flexible filtering options, so that the Dashboard isn't cluttered with irrelevant information and I can organize services as needed.
 
 #### Acceptance Criteria
 
-1. THE Dashboard SHALL read installed profiles from the installation state
+1. THE Dashboard SHALL read installed services from the installation state
 2. THE Dashboard SHALL only display service cards for services listed in the installation state
-3. THE Dashboard SHALL group services by their profile (Core, Kaspa User Applications, Indexer Services, etc.)
-4. THE Profile_Filter dropdown SHALL be populated with only the installed profiles
-5. WHEN a profile is selected in the filter, THE Dashboard SHALL show only services from that profile
-6. THE Dashboard SHALL display profile badges on service cards indicating which profile they belong to
-7. WHEN no services are installed for a profile, THE Dashboard SHALL hide that profile section
-8. THE Dashboard SHALL display a count of services per profile in the filter dropdown
+3. THE Dashboard SHALL provide a service filter dropdown with multiple filtering options
+4. THE Service_Filter dropdown SHALL include options for: "All Services", individual service types, and profile-based groupings when available
+5. WHEN a filter is selected, THE Dashboard SHALL show only services matching that filter criteria
+6. THE Dashboard SHALL display service type badges on service cards indicating their category
+7. THE Dashboard SHALL support flexible service organization regardless of how services were originally installed (profiles, templates, or ad-hoc)
+8. THE Dashboard SHALL display a count of services for each filter option in the dropdown
 
 ### Requirement 5: Wizard Reconfiguration Mode
 

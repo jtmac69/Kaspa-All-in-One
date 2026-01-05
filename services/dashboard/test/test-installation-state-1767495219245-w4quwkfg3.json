@@ -1,0 +1,110 @@
+{
+  "version": "1.0.0",
+  "installedAt": "-135718-06-12T05:07:53.859Z",
+  "lastModified": "2026-01-04T02:53:40.093Z",
+  "phase": "installing",
+  "profiles": {
+    "selected": [
+      "indexer-services",
+      "indexer-services",
+      "kaspa-user-applications"
+    ],
+    "count": 3
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": false,
+    "hasIndexers": false,
+    "hasArchive": false,
+    "hasMining": false,
+    "kaspaNodePort": 16114
+  },
+  "services": [
+    {
+      "name": "50l21q",
+      "displayName": "0cL23%Hg",
+      "profile": "core",
+      "running": false,
+      "exists": false,
+      "containerName": " ;jk\\h,N3pncLb",
+      "ports": [
+        54234
+      ]
+    },
+    {
+      "name": "8nk8",
+      "displayName": "32aG*q",
+      "profile": "mining",
+      "running": false,
+      "exists": false,
+      "containerName": "NWH\\vp_YQGu|2;@",
+      "ports": [
+        7495,
+        5071,
+        43069
+      ]
+    },
+    {
+      "name": "xbe",
+      "displayName": "&1OiW{/w9",
+      "profile": "archive",
+      "running": false,
+      "exists": false,
+      "containerName": "z1~K{",
+      "ports": [
+        15193,
+        63532,
+        44705
+      ]
+    },
+    {
+      "name": "2za",
+      "displayName": "/I8.Q$o)",
+      "profile": "mining",
+      "running": false,
+      "exists": true,
+      "containerName": "NrN@5]@:I}*f|[",
+      "ports": [
+        35645
+      ]
+    },
+    {
+      "name": "vig",
+      "displayName": "lbt",
+      "profile": "kaspa-user-applications",
+      "running": true,
+      "exists": true,
+      "containerName": "PDd*82z6Dmz$Il",
+      "ports": [
+        42987
+      ]
+    },
+    {
+      "name": "l6-k",
+      "displayName": "f/V8K%\"SI=Lrb;T",
+      "profile": "kaspa-user-applications",
+      "running": false,
+      "exists": true,
+      "containerName": null,
+      "ports": [
+        47107
+      ]
+    },
+    {
+      "name": "h2vo13",
+      "displayName": "qZY!U:(J9H@Ue",
+      "profile": "indexer-services",
+      "running": false,
+      "exists": false,
+      "containerName": "R:%6cK1UQR6Tzv mH%",
+      "ports": null
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "running": 0,
+    "stopped": 0,
+    "missing": 5
+  },
+  "wizardRunning": true
+}

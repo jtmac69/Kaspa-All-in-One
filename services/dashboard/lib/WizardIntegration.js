@@ -3,6 +3,7 @@ const { promisify } = require('util');
 const fs = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
+const { createResolver } = require('../../shared/lib/path-resolver');
 
 const execAsync = promisify(exec);
 
@@ -12,12 +13,16 @@ const execAsync = promisify(exec);
  */
 class WizardIntegration {
     constructor() {
+        // Use centralized path resolver for consistent path resolution
+        const resolver = createResolver(__dirname);
+        const paths = resolver.getPaths();
+        
         this.wizardPort = process.env.WIZARD_PORT || 3000;
         this.wizardUrl = `http://localhost:${this.wizardPort}`;
-        this.projectRoot = process.env.PROJECT_ROOT || '/app';
+        this.projectRoot = paths.root;
         this.configPath = path.join(this.projectRoot, '.env');
         this.dockerComposePath = path.join(this.projectRoot, 'docker-compose.yml');
-        this.installationStatePath = path.join(this.projectRoot, 'installation-state.json');
+        this.installationStatePath = path.join(this.projectRoot, '.kaspa-aio', 'installation-state.json');
     }
 
     /**

@@ -1,0 +1,69 @@
+{
+  "version": "1.0.0",
+  "installedAt": "-266671-10-26T10:51:48.699Z",
+  "lastModified": "2026-01-04T02:53:40.219Z",
+  "phase": "error",
+  "profiles": {
+    "selected": [
+      "core",
+      "management"
+    ],
+    "count": 2
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": true,
+    "hasIndexers": true,
+    "hasArchive": true,
+    "hasMining": true,
+    "kaspaNodePort": 16115
+  },
+  "services": [
+    {
+      "name": "indexer-db",
+      "displayName": null,
+      "profile": "management",
+      "type": "Proxy",
+      "running": true,
+      "exists": false,
+      "containerName": null,
+      "ports": [
+        46457
+      ]
+    },
+    {
+      "name": "kaspa-explorer",
+      "displayName": "'Rzn1bO}",
+      "profile": "archive-node",
+      "type": "Indexer",
+      "running": false,
+      "exists": true,
+      "containerName": "N=F\"teP/o#cbqU#e",
+      "ports": [
+        35761,
+        5478
+      ]
+    },
+    {
+      "name": "kaspa-archive-node",
+      "displayName": "pAI*D!vea$gfN.g",
+      "profile": "kaspa-user-applications",
+      "type": "Mining",
+      "running": false,
+      "exists": true,
+      "containerName": "[jHXkV+N|\"XN<*)/",
+      "ports": [
+        63657,
+        4545,
+        1038
+      ]
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "running": 13,
+    "stopped": 15,
+    "missing": 1
+  },
+  "wizardRunning": false
+}

@@ -7,6 +7,10 @@ const DockerManager = require('../utils/docker-manager');
 const StateManager = require('../utils/state-manager');
 const BackupManager = require('../utils/backup-manager');
 const ProfileStateManager = require('../utils/profile-state-manager');
+const { createResolver } = require('../../../../shared/lib/path-resolver');
+
+// Initialize path resolver for this module
+const resolver = createResolver(__dirname);
 
 const configGenerator = new ConfigGenerator();
 const dockerManager = new DockerManager();
@@ -40,8 +44,8 @@ router.get('/profiles/state', async (req, res) => {
     const partialProfiles = profileStates.filter(p => p.installationState === 'partial');
     
     // Get additional context
-    const projectRoot = process.env.PROJECT_ROOT || '/workspace';
-    const envPath = path.join(projectRoot, '.env');
+    const paths = resolver.getPaths();
+    const envPath = paths.env;
     let envExists = false;
     
     try {
@@ -52,7 +56,7 @@ router.get('/profiles/state', async (req, res) => {
     }
     
     // Load installation state for metadata
-    const installationStatePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+    const installationStatePath = paths.installationState;
     let installationState = null;
     try {
       const stateContent = await fs.readFile(installationStatePath, 'utf8');
@@ -207,9 +211,9 @@ router.get('/profiles/cache-status', async (req, res) => {
  */
 router.get('/current-config', async (req, res) => {
   try {
-    const projectRoot = process.env.PROJECT_ROOT || '/workspace';
-    const envPath = path.join(projectRoot, '.env');
-    const installationStatePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+    const paths = resolver.getPaths();
+    const envPath = paths.env;
+    const installationStatePath = paths.installationState;
     
     // Load .env file
     let envExists = false;
@@ -318,9 +322,9 @@ router.post('/reconfigure', async (req, res) => {
       });
     }
     
-    const projectRoot = process.env.PROJECT_ROOT || '/workspace';
-    const envPath = path.join(projectRoot, '.env');
-    const installationStatePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+    const paths = resolver.getPaths();
+    const envPath = paths.env;
+    const installationStatePath = paths.installationState;
     
     // Load current configuration for diff
     let currentConfig = {};
@@ -503,7 +507,8 @@ router.post('/restart', async (req, res) => {
  */
 router.get('/backups', async (req, res) => {
   try {
-    const projectRoot = process.env.PROJECT_ROOT || '/workspace';
+    const paths = resolver.getPaths();
+    const projectRoot = paths.root;
     const files = await fs.readdir(projectRoot);
     
     const backups = files
@@ -547,9 +552,10 @@ router.post('/restore', async (req, res) => {
       });
     }
     
-    const projectRoot = process.env.PROJECT_ROOT || '/workspace';
+    const paths = resolver.getPaths();
+    const projectRoot = paths.root;
     const backupPath = path.join(projectRoot, backupFilename);
-    const envPath = path.join(projectRoot, '.env');
+    const envPath = paths.env;
     
     // Verify backup exists
     try {

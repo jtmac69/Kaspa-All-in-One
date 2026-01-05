@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const path = require('path');
+const { getProjectRoot } = require('../../../../shared/lib/path-resolver');
 
 /**
  * Security middleware for wizard API
@@ -235,8 +237,7 @@ async function validateDockerAccess(req, res, next) {
  * Prevent path traversal attacks
  */
 function preventPathTraversal(filePath) {
-  const path = require('path');
-  const projectRoot = process.env.PROJECT_ROOT || '/workspace';
+  const projectRoot = getProjectRoot(__dirname);
   
   // Resolve the path
   const resolvedPath = path.resolve(projectRoot, filePath);

@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0",
+  "installedAt": "1970-01-01T00:00:00.006Z",
+  "lastModified": "2026-01-04T18:29:01.680Z",
+  "phase": "error",
+  "profiles": {
+    "selected": [
+      "core"
+    ],
+    "count": 1
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": true,
+    "hasIndexers": true,
+    "hasArchive": true,
+    "hasMining": true
+  },
+  "services": [
+    {
+      "name": "kaspa-explorer",
+      "profile": "indexer-services",
+      "running": false,
+      "exists": true
+    },
+    {
+      "name": "timescaledb",
+      "profile": "indexer-services",
+      "running": false,
+      "exists": false
+    },
+    {
+      "name": "kaspa-indexer",
+      "profile": "core",
+      "running": true,
+      "exists": true
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "running": 4,
+    "stopped": 3,
+    "missing": 1
+  },
+  "wizardRunning": false
+}

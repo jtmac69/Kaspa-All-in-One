@@ -20,6 +20,10 @@ const ResourceMonitor = require('./lib/ResourceMonitor');
 const WizardIntegration = require('./lib/WizardIntegration');
 const ConfigurationSynchronizer = require('./lib/ConfigurationSynchronizer');
 
+// Shared modules
+const { SharedStateManager } = require('../shared/lib/state-manager');
+const ErrorDisplay = require('../shared/lib/error-display');
+
 // Security and performance modules
 const { 
     validators, 
@@ -60,6 +64,9 @@ const performanceMonitor = new PerformanceMonitor();
 const responseCache = new ResponseCache(30000); // 30 second cache
 const requestQueue = new RequestQueue(10); // Max 10 concurrent requests
 
+// Initialize error display for consistent error handling
+const errorDisplay = new ErrorDisplay();
+
 // Security middleware
 app.use(helmet(helmetOptions));
 app.use(compression(compressionOptions));
@@ -86,6 +93,12 @@ app.use(express.static(path.join(__dirname, 'public'), {
     etag: true
 }));
 
+// Serve shared styles
+app.use('/shared', express.static(path.join(__dirname, '../shared'), {
+    maxAge: process.env.NODE_ENV === 'production' ? '1d' : '0',
+    etag: true
+}));
+
 // Health check endpoint
 app.get('/health', responseCache.middleware(60000), (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
@@ -95,31 +108,244 @@ app.get('/health', responseCache.middleware(60000), (req, res) => {
 app.get('/api/status', responseCache.middleware(5000), async (req, res) => {
     const startTime = Date.now();
     try {
-        const services = await requestQueue.add(() => serviceMonitor.checkAllServices());
+        // Check if installation exists
+        const installationState = await stateManager.readState();
+        
+        if (!installationState) {
+            // No installation detected - use ErrorDisplay for consistent messaging
+            const errorResult = errorDisplay.showStateFileError('not_found', new Error('Installation state file not found'));
+            performanceMonitor.recordAPIRequest('/api/status', Date.now() - startTime, true);
+            return res.json({
+                noInstallation: true,
+                message: errorResult.userMessage,
+                services: []
+            });
+        }
+        
+        // Get all services from Docker
+        const allServices = await requestQueue.add(() => serviceMonitor.checkAllServices());
+        
+        // Filter to only show services that are in the installation state
+        const installedServiceNames = new Set(installationState.services.map(s => s.name));
+        const filteredServices = allServices.filter(service => 
+            installedServiceNames.has(service.name)
+        );
+        
         performanceMonitor.recordAPIRequest('/api/status', Date.now() - startTime, true);
-        res.json(services);
+        res.json({
+            noInstallation: false,
+            services: filteredServices,
+            installationState: {
+                version: installationState.version,
+                installedAt: installationState.installedAt,
+                lastModified: installationState.lastModified,
+                profiles: installationState.profiles
+            }
+        });
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/status', error);
         performanceMonitor.recordAPIRequest('/api/status', Date.now() - startTime, false);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
     }
 });
 
-// Get active profiles
+// Get service filter options with counts
 app.get('/api/profiles', async (req, res) => {
     try {
-        const dockerServices = await getDockerServices();
-        const profiles = new Set(['core']);
+        // Check if installation exists
+        const installationState = await stateManager.readState();
         
-        dockerServices.forEach((info, serviceName) => {
-            const serviceDef = serviceMonitor.serviceDefinitions.find(s => s.name === serviceName);
-            if (serviceDef && serviceDef.profile !== 'core') {
-                profiles.add(serviceDef.profile);
+        if (!installationState) {
+            return res.json([]);
+        }
+        
+        // Service to profile mapping
+        const serviceToProfile = {
+            'kaspa-node': 'core',
+            'dashboard': 'core',
+            'wallet': 'core',
+            'kaspa-archive-node': 'archive-node',
+            'timescaledb': 'indexer-services',
+            'indexer-db': 'indexer-services',
+            'k-indexer': 'indexer-services',
+            'kasia-indexer': 'indexer-services',
+            'simply-kaspa-indexer': 'indexer-services',
+            'archive-indexer': 'indexer-services',
+            'kasia-app': 'kaspa-user-applications',
+            'k-social': 'kaspa-user-applications',
+            'kaspa-explorer': 'kaspa-user-applications',
+            'kaspa-nginx': 'kaspa-user-applications',
+            'kaspa-stratum': 'mining',
+            'portainer': 'management',
+            'pgadmin': 'management'
+        };
+        
+        // Service to type mapping
+        const serviceToType = {
+            'kaspa-node': 'Node',
+            'kaspa-archive-node': 'Node',
+            'dashboard': 'Management',
+            'wallet': 'Wallet',
+            'timescaledb': 'Database',
+            'indexer-db': 'Database',
+            'k-indexer': 'Indexer',
+            'kasia-indexer': 'Indexer',
+            'simply-kaspa-indexer': 'Indexer',
+            'archive-indexer': 'Indexer',
+            'kasia-app': 'Application',
+            'k-social': 'Application',
+            'kaspa-explorer': 'Application',
+            'kaspa-nginx': 'Proxy',
+            'kaspa-stratum': 'Mining',
+            'portainer': 'Management',
+            'pgadmin': 'Management'
+        };
+        
+        const services = installationState.services || [];
+        const filterOptions = [];
+        
+        // Always include "All Services" option
+        filterOptions.push({
+            name: 'All Services',
+            value: 'all',
+            count: services.length
+        });
+        
+        // Group by service type
+        const serviceTypes = {};
+        services.forEach(service => {
+            const type = service.type || serviceToType[service.name] || 'Other';
+            serviceTypes[type] = (serviceTypes[type] || 0) + 1;
+        });
+        
+        // Add service type filters
+        Object.entries(serviceTypes).forEach(([type, count]) => {
+            filterOptions.push({
+                name: type,
+                value: `type:${type}`,
+                count: count
+            });
+        });
+        
+        // Group by profile
+        const profiles = {};
+        services.forEach(service => {
+            const profile = service.profile || serviceToProfile[service.name];
+            if (profile) {
+                profiles[profile] = (profiles[profile] || 0) + 1;
             }
         });
         
-        res.json(Array.from(profiles));
+        // Add profile filters
+        Object.entries(profiles).forEach(([profile, count]) => {
+            filterOptions.push({
+                name: `${profile} Profile`,
+                value: `profile:${profile}`,
+                count: count
+            });
+        });
+        
+        res.json(filterOptions);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/profiles', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
+    }
+});
+
+// Get installation state
+app.get('/api/installation/state', async (req, res) => {
+    try {
+        const installationState = await stateManager.readState();
+        
+        if (!installationState) {
+            const errorResult = errorDisplay.showStateFileError('not_found', new Error('Installation state file not found'));
+            return res.json({
+                exists: false,
+                message: errorResult.userMessage
+            });
+        }
+        
+        res.json({
+            exists: true,
+            state: installationState
+        });
+    } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showStateFileError('corrupt', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
+    }
+});
+
+// Manual refresh endpoint for state file changes
+app.post('/api/installation/refresh', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        console.log('Manual refresh requested');
+        
+        // Re-read the state file
+        const installationState = await stateManager.readState();
+        
+        // Get updated service status
+        const allServices = await serviceMonitor.checkAllServices();
+        
+        let filteredServices = [];
+        let stateInfo = null;
+
+        if (installationState) {
+            // Filter to only show services that are in the installation state
+            const installedServiceNames = new Set(installationState.services.map(s => s.name));
+            filteredServices = allServices.filter(service => 
+                installedServiceNames.has(service.name)
+            );
+            
+            stateInfo = {
+                version: installationState.version,
+                installedAt: installationState.installedAt,
+                lastModified: installationState.lastModified,
+                profiles: installationState.profiles,
+                wizardRunning: installationState.wizardRunning || false
+            };
+        }
+
+        // Broadcast refresh to all connected clients
+        wsManager.broadcast({
+            type: 'manual_refresh_completed',
+            data: {
+                hasInstallation: installationState !== null,
+                services: filteredServices,
+                installationState: stateInfo,
+                timestamp: new Date().toISOString()
+            }
+        });
+
+        performanceMonitor.recordAPIRequest('/api/installation/refresh', Date.now() - startTime, true);
+        res.json({
+            success: true,
+            hasInstallation: installationState !== null,
+            services: filteredServices,
+            installationState: stateInfo,
+            message: 'Dashboard refreshed successfully'
+        });
+    } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/installation/refresh', error);
+        performanceMonitor.recordAPIRequest('/api/installation/refresh', Date.now() - startTime, false);
+        res.status(500).json({ 
+            success: false,
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
     }
 });
 
@@ -134,15 +360,27 @@ app.post('/api/services/:serviceName/start',
             
             // Additional validation
             if (!isValidServiceName(serviceName)) {
-                return res.status(400).json({ error: 'Invalid service name' });
+                const errorResult = errorDisplay.show({
+                    type: 'API_ERROR',
+                    details: { error: 'Invalid service name', serviceName }
+                });
+                return res.status(400).json({ 
+                    error: errorResult.userMessage,
+                    details: errorResult.errorType 
+                });
             }
             
             await execAsync(`docker start ${serviceName}`);
             performanceMonitor.recordAPIRequest('/api/services/start', Date.now() - startTime, true);
             res.json({ success: true, message: `Service ${serviceName} started` });
         } catch (error) {
+            // Use ErrorDisplay for consistent error handling
+            const errorResult = errorDisplay.showApiError('/api/services/start', error);
             performanceMonitor.recordAPIRequest('/api/services/start', Date.now() - startTime, false);
-            res.status(500).json({ error: error.message });
+            res.status(500).json({ 
+                error: errorResult.userMessage,
+                details: errorResult.errorType 
+            });
         }
     }
 );
@@ -156,15 +394,27 @@ app.post('/api/services/:serviceName/stop',
             const { serviceName } = req.params;
             
             if (!isValidServiceName(serviceName)) {
-                return res.status(400).json({ error: 'Invalid service name' });
+                const errorResult = errorDisplay.show({
+                    type: 'API_ERROR',
+                    details: { error: 'Invalid service name', serviceName }
+                });
+                return res.status(400).json({ 
+                    error: errorResult.userMessage,
+                    details: errorResult.errorType 
+                });
             }
             
             await execAsync(`docker stop ${serviceName}`);
             performanceMonitor.recordAPIRequest('/api/services/stop', Date.now() - startTime, true);
             res.json({ success: true, message: `Service ${serviceName} stopped` });
         } catch (error) {
+            // Use ErrorDisplay for consistent error handling
+            const errorResult = errorDisplay.showApiError('/api/services/stop', error);
             performanceMonitor.recordAPIRequest('/api/services/stop', Date.now() - startTime, false);
-            res.status(500).json({ error: error.message });
+            res.status(500).json({ 
+                error: errorResult.userMessage,
+                details: errorResult.errorType 
+            });
         }
     }
 );
@@ -178,15 +428,27 @@ app.post('/api/services/:serviceName/restart',
             const { serviceName } = req.params;
             
             if (!isValidServiceName(serviceName)) {
-                return res.status(400).json({ error: 'Invalid service name' });
+                const errorResult = errorDisplay.show({
+                    type: 'API_ERROR',
+                    details: { error: 'Invalid service name', serviceName }
+                });
+                return res.status(400).json({ 
+                    error: errorResult.userMessage,
+                    details: errorResult.errorType 
+                });
             }
             
             await execAsync(`docker restart ${serviceName}`);
             performanceMonitor.recordAPIRequest('/api/services/restart', Date.now() - startTime, true);
             res.json({ success: true, message: `Service ${serviceName} restarted` });
         } catch (error) {
+            // Use ErrorDisplay for consistent error handling
+            const errorResult = errorDisplay.showApiError('/api/services/restart', error);
             performanceMonitor.recordAPIRequest('/api/services/restart', Date.now() - startTime, false);
-            res.status(500).json({ error: error.message });
+            res.status(500).json({ 
+                error: errorResult.userMessage,
+                details: errorResult.errorType 
+            });
         }
     }
 );
@@ -204,7 +466,14 @@ app.get('/api/services/:serviceName/logs',
             const { lines = 100, search = '' } = req.query;
             
             if (!isValidServiceName(serviceName)) {
-                return res.status(400).json({ error: 'Invalid service name' });
+                const errorResult = errorDisplay.show({
+                    type: 'API_ERROR',
+                    details: { error: 'Invalid service name', serviceName }
+                });
+                return res.status(400).json({ 
+                    error: errorResult.userMessage,
+                    details: errorResult.errorType 
+                });
             }
             
             const { stdout } = await execAsync(`docker logs --tail=${lines} ${serviceName}`);
@@ -224,8 +493,13 @@ app.get('/api/services/:serviceName/logs',
             performanceMonitor.recordAPIRequest('/api/services/logs', Date.now() - startTime, true);
             res.json({ logs: sanitizedLogs });
         } catch (error) {
+            // Use ErrorDisplay for consistent error handling
+            const errorResult = errorDisplay.showApiError('/api/services/logs', error);
             performanceMonitor.recordAPIRequest('/api/services/logs', Date.now() - startTime, false);
-            res.status(500).json({ error: error.message });
+            res.status(500).json({ 
+                error: errorResult.userMessage,
+                details: errorResult.errorType 
+            });
         }
     }
 );
@@ -236,7 +510,12 @@ app.get('/api/system/resources', async (req, res) => {
         const resources = await resourceMonitor.getSystemResources();
         res.json(resources);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/system/resources', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
     }
 });
 
@@ -264,8 +543,13 @@ app.get('/api/config',
             performanceMonitor.recordAPIRequest('/api/config', Date.now() - startTime, true);
             res.json(config);
         } catch (error) {
+            // Use ErrorDisplay for consistent error handling
+            const errorResult = errorDisplay.showApiError('/api/config', error);
             performanceMonitor.recordAPIRequest('/api/config', Date.now() - startTime, false);
-            res.status(500).json({ error: error.message });
+            res.status(500).json({ 
+                error: errorResult.userMessage,
+                details: errorResult.errorType 
+            });
         }
     }
 );
@@ -314,11 +598,22 @@ app.get('/api/kaspa/info', async (req, res) => {
         });
         res.json(response.data);
     } catch (error) {
+        // Use ErrorDisplay for graceful error handling (no crashes)
+        const errorResult = errorDisplay.show({
+            type: 'KASPA_NODE_UNAVAILABLE',
+            details: { error: error.message, endpoint: '/api/kaspa/info' }
+        });
+        
         // Return graceful JSON response instead of 500 error
         res.json({ 
-            error: 'Kaspa node not available',
+            error: errorResult.userMessage,
             available: false,
-            message: 'Kaspa node is not running or not accessible'
+            message: 'Kaspa node is not running or not accessible',
+            troubleshooting: [
+                'Check if Kaspa node container is running: docker ps | grep kaspa-node',
+                'Check container logs: docker logs kaspa-node',
+                'Verify network connectivity between Dashboard and Kaspa node'
+            ]
         });
     }
 });
@@ -335,11 +630,139 @@ app.get('/api/kaspa/stats', async (req, res) => {
             network: networkInfo.data
         });
     } catch (error) {
+        // Use ErrorDisplay for graceful error handling (no crashes)
+        const errorResult = errorDisplay.show({
+            type: 'KASPA_NODE_UNAVAILABLE',
+            details: { error: error.message, endpoint: '/api/kaspa/stats' }
+        });
+        
         // Return graceful JSON response instead of 500 error
+        res.json({ 
+            error: errorResult.userMessage,
+            available: false,
+            message: 'Kaspa node is not running or not accessible',
+            troubleshooting: [
+                'Check if Kaspa node container is running: docker ps | grep kaspa-node',
+                'Check container logs: docker logs kaspa-node',
+                'Verify network connectivity between Dashboard and Kaspa node'
+            ]
+        });
+    }
+});
+
+// Enhanced Kaspa node endpoints with port fallback
+app.get('/api/kaspa/connection/status', async (req, res) => {
+    try {
+        const connectionStatus = kaspaNodeClient.getConnectionStatus();
+        res.json({
+            ...connectionStatus,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/kaspa/connection/status', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
+    }
+});
+
+app.post('/api/kaspa/connection/test', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const result = await kaspaNodeClient.forceReconnect();
+        
+        performanceMonitor.recordAPIRequest('/api/kaspa/connection/test', Date.now() - startTime, result.connected);
+        res.json({
+            success: result.connected,
+            connection: result,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/kaspa/connection/test', error);
+        performanceMonitor.recordAPIRequest('/api/kaspa/connection/test', Date.now() - startTime, false);
+        res.status(500).json({ 
+            success: false,
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
+    }
+});
+
+app.get('/api/kaspa/node/info', async (req, res) => {
+    try {
+        const nodeInfo = await kaspaNodeClient.getNodeInfo();
+        const connectionStatus = kaspaNodeClient.getConnectionStatus();
+        
+        res.json({
+            ...nodeInfo,
+            connection: {
+                port: connectionStatus.workingPort,
+                url: connectionStatus.workingUrl,
+                status: connectionStatus.connected ? 'connected' : 'disconnected'
+            }
+        });
+    } catch (error) {
+        const connectionStatus = kaspaNodeClient.getConnectionStatus();
         res.json({ 
             error: 'Kaspa node not available',
             available: false,
-            message: 'Kaspa node is not running or not accessible'
+            message: error.message,
+            connection: {
+                port: connectionStatus.workingPort,
+                url: connectionStatus.workingUrl,
+                status: 'disconnected',
+                error: connectionStatus.error,
+                portChain: connectionStatus.portChain,
+                troubleshooting: [
+                    'Check if Kaspa node container is running: docker ps | grep kaspa-node',
+                    'Check container logs: docker logs kaspa-node',
+                    'Verify network connectivity between Dashboard and Kaspa node',
+                    `Tried ports: ${connectionStatus.portChain?.join(', ') || 'unknown'}`
+                ]
+            }
+        });
+    }
+});
+
+app.get('/api/kaspa/node/stats', async (req, res) => {
+    try {
+        const [blockDag, networkInfo] = await Promise.all([
+            kaspaNodeClient.getBlockDagInfo(),
+            kaspaNodeClient.getCurrentNetwork()
+        ]);
+        
+        const connectionStatus = kaspaNodeClient.getConnectionStatus();
+        
+        res.json({
+            blockDag,
+            network: networkInfo,
+            connection: {
+                port: connectionStatus.workingPort,
+                url: connectionStatus.workingUrl,
+                status: 'connected'
+            }
+        });
+    } catch (error) {
+        const connectionStatus = kaspaNodeClient.getConnectionStatus();
+        res.json({ 
+            error: 'Kaspa node not available',
+            available: false,
+            message: error.message,
+            connection: {
+                port: connectionStatus.workingPort,
+                url: connectionStatus.workingUrl,
+                status: 'disconnected',
+                error: connectionStatus.error,
+                troubleshooting: [
+                    'Check if Kaspa node container is running',
+                    'Verify RPC is enabled on the node',
+                    'Check firewall settings',
+                    `Attempted ports: ${connectionStatus.portChain?.join(', ') || 'unknown'}`
+                ]
+            }
         });
     }
 });
@@ -349,13 +772,20 @@ app.get('/api/kaspa/wallet', async (req, res) => {
     try {
         // For now, return a placeholder response since wallet functionality 
         // is not yet implemented in the Kaspa node setup
+        const errorResult = errorDisplay.showServiceUnavailable('Wallet');
         res.json({
-            error: 'Wallet functionality not available',
+            error: errorResult.userMessage,
             message: 'Wallet features are not currently configured in this installation',
-            available: false
+            available: false,
+            placeholder: errorResult.placeholder
         });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to get wallet info' });
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/kaspa/wallet', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
     }
 });
 
@@ -369,7 +799,12 @@ app.get('/api/updates/available', async (req, res) => {
             message: 'Update checking not yet implemented'
         });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to check for updates' });
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/updates/available', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
     }
 });
 
@@ -387,7 +822,12 @@ app.get('/api/alerts', (req, res) => {
         const alerts = alertManager.getAlertHistory(options);
         res.json(alerts);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/alerts', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
     }
 });
 
@@ -396,7 +836,12 @@ app.get('/api/alerts/stats', (req, res) => {
         const stats = alertManager.getStats();
         res.json(stats);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/alerts/stats', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
     }
 });
 
@@ -408,10 +853,22 @@ app.post('/api/alerts/:alertId/acknowledge', (req, res) => {
         if (success) {
             res.json({ success: true, message: 'Alert acknowledged' });
         } else {
-            res.status(404).json({ error: 'Alert not found' });
+            const errorResult = errorDisplay.show({
+                type: 'API_ERROR',
+                details: { error: 'Alert not found', alertId }
+            });
+            res.status(404).json({ 
+                error: errorResult.userMessage,
+                details: errorResult.errorType 
+            });
         }
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/alerts/acknowledge', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
     }
 });
 
@@ -421,7 +878,12 @@ app.put('/api/alerts/thresholds', (req, res) => {
         alertManager.updateThresholds(thresholds);
         res.json({ success: true, message: 'Thresholds updated', thresholds: alertManager.alertThresholds });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/alerts/thresholds', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
     }
 });
 
@@ -444,7 +906,12 @@ app.get('/api/websocket/stats', (req, res) => {
             requestQueue: queueStats
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/websocket/stats', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
     }
 });
 
@@ -454,7 +921,12 @@ app.get('/api/performance/stats', (req, res) => {
         const stats = performanceMonitor.getStats();
         res.json(stats);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/performance/stats', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
     }
 });
 
@@ -464,7 +936,12 @@ app.post('/api/cache/clear', (req, res) => {
         responseCache.clear();
         res.json({ success: true, message: 'Cache cleared' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/cache/clear', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
     }
 });
 
@@ -473,12 +950,31 @@ app.get('/api/cache/stats', (req, res) => {
         const stats = responseCache.getStats();
         res.json(stats);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/cache/stats', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
     }
 });
 
 // Add security error handler
 app.use(securityErrorHandler);
+
+// Global error handler for graceful degradation (Requirement 9.5)
+app.use((error, req, res, next) => {
+    // Use ErrorDisplay for consistent error handling
+    const errorResult = errorDisplay.showApiError(req.path, error);
+    
+    // Always return JSON, never crash
+    res.status(500).json({
+        error: errorResult.userMessage,
+        details: errorResult.errorType,
+        path: req.path,
+        timestamp: new Date().toISOString()
+    });
+});
 
 // Serve the dashboard HTML
 app.get('/', (req, res) => {
@@ -496,7 +992,11 @@ async function getDockerServices() {
         });
         return runningServices;
     } catch (error) {
-        console.error('Failed to get Docker services:', error);
+        // Use ErrorDisplay for consistent error logging
+        const errorResult = errorDisplay.show({
+            type: 'DOCKER_UNAVAILABLE',
+            details: { error: error.message, operation: 'getDockerServices' }
+        });
         return new Map();
     }
 }
@@ -516,11 +1016,13 @@ app.post('/api/wizard/start', async (req, res) => {
             errors: stderr
         });
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/wizard/start', error);
         performanceMonitor.recordAPIRequest('/api/wizard/start', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to start wizard',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -536,11 +1038,13 @@ app.post('/api/wizard/launch', async (req, res) => {
         performanceMonitor.recordAPIRequest('/api/wizard/launch', Date.now() - startTime, true);
         res.json(result);
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/wizard/launch', error);
         performanceMonitor.recordAPIRequest('/api/wizard/launch', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to launch wizard',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -554,11 +1058,13 @@ app.get('/api/wizard/config', async (req, res) => {
         performanceMonitor.recordAPIRequest('/api/wizard/config', Date.now() - startTime, true);
         res.json(config);
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/wizard/config', error);
         performanceMonitor.recordAPIRequest('/api/wizard/config', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to export configuration',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -572,11 +1078,13 @@ app.get('/api/wizard/suggestions', async (req, res) => {
         performanceMonitor.recordAPIRequest('/api/wizard/suggestions', Date.now() - startTime, true);
         res.json(suggestions);
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/wizard/suggestions', error);
         performanceMonitor.recordAPIRequest('/api/wizard/suggestions', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to generate suggestions',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -590,11 +1098,13 @@ app.get('/api/wizard/monitoring/status', async (req, res) => {
         performanceMonitor.recordAPIRequest('/api/wizard/monitoring/status', Date.now() - startTime, true);
         res.json(status);
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/wizard/monitoring/status', error);
         performanceMonitor.recordAPIRequest('/api/wizard/monitoring/status', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to get monitoring status',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -608,11 +1118,13 @@ app.post('/api/wizard/monitoring/start', async (req, res) => {
         performanceMonitor.recordAPIRequest('/api/wizard/monitoring/start', Date.now() - startTime, true);
         res.json(result);
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/wizard/monitoring/start', error);
         performanceMonitor.recordAPIRequest('/api/wizard/monitoring/start', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to start monitoring',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -627,11 +1139,13 @@ app.get('/api/wizard/status/:sessionId', async (req, res) => {
         performanceMonitor.recordAPIRequest('/api/wizard/status', Date.now() - startTime, true);
         res.json(status);
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/wizard/status', error);
         performanceMonitor.recordAPIRequest('/api/wizard/status', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to get wizard status',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -681,11 +1195,13 @@ app.post('/api/wizard/poll/:sessionId', async (req, res) => {
             sessionId
         });
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/wizard/poll', error);
         performanceMonitor.recordAPIRequest('/api/wizard/poll', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to start wizard polling',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -700,11 +1216,13 @@ app.post('/api/wizard/completion', async (req, res) => {
         performanceMonitor.recordAPIRequest('/api/wizard/completion', Date.now() - startTime, true);
         res.json(result);
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/wizard/completion', error);
         performanceMonitor.recordAPIRequest('/api/wizard/completion', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to handle wizard completion',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -723,11 +1241,13 @@ app.get('/api/config/history', async (req, res) => {
         performanceMonitor.recordAPIRequest('/api/config/history', Date.now() - startTime, true);
         res.json(history);
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/config/history', error);
         performanceMonitor.recordAPIRequest('/api/config/history', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to get configuration history',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -740,11 +1260,13 @@ app.post('/api/config/validate', async (req, res) => {
         performanceMonitor.recordAPIRequest('/api/config/validate', Date.now() - startTime, true);
         res.json(validation);
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/config/validate', error);
         performanceMonitor.recordAPIRequest('/api/config/validate', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to validate configuration',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -758,11 +1280,13 @@ app.post('/api/config/rollback/:changeId', async (req, res) => {
         performanceMonitor.recordAPIRequest('/api/config/rollback', Date.now() - startTime, true);
         res.json(result);
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/config/rollback', error);
         performanceMonitor.recordAPIRequest('/api/config/rollback', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to rollback configuration',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -775,11 +1299,13 @@ app.get('/api/config/sync/status', async (req, res) => {
         performanceMonitor.recordAPIRequest('/api/config/sync/status', Date.now() - startTime, true);
         res.json(status);
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/config/sync/status', error);
         performanceMonitor.recordAPIRequest('/api/config/sync/status', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to get sync status',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -795,11 +1321,13 @@ app.post('/api/config/sync/start', async (req, res) => {
             message: 'Configuration synchronization started'
         });
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/config/sync/start', error);
         performanceMonitor.recordAPIRequest('/api/config/sync/start', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to start configuration sync',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -815,11 +1343,13 @@ app.post('/api/config/sync/stop', async (req, res) => {
             message: 'Configuration synchronization stopped'
         });
     } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/config/sync/stop', error);
         performanceMonitor.recordAPIRequest('/api/config/sync/stop', Date.now() - startTime, false);
         res.status(500).json({
             success: false,
-            error: 'Failed to stop configuration sync',
-            message: error.message
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -835,9 +1365,31 @@ const server = sslResult.ssl ? sslResult.server : app.listen(PORT, '0.0.0.0', ()
 });
 
 // Initialize monitoring services
+const stateManager = new SharedStateManager(path.join(__dirname, '../../.kaspa-aio/installation-state.json'));
 const serviceMonitor = new ServiceMonitor();
 const resourceMonitor = new ResourceMonitor();
-const kaspaNodeClient = new (require('./lib/KaspaNodeClient'))();
+
+// Initialize KaspaNodeClient with port from installation state
+let kaspaNodeClient;
+async function initializeKaspaNodeClient() {
+    try {
+        const installationState = await stateManager.readState();
+        const configuredPort = installationState?.configuration?.kaspaNodePort || 16111;
+        
+        kaspaNodeClient = new (require('./lib/KaspaNodeClient'))({
+            configuredPort: configuredPort
+        });
+        
+        console.log(`KaspaNodeClient initialized with configured port: ${configuredPort}`);
+    } catch (error) {
+        console.warn('Failed to read installation state for Kaspa node port, using default:', error.message);
+        kaspaNodeClient = new (require('./lib/KaspaNodeClient'))();
+    }
+}
+
+// Initialize immediately
+initializeKaspaNodeClient();
+
 const wizardIntegration = new WizardIntegration();
 const configSynchronizer = new ConfigurationSynchronizer();
 
@@ -850,6 +1402,124 @@ const alertManager = new AlertManager(wsManager);
 // Initialize Update Broadcaster
 const updateBroadcaster = new UpdateBroadcaster(wsManager, serviceMonitor, resourceMonitor);
 updateBroadcaster.start();
+
+// Setup state file watching for configuration changes
+let stateWatchUnsubscribe = null;
+
+function setupStateFileWatching() {
+    // Clean up existing watcher if any
+    if (stateWatchUnsubscribe) {
+        stateWatchUnsubscribe();
+    }
+
+    // Watch for state file changes
+    stateWatchUnsubscribe = stateManager.watchState(async (newState, error) => {
+        if (error) {
+            // Use ErrorDisplay for consistent error logging
+            const errorResult = errorDisplay.show({
+                type: 'STATE_FILE_CORRUPT',
+                details: { error: error.message, operation: 'state_file_watch' }
+            });
+            
+            // Broadcast error to clients
+            wsManager.broadcast({
+                type: 'state_watch_error',
+                data: {
+                    error: error.message,
+                    timestamp: new Date().toISOString()
+                }
+            });
+            return;
+        }
+
+        console.log('Installation state file changed, refreshing dashboard...');
+
+        // Update Kaspa node client configuration if port changed
+        if (newState?.configuration?.kaspaNodePort) {
+            const currentPort = kaspaNodeClient.getConnectionStatus().fallbackStatus?.configuredPort;
+            const newPort = newState.configuration.kaspaNodePort;
+            
+            if (currentPort !== newPort) {
+                console.log(`Updating Kaspa node port from ${currentPort} to ${newPort}`);
+                kaspaNodeClient.updateConfiguredPort(newPort);
+            }
+        }
+
+        try {
+            // Get updated service status
+            const allServices = await serviceMonitor.checkAllServices();
+            
+            let filteredServices = [];
+            let installationState = null;
+
+            if (newState) {
+                // Filter to only show services that are in the installation state
+                const installedServiceNames = new Set(newState.services.map(s => s.name));
+                filteredServices = allServices.filter(service => 
+                    installedServiceNames.has(service.name)
+                );
+                
+                installationState = {
+                    version: newState.version,
+                    installedAt: newState.installedAt,
+                    lastModified: newState.lastModified,
+                    profiles: newState.profiles,
+                    wizardRunning: newState.wizardRunning || false
+                };
+            }
+
+            // Broadcast state change notification
+            wsManager.broadcast({
+                type: 'configuration_changed',
+                data: {
+                    hasInstallation: newState !== null,
+                    services: filteredServices,
+                    installationState: installationState,
+                    timestamp: new Date().toISOString(),
+                    message: newState ? 'Configuration updated' : 'Installation removed'
+                }
+            });
+
+            // Also broadcast dashboard refresh request
+            wsManager.broadcast({
+                type: 'dashboard_refresh_needed',
+                data: {
+                    reason: 'state_file_changed',
+                    hasInstallation: newState !== null,
+                    timestamp: new Date().toISOString()
+                }
+            });
+
+        } catch (serviceError) {
+            // Use ErrorDisplay for consistent error logging
+            const errorResult = errorDisplay.showApiError('service_refresh_after_state_change', serviceError);
+            
+            // Still broadcast the state change even if service refresh fails
+            wsManager.broadcast({
+                type: 'configuration_changed',
+                data: {
+                    hasInstallation: newState !== null,
+                    services: [],
+                    installationState: newState ? {
+                        version: newState.version,
+                        installedAt: newState.installedAt,
+                        lastModified: newState.lastModified,
+                        profiles: newState.profiles,
+                        wizardRunning: newState.wizardRunning || false
+                    } : null,
+                    timestamp: new Date().toISOString(),
+                    message: 'Configuration changed but service refresh failed',
+                    error: serviceError.message
+                }
+            });
+        }
+    });
+
+    console.log('State file watching initialized');
+}
+
+// Start state file watching
+setupStateFileWatching();
 
 // Initialize Configuration Synchronizer with WebSocket integration
 configSynchronizer.onConfigurationChanged = (changes, diffAnalysis) => {
@@ -889,10 +1559,28 @@ updateBroadcaster.on('resources-broadcasted', ({ resources }) => {
 });
 
 // Add sync status monitoring
+let kaspaNodeRetryActive = false;
+
 setInterval(async () => {
     try {
         const syncStatus = await kaspaNodeClient.getSyncStatus();
         alertManager.processSyncStatusUpdates(syncStatus);
+        
+        // If we successfully got sync status, stop any active retry
+        if (kaspaNodeRetryActive) {
+            kaspaNodeClient.stopRetry();
+            kaspaNodeRetryActive = false;
+            console.log('Kaspa node connection restored, stopping retry');
+            
+            // Broadcast connection restored
+            wsManager.broadcast({
+                type: 'kaspa_node_restored',
+                data: {
+                    message: 'Kaspa node connection restored',
+                    timestamp: new Date().toISOString()
+                }
+            });
+        }
         
         // Broadcast sync status updates
         wsManager.broadcast({
@@ -901,13 +1589,77 @@ setInterval(async () => {
             timestamp: new Date().toISOString()
         });
     } catch (error) {
-        console.error('Failed to get sync status:', error);
+        // Use ErrorDisplay for consistent error logging
+        const errorResult = errorDisplay.show({
+            type: 'KASPA_NODE_UNAVAILABLE',
+            details: { error: error.message, operation: 'sync_status_monitoring' }
+        });
+        
+        // Start retry logic if not already active
+        if (!kaspaNodeRetryActive) {
+            kaspaNodeRetryActive = true;
+            console.log('Kaspa node unavailable, starting retry logic');
+            
+            kaspaNodeClient.startRetry((result) => {
+                console.log(`Kaspa node reconnected on port ${result.port}`);
+                
+                // Broadcast reconnection
+                wsManager.broadcast({
+                    type: 'kaspa_node_reconnected',
+                    data: {
+                        message: `Kaspa node reconnected on port ${result.port}`,
+                        port: result.port,
+                        url: result.url,
+                        timestamp: new Date().toISOString()
+                    }
+                });
+                
+                // Update status within 5 seconds by triggering immediate sync check
+                setTimeout(async () => {
+                    try {
+                        const syncStatus = await kaspaNodeClient.getSyncStatus();
+                        wsManager.broadcast({
+                            type: 'sync_status_update',
+                            data: syncStatus,
+                            timestamp: new Date().toISOString()
+                        });
+                    } catch (retryError) {
+                        // Use ErrorDisplay for consistent error logging
+                        const retryErrorResult = errorDisplay.show({
+                            type: 'KASPA_NODE_UNAVAILABLE',
+                            details: { error: retryError.message, operation: 'sync_status_after_reconnection' }
+                        });
+                    }
+                }, 1000); // Check after 1 second to ensure connection is stable
+            });
+            
+            // Broadcast that node is unavailable and retry started
+            wsManager.broadcast({
+                type: 'kaspa_node_unavailable',
+                data: {
+                    message: 'Kaspa node unavailable - retrying every 30 seconds',
+                    error: error.message,
+                    timestamp: new Date().toISOString()
+                }
+            });
+        }
     }
 }, 30000); // Check every 30 seconds
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
     console.log('Received SIGTERM, shutting down gracefully...');
+    
+    // Clean up state file watcher
+    if (stateWatchUnsubscribe) {
+        stateWatchUnsubscribe();
+    }
+    
+    // Clean up Kaspa node client
+    if (kaspaNodeClient) {
+        kaspaNodeClient.destroy();
+    }
+    
     configSynchronizer.shutdown();
     alertManager.shutdown();
     updateBroadcaster.shutdown();
@@ -920,6 +1672,17 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
     console.log('Received SIGINT, shutting down gracefully...');
+    
+    // Clean up state file watcher
+    if (stateWatchUnsubscribe) {
+        stateWatchUnsubscribe();
+    }
+    
+    // Clean up Kaspa node client
+    if (kaspaNodeClient) {
+        kaspaNodeClient.destroy();
+    }
+    
     configSynchronizer.shutdown();
     alertManager.shutdown();
     updateBroadcaster.shutdown();

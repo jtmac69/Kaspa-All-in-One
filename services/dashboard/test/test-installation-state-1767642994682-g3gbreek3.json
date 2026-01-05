@@ -1,0 +1,104 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-07-15T07:27:28.453Z",
+  "lastModified": "2026-01-05T19:56:34.915Z",
+  "phase": "error",
+  "profiles": {
+    "selected": [
+      "indexer-services",
+      "core",
+      "kaspa-user-applications",
+      "kaspa-user-applications"
+    ],
+    "count": 6
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": true,
+    "hasIndexers": true,
+    "hasArchive": true,
+    "hasMining": true,
+    "kaspaNodePort": 16111
+  },
+  "services": [
+    {
+      "name": "pgadmin",
+      "displayName": "2u<QKZYz#",
+      "profile": "management",
+      "type": "Database",
+      "running": false,
+      "exists": false,
+      "containerName": "{=~kAjiQsUz*p3)#v <F",
+      "ports": [
+        13538,
+        18690,
+        12879
+      ]
+    },
+    {
+      "name": "timescaledb",
+      "displayName": null,
+      "profile": "core",
+      "type": "Mining",
+      "running": true,
+      "exists": true,
+      "containerName": "PhUt>.$ H",
+      "ports": [
+        41259
+      ]
+    },
+    {
+      "name": "kaspa-stratum",
+      "displayName": "zvGz\"Z(",
+      "profile": null,
+      "type": "Wallet",
+      "running": false,
+      "exists": true,
+      "containerName": null,
+      "ports": [
+        5017
+      ]
+    },
+    {
+      "name": "kaspa-node",
+      "displayName": "$VqBS3Vz<<DL",
+      "profile": "management",
+      "type": "Node",
+      "running": false,
+      "exists": true,
+      "containerName": null,
+      "ports": []
+    },
+    {
+      "name": "portainer",
+      "displayName": "dNNi'8x.m9",
+      "profile": "archive-node",
+      "type": "Indexer",
+      "running": true,
+      "exists": true,
+      "containerName": "OGh9I\"g",
+      "ports": []
+    },
+    {
+      "name": "k-social",
+      "displayName": "/c`2euQ<0JC@.>",
+      "profile": null,
+      "type": null,
+      "running": false,
+      "exists": false,
+      "containerName": "H s~}:n!pxMrt6&Bc",
+      "ports": [
+        47821,
+        10796,
+        47932
+      ]
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "running": 14,
+    "stopped": 8,
+    "missing": 6
+  },
+  "wizardRunning": false
+}

@@ -1,0 +1,35 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-01-05T18:49:20.434Z",
+  "lastModified": "2026-01-05T18:49:21.412Z",
+  "phase": "installing",
+  "profiles": {
+    "selected": [
+      "kaspa-user-applications",
+      "indexer-services"
+    ],
+    "count": 3
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": true,
+    "hasIndexers": false,
+    "hasArchive": false,
+    "hasMining": true
+  },
+  "services": [
+    {
+      "name": "kaspa-explorer",
+      "profile": "kaspa-user-applications",
+      "running": false,
+      "exists": false
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "running": 3,
+    "stopped": 1,
+    "missing": 4
+  },
+  "wizardRunning": true
+}

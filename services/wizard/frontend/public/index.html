@@ -1890,12 +1890,71 @@
                     </div>
                 </div>
                 
+                <!-- Dashboard Navigation Section -->
+                <div class="completion-section dashboard-navigation">
+                    <h3 class="completion-section-title">📊 Next Steps: Access Your Dashboard</h3>
+                    <p class="section-description">
+                        Your installation is complete! Access the Management Dashboard to monitor and control your Kaspa services.
+                    </p>
+                    
+                    <div class="dashboard-access-options">
+                        <div class="dashboard-option primary-option">
+                            <div class="option-header">
+                                <div class="option-icon">🚀</div>
+                                <div class="option-content">
+                                    <h4 class="option-title">Go to Dashboard</h4>
+                                    <p class="option-description">Open the Management Dashboard in this browser</p>
+                                </div>
+                            </div>
+                            <div class="option-actions">
+                                <a href="http://localhost:8080" target="_blank" class="btn-primary btn-large dashboard-link">
+                                    Open Dashboard
+                                    <span class="btn-icon">→</span>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-option secondary-option">
+                            <div class="option-header">
+                                <div class="option-icon">🔗</div>
+                                <div class="option-content">
+                                    <h4 class="option-title">Manual Access</h4>
+                                    <p class="option-description">Copy the URL to access from any browser</p>
+                                </div>
+                            </div>
+                            <div class="option-actions">
+                                <div class="url-display">
+                                    <input type="text" value="http://localhost:8080" readonly class="dashboard-url-input" id="dashboard-url">
+                                    <button class="btn-secondary btn-small" onclick="copyDashboardUrl()">
+                                        <span class="btn-icon">📋</span> Copy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-info">
+                        <div class="info-item">
+                            <span class="info-icon">💡</span>
+                            <span class="info-text">
+                                <strong>Tip:</strong> Bookmark the dashboard URL for easy access. The dashboard runs on your local machine at port 8080.
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-icon">🔄</span>
+                            <span class="info-text">
+                                If the dashboard doesn't load, it may still be starting up. Wait a moment and try again.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="step-actions">
                     <button class="btn-secondary" onclick="restartWizard()">
                         <span class="btn-icon">↺</span> Run Wizard Again
                     </button>
-                    <button class="btn-primary btn-large" onclick="openDashboard()">
-                        Open Dashboard
+                    <button class="btn-primary btn-large" onclick="handleCompletionNavigation()">
+                        <span id="completion-nav-text">Go to Dashboard</span>
                         <span class="btn-icon">→</span>
                     </button>
                 </div>

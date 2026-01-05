@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaspa All-in-One Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 </head>
 <body>
@@ -17,6 +17,17 @@
                 <select id="profile-filter" class="profile-selector" aria-label="Filter services by profile">
                     <option value="all">All Services</option>
                 </select>
+                
+                <!-- Wizard Navigation Elements -->
+                <div class="wizard-nav" role="toolbar" aria-label="Wizard navigation">
+                    <a href="#" id="wizard-link" class="btn-wizard-nav" title="Open Installation Wizard" aria-label="Open Installation Wizard">
+                        🧙‍♂️ Wizard
+                    </a>
+                    <button id="reconfigure-btn" class="btn-reconfigure" title="Reconfigure System" aria-label="Reconfigure system settings">
+                        ⚙️ Reconfigure System
+                    </button>
+                </div>
+                
                 <button id="updates-btn" class="btn-icon" title="Check for updates" aria-label="Check for updates">
                     ⬆️
                     <span class="update-badge" id="update-badge" style="display: none;" aria-live="polite">0</span>
@@ -27,6 +38,15 @@
                     <span class="text">Connecting...</span>
                 </div>
             </nav>
+            
+            <!-- Wizard Running Indicator -->
+            <div class="wizard-running-indicator" id="wizard-running-indicator" style="display: none;" role="alert" aria-live="assertive">
+                <div class="wizard-running-content">
+                    <span class="wizard-running-icon" aria-hidden="true">⚙️</span>
+                    <span class="wizard-running-text">Configuration in progress - some operations may be disabled</span>
+                    <button class="wizard-running-dismiss" id="wizard-running-dismiss" aria-label="Dismiss notification" title="Dismiss notification">✕</button>
+                </div>
+            </div>
         </header>
 
         <main role="main" id="main-content">
@@ -155,14 +175,29 @@
             <!-- Quick Actions -->
             <section class="actions" aria-labelledby="actions-heading">
                 <h2 id="actions-heading">Quick Actions</h2>
+                
+                <!-- Context-Specific Quick Actions -->
+                <div class="context-actions" id="context-actions" style="display: none;" role="toolbar" aria-label="Context-specific actions">
+                    <div class="context-actions-header">
+                        <h3>Configuration Suggestions</h3>
+                        <button id="dismiss-suggestions" class="btn-small" aria-label="Dismiss suggestions">✕</button>
+                    </div>
+                    <div class="context-actions-grid" id="context-actions-grid">
+                        <!-- Context-specific actions will be populated by JavaScript -->
+                    </div>
+                </div>
+                
                 <div class="actions-grid" role="toolbar" aria-label="System actions">
-                    <button class="action-btn" id="restart-all-btn" aria-label="Restart all services">
+                    <button class="action-btn" id="restart-all-btn" aria-label="Restart all services"
+                            data-original-title="Restart all services" title="Restart all services">
                         🔄 Restart All Services
                     </button>
-                    <button class="action-btn" id="update-services-btn" aria-label="Update all services">
+                    <button class="action-btn" id="update-services-btn" aria-label="Update all services"
+                            data-original-title="Update all services" title="Update all services">
                         ⬆️ Update Services
                     </button>
-                    <button class="action-btn" id="backup-data-btn" aria-label="Create system backup">
+                    <button class="action-btn" id="backup-data-btn" aria-label="Create system backup"
+                            data-original-title="Create system backup" title="Create system backup">
                         💾 Backup Data
                     </button>
                 </div>

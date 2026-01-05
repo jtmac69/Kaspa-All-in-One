@@ -3,16 +3,16 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 const path = require('path');
 const { DockerError, retryOperation, withTimeout } = require('./error-handler');
+const { createResolver } = require('../../../../shared/lib/path-resolver');
 
 const execAsync = promisify(exec);
 
 class DockerManager {
   constructor() {
     this.docker = new Docker();
-    // Use PROJECT_ROOT env var if available (when running in container)
-    // Otherwise calculate relative path (for local development)
-    // Path from services/wizard/backend/src/utils to project root is 5 levels up
-    this.projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
+    // Use centralized path resolver for consistent path resolution
+    const resolver = createResolver(__dirname);
+    this.projectRoot = resolver.getProjectRoot();
     
     // Map wizard profile names to docker-compose profile names
     // Now docker-compose uses the same profile names as the wizard

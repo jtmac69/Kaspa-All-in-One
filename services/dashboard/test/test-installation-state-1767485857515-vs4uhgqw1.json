@@ -1,0 +1,79 @@
+{
+  "version": "1.0.0",
+  "installedAt": "-271821-04-20T00:00:00.051Z",
+  "lastModified": "2026-01-04T00:17:38.473Z",
+  "phase": "complete",
+  "profiles": {
+    "selected": [
+      "core",
+      "core",
+      "indexer-services",
+      "mining"
+    ],
+    "count": 4
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": false,
+    "hasIndexers": false,
+    "hasArchive": false,
+    "hasMining": true,
+    "kaspaNodePort": 16110
+  },
+  "services": [
+    {
+      "name": "arguments",
+      "displayName": ".\\h",
+      "profile": "kaspa-user-applications",
+      "running": false,
+      "exists": true,
+      "containerName": "z]\"~^x",
+      "ports": null
+    },
+    {
+      "name": "ref",
+      "displayName": "+nlgAfMEu)[F}6",
+      "profile": "core",
+      "running": false,
+      "exists": true,
+      "containerName": "A?CoaHU",
+      "ports": null
+    },
+    {
+      "name": "length",
+      "displayName": "uCV",
+      "profile": "archive",
+      "running": false,
+      "exists": false,
+      "containerName": "y[J(0ZC2Rk7,eN",
+      "ports": null
+    },
+    {
+      "name": "argument",
+      "displayName": "MdgnHwCj/*_/cP3",
+      "profile": "mining",
+      "running": true,
+      "exists": false,
+      "containerName": "g9l!{:E.NH\"&ffBO",
+      "ports": [
+        47639
+      ]
+    },
+    {
+      "name": "argumen",
+      "displayName": "$w^M35)THpTB8",
+      "profile": "core",
+      "running": false,
+      "exists": true,
+      "containerName": "|b^`HL_%\"2FTBU5B+AK",
+      "ports": []
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "running": 9,
+    "stopped": 7,
+    "missing": 5
+  },
+  "wizardRunning": null
+}

@@ -4,6 +4,10 @@ const fs = require('fs').promises;
 const path = require('path');
 const RollbackManager = require('../utils/rollback-manager');
 const DockerManager = require('../utils/docker-manager');
+const { createResolver } = require('../../../../shared/lib/path-resolver');
+
+// Initialize path resolver for this module
+const resolver = createResolver(__dirname);
 
 const rollbackManager = new RollbackManager();
 const dockerManager = new DockerManager();
@@ -335,9 +339,9 @@ router.post('/start-over', async (req, res) => {
     // Delete configuration
     if (deleteConfig) {
       try {
-        const projectRoot = process.env.PROJECT_ROOT || '/workspace';
-        const envPath = path.join(projectRoot, '.env');
-        const wizardConfigPath = path.join(projectRoot, '.wizard-config.json');
+        const paths = resolver.getPaths();
+        const envPath = paths.env;
+        const wizardConfigPath = path.join(paths.root, '.wizard-config.json');
         
         try {
           await fs.unlink(envPath);

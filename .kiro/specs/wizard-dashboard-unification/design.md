@@ -357,9 +357,9 @@ interface ConnectionResult {
 
 **Validates: Requirements 3.7, 3.8**
 
-### Property 9: Profile Filtering Consistency
+### Property 9: Service Filtering Consistency
 
-*For any* profile filter selection, the Dashboard SHALL display only services belonging to the selected profile, and the filter dropdown SHALL contain only installed profiles with accurate service counts.
+*For any* service filter selection, the Dashboard SHALL display only services matching the selected filter criteria, and the filter dropdown SHALL contain accurate service counts for each filter option.
 
 **Validates: Requirements 4.3, 4.4, 4.5, 4.6, 4.7, 4.8**
 
@@ -504,10 +504,10 @@ Property-based tests verify universal properties across many generated inputs. E
    - Verify correct fallback order
    - **Feature: wizard-dashboard-unification, Property 6: Port Fallback Chain**
 
-4. **Property Test: Profile Filtering**
-   - Generate random profile/service combinations
+4. **Property Test: Service Filtering**
+   - Generate random service/filter combinations
    - Verify filter shows correct services
-   - **Feature: wizard-dashboard-unification, Property 9: Profile Filtering Consistency**
+   - **Feature: wizard-dashboard-unification, Property 9: Service Filtering Consistency**
 
 5. **Property Test: Cross-Launch Context**
    - Generate random launch contexts

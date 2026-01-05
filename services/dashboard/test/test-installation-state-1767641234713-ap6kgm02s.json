@@ -1,0 +1,119 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-01-05T19:27:13.749Z",
+  "lastModified": "2026-01-05T19:27:14.940Z",
+  "phase": "installing",
+  "profiles": {
+    "selected": [
+      "management",
+      "archive-node",
+      "archive-node",
+      "core",
+      "management",
+      "kaspa-user-applications"
+    ],
+    "count": 1
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": false,
+    "hasIndexers": false,
+    "hasArchive": false,
+    "hasMining": true,
+    "kaspaNodePort": 16111
+  },
+  "services": [
+    {
+      "name": "kaspa-nginx",
+      "displayName": null,
+      "profile": null,
+      "type": "Wallet",
+      "running": true,
+      "exists": false,
+      "containerName": "<R&QM\"d;RCnH*C-fb",
+      "ports": null
+    },
+    {
+      "name": "simply-kaspa-indexer",
+      "displayName": "u^ied0vh8J`5b",
+      "profile": "core",
+      "type": "Proxy",
+      "running": true,
+      "exists": true,
+      "containerName": null,
+      "ports": []
+    },
+    {
+      "name": "dashboard",
+      "displayName": null,
+      "profile": "kaspa-user-applications",
+      "type": "Proxy",
+      "running": true,
+      "exists": false,
+      "containerName": "6X;fSoR}9yy-\\DSR'+",
+      "ports": null
+    },
+    {
+      "name": "kaspa-explorer",
+      "displayName": null,
+      "profile": "kaspa-user-applications",
+      "type": "Management",
+      "running": false,
+      "exists": false,
+      "containerName": "U.(LP",
+      "ports": [
+        50639,
+        22763
+      ]
+    },
+    {
+      "name": "kaspa-stratum",
+      "displayName": "@b@2p",
+      "profile": "core",
+      "type": null,
+      "running": true,
+      "exists": true,
+      "containerName": "\"ar:YG9zPswvZ",
+      "ports": [
+        64590,
+        33747,
+        32083
+      ]
+    },
+    {
+      "name": "portainer",
+      "displayName": ".Us2fm-",
+      "profile": "management",
+      "type": null,
+      "running": false,
+      "exists": true,
+      "containerName": "AA~l72x<N",
+      "ports": [
+        17297,
+        63828,
+        14586
+      ]
+    },
+    {
+      "name": "k-social",
+      "displayName": "M;u{A'",
+      "profile": "archive-node",
+      "type": "Application",
+      "running": false,
+      "exists": true,
+      "containerName": "iw%f'E_UkFN%",
+      "ports": [
+        9897,
+        7164,
+        57351
+      ]
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "running": 0,
+    "stopped": 10,
+    "missing": 0
+  },
+  "wizardRunning": false
+}

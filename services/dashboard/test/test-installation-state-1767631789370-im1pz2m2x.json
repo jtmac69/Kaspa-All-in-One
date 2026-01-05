@@ -1,0 +1,119 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-01-05T16:49:49.392Z",
+  "lastModified": "2026-01-05T16:49:49.671Z",
+  "phase": "error",
+  "profiles": {
+    "selected": [
+      "core",
+      "management",
+      "archive-node",
+      "mining",
+      "management"
+    ],
+    "count": 4
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": false,
+    "hasIndexers": true,
+    "hasArchive": true,
+    "hasMining": true,
+    "kaspaNodePort": 16112
+  },
+  "services": [
+    {
+      "name": "kaspa-explorer",
+      "displayName": "D6Ia;_Qg=drJUq",
+      "profile": "mining",
+      "type": "Database",
+      "running": true,
+      "exists": false,
+      "containerName": "}S1dALtg",
+      "ports": [
+        60801,
+        1669
+      ]
+    },
+    {
+      "name": "kaspa-node",
+      "displayName": null,
+      "profile": null,
+      "type": "Proxy",
+      "running": false,
+      "exists": true,
+      "containerName": "w&@QIF",
+      "ports": [
+        17193,
+        56201,
+        40707
+      ]
+    },
+    {
+      "name": "timescaledb",
+      "displayName": "T`]woQNG<79ctc)S",
+      "profile": "core",
+      "type": "Application",
+      "running": false,
+      "exists": true,
+      "containerName": null,
+      "ports": [
+        53500
+      ]
+    },
+    {
+      "name": "kaspa-archive-node",
+      "displayName": "X6C7u",
+      "profile": "indexer-services",
+      "type": "Management",
+      "running": false,
+      "exists": false,
+      "containerName": "<&a%zpV",
+      "ports": []
+    },
+    {
+      "name": "dashboard",
+      "displayName": "B\"-Dw",
+      "profile": "mining",
+      "type": "Mining",
+      "running": false,
+      "exists": true,
+      "containerName": "=T2@#dWjP;]s",
+      "ports": [
+        17434,
+        36076
+      ]
+    },
+    {
+      "name": "simply-kaspa-indexer",
+      "displayName": "};5hGnX8i8;9M",
+      "profile": "indexer-services",
+      "type": "Mining",
+      "running": false,
+      "exists": false,
+      "containerName": null,
+      "ports": [
+        60587,
+        21028,
+        21204
+      ]
+    },
+    {
+      "name": "portainer",
+      "displayName": "NCJL",
+      "profile": "management",
+      "type": null,
+      "running": false,
+      "exists": false,
+      "containerName": "tt 8p)iWk&Q46H2]|G_",
+      "ports": []
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "running": 14,
+    "stopped": 11,
+    "missing": 10
+  },
+  "wizardRunning": false
+}

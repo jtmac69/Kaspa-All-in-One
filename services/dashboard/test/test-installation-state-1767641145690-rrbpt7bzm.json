@@ -1,0 +1,66 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-06-30T17:12:17.998Z",
+  "lastModified": "2026-01-05T19:25:47.058Z",
+  "phase": "error",
+  "profiles": {
+    "selected": [
+      "archive",
+      "archive",
+      "archive"
+    ],
+    "count": 3
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": false,
+    "hasIndexers": false,
+    "hasArchive": true,
+    "hasMining": false,
+    "kaspaNodePort": null
+  },
+  "services": [
+    {
+      "name": "v19w",
+      "displayName": "a9uQSpj`<&x",
+      "profile": "indexer-services",
+      "running": false,
+      "exists": false,
+      "containerName": "$Q!'uLTEU&eBNjJw",
+      "ports": [
+        37720,
+        19687,
+        47573
+      ]
+    },
+    {
+      "name": "ccm",
+      "displayName": "TSYECq,HqX9Q,",
+      "profile": "core",
+      "running": true,
+      "exists": true,
+      "containerName": "<Iy0Li+%DD@'Px]@I)U*",
+      "ports": []
+    },
+    {
+      "name": "m9-",
+      "displayName": "y'Zn]uEp1J<3CK",
+      "profile": "mining",
+      "running": true,
+      "exists": true,
+      "containerName": null,
+      "ports": [
+        17364,
+        50728,
+        49424
+      ]
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "running": 5,
+    "stopped": 7,
+    "missing": 3
+  },
+  "wizardRunning": true
+}

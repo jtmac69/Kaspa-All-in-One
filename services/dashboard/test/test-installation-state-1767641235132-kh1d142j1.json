@@ -1,0 +1,52 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-05-10T21:34:16.175Z",
+  "lastModified": "2026-01-05T19:27:15.285Z",
+  "phase": "error",
+  "profiles": {
+    "selected": [
+      "management",
+      "management"
+    ],
+    "count": 4
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": false,
+    "hasIndexers": true,
+    "hasArchive": false,
+    "hasMining": false,
+    "kaspaNodePort": 16114
+  },
+  "services": [
+    {
+      "name": "kaspa-node",
+      "displayName": "SUOO)'xi%w_#6)",
+      "profile": null,
+      "type": "Indexer",
+      "running": false,
+      "exists": true,
+      "containerName": "{F-A=6'Xn",
+      "ports": null
+    },
+    {
+      "name": "dashboard",
+      "displayName": "6!=;E/CSw5i9ae",
+      "profile": "core",
+      "type": "Proxy",
+      "running": true,
+      "exists": true,
+      "containerName": "{6C&,uGrml(D-FF",
+      "ports": [
+        3253
+      ]
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "running": 13,
+    "stopped": 13,
+    "missing": 14
+  },
+  "wizardRunning": false
+}

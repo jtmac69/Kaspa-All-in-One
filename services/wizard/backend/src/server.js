@@ -6,6 +6,10 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 
+// Import centralized path resolver
+const { createResolver } = require('../../../shared/lib/path-resolver');
+const pathResolver = createResolver(__dirname);
+
 // Import build configuration
 const buildConfig = require('./config/build-config');
 
@@ -148,15 +152,14 @@ app.get('/api/health', (req, res) => {
 app.get('/api/wizard/current-config', async (req, res) => {
   try {
     const fs = require('fs').promises;
-    const path = require('path');
     const dotenv = require('dotenv');
+    const { SharedStateManager } = require('../../shared/lib/state-manager');
     
-    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
-    const envPath = path.join(projectRoot, '.env');
-    const statePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+    const paths = pathResolver.getPaths();
+    const envPath = paths.env;
+    const statePath = paths.installationState;
     
     let config = {};
-    let installationState = null;
     
     // Load .env file
     try {
@@ -170,13 +173,9 @@ app.get('/api/wizard/current-config', async (req, res) => {
       });
     }
     
-    // Load installation state
-    try {
-      const stateContent = await fs.readFile(statePath, 'utf8');
-      installationState = JSON.parse(stateContent);
-    } catch {
-      // State file doesn't exist, that's okay
-    }
+    // Load installation state using SharedStateManager
+    const stateManager = new SharedStateManager(statePath);
+    const installationState = await stateManager.readState();
     
     res.json({
       success: true,
@@ -200,33 +199,34 @@ app.get('/api/wizard/current-config', async (req, res) => {
 app.get('/api/wizard/mode', async (req, res) => {
   try {
     const fs = require('fs').promises;
-    const path = require('path');
+    const { SharedStateManager } = require('../../../shared/lib/state-manager');
     
     // Get mode from URL parameter (if provided)
     const urlMode = req.query.mode;
     
     // Check for existing configuration files
-    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
-    const envPath = path.join(projectRoot, '.env');
-    const statePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+    const paths = pathResolver.getPaths();
+    const projectRoot = paths.root;
+    const envPath = paths.env;
+    const statePath = paths.installationState;
+    
+    console.log('[MODE DETECTION] Project root:', projectRoot);
+    console.log('[MODE DETECTION] State path:', statePath);
+    
+    // Use SharedStateManager to check for installation state
+    const stateManager = new SharedStateManager(statePath);
+    const installationState = await stateManager.readState();
+    const hasState = installationState !== null;
+    
+    console.log('[MODE DETECTION] Has state:', hasState);
+    console.log('[MODE DETECTION] Installation state:', installationState ? 'exists' : 'null');
     
     let hasEnv = false;
-    let hasState = false;
-    let installationState = null;
-    
     try {
       await fs.access(envPath);
       hasEnv = true;
     } catch {
       // .env doesn't exist
-    }
-    
-    try {
-      const stateContent = await fs.readFile(statePath, 'utf8');
-      installationState = JSON.parse(stateContent);
-      hasState = true;
-    } catch {
-      // installation-state.json doesn't exist
     }
     
     // Determine wizard mode
@@ -258,6 +258,9 @@ app.get('/api/wizard/mode', async (req, res) => {
       reason = 'Configuration exists but no installation state';
     }
     
+    console.log('[MODE DETECTION] Final mode:', mode);
+    console.log('[MODE DETECTION] Reason:', reason);
+    
     // Get auto-start setting
     const autoStart = process.env.WIZARD_AUTO_START === 'true';
     
@@ -287,10 +290,60 @@ app.get('/api/wizard/mode', async (req, res) => {
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
+  // Helper function to clear wizardRunning flag
+  const clearWizardRunningFlag = async (phase = 'error') => {
+    try {
+      const { SharedStateManager } = require('../../shared/lib/state-manager');
+      const paths = pathResolver.getPaths();
+      const statePath = paths.installationState;
+      const stateManager = new SharedStateManager(statePath);
+      const currentState = await stateManager.readState();
+      if (currentState) {
+        await stateManager.updateState({ 
+          wizardRunning: false,
+          phase: phase
+        });
+        console.log(`[INSTALL] wizardRunning flag cleared (phase: ${phase})`);
+      }
+    } catch (error) {
+      console.error('[INSTALL] Error clearing wizardRunning flag:', error);
+    }
+  };
+
   // Handle installation progress streaming
   socket.on('install:start', async (data) => {
     try {
       const { config, profiles } = data;
+      
+      // Set wizardRunning flag at start of installation
+      try {
+        const { SharedStateManager } = require('../../shared/lib/state-manager');
+        const paths = pathResolver.getPaths();
+        const statePath = paths.installationState;
+        const stateManager = new SharedStateManager(statePath);
+        
+        // Check if state exists, if so update it, otherwise create minimal state
+        const currentState = await stateManager.readState();
+        if (currentState) {
+          await stateManager.updateState({ wizardRunning: true });
+        } else {
+          // Create minimal state for new installation
+          await stateManager.writeState({
+            version: '1.0.0',
+            installedAt: new Date().toISOString(),
+            lastModified: new Date().toISOString(),
+            phase: 'installing',
+            profiles: { selected: profiles || [], count: (profiles || []).length },
+            configuration: { network: 'mainnet', publicNode: false, hasIndexers: false, hasArchive: false, hasMining: false },
+            services: [],
+            summary: { total: 0, running: 0, stopped: 0, missing: 0 },
+            wizardRunning: true
+          });
+        }
+        console.log('[INSTALL] wizardRunning flag set to true');
+      } catch (error) {
+        console.error('[INSTALL] Error setting wizardRunning flag:', error);
+      }
       
       socket.emit('install:progress', {
         stage: 'init',
@@ -301,6 +354,7 @@ io.on('connection', (socket) => {
       // Save configuration
       const configValidation = await configGenerator.validateConfig(config);
       if (!configValidation.valid) {
+        await clearWizardRunningFlag('error');
         socket.emit('install:error', {
           stage: 'config',
           message: 'Invalid configuration',
@@ -310,7 +364,8 @@ io.on('connection', (socket) => {
       }
 
       const envContent = await configGenerator.generateEnvFile(configValidation.config, profiles);
-      const envPath = path.resolve(__dirname, '../../../../.env');
+      const installPaths = pathResolver.getPaths();
+      const envPath = installPaths.env;
       const saveResult = await configGenerator.saveEnvFile(envContent, envPath);
 
       if (!saveResult.success) {
@@ -324,7 +379,7 @@ io.on('connection', (socket) => {
 
       // Generate and save docker-compose.yml
       const composeContent = await configGenerator.generateDockerCompose(configValidation.config, profiles);
-      const composePath = path.resolve(__dirname, '../../../../docker-compose.yml');
+      const composePath = installPaths.dockerCompose;
       const composeResult = await configGenerator.saveDockerCompose(composeContent, composePath);
 
       if (!composeResult.success) {
@@ -577,8 +632,12 @@ io.on('connection', (socket) => {
           infrastructureSummary: infrastructureSummary
         }
       });
+      
+      // Clear wizardRunning flag after successful installation
+      await clearWizardRunningFlag('complete');
 
     } catch (error) {
+      await clearWizardRunningFlag('error');
       socket.emit('install:error', {
         stage: 'unknown',
         message: 'Installation failed',

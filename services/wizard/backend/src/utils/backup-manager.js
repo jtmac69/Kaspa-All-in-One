@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
+const { createResolver } = require('../../../../shared/lib/path-resolver');
 
 const execAsync = promisify(exec);
 
@@ -12,8 +13,12 @@ const execAsync = promisify(exec);
  */
 class BackupManager {
   constructor() {
-    this.projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
-    this.backupDir = path.join(this.projectRoot, '.kaspa-backups');
+    // Use centralized path resolver for consistent path resolution
+    const resolver = createResolver(__dirname);
+    const paths = resolver.getPaths();
+    
+    this.projectRoot = paths.root;
+    this.backupDir = paths.backupDir;
   }
 
   /**

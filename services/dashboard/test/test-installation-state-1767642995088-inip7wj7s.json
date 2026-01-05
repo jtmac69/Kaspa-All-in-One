@@ -1,0 +1,109 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-01-24T14:56:49.243Z",
+  "lastModified": "2026-01-05T19:56:35.245Z",
+  "phase": "complete",
+  "profiles": {
+    "selected": [
+      "management",
+      "archive-node",
+      "mining"
+    ],
+    "count": 4
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": false,
+    "hasIndexers": true,
+    "hasArchive": false,
+    "hasMining": true,
+    "kaspaNodePort": 16110
+  },
+  "services": [
+    {
+      "name": "kaspa-node",
+      "displayName": "q)Rvw",
+      "profile": "archive-node",
+      "type": "Proxy",
+      "running": false,
+      "exists": false,
+      "containerName": "%7H\\S^STN{&l=3",
+      "ports": [
+        2831,
+        29297
+      ]
+    },
+    {
+      "name": "kaspa-explorer",
+      "displayName": null,
+      "profile": "kaspa-user-applications",
+      "type": "Application",
+      "running": false,
+      "exists": false,
+      "containerName": null,
+      "ports": [
+        1438,
+        55126
+      ]
+    },
+    {
+      "name": "kasia-indexer",
+      "displayName": "NuKYEWal'Nj<;X",
+      "profile": null,
+      "type": "Proxy",
+      "running": true,
+      "exists": false,
+      "containerName": "Zy$W@gv]Z{TcQ",
+      "ports": [
+        17517,
+        19703,
+        7535
+      ]
+    },
+    {
+      "name": "pgadmin",
+      "displayName": null,
+      "profile": "management",
+      "type": "Mining",
+      "running": true,
+      "exists": false,
+      "containerName": null,
+      "ports": [
+        48187,
+        34713,
+        1979
+      ]
+    },
+    {
+      "name": "simply-kaspa-indexer",
+      "displayName": "7GPlY3[*C\"0y&",
+      "profile": null,
+      "type": "Management",
+      "running": false,
+      "exists": true,
+      "containerName": null,
+      "ports": [
+        54872,
+        36722,
+        28814
+      ]
+    },
+    {
+      "name": "archive-indexer",
+      "displayName": "t1b|SO$5m",
+      "profile": "archive-node",
+      "type": "Management",
+      "running": false,
+      "exists": false,
+      "containerName": null,
+      "ports": null
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "running": 2,
+    "stopped": 9,
+    "missing": 14
+  },
+  "wizardRunning": null
+}

@@ -1,0 +1,119 @@
+{
+  "version": "1.0.0",
+  "installedAt": "1970-01-01T00:00:00.052Z",
+  "lastModified": "2026-01-05T16:39:22.689Z",
+  "phase": "error",
+  "profiles": {
+    "selected": [
+      "management",
+      "core",
+      "core"
+    ],
+    "count": 1
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": false,
+    "hasIndexers": false,
+    "hasArchive": true,
+    "hasMining": true,
+    "kaspaNodePort": 16111
+  },
+  "services": [
+    {
+      "name": "k-indexer",
+      "displayName": "Aid",
+      "profile": "core",
+      "type": "Application",
+      "running": false,
+      "exists": false,
+      "containerName": "aIa@{FB4TeOT%4",
+      "ports": [
+        46823,
+        25180
+      ]
+    },
+    {
+      "name": "timescaledb",
+      "displayName": "r9#",
+      "profile": "indexer-services",
+      "type": "Wallet",
+      "running": true,
+      "exists": false,
+      "containerName": "0%%9#rd$W\\",
+      "ports": [
+        55616
+      ]
+    },
+    {
+      "name": "kaspa-stratum",
+      "displayName": "@'t)qXD%vE*G`x#",
+      "profile": "mining",
+      "type": "Mining",
+      "running": false,
+      "exists": true,
+      "containerName": null,
+      "ports": [
+        63473
+      ]
+    },
+    {
+      "name": "wallet",
+      "displayName": "0;{59",
+      "profile": "mining",
+      "type": "Wallet",
+      "running": true,
+      "exists": false,
+      "containerName": "dM\\NAJP'tp~l",
+      "ports": []
+    },
+    {
+      "name": "dashboard",
+      "displayName": "*YI8qA#8`}rQV",
+      "profile": "indexer-services",
+      "type": null,
+      "running": false,
+      "exists": false,
+      "containerName": ":po8|I &j{K6\"mU:",
+      "ports": [
+        25421,
+        50375
+      ]
+    },
+    {
+      "name": "portainer",
+      "displayName": "jABW",
+      "profile": "archive-node",
+      "type": "Database",
+      "running": true,
+      "exists": false,
+      "containerName": "<C'kK8Ez&r-B@.TX",
+      "ports": [
+        61603,
+        34388,
+        20344
+      ]
+    },
+    {
+      "name": "indexer-db",
+      "displayName": "~W6>0Iz?\"ld!|1W",
+      "profile": "archive-node",
+      "type": "Mining",
+      "running": true,
+      "exists": false,
+      "containerName": "x6@n?z\"N",
+      "ports": [
+        40824,
+        17920,
+        62140
+      ]
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "running": 3,
+    "stopped": 2,
+    "missing": 13
+  },
+  "wizardRunning": false
+}

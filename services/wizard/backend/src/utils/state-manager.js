@@ -6,14 +6,17 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+const { createResolver } = require('../../../../shared/lib/path-resolver');
 
 class StateManager {
   constructor() {
-    // Use PROJECT_ROOT env var, or go up 5 levels from backend/src/utils to project root
-    // Path: backend/src/utils -> backend/src -> backend -> wizard -> services -> project root
-    this.projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
-    this.stateDir = path.join(this.projectRoot, '.kaspa-aio');
-    this.stateFile = path.join(this.stateDir, 'wizard-state.json');
+    // Use centralized path resolver for consistent path resolution
+    const resolver = createResolver(__dirname);
+    const paths = resolver.getPaths();
+    
+    this.projectRoot = paths.root;
+    this.stateDir = paths.kaspaAioDir;
+    this.stateFile = paths.wizardState;
     this.maxStateHistory = 10; // Keep last 10 state snapshots
     
     console.log(`StateManager initialized with project root: ${this.projectRoot}`);

@@ -6,12 +6,14 @@
 import { APIClient } from './modules/api-client.js';
 import { WebSocketManager } from './modules/websocket-manager.js';
 import { UIManager } from './modules/ui-manager.js';
+import { WizardNavigation } from './modules/wizard-navigation.js';
 
 class Dashboard {
     constructor() {
         this.api = new APIClient();
         this.ws = new WebSocketManager();
         this.ui = new UIManager();
+        this.wizardNav = new WizardNavigation();
         
         this.currentFilter = 'all';
         this.updateInterval = null;
@@ -25,6 +27,9 @@ class Dashboard {
 
         // Initialize UI
         this.ui.init();
+
+        // Initialize wizard navigation
+        this.wizardNav.init();
 
         // Setup event listeners
         this.setupEventListeners();
@@ -87,7 +92,7 @@ class Dashboard {
 
         const refreshBtn = document.getElementById('refresh-services');
         if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.refreshServices());
+            refreshBtn.addEventListener('click', () => this.manualRefresh());
         }
 
         // Quick actions
@@ -130,6 +135,98 @@ class Dashboard {
             }
         });
 
+        // Handle configuration changes from state file watching
+        this.ws.on('configuration_changed', (data) => {
+            console.log('Configuration changed:', data);
+            
+            // Show notification about the change
+            const message = data.error 
+                ? `Configuration changed but refresh failed: ${data.error}`
+                : data.message || 'Configuration updated';
+            
+            this.ui.showNotification(message, data.error ? 'warning' : 'info');
+            
+            // Update services display
+            if (data.hasInstallation) {
+                this.ui.updateServices(data.services || [], this.currentFilter);
+                // Reload profiles to get updated counts
+                this.loadProfiles();
+            } else {
+                this.ui.showNoInstallation();
+            }
+            
+            // Update installation state info if available
+            if (data.installationState) {
+                this.updateInstallationInfo(data.installationState);
+            }
+        });
+
+        // Handle dashboard refresh requests
+        this.ws.on('dashboard_refresh_needed', (data) => {
+            console.log('Dashboard refresh needed:', data);
+            
+            // Show notification
+            this.ui.showNotification('Configuration changed - refreshing dashboard...', 'info');
+            
+            // Refresh services after a short delay to allow file operations to complete
+            setTimeout(() => {
+                this.refreshServices();
+            }, 1000);
+        });
+
+        // Handle manual refresh completion
+        this.ws.on('manual_refresh_completed', (data) => {
+            console.log('Manual refresh completed:', data);
+            
+            // Update services display
+            if (data.hasInstallation) {
+                this.ui.updateServices(data.services || [], this.currentFilter);
+                // Reload profiles to get updated counts
+                this.loadProfiles();
+            } else {
+                this.ui.showNoInstallation();
+            }
+            
+            // Update installation state info if available
+            if (data.installationState) {
+                this.updateInstallationInfo(data.installationState);
+            }
+        });
+
+        // Handle state watch errors
+        this.ws.on('state_watch_error', (data) => {
+            console.error('State watch error:', data);
+            this.ui.showNotification('Error monitoring configuration changes', 'error');
+        });
+
+        // Handle Kaspa node connection events
+        this.ws.on('kaspa_node_unavailable', (data) => {
+            console.log('Kaspa node unavailable:', data);
+            this.ui.showNotification('Kaspa node unavailable - retrying connection...', 'warning');
+            
+            // Update node status to show unavailable
+            this.ui.updateNodeStatus({ error: 'Node unavailable' }, { 
+                connected: false, 
+                error: data.error,
+                status: 'disconnected'
+            });
+        });
+
+        this.ws.on('kaspa_node_reconnected', (data) => {
+            console.log('Kaspa node reconnected:', data);
+            this.ui.showNotification(`Kaspa node reconnected on port ${data.port}`, 'success');
+            
+            // Refresh Kaspa info to show updated status
+            setTimeout(() => {
+                this.loadKaspaInfo();
+            }, 2000); // Wait 2 seconds for connection to stabilize
+        });
+
+        this.ws.on('kaspa_node_restored', (data) => {
+            console.log('Kaspa node connection restored:', data);
+            this.ui.showNotification('Kaspa node connection restored', 'success');
+        });
+
         this.ws.on('alert', (data) => {
             this.handleAlert(data);
         });
@@ -144,8 +241,14 @@ class Dashboard {
      */
     async loadInitialData() {
         try {
+            // Load installation state first to check wizard running status
+            await this.loadInstallationState();
+
             // Load services
             await this.refreshServices();
+
+            // Load profiles for filter dropdown
+            await this.loadProfiles();
 
             // Load Kaspa info
             await this.loadKaspaInfo();
@@ -165,14 +268,95 @@ class Dashboard {
     }
 
     /**
+     * Load installation state
+     */
+    async loadInstallationState() {
+        try {
+            const response = await this.api.getInstallationState();
+            if (response.exists && response.state) {
+                this.updateInstallationInfo(response.state);
+            }
+        } catch (error) {
+            console.warn('Failed to load installation state:', error);
+        }
+    }
+
+    /**
+     * Load profiles for filter dropdown
+     */
+    async loadProfiles() {
+        try {
+            const profiles = await this.api.getProfiles();
+            this.ui.updateProfileFilter(profiles);
+        } catch (error) {
+            console.error('Failed to load profiles:', error);
+        }
+    }
+
+    /**
      * Refresh services
      */
     async refreshServices() {
         try {
-            const services = await this.api.getServiceStatus();
+            const response = await this.api.getServiceStatus();
+            
+            // Check if no installation detected
+            if (response.noInstallation) {
+                this.ui.showNoInstallation();
+                return;
+            }
+            
+            // Normal service display
+            const services = response.services || response;
             this.ui.updateServices(services, this.currentFilter);
         } catch (error) {
             console.error('Failed to refresh services:', error);
+        }
+    }
+
+    /**
+     * Manual refresh - calls the backend refresh endpoint
+     */
+    async manualRefresh() {
+        try {
+            this.ui.showNotification('Refreshing dashboard...', 'info');
+            
+            const response = await this.api.post('/api/installation/refresh');
+            
+            if (response.success) {
+                // The WebSocket will handle the actual UI update via manual_refresh_completed event
+                console.log('Manual refresh initiated successfully');
+            } else {
+                this.ui.showNotification('Failed to refresh dashboard', 'error');
+            }
+        } catch (error) {
+            console.error('Failed to manually refresh:', error);
+            this.ui.showNotification('Failed to refresh dashboard', 'error');
+        }
+    }
+
+    /**
+     * Update installation info display
+     */
+    updateInstallationInfo(installationState) {
+        // Update any installation-specific UI elements
+        if (installationState.wizardRunning) {
+            this.ui.showNotification('Configuration in progress - some operations may be disabled', 'warning');
+        }
+        
+        // Update wizard running indicator
+        this.wizardNav.updateWizardRunningIndicator(installationState.wizardRunning || false);
+        
+        // Update profile filter when profiles change
+        if (installationState.profiles && installationState.profiles.selected) {
+            this.loadProfiles(); // Reload profiles to get updated counts
+        }
+        
+        // Update last modified timestamp if there's a display element for it
+        const lastModified = document.getElementById('last-modified');
+        if (lastModified && installationState.lastModified) {
+            const date = new Date(installationState.lastModified);
+            lastModified.textContent = `Last updated: ${date.toLocaleString()}`;
         }
     }
 
@@ -181,13 +365,17 @@ class Dashboard {
      */
     async loadKaspaInfo() {
         try {
-            const [info, stats] = await Promise.all([
-                this.api.getKaspaInfo(),
-                this.api.getKaspaStats()
+            const [info, stats, connectionStatus] = await Promise.all([
+                this.api.getKaspaNodeInfo(),
+                this.api.getKaspaNodeStats(),
+                this.api.getKaspaConnectionStatus()
             ]);
 
             if (!info.error) {
-                this.ui.updateNodeStatus(info);
+                this.ui.updateNodeStatus(info, connectionStatus);
+            } else {
+                // Show connection troubleshooting if available
+                this.ui.updateNodeStatus(info, connectionStatus);
             }
 
             if (!stats.error) {
@@ -382,6 +570,28 @@ class Dashboard {
     async backupData() {
         this.ui.showNotification('Creating backup...', 'info');
         // Implement backup
+    }
+
+    /**
+     * Test Kaspa connection
+     */
+    async testKaspaConnection() {
+        try {
+            this.ui.showNotification('Testing Kaspa node connection...', 'info');
+            
+            const result = await this.api.testKaspaConnection();
+            
+            if (result.success) {
+                this.ui.showNotification('Connection test successful!', 'success');
+                // Refresh Kaspa info to show updated connection status
+                await this.loadKaspaInfo();
+            } else {
+                this.ui.showNotification(`Connection test failed: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Connection test failed:', error);
+            this.ui.showNotification('Connection test failed', 'error');
+        }
     }
 
     /**

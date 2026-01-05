@@ -3083,3 +3083,537 @@ nhanced header controls */
         justify-content: center;
     }
 }
+
+
+/* No Installation Message */
+.no-installation-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 40px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    min-height: 400px;
+}
+
+.no-installation-message .message-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.8;
+}
+
+.no-installation-message h2 {
+    color: #2d3748;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.no-installation-message p {
+    color: #4a5568;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 10px;
+    max-width: 600px;
+}
+
+.no-installation-message .message-actions {
+    margin-top: 30px;
+}
+
+.no-installation-message .btn-primary {
+    display: inline-block;
+    padding: 15px 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.no-installation-message .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.no-installation-message .btn-primary:active {
+    transform: translateY(0);
+}
+/* Kaspa Connection Information Styles */
+.connection-info {
+    margin-top: 15px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    border-left: 4px solid #70C7BA;
+}
+
+.connection-status {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.connection-status.connected .status-indicator {
+    color: #48bb78;
+}
+
+.connection-status.disconnected .status-indicator {
+    color: #f56565;
+}
+
+.connection-url {
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'Courier New', monospace;
+}
+
+.connection-error {
+    font-size: 0.9em;
+    color: #fed7d7;
+    background: rgba(245, 101, 101, 0.2);
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.troubleshooting-info {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(245, 101, 101, 0.1);
+    border-radius: 8px;
+    border-left: 4px solid #f56565;
+}
+
+.troubleshooting-header {
+    font-weight: 600;
+    color: #f56565;
+    margin-bottom: 10px;
+}
+
+.troubleshooting-list {
+    list-style: none;
+    margin: 10px 0;
+}
+
+.troubleshooting-list li {
+    padding: 5px 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9em;
+}
+
+.troubleshooting-list li:before {
+    content: "• ";
+    color: #f56565;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.test-connection-btn {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background: #70C7BA;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+}
+
+.test-connection-btn:hover {
+    background: #49C8B5;
+}
+
+.test-connection-btn:active {
+    transform: translateY(1px);
+}
+
+/* Status indicator improvements */
+.status-indicator.connected .dot {
+    background: #48bb78;
+    box-shadow: 0 0 8px rgba(72, 187, 120, 0.5);
+}
+
+.status-indicator.disconnected .dot {
+    background: #f56565;
+    box-shadow: 0 0 8px rgba(245, 101, 101, 0.5);
+    animation: pulse-error 2s infinite;
+}
+
+@keyframes pulse-error {
+    0% {
+        box-shadow: 0 0 8px rgba(245, 101, 101, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(245, 101, 101, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 8px rgba(245, 101, 101, 0.5);
+    }
+}
+
+
+/* ============================================================================
+   Service Type and Profile Badges - Task 9.2
+   ============================================================================ */
+
+/* Service Badges Container */
+.service-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+/* Service Type Badge Base Styles */
+.service-type-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+/* Service Type Badge Colors */
+.service-type-badge.type-node {
+    background: linear-gradient(135deg, #70C7BA 0%, #49C8B5 100%);
+    color: white;
+}
+
+.service-type-badge.type-database {
+    background: linear-gradient(135deg, #7B61FF 0%, #5B41DF 100%);
+    color: white;
+}
+
+.service-type-badge.type-indexer {
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    color: white;
+}
+
+.service-type-badge.type-application {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+}
+
+.service-type-badge.type-mining {
+    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+    color: white;
+}
+
+.service-type-badge.type-proxy {
+    background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
+    color: white;
+}
+
+.service-type-badge.type-management {
+    background: linear-gradient(135deg, #667eea 0%, #5a67d8 100%);
+    color: white;
+}
+
+.service-type-badge.type-wallet {
+    background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+    color: white;
+}
+
+.service-type-badge.type-other {
+    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+    color: white;
+}
+
+/* Profile Badge Styles */
+.profile-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+/* Profile Badge Colors */
+.profile-badge.profile-core {
+    background: rgba(112, 199, 186, 0.15);
+    color: #49C8B5;
+    border-color: rgba(112, 199, 186, 0.3);
+}
+
+.profile-badge.profile-archive {
+    background: rgba(245, 166, 35, 0.15);
+    color: #dd6b20;
+    border-color: rgba(245, 166, 35, 0.3);
+}
+
+.profile-badge.profile-indexer {
+    background: rgba(66, 153, 225, 0.15);
+    color: #3182ce;
+    border-color: rgba(66, 153, 225, 0.3);
+}
+
+.profile-badge.profile-applications {
+    background: rgba(72, 187, 120, 0.15);
+    color: #38a169;
+    border-color: rgba(72, 187, 120, 0.3);
+}
+
+.profile-badge.profile-mining {
+    background: rgba(237, 137, 54, 0.15);
+    color: #c05621;
+    border-color: rgba(237, 137, 54, 0.3);
+}
+
+.profile-badge.profile-management {
+    background: rgba(102, 126, 234, 0.15);
+    color: #5a67d8;
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.profile-badge.profile-other {
+    background: rgba(160, 174, 192, 0.15);
+    color: #718096;
+    border-color: rgba(160, 174, 192, 0.3);
+}
+
+/* ============================================================================
+   Service Grouping Styles - Task 9.2
+   ============================================================================ */
+
+/* Service Group Container */
+.service-group {
+    margin-bottom: 24px;
+}
+
+.service-group:last-child {
+    margin-bottom: 0;
+}
+
+/* Service Group Header */
+.service-group-header {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.service-group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+}
+
+.group-count {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #718096;
+}
+
+/* Group Badge Styles */
+.group-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+}
+
+/* Group Badge Colors - Type */
+.group-badge.type-node {
+    background: linear-gradient(135deg, #70C7BA 0%, #49C8B5 100%);
+}
+
+.group-badge.type-database {
+    background: linear-gradient(135deg, #7B61FF 0%, #5B41DF 100%);
+}
+
+.group-badge.type-indexer {
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+}
+
+.group-badge.type-application {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+}
+
+.group-badge.type-mining {
+    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+}
+
+.group-badge.type-proxy {
+    background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
+}
+
+.group-badge.type-management {
+    background: linear-gradient(135deg, #667eea 0%, #5a67d8 100%);
+}
+
+.group-badge.type-wallet {
+    background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+}
+
+.group-badge.type-other {
+    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+}
+
+/* Group Badge Colors - Profile */
+.group-badge.profile-core {
+    background: linear-gradient(135deg, #70C7BA 0%, #49C8B5 100%);
+}
+
+.group-badge.profile-archive {
+    background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+}
+
+.group-badge.profile-indexer {
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+}
+
+.group-badge.profile-applications {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+}
+
+.group-badge.profile-mining {
+    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+}
+
+.group-badge.profile-management {
+    background: linear-gradient(135deg, #667eea 0%, #5a67d8 100%);
+}
+
+.group-badge.profile-other {
+    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+}
+
+/* No Services Message */
+.no-services-message {
+    text-align: center;
+    padding: 40px 20px;
+    background: #f7fafc;
+    border-radius: 10px;
+    color: #718096;
+    font-size: 1rem;
+}
+
+/* Container Name in Service Info */
+.container-name {
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    background: #f7fafc;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+/* Service Info Row Enhancements */
+.service-info {
+    margin-bottom: 12px;
+}
+
+.service-info .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 0.85rem;
+}
+
+.service-info .info-row .label {
+    color: #718096;
+    font-weight: 500;
+}
+
+.service-info .info-row .value {
+    color: #2d3748;
+    font-weight: 500;
+}
+
+/* Service Error Styling */
+.service-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: rgba(245, 101, 101, 0.1);
+    border: 1px solid rgba(245, 101, 101, 0.3);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #c53030;
+}
+
+.service-error .error-icon {
+    flex-shrink: 0;
+}
+
+.service-error .error-text {
+    flex: 1;
+}
+
+/* Responsive Adjustments for Badges */
+@media (max-width: 767px) {
+    .service-badges {
+        gap: 4px;
+    }
+    
+    .service-type-badge,
+    .profile-badge {
+        padding: 2px 6px;
+        font-size: 0.65rem;
+    }
+    
+    .group-badge {
+        padding: 3px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .service-group-header {
+        margin-bottom: 10px;
+    }
+    
+    .service-group-title {
+        font-size: 0.9rem;
+    }
+    
+    .group-count {
+        font-size: 0.8rem;
+    }
+}
+
+/* High Contrast Mode Support for Badges */
+@media (prefers-contrast: high) {
+    .service-type-badge,
+    .profile-badge,
+    .group-badge {
+        border: 2px solid currentColor;
+    }
+    
+    .service-group-header {
+        border-bottom: 2px solid #2d3748;
+    }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    .service-type-badge,
+    .profile-badge,
+    .group-badge {
+        transition: none;
+    }
+}

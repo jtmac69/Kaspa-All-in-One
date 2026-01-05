@@ -53,6 +53,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('wizardVersion', WIZARD_VERSION);
     }
     
+    // Initialize launch context from URL parameters
+    const { initializeLaunchContext } = await import('./modules/launch-context.js');
+    const launchContext = initializeLaunchContext();
+    
     // Detect wizard mode
     const wizardMode = await detectWizardMode();
     console.log('Wizard mode:', wizardMode);
@@ -61,6 +65,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     stateManager.set('wizardMode', wizardMode.mode);
     stateManager.set('wizardModeInfo', wizardMode);
     
+    // Apply launch context to wizard mode if present
+    if (launchContext) {
+        console.log('Launch context detected:', launchContext);
+        
+        // If context specifies an action, ensure we're in reconfiguration mode
+        if (launchContext.action && launchContext.action !== 'view') {
+            stateManager.set('wizardMode', 'reconfigure');
+            wizardMode.mode = 'reconfigure';
+        }
+    }
+    
     // Initialize modules
     initNavigation();
     initNavigationFooter();
@@ -68,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Handle different modes
     if (wizardMode.mode === 'reconfigure') {
-        await handleReconfigurationMode(wizardMode);
+        await handleReconfigurationMode(wizardMode, launchContext);
     } else if (wizardMode.mode === 'update') {
         await handleUpdateMode(wizardMode);
     } else {
@@ -260,11 +275,25 @@ function setupEventListeners() {
         // Display validation results when entering complete step
         if (stepId === 'complete') {
             // Small delay to ensure UI is ready
-            setTimeout(() => {
-                displayValidationResults().catch(error => {
-                    console.error('Failed to display validation results:', error);
-                    showNotification('Failed to validate services', 'error');
-                });
+            setTimeout(async () => {
+                try {
+                    // Initialize completion page with context-aware navigation
+                    const { initializeCompletionPage } = await import('./modules/complete.js');
+                    initializeCompletionPage();
+                    
+                    // Display validation results
+                    displayValidationResults().catch(error => {
+                        console.error('Failed to display validation results:', error);
+                        showNotification('Failed to validate services', 'error');
+                    });
+                } catch (error) {
+                    console.error('Failed to initialize completion page:', error);
+                    // Still try to display validation results
+                    displayValidationResults().catch(error => {
+                        console.error('Failed to display validation results:', error);
+                        showNotification('Failed to validate services', 'error');
+                    });
+                }
             }, 500);
         }
         
@@ -346,8 +375,8 @@ async function handleInitialMode(wizardMode) {
 /**
  * Handle reconfiguration mode
  */
-async function handleReconfigurationMode(wizardMode) {
-    console.log('Handling reconfiguration mode');
+async function handleReconfigurationMode(wizardMode, launchContext = null) {
+    console.log('Handling reconfiguration mode', { wizardMode, launchContext });
     
     // Update wizard title
     updateWizardTitle('Reconfigure Kaspa All-in-One');
@@ -364,14 +393,14 @@ async function handleReconfigurationMode(wizardMode) {
     ]);
     
     // Show reconfiguration landing page
-    await showReconfigurationLanding();
+    await showReconfigurationLanding(launchContext);
 }
 
 /**
  * Show reconfiguration landing page
  */
-async function showReconfigurationLanding() {
-    console.log('Showing reconfiguration landing page');
+async function showReconfigurationLanding(launchContext = null) {
+    console.log('Showing reconfiguration landing page', { launchContext });
     
     // Show the reconfiguration landing step
     const landingStep = document.getElementById('step-reconfigure-landing');
@@ -393,6 +422,11 @@ async function showReconfigurationLanding() {
         
         // Load installation state and profile information
         await loadReconfigurationData();
+        
+        // Apply launch context pre-selections if available
+        if (launchContext) {
+            applyLaunchContextToReconfiguration(launchContext);
+        }
     }
 }
 
@@ -405,14 +439,14 @@ async function loadReconfigurationData() {
         updateInstallationStatus('checking', 'Loading installation details...');
         
         // Load profile states
-        const response = await api.get('/wizard/profiles/state');
+        const response = await api.get('/wizard/profiles/status');
         
         if (response.success) {
             // Update installation summary
             updateInstallationSummary(response);
             
             // Update profile status overview
-            updateProfileStatusOverview(response.profiles);
+            updateProfileStatusOverview(response.profileStates);
             
             // Update configuration suggestions
             updateConfigurationSuggestions(response.suggestions);
@@ -430,7 +464,7 @@ async function loadReconfigurationData() {
             }
             
             // Show profile status overview if there are profiles
-            if (response.profiles && response.profiles.length > 0) {
+            if (response.profileStates && response.profileStates.length > 0) {
                 const overviewSection = document.getElementById('profile-status-overview');
                 if (overviewSection) {
                     overviewSection.style.display = 'block';
@@ -466,8 +500,8 @@ function updateInstallationSummary(data) {
     // Update summary text
     const summaryText = document.getElementById('installation-summary-text');
     if (summaryText) {
-        const installedCount = data.installedProfiles.length;
-        const totalProfiles = data.profiles.length;
+        const installedCount = data.installedProfiles?.length || 0;
+        const totalProfiles = data.profileStates?.length || 0;
         summaryText.textContent = `${installedCount} of ${totalProfiles} profiles installed`;
     }
     
@@ -612,6 +646,56 @@ function getPriorityIcon(priority) {
         case 'medium': return '🟡';
         case 'low': return '🟢';
         default: return '💡';
+    }
+}
+
+/**
+ * Apply launch context to reconfiguration landing page
+ */
+function applyLaunchContextToReconfiguration(launchContext) {
+    console.log('Applying launch context to reconfiguration:', launchContext);
+    
+    // Pre-select action based on context
+    if (launchContext.action) {
+        const actionMapping = {
+            'add': 'add-profiles',
+            'modify': 'modify-config',
+            'remove': 'remove-profiles'
+        };
+        
+        const actionId = actionMapping[launchContext.action];
+        if (actionId) {
+            // Auto-select the action
+            selectReconfigurationAction(actionId);
+            
+            // Show notification about pre-selection
+            const actionMessages = {
+                'add-profiles': 'Ready to add new services',
+                'modify-config': 'Ready to modify configuration',
+                'remove-profiles': 'Ready to remove services'
+            };
+            
+            showNotification(actionMessages[actionId] || 'Action pre-selected', 'info');
+            
+            // If we have a specific profile, show additional context
+            if (launchContext.profile) {
+                const profileMessage = launchContext.action === 'add' 
+                    ? `Adding ${launchContext.profile} profile`
+                    : launchContext.action === 'remove'
+                    ? `Removing ${launchContext.profile} profile`
+                    : `Modifying ${launchContext.profile} profile`;
+                
+                showNotification(profileMessage, 'info');
+            }
+            
+            // Auto-proceed if we have enough context
+            if (launchContext.profile && (launchContext.action === 'add' || launchContext.action === 'remove')) {
+                // Wait a moment for user to see the selection, then proceed
+                setTimeout(() => {
+                    proceedWithReconfiguration();
+                }, 2000);
+            }
+        }
     }
 }
 
@@ -1427,6 +1511,30 @@ if (typeof window !== 'undefined') {
             
             stateManager.set('selectedProfiles', selectedProfiles);
             showNotification(`Profile ${profileId} ${index > -1 ? 'deselected' : 'selected'}`, 'success');
+        }
+    };
+    
+    // Reconfiguration functions
+    window.selectReconfigurationAction = selectReconfigurationAction;
+    window.proceedWithReconfiguration = proceedWithReconfiguration;
+    window.goToInitialMode = () => {
+        // Clear reconfiguration mode and restart wizard in initial mode
+        stateManager.set('wizardMode', 'initial');
+        stateManager.set('reconfigurationAction', null);
+        window.location.href = '/?mode=initial';
+    };
+    window.applySuggestion = (suggestionId) => {
+        const reconfigData = stateManager.get('reconfigurationData');
+        if (!reconfigData || !reconfigData.suggestions) return;
+        
+        const suggestion = reconfigData.suggestions.find(s => s.id === suggestionId);
+        if (!suggestion) return;
+        
+        // Apply the suggestion based on its action
+        if (suggestion.action === 'add-profiles') {
+            stateManager.set('reconfigurationAction', 'add-profiles');
+            stateManager.set('suggestedProfiles', suggestion.context.profiles);
+            proceedWithReconfiguration();
         }
     };
     

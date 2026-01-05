@@ -625,7 +625,7 @@ export function showServiceManagementGuide() {
 
 /**
  * Open dashboard in new tab
- * Checks if dashboard is running and starts it if needed
+ * Provides dashboard URL for manual navigation instead of auto-opening
  */
 export async function openDashboard() {
     try {
@@ -641,12 +641,8 @@ export async function openDashboard() {
                 mode: 'no-cors' // Avoid CORS issues for simple check
             });
             
-            // Dashboard is accessible, open it
-            // Use location.href instead of window.open to avoid pop-up blockers
-            showNotification('Opening dashboard...', 'success');
-            setTimeout(() => {
-                window.location.href = dashboardUrl;
-            }, 1000);
+            // Dashboard is accessible, show success message
+            showNotification('Dashboard is ready! Click the link above to access it.', 'success');
             
         } catch (error) {
             // Dashboard is not running, try to start it
@@ -657,12 +653,7 @@ export async function openDashboard() {
                 const startResponse = await api.post('/wizard/start');
                 
                 if (startResponse.success) {
-                    showNotification('Dashboard started successfully!', 'success');
-                    
-                    // Wait a moment for dashboard to initialize
-                    setTimeout(() => {
-                        window.location.href = dashboardUrl;
-                    }, 2000);
+                    showNotification('Dashboard started successfully! Click the link above to access it.', 'success');
                 } else {
                     showNotification('Failed to start dashboard. Please start it manually: npm start in services/dashboard', 'error', 10000);
                 }
@@ -674,8 +665,8 @@ export async function openDashboard() {
         }
         
     } catch (error) {
-        console.error('Error opening dashboard:', error);
-        showNotification('Error opening dashboard', 'error');
+        console.error('Error checking dashboard:', error);
+        showNotification('Error checking dashboard status', 'error');
     }
 }
 
@@ -1111,4 +1102,101 @@ if (typeof window !== 'undefined') {
     window.startTour = startTour;
     window.skipTour = skipTour;
     window.startDashboardTour = startDashboardTour;
+}
+/**
+ * Copy dashboard URL to clipboard
+ */
+export function copyDashboardUrl() {
+    const urlInput = document.getElementById('dashboard-url');
+    if (!urlInput) {
+        showNotification('Unable to copy URL', 'error');
+        return;
+    }
+    
+    try {
+        // Select and copy the URL
+        urlInput.select();
+        urlInput.setSelectionRange(0, 99999); // For mobile devices
+        
+        // Try modern clipboard API first
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(urlInput.value).then(() => {
+                showNotification('Dashboard URL copied to clipboard!', 'success');
+            }).catch(() => {
+                // Fallback to execCommand
+                document.execCommand('copy');
+                showNotification('Dashboard URL copied to clipboard!', 'success');
+            });
+        } else {
+            // Fallback to execCommand
+            document.execCommand('copy');
+            showNotification('Dashboard URL copied to clipboard!', 'success');
+        }
+    } catch (error) {
+        console.error('Failed to copy URL:', error);
+        showNotification('Failed to copy URL. Please copy manually.', 'error');
+    }
+}
+
+// Export for global access
+if (typeof window !== 'undefined') {
+    window.copyDashboardUrl = copyDashboardUrl;
+}
+/**
+ * Handle completion navigation - either return to previous page or go to dashboard
+ */
+export async function handleCompletionNavigation() {
+    try {
+        // Import launch context module
+        const { getReturnUrl, navigateToReturnUrl } = await import('./launch-context.js');
+        
+        // Check if we have a return URL
+        const returnUrl = getReturnUrl();
+        
+        if (returnUrl) {
+            // Navigate back to the return URL (likely Dashboard)
+            showNotification('Returning to previous page...', 'info');
+            const navigated = navigateToReturnUrl();
+            
+            if (!navigated) {
+                // Fallback to dashboard if navigation failed
+                window.location.href = 'http://localhost:8080';
+            }
+        } else {
+            // No return URL, go to dashboard
+            window.location.href = 'http://localhost:8080';
+        }
+    } catch (error) {
+        console.error('Error handling completion navigation:', error);
+        // Fallback to dashboard
+        window.location.href = 'http://localhost:8080';
+    }
+}
+
+/**
+ * Initialize completion page with context-aware navigation
+ */
+export function initializeCompletionPage() {
+    try {
+        // Import launch context module and check for return URL
+        import('./launch-context.js').then(({ getReturnUrl }) => {
+            const returnUrl = getReturnUrl();
+            const navText = document.getElementById('completion-nav-text');
+            
+            if (returnUrl && navText) {
+                // Update button text to indicate return navigation
+                navText.textContent = 'Return to Dashboard';
+            }
+        }).catch(error => {
+            console.warn('Could not load launch context:', error);
+        });
+    } catch (error) {
+        console.warn('Error initializing completion page:', error);
+    }
+}
+
+// Export for global access
+if (typeof window !== 'undefined') {
+    window.handleCompletionNavigation = handleCompletionNavigation;
+    window.initializeCompletionPage = initializeCompletionPage;
 }

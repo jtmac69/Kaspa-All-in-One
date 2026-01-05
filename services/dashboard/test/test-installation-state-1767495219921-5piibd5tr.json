@@ -1,0 +1,95 @@
+{
+  "version": "1.0.0",
+  "installedAt": "+047483-06-09T19:42:55.288Z",
+  "lastModified": "2026-01-04T02:53:40.089Z",
+  "phase": "installing",
+  "profiles": {
+    "selected": [
+      "core"
+    ],
+    "count": 1
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": true,
+    "hasIndexers": false,
+    "hasArchive": false,
+    "hasMining": false,
+    "kaspaNodePort": 16113
+  },
+  "services": [
+    {
+      "name": "archive-indexer",
+      "displayName": "^iBU5:K%2S<u]",
+      "profile": null,
+      "type": "Wallet",
+      "running": false,
+      "exists": false,
+      "containerName": "V<vF $bbt\";M[X0`",
+      "ports": [
+        41984,
+        46301,
+        17401
+      ]
+    },
+    {
+      "name": "timescaledb",
+      "displayName": null,
+      "profile": "indexer-services",
+      "type": null,
+      "running": true,
+      "exists": true,
+      "containerName": ".dQYyD/k`H:VMy#",
+      "ports": [
+        17529,
+        12093,
+        32828
+      ]
+    },
+    {
+      "name": "kaspa-node",
+      "displayName": null,
+      "profile": "archive-node",
+      "type": "Management",
+      "running": false,
+      "exists": false,
+      "containerName": "9+Hnu'4LXAB\"",
+      "ports": [
+        42895,
+        49871,
+        46317
+      ]
+    },
+    {
+      "name": "kasia-indexer",
+      "displayName": null,
+      "profile": "kaspa-user-applications",
+      "type": "Node",
+      "running": false,
+      "exists": false,
+      "containerName": "KY$kIw}TgVT",
+      "ports": null
+    },
+    {
+      "name": "kaspa-archive-node",
+      "displayName": "<@SpdIo",
+      "profile": "mining",
+      "type": "Wallet",
+      "running": true,
+      "exists": true,
+      "containerName": "#nBO0IPx}pH:+ipjC7Q",
+      "ports": [
+        34741,
+        12178,
+        40949
+      ]
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "running": 6,
+    "stopped": 10,
+    "missing": 2
+  },
+  "wizardRunning": false
+}

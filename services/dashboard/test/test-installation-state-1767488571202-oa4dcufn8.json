@@ -1,0 +1,89 @@
+{
+  "version": "1.0.0",
+  "installedAt": "-154201-01-17T11:29:51.580Z",
+  "lastModified": "2026-01-04T01:02:51.300Z",
+  "phase": "installing",
+  "profiles": {
+    "selected": [
+      "kaspa-user-applications",
+      "indexer-services",
+      "archive-node",
+      "archive-node"
+    ],
+    "count": 1
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": false,
+    "hasIndexers": true,
+    "hasArchive": false,
+    "hasMining": false,
+    "kaspaNodePort": 16114
+  },
+  "services": [
+    {
+      "name": "wallet",
+      "displayName": "tQ6b+ F_^Dt,i6",
+      "profile": null,
+      "type": null,
+      "running": false,
+      "exists": false,
+      "containerName": "fhJc,S",
+      "ports": null
+    },
+    {
+      "name": "kaspa-nginx",
+      "displayName": "B}B",
+      "profile": "management",
+      "type": "Wallet",
+      "running": true,
+      "exists": true,
+      "containerName": null,
+      "ports": [
+        49211,
+        32044,
+        29909
+      ]
+    },
+    {
+      "name": "pgadmin",
+      "displayName": "6E*a7&n)=G>0AUi",
+      "profile": "management",
+      "type": null,
+      "running": true,
+      "exists": true,
+      "containerName": " [#o%)8h>N",
+      "ports": null
+    },
+    {
+      "name": "kasia-app",
+      "displayName": "iEUm",
+      "profile": "management",
+      "type": "Management",
+      "running": false,
+      "exists": false,
+      "containerName": "NZPV`kK<A/-qSC,",
+      "ports": [
+        42336,
+        20426
+      ]
+    },
+    {
+      "name": "timescaledb",
+      "displayName": "8kWZ5^{Pg:.7'",
+      "profile": "mining",
+      "type": null,
+      "running": true,
+      "exists": false,
+      "containerName": "D3/VAG'}2O'",
+      "ports": []
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "running": 0,
+    "stopped": 8,
+    "missing": 12
+  },
+  "wizardRunning": true
+}

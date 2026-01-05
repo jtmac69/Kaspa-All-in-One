@@ -12,13 +12,15 @@ describe('KaspaNodeClient', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize with default RPC URL', () => {
+    it('should initialize with default port', () => {
       const defaultClient = new KaspaNodeClient();
-      expect(defaultClient.rpcUrl).toBe('http://kaspa-node:16111');
+      expect(defaultClient.portFallback).toBeDefined();
+      expect(defaultClient.portFallback.configuredPort).toBe(16111);
     });
 
-    it('should initialize with custom RPC URL', () => {
-      expect(client.rpcUrl).toBe('http://test-node:16111');
+    it('should initialize with custom port from rpcUrl', () => {
+      expect(client.portFallback).toBeDefined();
+      expect(client.portFallback.configuredPort).toBe(16111);
     });
 
     it('should set default timeout', () => {
@@ -27,6 +29,15 @@ describe('KaspaNodeClient', () => {
   });
 
   describe('makeRpcCall', () => {
+    beforeEach(() => {
+      // Mock the portFallback.connect() to return successful connection
+      client.portFallback.connect = jest.fn().mockResolvedValue({
+        connected: true,
+        port: 16111,
+        url: 'http://test-node:16111'
+      });
+    });
+
     it('should make successful RPC call', async () => {
       const mockResponse = {
         data: {
@@ -37,6 +48,7 @@ describe('KaspaNodeClient', () => {
 
       const result = await client.makeRpcCall('testMethod', { param: 'value' });
       
+      expect(client.portFallback.connect).toHaveBeenCalled();
       expect(axios.post).toHaveBeenCalledWith(
         'http://test-node:16111',
         {
@@ -62,9 +74,12 @@ describe('KaspaNodeClient', () => {
     });
 
     it('should handle connection refused error', async () => {
-      const error = new Error('Connection refused');
-      error.code = 'ECONNREFUSED';
-      axios.post.mockRejectedValue(error);
+      // Mock connection failure
+      client.portFallback.connect = jest.fn().mockResolvedValue({
+        connected: false,
+        port: null,
+        error: 'Failed to connect to Kaspa node on any port: 16111, 16110'
+      });
 
       await expect(client.makeRpcCall('testMethod')).rejects.toThrow('Cannot connect to Kaspa node');
     });
@@ -79,6 +94,15 @@ describe('KaspaNodeClient', () => {
   });
 
   describe('getNodeInfo', () => {
+    beforeEach(() => {
+      // Mock the portFallback.connect() to return successful connection
+      client.portFallback.connect = jest.fn().mockResolvedValue({
+        connected: true,
+        port: 16111,
+        url: 'http://test-node:16111'
+      });
+    });
+
     it('should return formatted node info', async () => {
       const mockResponse = {
         data: {
@@ -237,6 +261,15 @@ describe('KaspaNodeClient', () => {
   });
 
   describe('ping', () => {
+    beforeEach(() => {
+      // Mock the portFallback.connect() to return successful connection
+      client.portFallback.connect = jest.fn().mockResolvedValue({
+        connected: true,
+        port: 16111,
+        url: 'http://test-node:16111'
+      });
+    });
+
     it('should return true on successful ping', async () => {
       axios.post.mockResolvedValue({ data: { result: 'pong' } });
       

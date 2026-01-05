@@ -1,0 +1,55 @@
+{
+  "version": "1.0.0",
+  "installedAt": "-122501-11-07T15:51:34.423Z",
+  "lastModified": "2026-01-04T00:17:38.341Z",
+  "phase": "error",
+  "profiles": {
+    "selected": [
+      "mining",
+      "mining"
+    ],
+    "count": 4
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": false,
+    "hasIndexers": false,
+    "hasArchive": true,
+    "hasMining": false,
+    "kaspaNodePort": 16114
+  },
+  "services": [
+    {
+      "name": "kaspa-explorer",
+      "displayName": "YhdSo",
+      "profile": "core",
+      "type": "Node",
+      "running": true,
+      "exists": false,
+      "containerName": "@^Xf9zj|\"(",
+      "ports": [
+        1108
+      ]
+    },
+    {
+      "name": "wallet",
+      "displayName": "l[3",
+      "profile": "kaspa-user-applications",
+      "type": "Node",
+      "running": false,
+      "exists": true,
+      "containerName": "O\\g0w'",
+      "ports": [
+        23752,
+        20706
+      ]
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "running": 6,
+    "stopped": 2,
+    "missing": 3
+  },
+  "wizardRunning": null
+}

@@ -1,0 +1,131 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-05-24T08:18:32.256Z",
+  "lastModified": "2026-01-05T16:49:49.863Z",
+  "phase": "installing",
+  "profiles": {
+    "selected": [
+      "mining",
+      "kaspa-user-applications",
+      "management",
+      "indexer-services"
+    ],
+    "count": 6
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": true,
+    "hasIndexers": true,
+    "hasArchive": true,
+    "hasMining": false,
+    "kaspaNodePort": 16114
+  },
+  "services": [
+    {
+      "name": "pgadmin",
+      "displayName": "*gq<PHz",
+      "profile": "kaspa-user-applications",
+      "type": "Node",
+      "running": true,
+      "exists": true,
+      "containerName": "`K&z1>Df<#+D",
+      "ports": [
+        58114,
+        49888,
+        47459
+      ]
+    },
+    {
+      "name": "kaspa-node",
+      "displayName": "4 i",
+      "profile": "mining",
+      "type": "Management",
+      "running": true,
+      "exists": false,
+      "containerName": "~\\37(T>>mXf*@A%oW4",
+      "ports": [
+        6280,
+        19640
+      ]
+    },
+    {
+      "name": "kasia-indexer",
+      "displayName": "6qQ W",
+      "profile": "kaspa-user-applications",
+      "type": "Node",
+      "running": false,
+      "exists": false,
+      "containerName": "w=G36-!H",
+      "ports": [
+        57900
+      ]
+    },
+    {
+      "name": "timescaledb",
+      "displayName": "(zeH",
+      "profile": "archive-node",
+      "type": null,
+      "running": false,
+      "exists": false,
+      "containerName": null,
+      "ports": [
+        45053,
+        48581,
+        14275
+      ]
+    },
+    {
+      "name": "kaspa-nginx",
+      "displayName": "Jk1,R%ZF`'s(Rp",
+      "profile": "indexer-services",
+      "type": null,
+      "running": true,
+      "exists": true,
+      "containerName": null,
+      "ports": [
+        11309,
+        16358,
+        59442
+      ]
+    },
+    {
+      "name": "kasia-app",
+      "displayName": "-(si#c`O",
+      "profile": "indexer-services",
+      "type": "Mining",
+      "running": true,
+      "exists": false,
+      "containerName": "Y;*f+<8HD;%,gV",
+      "ports": [
+        46150
+      ]
+    },
+    {
+      "name": "portainer",
+      "displayName": "\\!#AdH69",
+      "profile": "kaspa-user-applications",
+      "type": "Application",
+      "running": true,
+      "exists": true,
+      "containerName": "&Z}p}G.it'?d)[{e\\",
+      "ports": []
+    },
+    {
+      "name": "dashboard",
+      "displayName": "TTof",
+      "profile": "kaspa-user-applications",
+      "type": "Indexer",
+      "running": false,
+      "exists": true,
+      "containerName": "}W_YD\\Z}\\2>)R>0Zb",
+      "ports": null
+    }
+  ],
+  "summary": {
+    "total": 8,
+    "running": 12,
+    "stopped": 7,
+    "missing": 4
+  },
+  "wizardRunning": false
+}

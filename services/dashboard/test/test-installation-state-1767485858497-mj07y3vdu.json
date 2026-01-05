@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "installedAt": "+069997-01-31T01:22:51.702Z",
+  "lastModified": "2026-01-04T00:17:38.582Z",
+  "phase": "pending",
+  "profiles": {
+    "selected": [
+      "mining",
+      "indexer-services",
+      "archive",
+      "archive",
+      "mining"
+    ],
+    "count": 5
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": false,
+    "hasIndexers": true,
+    "hasArchive": false,
+    "hasMining": true,
+    "kaspaNodePort": 16115
+  },
+  "services": [],
+  "summary": {
+    "total": 0,
+    "running": 0,
+    "stopped": 0,
+    "missing": 0
+  },
+  "wizardRunning": true
+}

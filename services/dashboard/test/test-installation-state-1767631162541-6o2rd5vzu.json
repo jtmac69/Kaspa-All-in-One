@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "installedAt": "+035820-11-04T03:53:08.694Z",
+  "lastModified": "2026-01-05T16:39:22.628Z",
+  "phase": "installing",
+  "profiles": {
+    "selected": [
+      "mining"
+    ],
+    "count": 1
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": false,
+    "hasIndexers": true,
+    "hasArchive": true,
+    "hasMining": false,
+    "kaspaNodePort": 16112
+  },
+  "services": [],
+  "summary": {
+    "total": 0,
+    "running": 0,
+    "stopped": 0,
+    "missing": 0
+  },
+  "wizardRunning": null
+}

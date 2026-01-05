@@ -2325,14 +2325,20 @@ function addProfile(profileId) {
  * Modify profile configuration
  */
 window.modifyProfile = function(profileId) {
-    // Store the profile to modify and navigate to configuration
-    stateManager.set('modifyingProfile', profileId);
-    showNotification(`Modifying ${profileId} profile configuration`, 'info');
-    
-    // Navigate to configuration step
-    if (window.nextStep) {
-        window.nextStep();
-    }
+    // Import and show service modification dialog
+    import('./service-modification.js').then(module => {
+        module.showServiceModificationDialog(profileId);
+    }).catch(error => {
+        console.error('Failed to load service modification module:', error);
+        // Fallback to old behavior
+        stateManager.set('modifyingProfile', profileId);
+        showNotification(`Modifying ${profileId} profile configuration`, 'info');
+        
+        // Navigate to configuration step
+        if (window.nextStep) {
+            window.nextStep();
+        }
+    });
 };
 
 /**

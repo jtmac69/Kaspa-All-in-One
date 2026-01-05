@@ -1,0 +1,147 @@
+{
+  "version": "1.0.0",
+  "installedAt": "+037795-06-10T18:18:27.606Z",
+  "lastModified": "2026-01-05T16:39:22.485Z",
+  "phase": "error",
+  "profiles": {
+    "selected": [
+      "indexer-services",
+      "mining",
+      "kaspa-user-applications",
+      "archive-node",
+      "core",
+      "kaspa-user-applications"
+    ],
+    "count": 5
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": true,
+    "hasIndexers": false,
+    "hasArchive": true,
+    "hasMining": true,
+    "kaspaNodePort": 16114
+  },
+  "services": [
+    {
+      "name": "kaspa-nginx",
+      "displayName": "5=.k",
+      "profile": "kaspa-user-applications",
+      "type": "Application",
+      "running": false,
+      "exists": false,
+      "containerName": "X-uZkW.8G",
+      "ports": [
+        31412
+      ]
+    },
+    {
+      "name": "wallet",
+      "displayName": null,
+      "profile": "indexer-services",
+      "type": null,
+      "running": false,
+      "exists": false,
+      "containerName": "f<5w'O,|",
+      "ports": [
+        62191,
+        61428,
+        11735
+      ]
+    },
+    {
+      "name": "kasia-app",
+      "displayName": "@I$fsY",
+      "profile": "kaspa-user-applications",
+      "type": "Mining",
+      "running": true,
+      "exists": false,
+      "containerName": "n:AaX",
+      "ports": [
+        37164,
+        51938
+      ]
+    },
+    {
+      "name": "kaspa-stratum",
+      "displayName": "G8\\ ",
+      "profile": "indexer-services",
+      "type": "Management",
+      "running": false,
+      "exists": false,
+      "containerName": "x3|JBs\\w5",
+      "ports": [
+        25564,
+        48194,
+        56094
+      ]
+    },
+    {
+      "name": "kaspa-archive-node",
+      "displayName": "o_9 TFq,2l6(^L+",
+      "profile": "mining",
+      "type": "Wallet",
+      "running": false,
+      "exists": true,
+      "containerName": ")\\iRutqJ",
+      "ports": [
+        42044,
+        57704,
+        65096
+      ]
+    },
+    {
+      "name": "indexer-db",
+      "displayName": ":cRR:UyA3IXf",
+      "profile": "archive-node",
+      "type": "Node",
+      "running": true,
+      "exists": true,
+      "containerName": "7sEy_p_cTFB'wST",
+      "ports": []
+    },
+    {
+      "name": "pgadmin",
+      "displayName": "1V9@\\>Tbg&pCj|",
+      "profile": null,
+      "type": "Mining",
+      "running": false,
+      "exists": false,
+      "containerName": "{-Y5<*~0 W`]",
+      "ports": [
+        24260,
+        48489
+      ]
+    },
+    {
+      "name": "dashboard",
+      "displayName": null,
+      "profile": "kaspa-user-applications",
+      "type": "Mining",
+      "running": true,
+      "exists": true,
+      "containerName": null,
+      "ports": [
+        5910,
+        28237
+      ]
+    },
+    {
+      "name": "archive-indexer",
+      "displayName": "grt:j?*+'<puR!",
+      "profile": "kaspa-user-applications",
+      "type": "Proxy",
+      "running": true,
+      "exists": true,
+      "containerName": "<F.OvB fq",
+      "ports": []
+    }
+  ],
+  "summary": {
+    "total": 9,
+    "running": 0,
+    "stopped": 1,
+    "missing": 13
+  },
+  "wizardRunning": false
+}

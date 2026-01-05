@@ -1,0 +1,47 @@
+{
+  "version": "1.0.0",
+  "installedAt": "+275760-09-12T23:59:59.993Z",
+  "lastModified": "2026-01-05T16:41:07.859Z",
+  "phase": "complete",
+  "profiles": {
+    "selected": [
+      "core",
+      "indexer-services"
+    ],
+    "count": 3
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": false,
+    "hasIndexers": true,
+    "hasArchive": false,
+    "hasMining": false
+  },
+  "services": [
+    {
+      "name": "kaspa-node",
+      "profile": "kaspa-user-applications",
+      "running": true,
+      "exists": true
+    },
+    {
+      "name": "kaspa-indexer",
+      "profile": "core",
+      "running": true,
+      "exists": false
+    },
+    {
+      "name": "kaspa-indexer",
+      "profile": "core",
+      "running": false,
+      "exists": true
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "running": 3,
+    "stopped": 3,
+    "missing": 1
+  },
+  "wizardRunning": false
+}

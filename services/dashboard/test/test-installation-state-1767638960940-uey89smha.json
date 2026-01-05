@@ -1,0 +1,94 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-06-01T10:38:56.355Z",
+  "lastModified": "2026-01-05T18:49:21.067Z",
+  "phase": "installing",
+  "profiles": {
+    "selected": [
+      "core",
+      "indexer-services",
+      "management",
+      "management",
+      "mining",
+      "core"
+    ],
+    "count": 3
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": false,
+    "hasIndexers": false,
+    "hasArchive": true,
+    "hasMining": true,
+    "kaspaNodePort": 16113
+  },
+  "services": [
+    {
+      "name": "kaspa-stratum",
+      "displayName": ".3gA=og3\\;yqHcO=",
+      "profile": "kaspa-user-applications",
+      "type": null,
+      "running": true,
+      "exists": true,
+      "containerName": null,
+      "ports": [
+        6266
+      ]
+    },
+    {
+      "name": "wallet",
+      "displayName": "yS]LIe",
+      "profile": "core",
+      "type": "Proxy",
+      "running": false,
+      "exists": true,
+      "containerName": "XLJhf@E`\"o%",
+      "ports": [
+        4499,
+        58394
+      ]
+    },
+    {
+      "name": "kaspa-nginx",
+      "displayName": "KeH2C",
+      "profile": null,
+      "type": "Wallet",
+      "running": false,
+      "exists": false,
+      "containerName": "Bj%>|P<F&%%y%}&jd!Gj",
+      "ports": null
+    },
+    {
+      "name": "kaspa-archive-node",
+      "displayName": null,
+      "profile": "archive-node",
+      "type": "Application",
+      "running": false,
+      "exists": true,
+      "containerName": "X`-#-lYW@2",
+      "ports": [
+        55653,
+        55139
+      ]
+    },
+    {
+      "name": "portainer",
+      "displayName": "Kp;cOKHM^H?F*S)",
+      "profile": "management",
+      "type": "Management",
+      "running": true,
+      "exists": true,
+      "containerName": "*Xb}oWe0",
+      "ports": [
+        1011
+      ]
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "running": 2,
+    "stopped": 3,
+    "missing": 14
+  },
+  "wizardRunning": false
+}

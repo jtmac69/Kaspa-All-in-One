@@ -1,0 +1,113 @@
+{
+  "version": "1.0.0",
+  "installedAt": "1970-01-01T00:00:00.010Z",
+  "lastModified": "2026-01-04T02:53:39.685Z",
+  "phase": "error",
+  "profiles": {
+    "selected": [
+      "mining",
+      "mining",
+      "management",
+      "mining",
+      "archive-node"
+    ],
+    "count": 4
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": false,
+    "hasIndexers": true,
+    "hasArchive": false,
+    "hasMining": true,
+    "kaspaNodePort": 16111
+  },
+  "services": [
+    {
+      "name": "indexer-db",
+      "displayName": "TLtRQX/[r%d@&'",
+      "profile": "mining",
+      "type": "Wallet",
+      "running": false,
+      "exists": false,
+      "containerName": "Y2CcIr/Xg",
+      "ports": null
+    },
+    {
+      "name": "k-indexer",
+      "displayName": "^]Nu`jf",
+      "profile": "mining",
+      "type": "Mining",
+      "running": false,
+      "exists": false,
+      "containerName": "1ke@Gu",
+      "ports": [
+        13138,
+        40285
+      ]
+    },
+    {
+      "name": "kaspa-nginx",
+      "displayName": null,
+      "profile": "management",
+      "type": null,
+      "running": true,
+      "exists": false,
+      "containerName": "HPX[9s0",
+      "ports": [
+        37871,
+        23143
+      ]
+    },
+    {
+      "name": "dashboard",
+      "displayName": null,
+      "profile": "mining",
+      "type": "Indexer",
+      "running": false,
+      "exists": true,
+      "containerName": "cg390$",
+      "ports": []
+    },
+    {
+      "name": "kaspa-explorer",
+      "displayName": "WXG_py}$k{UeqJ5s",
+      "profile": null,
+      "type": "Mining",
+      "running": true,
+      "exists": false,
+      "containerName": ";hITR%n5tAv+%YP",
+      "ports": [
+        33340
+      ]
+    },
+    {
+      "name": "k-social",
+      "displayName": null,
+      "profile": "indexer-services",
+      "type": "Node",
+      "running": true,
+      "exists": false,
+      "containerName": "8^aB;Rq0`xz=FJqa8:c",
+      "ports": [
+        47468
+      ]
+    },
+    {
+      "name": "archive-indexer",
+      "displayName": null,
+      "profile": "archive-node",
+      "type": "Proxy",
+      "running": false,
+      "exists": false,
+      "containerName": "o(2Q6.M6n/[E(`l",
+      "ports": []
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "running": 12,
+    "stopped": 13,
+    "missing": 7
+  },
+  "wizardRunning": true
+}

@@ -3,6 +3,7 @@ const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const crypto = require('crypto');
+const { createResolver } = require('../../shared/lib/path-resolver');
 
 const execAsync = promisify(exec);
 
@@ -12,10 +13,14 @@ const execAsync = promisify(exec);
  */
 class ConfigurationSynchronizer {
     constructor(options = {}) {
-        this.projectRoot = options.projectRoot || process.env.PROJECT_ROOT || '/app';
+        // Use centralized path resolver for consistent path resolution
+        const resolver = createResolver(__dirname);
+        const paths = resolver.getPaths();
+        
+        this.projectRoot = options.projectRoot || paths.root;
         this.configPath = path.join(this.projectRoot, '.env');
         this.dockerComposePath = path.join(this.projectRoot, 'docker-compose.yml');
-        this.installationStatePath = path.join(this.projectRoot, 'installation-state.json');
+        this.installationStatePath = path.join(this.projectRoot, '.kaspa-aio', 'installation-state.json');
         this.historyPath = path.join(this.projectRoot, '.kaspa-aio', 'config-history.json');
         this.backupDir = path.join(this.projectRoot, '.kaspa-backups');
         

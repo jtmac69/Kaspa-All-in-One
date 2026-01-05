@@ -1,0 +1,45 @@
+{
+  "name": "@kaspa-aio/shared",
+  "version": "1.0.0",
+  "description": "Shared resources and utilities for Kaspa All-in-One Wizard and Dashboard",
+  "main": "lib/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "kaspa",
+    "shared",
+    "utilities",
+    "wizard",
+    "dashboard"
+  ],
+  "author": "Kaspa All-in-One Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dockerode": "^4.0.2",
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "fast-check": "^3.15.0"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./state-manager": "./lib/state-manager.js",
+    "./port-fallback": "./lib/port-fallback.js",
+    "./service-detector": "./lib/service-detector.js",
+    "./cross-launch": "./lib/cross-launch.js",
+    "./error-display": "./lib/error-display.js",
+    "./styles": "./styles/index.css"
+  },
+  "files": [
+    "lib/",
+    "styles/",
+    "README.md"
+  ]
+}

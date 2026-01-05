@@ -52,6 +52,16 @@ export class APIClient {
         }
     }
 
+    /**
+     * Generic POST request
+     */
+    async post(endpoint, body = null) {
+        return this.request(endpoint, {
+            method: 'POST',
+            body: body ? JSON.stringify(body) : null
+        });
+    }
+
     // Service Management
     async getServiceStatus() {
         return this.request('/api/status');
@@ -95,6 +105,39 @@ export class APIClient {
         }
     }
 
+    // Enhanced Kaspa Node with port fallback
+    async getKaspaNodeInfo() {
+        try {
+            return await this.request('/api/kaspa/node/info');
+        } catch (error) {
+            return { error: 'Node not available', available: false };
+        }
+    }
+
+    async getKaspaNodeStats() {
+        try {
+            return await this.request('/api/kaspa/node/stats');
+        } catch (error) {
+            return { error: 'Stats not available', available: false };
+        }
+    }
+
+    async getKaspaConnectionStatus() {
+        try {
+            return await this.request('/api/kaspa/connection/status');
+        } catch (error) {
+            return { connected: false, error: error.message };
+        }
+    }
+
+    async testKaspaConnection() {
+        try {
+            return await this.request('/api/kaspa/connection/test', { method: 'POST' });
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
     // Wallet (placeholder)
     async getWalletInfo() {
         try {
@@ -133,6 +176,11 @@ export class APIClient {
 
     async getDependencies() {
         return this.request('/api/dependencies');
+    }
+
+    // Installation state
+    async getInstallationState() {
+        return this.request('/api/installation/state');
     }
 
     // Alerts

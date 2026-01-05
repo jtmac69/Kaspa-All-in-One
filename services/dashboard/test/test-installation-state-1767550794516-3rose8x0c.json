@@ -1,0 +1,110 @@
+{
+  "version": "1.0.0",
+  "installedAt": "-271821-04-20T00:00:00.014Z",
+  "lastModified": "2026-01-04T18:19:54.616Z",
+  "phase": "complete",
+  "profiles": {
+    "selected": [
+      "archive-node",
+      "archive-node",
+      "archive-node"
+    ],
+    "count": 3
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": true,
+    "hasIndexers": true,
+    "hasArchive": true,
+    "hasMining": true,
+    "kaspaNodePort": 16110
+  },
+  "services": [
+    {
+      "name": "kaspa-nginx",
+      "displayName": "}#|P;~#I",
+      "profile": "core",
+      "type": "Indexer",
+      "running": false,
+      "exists": false,
+      "containerName": "hasOwn",
+      "ports": [
+        24293,
+        65522
+      ]
+    },
+    {
+      "name": "simply-kaspa-indexer",
+      "displayName": "~refWisPrototy",
+      "profile": "core",
+      "type": "Indexer",
+      "running": true,
+      "exists": true,
+      "containerName": "N^k&Kj#&F!a\")/$Q0c>",
+      "ports": null
+    },
+    {
+      "name": "dashboard",
+      "displayName": "\"'C)Ik27",
+      "profile": "indexer-services",
+      "type": "Application",
+      "running": true,
+      "exists": true,
+      "containerName": " @gc!PnyH5`",
+      "ports": [
+        63340
+      ]
+    },
+    {
+      "name": "k-indexer",
+      "displayName": "yy$1:Ho|",
+      "profile": "management",
+      "type": "Proxy",
+      "running": true,
+      "exists": false,
+      "containerName": null,
+      "ports": []
+    },
+    {
+      "name": "portainer",
+      "displayName": null,
+      "profile": "mining",
+      "type": "Proxy",
+      "running": true,
+      "exists": true,
+      "containerName": "HX$Nfcd",
+      "ports": []
+    },
+    {
+      "name": "wallet",
+      "displayName": "(xp.s'",
+      "profile": "archive-node",
+      "type": "Management",
+      "running": true,
+      "exists": true,
+      "containerName": "j~-W:YSI&HC",
+      "ports": [
+        48562
+      ]
+    },
+    {
+      "name": "k-social",
+      "displayName": "Wg\"\"%c&o!Tw",
+      "profile": "archive-node",
+      "type": "Node",
+      "running": false,
+      "exists": true,
+      "containerName": ";&+kO-`*X\\Ry",
+      "ports": [
+        57680
+      ]
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "running": 1,
+    "stopped": 2,
+    "missing": 9
+  },
+  "wizardRunning": null
+}

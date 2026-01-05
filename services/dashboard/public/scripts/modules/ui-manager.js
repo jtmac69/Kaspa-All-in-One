@@ -114,17 +114,218 @@ export class UIManager {
     }
 
     /**
-     * Update services grid
+     * Update service filter dropdown with flexible filtering options
      */
-    updateServices(services, filter = 'all') {
+    updateProfileFilter(filterOptions) {
+        const profileFilter = this.elements.profileFilter;
+        if (!profileFilter) return;
+
+        // Store current selection
+        const currentValue = profileFilter.value;
+
+        // Clear existing options
+        profileFilter.innerHTML = '';
+        
+        // Add filter options with counts
+        filterOptions.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option.value;
+            optionElement.textContent = `${option.name} (${option.count})`;
+            profileFilter.appendChild(optionElement);
+        });
+
+        // Restore selection if it still exists, otherwise default to "all"
+        const optionExists = Array.from(profileFilter.options).some(option => option.value === currentValue);
+        profileFilter.value = optionExists ? currentValue : 'all';
+    }
+
+    /**
+     * Update services grid with optional grouping
+     */
+    updateServices(services, filter = 'all', groupBy = null) {
         const grid = this.elements.servicesGrid;
         if (!grid) return;
 
-        const filteredServices = filter === 'all' 
-            ? services 
-            : services.filter(s => s.profile === filter);
+        let filteredServices = services;
+        
+        if (filter !== 'all') {
+            if (filter.startsWith('type:')) {
+                // Filter by service type
+                const type = filter.substring(5);
+                filteredServices = services.filter(s => (s.type || this.getServiceType(s.name)) === type);
+            } else if (filter.startsWith('profile:')) {
+                // Filter by profile
+                const profile = filter.substring(8);
+                filteredServices = services.filter(s => (s.profile || this.getServiceProfile(s.name)) === profile);
+            } else {
+                // Legacy profile filtering (for backward compatibility)
+                filteredServices = services.filter(s => (s.profile || this.getServiceProfile(s.name)) === filter);
+            }
+        }
 
-        grid.innerHTML = filteredServices.map(service => this.createServiceCard(service)).join('');
+        // Determine grouping based on filter or explicit groupBy parameter
+        let effectiveGroupBy = groupBy;
+        if (!effectiveGroupBy && filter !== 'all') {
+            // Auto-detect grouping from filter
+            if (filter.startsWith('type:')) {
+                effectiveGroupBy = null; // No grouping when filtering by type
+            } else if (filter.startsWith('profile:')) {
+                effectiveGroupBy = 'type'; // Group by type when filtering by profile
+            }
+        }
+
+        // Render services with or without grouping
+        if (effectiveGroupBy) {
+            grid.innerHTML = this.renderGroupedServices(filteredServices, effectiveGroupBy);
+        } else {
+            grid.innerHTML = `<div class="services-grid">${filteredServices.map(service => this.createServiceCard(service)).join('')}</div>`;
+        }
+    }
+
+    /**
+     * Render services grouped by a criteria (type or profile)
+     */
+    renderGroupedServices(services, groupBy) {
+        const groups = this.groupServices(services, groupBy);
+        
+        if (Object.keys(groups).length === 0) {
+            return '<div class="no-services-message">No services found</div>';
+        }
+
+        let html = '';
+        
+        // Define group order for consistent display
+        const groupOrder = groupBy === 'type' 
+            ? ['Node', 'Database', 'Indexer', 'Application', 'Mining', 'Proxy', 'Management', 'Wallet', 'Other']
+            : ['core', 'archive-node', 'indexer-services', 'kaspa-user-applications', 'mining', 'management'];
+
+        // Sort groups by predefined order
+        const sortedGroups = Object.keys(groups).sort((a, b) => {
+            const indexA = groupOrder.indexOf(a);
+            const indexB = groupOrder.indexOf(b);
+            if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+        });
+
+        for (const groupName of sortedGroups) {
+            const groupServices = groups[groupName];
+            const groupDisplayName = this.getGroupDisplayName(groupName, groupBy);
+            const groupClass = this.getGroupClass(groupName, groupBy);
+            
+            html += `
+                <div class="service-group" data-group="${groupName}">
+                    <div class="service-group-header">
+                        <h3 class="service-group-title">
+                            <span class="group-badge ${groupClass}">${groupDisplayName}</span>
+                            <span class="group-count">(${groupServices.length})</span>
+                        </h3>
+                    </div>
+                    <div class="services-grid">
+                        ${groupServices.map(service => this.createServiceCard(service)).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        return html;
+    }
+
+    /**
+     * Group services by a criteria
+     */
+    groupServices(services, groupBy) {
+        const groups = {};
+        
+        services.forEach(service => {
+            let groupKey;
+            
+            if (groupBy === 'type') {
+                groupKey = service.type || this.getServiceType(service.name);
+            } else if (groupBy === 'profile') {
+                groupKey = service.profile || this.getServiceProfile(service.name) || 'other';
+            } else {
+                groupKey = 'all';
+            }
+            
+            if (!groups[groupKey]) {
+                groups[groupKey] = [];
+            }
+            groups[groupKey].push(service);
+        });
+        
+        return groups;
+    }
+
+    /**
+     * Get display name for a group
+     */
+    getGroupDisplayName(groupName, groupBy) {
+        if (groupBy === 'profile') {
+            const profileNames = {
+                'core': 'Core Services',
+                'archive-node': 'Archive Node',
+                'indexer-services': 'Indexer Services',
+                'kaspa-user-applications': 'User Applications',
+                'mining': 'Mining',
+                'management': 'Management Tools'
+            };
+            return profileNames[groupName] || groupName;
+        }
+        return groupName;
+    }
+
+    /**
+     * Get CSS class for a group badge
+     */
+    getGroupClass(groupName, groupBy) {
+        if (groupBy === 'type') {
+            const typeClasses = {
+                'Node': 'type-node',
+                'Database': 'type-database',
+                'Indexer': 'type-indexer',
+                'Application': 'type-application',
+                'Mining': 'type-mining',
+                'Proxy': 'type-proxy',
+                'Management': 'type-management',
+                'Wallet': 'type-wallet'
+            };
+            return typeClasses[groupName] || 'type-other';
+        } else if (groupBy === 'profile') {
+            const profileClasses = {
+                'core': 'profile-core',
+                'archive-node': 'profile-archive',
+                'indexer-services': 'profile-indexer',
+                'kaspa-user-applications': 'profile-applications',
+                'mining': 'profile-mining',
+                'management': 'profile-management'
+            };
+            return profileClasses[groupName] || 'profile-other';
+        }
+        return '';
+    }
+
+    /**
+     * Show no installation message
+     */
+    showNoInstallation() {
+        const grid = this.elements.servicesGrid;
+        if (!grid) return;
+
+        grid.innerHTML = `
+            <div class="no-installation-message" role="alert">
+                <div class="message-icon">⚠️</div>
+                <h2>No Installation Detected</h2>
+                <p>No Kaspa All-in-One installation was found on this system.</p>
+                <p>Please run the Installation Wizard to set up your services.</p>
+                <div class="message-actions">
+                    <a href="http://localhost:3000" class="btn-primary" target="_blank">
+                        Launch Installation Wizard
+                    </a>
+                </div>
+            </div>
+        `;
     }
 
     /**
@@ -134,42 +335,58 @@ export class UIManager {
         const statusClass = service.status === 'healthy' ? 'healthy' : 
                           service.status === 'unhealthy' ? 'unhealthy' : 'stopped';
         
+        // Determine service type for badge
+        const serviceType = service.type || this.getServiceType(service.name);
+        const profile = service.profile || this.getServiceProfile(service.name);
+        const typeClass = this.getServiceTypeClass(serviceType);
+        const profileClass = this.getProfileClass(profile);
+        
         return `
             <article class="service-card ${statusClass}" role="region" aria-label="${service.displayName} service">
                 <div class="service-header">
                     <h3>${service.displayName}</h3>
                     <span class="status-badge ${statusClass}">${service.status}</span>
                 </div>
+                <div class="service-badges">
+                    <span class="service-type-badge ${typeClass}" title="Service Type: ${serviceType}">${serviceType}</span>
+                    ${profile ? `<span class="profile-badge ${profileClass}" title="Profile: ${profile}">${this.formatProfileName(profile)}</span>` : ''}
+                </div>
                 <div class="service-info">
-                    <div class="info-row">
-                        <span class="label">Profile:</span>
-                        <span class="value">${service.profile}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Type:</span>
-                        <span class="value">${service.type}</span>
-                    </div>
                     ${service.version ? `
                     <div class="info-row">
                         <span class="label">Version:</span>
                         <span class="value">${service.version}</span>
                     </div>
                     ` : ''}
+                    ${service.containerName ? `
+                    <div class="info-row">
+                        <span class="label">Container:</span>
+                        <span class="value container-name">${service.containerName}</span>
+                    </div>
+                    ` : ''}
                 </div>
                 <div class="service-actions">
                     <button class="btn-small" data-action="start" data-service="${service.name}" 
+                            data-original-title="Start ${service.displayName || service.name}"
+                            title="Start ${service.displayName || service.name}"
                             ${service.status === 'healthy' ? 'disabled' : ''}>
                         ▶️ Start
                     </button>
                     <button class="btn-small" data-action="stop" data-service="${service.name}"
+                            data-original-title="Stop ${service.displayName || service.name}"
+                            title="Stop ${service.displayName || service.name}"
                             ${service.status === 'stopped' ? 'disabled' : ''}>
                         ⏹️ Stop
                     </button>
                     <button class="btn-small" data-action="restart" data-service="${service.name}"
+                            data-original-title="Restart ${service.displayName || service.name}"
+                            title="Restart ${service.displayName || service.name}"
                             ${service.status === 'stopped' ? 'disabled' : ''}>
                         🔄 Restart
                     </button>
-                    <button class="btn-small" data-action="logs" data-service="${service.name}">
+                    <button class="btn-small" data-action="logs" data-service="${service.name}"
+                            data-original-title="View logs for ${service.displayName || service.name}"
+                            title="View logs for ${service.displayName || service.name}">
                         📋 Logs
                     </button>
                 </div>
@@ -181,6 +398,105 @@ export class UIManager {
                 ` : ''}
             </article>
         `;
+    }
+
+    /**
+     * Get CSS class for service type badge
+     */
+    getServiceTypeClass(serviceType) {
+        const typeClasses = {
+            'Node': 'type-node',
+            'Database': 'type-database',
+            'Indexer': 'type-indexer',
+            'Application': 'type-application',
+            'Mining': 'type-mining',
+            'Proxy': 'type-proxy',
+            'Management': 'type-management',
+            'Wallet': 'type-wallet'
+        };
+        return typeClasses[serviceType] || 'type-other';
+    }
+
+    /**
+     * Get CSS class for profile badge
+     */
+    getProfileClass(profile) {
+        const profileClasses = {
+            'core': 'profile-core',
+            'archive-node': 'profile-archive',
+            'indexer-services': 'profile-indexer',
+            'kaspa-user-applications': 'profile-applications',
+            'mining': 'profile-mining',
+            'management': 'profile-management'
+        };
+        return profileClasses[profile] || 'profile-other';
+    }
+
+    /**
+     * Format profile name for display
+     */
+    formatProfileName(profile) {
+        const profileNames = {
+            'core': 'Core',
+            'archive-node': 'Archive',
+            'indexer-services': 'Indexer',
+            'kaspa-user-applications': 'Apps',
+            'mining': 'Mining',
+            'management': 'Mgmt'
+        };
+        return profileNames[profile] || profile;
+    }
+
+    /**
+     * Get service type for display
+     */
+    getServiceType(serviceName) {
+        const serviceToType = {
+            'kaspa-node': 'Node',
+            'kaspa-archive-node': 'Node',
+            'dashboard': 'Management',
+            'wallet': 'Wallet',
+            'timescaledb': 'Database',
+            'indexer-db': 'Database',
+            'k-indexer': 'Indexer',
+            'kasia-indexer': 'Indexer',
+            'simply-kaspa-indexer': 'Indexer',
+            'archive-indexer': 'Indexer',
+            'kasia-app': 'Application',
+            'k-social': 'Application',
+            'kaspa-explorer': 'Application',
+            'kaspa-nginx': 'Proxy',
+            'kaspa-stratum': 'Mining',
+            'portainer': 'Management',
+            'pgadmin': 'Management'
+        };
+        return serviceToType[serviceName] || 'Other';
+    }
+
+    /**
+     * Get service profile for display
+     */
+    getServiceProfile(serviceName) {
+        const serviceToProfile = {
+            'kaspa-node': 'core',
+            'dashboard': 'core',
+            'wallet': 'core',
+            'kaspa-archive-node': 'archive-node',
+            'timescaledb': 'indexer-services',
+            'indexer-db': 'indexer-services',
+            'k-indexer': 'indexer-services',
+            'kasia-indexer': 'indexer-services',
+            'simply-kaspa-indexer': 'indexer-services',
+            'archive-indexer': 'indexer-services',
+            'kasia-app': 'kaspa-user-applications',
+            'k-social': 'kaspa-user-applications',
+            'kaspa-explorer': 'kaspa-user-applications',
+            'kaspa-nginx': 'kaspa-user-applications',
+            'kaspa-stratum': 'mining',
+            'portainer': 'management',
+            'pgadmin': 'management'
+        };
+        return serviceToProfile[serviceName];
     }
 
     /**
@@ -198,14 +514,24 @@ export class UIManager {
     /**
      * Update node status
      */
-    updateNodeStatus(status) {
+    updateNodeStatus(status, connectionStatus = null) {
         if (!status || status.error) {
             this.updateElement('syncStatus', 'Unavailable');
+            
+            // Show connection troubleshooting if available
+            if (status && status.connection && status.connection.troubleshooting) {
+                this.showConnectionTroubleshooting(status.connection);
+            }
             return;
         }
 
         const isSynced = status.isSynced;
         this.updateElement('syncStatus', isSynced ? 'Synced ✓' : 'Syncing...');
+        
+        // Show connection port information
+        if (status.connection || connectionStatus) {
+            this.updateConnectionInfo(status.connection || connectionStatus);
+        }
         
         if (!isSynced && status.progress !== undefined) {
             this.showSyncProgress(status.progress, status.estimatedTimeRemaining);
@@ -218,6 +544,95 @@ export class UIManager {
         this.updateElement('peerCountNode', status.peerCount || '-');
         this.updateElement('nodeVersion', status.version || '-');
         this.updateElement('uptime', this.formatUptime(status.uptime));
+    }
+
+    /**
+     * Update connection information display
+     */
+    updateConnectionInfo(connection) {
+        // Find or create connection info element
+        let connectionInfo = document.getElementById('kaspa-connection-info');
+        if (!connectionInfo) {
+            // Create connection info element if it doesn't exist
+            const nodeSection = document.querySelector('.kaspa-node-section') || 
+                               document.querySelector('#kaspa-stats');
+            if (nodeSection) {
+                connectionInfo = document.createElement('div');
+                connectionInfo.id = 'kaspa-connection-info';
+                connectionInfo.className = 'connection-info';
+                nodeSection.appendChild(connectionInfo);
+            }
+        }
+
+        if (connectionInfo && connection) {
+            const status = connection.status || (connection.connected ? 'connected' : 'disconnected');
+            const port = connection.port || connection.workingPort;
+            const url = connection.url || connection.workingUrl;
+            
+            let html = `<div class="connection-status ${status}">`;
+            
+            if (status === 'connected') {
+                html += `
+                    <span class="status-indicator connected">
+                        <span class="dot"></span>
+                        Connected via port ${port}
+                    </span>
+                `;
+                if (url) {
+                    html += `<div class="connection-url">${url}</div>`;
+                }
+            } else {
+                html += `
+                    <span class="status-indicator disconnected">
+                        <span class="dot"></span>
+                        Not Available
+                    </span>
+                `;
+                if (connection.error) {
+                    html += `<div class="connection-error">${connection.error}</div>`;
+                }
+            }
+            
+            html += '</div>';
+            connectionInfo.innerHTML = html;
+        }
+    }
+
+    /**
+     * Show connection troubleshooting information
+     */
+    showConnectionTroubleshooting(connection) {
+        let troubleshootingEl = document.getElementById('kaspa-troubleshooting');
+        if (!troubleshootingEl) {
+            const nodeSection = document.querySelector('.kaspa-node-section') || 
+                               document.querySelector('#kaspa-stats');
+            if (nodeSection) {
+                troubleshootingEl = document.createElement('div');
+                troubleshootingEl.id = 'kaspa-troubleshooting';
+                troubleshootingEl.className = 'troubleshooting-info';
+                nodeSection.appendChild(troubleshootingEl);
+            }
+        }
+
+        if (troubleshootingEl && connection.troubleshooting) {
+            let html = '<div class="troubleshooting-header">Troubleshooting:</div>';
+            html += '<ul class="troubleshooting-list">';
+            
+            connection.troubleshooting.forEach(tip => {
+                html += `<li>${tip}</li>`;
+            });
+            
+            html += '</ul>';
+            
+            // Add test connection button
+            html += `
+                <button class="btn btn-secondary test-connection-btn" onclick="dashboard.testKaspaConnection()">
+                    Test Connection
+                </button>
+            `;
+            
+            troubleshootingEl.innerHTML = html;
+        }
     }
 
     /**

@@ -294,3 +294,199 @@
         border-top-color: var(--primary-color);
     }
 }
+/* Dashboard Navigation Section */
+.dashboard-navigation {
+    background: linear-gradient(135deg, rgba(112, 199, 186, 0.05) 0%, rgba(123, 97, 255, 0.02) 100%);
+    border: 2px solid rgba(112, 199, 186, 0.2);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 24px 0;
+}
+
+.dashboard-access-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.dashboard-option {
+    background: var(--bg-secondary, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.2s ease;
+}
+
+.dashboard-option.primary-option {
+    border-color: var(--kaspa-blue, #70C7BA);
+    background: rgba(112, 199, 186, 0.05);
+}
+
+.dashboard-option.secondary-option {
+    border-color: var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.dashboard-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.option-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.option-icon {
+    font-size: 32px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.option-content {
+    flex: 1;
+}
+
+.option-title {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary, #fff);
+}
+
+.option-description {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary, #ccc);
+}
+
+.option-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.dashboard-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--kaspa-blue, #70C7BA);
+    color: white;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.dashboard-link:hover {
+    background: var(--kaspa-dark, #49C8B5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(112, 199, 186, 0.3);
+}
+
+.url-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.dashboard-url-input {
+    flex: 1;
+    padding: 10px 12px;
+    background: var(--bg-primary, #1a1a1a);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 6px;
+    color: var(--text-primary, #fff);
+    font-family: var(--font-code, monospace);
+    font-size: 14px;
+}
+
+.dashboard-url-input:focus {
+    outline: none;
+    border-color: var(--kaspa-blue, #70C7BA);
+    box-shadow: 0 0 0 2px rgba(112, 199, 186, 0.2);
+}
+
+.dashboard-info {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+}
+
+.info-icon {
+    font-size: 16px;
+    margin-top: 2px;
+    min-width: 20px;
+}
+
+.info-text {
+    font-size: 14px;
+    color: var(--text-secondary, #ccc);
+    line-height: 1.5;
+}
+
+.info-text strong {
+    color: var(--text-primary, #fff);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-navigation {
+        padding: 16px;
+        margin: 16px 0;
+    }
+    
+    .option-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        text-align: left;
+    }
+    
+    .option-icon {
+        align-self: center;
+    }
+    
+    .url-display {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .dashboard-url-input {
+        width: 100%;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .dashboard-option {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .dashboard-option.primary-option {
+        background: rgba(112, 199, 186, 0.08);
+        border-color: rgba(112, 199, 186, 0.3);
+    }
+    
+    .dashboard-url-input {
+        background: rgba(0, 0, 0, 0.3);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+}

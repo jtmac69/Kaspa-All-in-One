@@ -1,0 +1,47 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-03-15T01:54:16.857Z",
+  "lastModified": "2026-01-05T19:27:14.707Z",
+  "phase": "complete",
+  "profiles": {
+    "selected": [
+      "management",
+      "mining",
+      "management",
+      "kaspa-user-applications",
+      "indexer-services",
+      "kaspa-user-applications"
+    ],
+    "count": 4
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": false,
+    "hasIndexers": true,
+    "hasArchive": true,
+    "hasMining": false,
+    "kaspaNodePort": 16114
+  },
+  "services": [
+    {
+      "name": "kaspa-explorer",
+      "displayName": null,
+      "profile": "archive-node",
+      "type": "Management",
+      "running": false,
+      "exists": true,
+      "containerName": "2tnYPvp5VcSZ.zL@-BG",
+      "ports": [
+        18336,
+        2864
+      ]
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "running": 0,
+    "stopped": 15,
+    "missing": 2
+  },
+  "wizardRunning": false
+}
