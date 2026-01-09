@@ -148,6 +148,32 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Start dashboard if needed (called by wizard frontend)
+app.post('/api/dashboard/start', async (req, res) => {
+  try {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    
+    const scriptPath = path.join(__dirname, '../../dashboard/start-dashboard.sh');
+    const { stdout, stderr } = await execAsync(scriptPath);
+    
+    res.json({
+      success: true,
+      message: 'Dashboard started successfully',
+      output: stdout,
+      errors: stderr
+    });
+  } catch (error) {
+    console.error('Error starting dashboard:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to start dashboard',
+      details: error.message
+    });
+  }
+});
+
 // Load existing configuration for reconfiguration mode
 app.get('/api/wizard/current-config', async (req, res) => {
   try {
@@ -187,11 +213,10 @@ app.get('/api/wizard/current-config', async (req, res) => {
     });
   } catch (error) {
     console.error('Error loading current configuration:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to load configuration',
-      message: error.message
-    });
+    
+    // Use shared error handling patterns
+    const { handleApiError } = require('./utils/error-handler');
+    handleApiError(res, error, { operation: 'load_current_config' });
   }
 });
 
@@ -277,9 +302,15 @@ app.get('/api/wizard/mode', async (req, res) => {
     });
   } catch (error) {
     console.error('Error detecting wizard mode:', error);
+    
+    // Use shared error handling patterns but provide fallback mode
+    const { createUserFriendlyError } = require('./utils/error-handler');
+    const userFriendlyError = createUserFriendlyError('API_ERROR', error, {
+      operation: 'mode_detection'
+    });
+    
     res.status(500).json({
-      error: 'Failed to detect wizard mode',
-      message: error.message,
+      ...userFriendlyError,
       mode: 'initial', // Fallback to initial mode
       reason: 'Error during detection'
     });
@@ -355,10 +386,20 @@ io.on('connection', (socket) => {
       const configValidation = await configGenerator.validateConfig(config);
       if (!configValidation.valid) {
         await clearWizardRunningFlag('error');
+        
+        // Use shared error handling patterns
+        const { createUserFriendlyError } = require('./utils/error-handler');
+        const userFriendlyError = createUserFriendlyError('VALIDATION_ERROR', 
+          new Error('Invalid configuration'), 
+          { errors: configValidation.errors }
+        );
+        
         socket.emit('install:error', {
           stage: 'config',
-          message: 'Invalid configuration',
-          errors: configValidation.errors
+          message: userFriendlyError.message,
+          errors: configValidation.errors,
+          documentationLink: userFriendlyError.documentationLink,
+          troubleshootingSteps: userFriendlyError.troubleshootingSteps
         });
         return;
       }
@@ -369,10 +410,21 @@ io.on('connection', (socket) => {
       const saveResult = await configGenerator.saveEnvFile(envContent, envPath);
 
       if (!saveResult.success) {
+        await clearWizardRunningFlag('error');
+        
+        // Use shared error handling patterns
+        const { createUserFriendlyError } = require('./utils/error-handler');
+        const userFriendlyError = createUserFriendlyError('STATE_FILE_CORRUPT', 
+          new Error(saveResult.error), 
+          { operation: 'save_env_file' }
+        );
+        
         socket.emit('install:error', {
           stage: 'config',
-          message: 'Failed to save configuration',
-          error: saveResult.error
+          message: userFriendlyError.message,
+          error: saveResult.error,
+          documentationLink: userFriendlyError.documentationLink,
+          troubleshootingSteps: userFriendlyError.troubleshootingSteps
         });
         return;
       }
@@ -383,10 +435,21 @@ io.on('connection', (socket) => {
       const composeResult = await configGenerator.saveDockerCompose(composeContent, composePath);
 
       if (!composeResult.success) {
+        await clearWizardRunningFlag('error');
+        
+        // Use shared error handling patterns
+        const { createUserFriendlyError } = require('./utils/error-handler');
+        const userFriendlyError = createUserFriendlyError('STATE_FILE_CORRUPT', 
+          new Error(composeResult.error), 
+          { operation: 'save_docker_compose' }
+        );
+        
         socket.emit('install:error', {
           stage: 'config',
-          message: 'Failed to save docker-compose.yml',
-          error: composeResult.error
+          message: userFriendlyError.message,
+          error: composeResult.error,
+          documentationLink: userFriendlyError.documentationLink,
+          troubleshootingSteps: userFriendlyError.troubleshootingSteps
         });
         return;
       }
@@ -415,6 +478,8 @@ io.on('connection', (socket) => {
 
       const failedResults = pullResults.filter(r => !r.success);
       if (failedResults.length > 0) {
+        await clearWizardRunningFlag('error');
+        
         // Enhanced error handling with troubleshooting
         const TroubleshootingSystem = require('./utils/troubleshooting-system');
         const troubleshootingSystem = new TroubleshootingSystem();
@@ -430,20 +495,39 @@ io.on('connection', (socket) => {
             profiles
           });
           
+          // Use shared error handling patterns
+          const { createUserFriendlyError } = require('./utils/error-handler');
+          const userFriendlyError = createUserFriendlyError('DOCKER_UNAVAILABLE', 
+            new Error(errorMessage), 
+            { operation: 'pull_images', failedImages: failedResults.map(r => r.image) }
+          );
+          
           socket.emit('install:error', {
             stage: 'pull',
-            message: 'Failed to pull some images',
+            message: userFriendlyError.message,
             error: errorMessage,
             results: pullResults,
-            troubleshootingGuide: guide
+            troubleshootingGuide: guide,
+            documentationLink: userFriendlyError.documentationLink,
+            troubleshootingSteps: userFriendlyError.troubleshootingSteps
           });
         } catch (troubleshootingError) {
           console.error('Failed to generate troubleshooting guide:', troubleshootingError);
+          
+          // Fallback error handling
+          const { createUserFriendlyError } = require('./utils/error-handler');
+          const userFriendlyError = createUserFriendlyError('DOCKER_UNAVAILABLE', 
+            new Error(errorMessage), 
+            { operation: 'pull_images' }
+          );
+          
           socket.emit('install:error', {
             stage: 'pull',
-            message: 'Failed to pull some images',
+            message: userFriendlyError.message,
             error: errorMessage,
-            results: pullResults
+            results: pullResults,
+            documentationLink: userFriendlyError.documentationLink,
+            troubleshootingSteps: userFriendlyError.troubleshootingSteps
           });
         }
         return;
@@ -472,6 +556,8 @@ io.on('connection', (socket) => {
       });
 
       if (!buildResult.success) {
+        await clearWizardRunningFlag('error');
+        
         // Enhanced error handling with troubleshooting
         const TroubleshootingSystem = require('./utils/troubleshooting-system');
         const troubleshootingSystem = new TroubleshootingSystem();
@@ -485,20 +571,39 @@ io.on('connection', (socket) => {
             profiles
           });
           
+          // Use shared error handling patterns
+          const { createUserFriendlyError } = require('./utils/error-handler');
+          const userFriendlyError = createUserFriendlyError('DOCKER_UNAVAILABLE', 
+            new Error(buildResult.error || 'Build failed'), 
+            { operation: 'build_services', failedService: buildResult.failedService }
+          );
+          
           socket.emit('install:error', {
             stage: 'build',
-            message: 'Failed to build some services',
+            message: userFriendlyError.message,
             error: buildResult.error,
             results: buildResult.services,
-            troubleshootingGuide: guide
+            troubleshootingGuide: guide,
+            documentationLink: userFriendlyError.documentationLink,
+            troubleshootingSteps: userFriendlyError.troubleshootingSteps
           });
         } catch (troubleshootingError) {
           console.error('Failed to generate troubleshooting guide:', troubleshootingError);
+          
+          // Fallback error handling
+          const { createUserFriendlyError } = require('./utils/error-handler');
+          const userFriendlyError = createUserFriendlyError('DOCKER_UNAVAILABLE', 
+            new Error(buildResult.error || 'Build failed'), 
+            { operation: 'build_services' }
+          );
+          
           socket.emit('install:error', {
             stage: 'build',
-            message: 'Failed to build some services',
+            message: userFriendlyError.message,
             error: buildResult.error,
-            results: buildResult.services
+            results: buildResult.services,
+            documentationLink: userFriendlyError.documentationLink,
+            troubleshootingSteps: userFriendlyError.troubleshootingSteps
           });
         }
         return;
@@ -527,6 +632,8 @@ io.on('connection', (socket) => {
       });
 
       if (!deployResult.success) {
+        await clearWizardRunningFlag('error');
+        
         // Enhanced error handling with troubleshooting
         const TroubleshootingSystem = require('./utils/troubleshooting-system');
         const troubleshootingSystem = new TroubleshootingSystem();
@@ -540,18 +647,37 @@ io.on('connection', (socket) => {
             profiles
           });
           
+          // Use shared error handling patterns
+          const { createUserFriendlyError } = require('./utils/error-handler');
+          const userFriendlyError = createUserFriendlyError('DOCKER_UNAVAILABLE', 
+            new Error(deployResult.error || 'Deployment failed'), 
+            { operation: 'start_services', failedService: deployResult.failedService }
+          );
+          
           socket.emit('install:error', {
             stage: 'deploy',
-            message: 'Failed to start services',
+            message: userFriendlyError.message,
             error: deployResult.error,
-            troubleshootingGuide: guide
+            troubleshootingGuide: guide,
+            documentationLink: userFriendlyError.documentationLink,
+            troubleshootingSteps: userFriendlyError.troubleshootingSteps
           });
         } catch (troubleshootingError) {
           console.error('Failed to generate troubleshooting guide:', troubleshootingError);
+          
+          // Fallback error handling
+          const { createUserFriendlyError } = require('./utils/error-handler');
+          const userFriendlyError = createUserFriendlyError('DOCKER_UNAVAILABLE', 
+            new Error(deployResult.error || 'Deployment failed'), 
+            { operation: 'start_services' }
+          );
+          
           socket.emit('install:error', {
             stage: 'deploy',
-            message: 'Failed to start services',
-            error: deployResult.error
+            message: userFriendlyError.message,
+            error: deployResult.error,
+            documentationLink: userFriendlyError.documentationLink,
+            troubleshootingSteps: userFriendlyError.troubleshootingSteps
           });
         }
         return;
@@ -638,10 +764,20 @@ io.on('connection', (socket) => {
 
     } catch (error) {
       await clearWizardRunningFlag('error');
+      
+      // Use shared error handling patterns
+      const { createUserFriendlyError } = require('./utils/error-handler');
+      const userFriendlyError = createUserFriendlyError('INSTALLATION_FAILED', error, {
+        operation: 'installation',
+        profiles: profiles
+      });
+      
       socket.emit('install:error', {
         stage: 'unknown',
-        message: 'Installation failed',
-        error: error.message
+        message: userFriendlyError.message,
+        error: error.message,
+        documentationLink: userFriendlyError.documentationLink,
+        troubleshootingSteps: userFriendlyError.troubleshootingSteps
       });
     }
   });
@@ -652,9 +788,18 @@ io.on('connection', (socket) => {
       const status = await dockerManager.getServiceStatus(serviceName);
       socket.emit('service:status:response', { service: serviceName, status });
     } catch (error) {
+      // Use shared error handling patterns
+      const { createUserFriendlyError } = require('./utils/error-handler');
+      const userFriendlyError = createUserFriendlyError('SERVICE_NOT_FOUND', error, {
+        operation: 'service_status',
+        serviceName: serviceName
+      });
+      
       socket.emit('service:status:error', {
         service: serviceName,
-        error: error.message
+        error: userFriendlyError.message,
+        documentationLink: userFriendlyError.documentationLink,
+        troubleshootingSteps: userFriendlyError.troubleshootingSteps
       });
     }
   });
@@ -666,9 +811,18 @@ io.on('connection', (socket) => {
       const result = await dockerManager.getLogs(service, lines || 100);
       socket.emit('logs:data', { service, logs: result.logs });
     } catch (error) {
+      // Use shared error handling patterns
+      const { createUserFriendlyError } = require('./utils/error-handler');
+      const userFriendlyError = createUserFriendlyError('SERVICE_NOT_FOUND', error, {
+        operation: 'logs_stream',
+        serviceName: data.service
+      });
+      
       socket.emit('logs:error', {
         service: data.service,
-        error: error.message
+        error: userFriendlyError.message,
+        documentationLink: userFriendlyError.documentationLink,
+        troubleshootingSteps: userFriendlyError.troubleshootingSteps
       });
     }
   });

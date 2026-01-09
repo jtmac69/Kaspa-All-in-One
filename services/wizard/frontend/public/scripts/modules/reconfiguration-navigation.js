@@ -539,6 +539,10 @@ function initializeTooltips() {
  */
 function handleTooltipShow(event) {
     const element = event.target;
+    
+    // Check if element has getAttribute method (is an Element)
+    if (!element || typeof element.getAttribute !== 'function') return;
+    
     const tooltipText = element.getAttribute('data-tooltip') || element.title;
     
     if (!tooltipText) return;
@@ -557,6 +561,9 @@ function handleTooltipShow(event) {
  */
 function handleTooltipHide(event) {
     const element = event.target;
+    
+    // Check if element has getAttribute method (is an Element)
+    if (!element || typeof element.getAttribute !== 'function') return;
     
     // Restore original title
     const originalTitle = element.getAttribute('data-original-title');

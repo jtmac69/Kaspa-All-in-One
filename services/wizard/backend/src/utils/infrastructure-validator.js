@@ -53,23 +53,29 @@ class InfrastructureValidator {
       timestamp: new Date().toISOString()
     };
 
-    // Nginx is tested for all profiles (always present)
-    try {
-      results.nginx = await this.validateNginx();
-    } catch (error) {
-      results.nginx = {
-        tested: true,
-        totalTests: 0,
-        passed: 0,
-        failed: 1,
-        warnings: 0,
-        tests: [{
-          category: 'execution',
-          name: 'Test Script Execution',
-          status: 'fail',
-          message: `Failed to execute nginx tests: ${error.message}`
-        }]
-      };
+    // Nginx is only tested for profiles that use containerized web applications
+    const needsNginx = profiles.some(p => 
+      ['kaspa-user-applications', 'indexer-services', 'archive-node', 'kaspa-explorer'].includes(p)
+    );
+
+    if (needsNginx) {
+      try {
+        results.nginx = await this.validateNginx();
+      } catch (error) {
+        results.nginx = {
+          tested: true,
+          totalTests: 0,
+          passed: 0,
+          failed: 1,
+          warnings: 0,
+          tests: [{
+            category: 'execution',
+            name: 'Test Script Execution',
+            status: 'fail',
+            message: `Failed to execute nginx tests: ${error.message}`
+          }]
+        };
+      }
     }
 
     // TimescaleDB is only tested if indexer-services or archive-node profile is selected
@@ -100,8 +106,11 @@ class InfrastructureValidator {
     // Determine overall status
     const totalFailed = results.nginx.failed + results.timescaledb.failed;
     const totalWarnings = results.nginx.warnings + results.timescaledb.warnings;
+    const totalTested = (results.nginx.tested ? 1 : 0) + (results.timescaledb.tested ? 1 : 0);
 
-    if (totalFailed > 0) {
+    if (totalTested === 0) {
+      results.overallStatus = 'healthy'; // No infrastructure components to test
+    } else if (totalFailed > 0) {
       results.overallStatus = 'unhealthy';
     } else if (totalWarnings > 0) {
       results.overallStatus = 'degraded';

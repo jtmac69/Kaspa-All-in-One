@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-12-22T15:18:55.516Z",
+  "lastModified": "2026-01-06T20:15:34.536Z",
+  "phase": "error",
+  "profiles": {
+    "selected": [
+      "mining",
+      "kaspa-user-applications",
+      "archive",
+      "archive",
+      "mining"
+    ],
+    "count": 5
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": true,
+    "hasIndexers": true,
+    "hasArchive": true,
+    "hasMining": false,
+    "kaspaNodePort": 16111
+  },
+  "services": [
+    {
+      "name": "wpq",
+      "displayName": "wP9 m_",
+      "profile": "indexer-services",
+      "running": false,
+      "exists": false,
+      "containerName": "VZ|xCExX",
+      "ports": [
+        22802,
+        9415,
+        52560
+      ]
+    },
+    {
+      "name": "9u4",
+      "displayName": "KK;u-ceK",
+      "profile": "indexer-services",
+      "running": false,
+      "exists": true,
+      "containerName": "Hy?\"\"fAG=faf8J",
+      "ports": [
+        27874
+      ]
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "running": 1,
+    "stopped": 3,
+    "missing": 5
+  },
+  "wizardRunning": false
+}

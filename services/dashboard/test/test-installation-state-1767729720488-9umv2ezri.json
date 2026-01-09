@@ -1,0 +1,43 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-11-19T07:45:38.049Z",
+  "lastModified": "2026-01-06T20:02:00.563Z",
+  "phase": "pending",
+  "profiles": {
+    "selected": [
+      "kaspa-user-applications",
+      "archive",
+      "kaspa-user-applications",
+      "core"
+    ],
+    "count": 2
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": true,
+    "hasIndexers": false,
+    "hasArchive": true,
+    "hasMining": false,
+    "kaspaNodePort": 16114
+  },
+  "services": [
+    {
+      "name": "51l",
+      "displayName": "0*}3)=7RI",
+      "profile": "mining",
+      "running": true,
+      "exists": true,
+      "containerName": "==$mnul#j",
+      "ports": [
+        5498
+      ]
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "running": 1,
+    "stopped": 3,
+    "missing": 2
+  },
+  "wizardRunning": null
+}

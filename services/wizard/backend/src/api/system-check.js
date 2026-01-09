@@ -1,5 +1,6 @@
 const express = require('express');
 const SystemChecker = require('../utils/system-checker');
+const { handleApiError } = require('../utils/error-handler');
 
 const router = express.Router();
 const systemChecker = new SystemChecker();
@@ -14,10 +15,7 @@ router.get('/', async (req, res) => {
     const results = await systemChecker.runFullCheck(requiredPorts);
     res.json(results);
   } catch (error) {
-    res.status(500).json({
-      error: 'System check failed',
-      message: error.message
-    });
+    handleApiError(res, error, { operation: 'system_check', requiredPorts });
   }
 });
 
@@ -27,10 +25,7 @@ router.get('/docker', async (req, res) => {
     const result = await systemChecker.checkDocker();
     res.json(result);
   } catch (error) {
-    res.status(500).json({
-      error: 'Docker check failed',
-      message: error.message
-    });
+    handleApiError(res, error, { operation: 'docker_check' });
   }
 });
 
@@ -40,10 +35,7 @@ router.get('/docker-compose', async (req, res) => {
     const result = await systemChecker.checkDockerCompose();
     res.json(result);
   } catch (error) {
-    res.status(500).json({
-      error: 'Docker Compose check failed',
-      message: error.message
-    });
+    handleApiError(res, error, { operation: 'docker_compose_check' });
   }
 });
 

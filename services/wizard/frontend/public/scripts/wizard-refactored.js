@@ -1,6 +1,7 @@
 /**
  * Kaspa All-in-One Installation Wizard
  * Main entry point - Refactored modular version
+ * Updated to use shared error handling patterns (Requirements 9.7, 9.8)
  */
 
 // Import modules
@@ -127,9 +128,14 @@ function initWebSocket() {
         handleInstallationComplete(data);
     });
     
-    // Installation error
+    // Installation error - Use shared error handling patterns
     wsManager.on('install:error', (data) => {
         console.error('Installation error:', data);
+        
+        // Use shared error display if available
+        if (window.wizardErrorDisplay) {
+            window.wizardErrorDisplay.showError(data, 'Installation Error');
+        }
         
         // Use enhanced troubleshooting if available
         if (window.enhancedTroubleshooting && data.troubleshootingGuide) {
@@ -165,7 +171,24 @@ function initWebSocket() {
     
     wsManager.on('sync:error', (data) => {
         console.error('Sync error:', data);
-        showNotification(`${data.service} synchronization error: ${data.error}`, 'error');
+        
+        // Use shared error display if available
+        if (window.wizardErrorDisplay) {
+            const errorData = {
+                error: 'KASPA_NODE_UNAVAILABLE',
+                message: `${data.service} synchronization error: ${data.error}`,
+                documentationLink: 'https://github.com/kaspanet/kaspa-all-in-one/blob/main/docs/guides/troubleshooting.md#kaspa-node-issues',
+                troubleshootingSteps: [
+                    'Check if the Kaspa node container is running',
+                    'Verify network connectivity',
+                    'Check container logs for errors',
+                    'Try restarting the service'
+                ]
+            };
+            window.wizardErrorDisplay.showError(errorData, 'Synchronization Error');
+        } else {
+            showNotification(`${data.service} synchronization error: ${data.error}`, 'error');
+        }
     });
     
     wsManager.on('node:ready', (data) => {
@@ -220,6 +243,22 @@ function setupEventListeners() {
         if (stepId === 'checklist') {
             runSystemCheck().catch(error => {
                 console.error('Failed to run system check:', error);
+                
+                // Use shared error display if available
+                if (window.wizardErrorDisplay) {
+                    const errorData = {
+                        error: 'API_ERROR',
+                        message: 'Failed to run system check',
+                        documentationLink: 'https://github.com/kaspanet/kaspa-all-in-one/blob/main/docs/guides/troubleshooting.md#system-check-issues',
+                        troubleshootingSteps: [
+                            'Check if Docker is running',
+                            'Verify system requirements',
+                            'Try refreshing the page',
+                            'Contact support if the issue persists'
+                        ]
+                    };
+                    window.wizardErrorDisplay.showError(errorData, 'System Check Failed');
+                }
             });
         }
         
@@ -227,6 +266,22 @@ function setupEventListeners() {
         if (stepId === 'system-check') {
             runFullSystemCheck().catch(error => {
                 console.error('Failed to run full system check:', error);
+                
+                // Use shared error display if available
+                if (window.wizardErrorDisplay) {
+                    const errorData = {
+                        error: 'DOCKER_UNAVAILABLE',
+                        message: 'Failed to run full system check',
+                        documentationLink: 'https://docs.docker.com/get-started/',
+                        troubleshootingSteps: [
+                            'Check if Docker is installed and running',
+                            'Verify Docker permissions',
+                            'Ensure sufficient system resources',
+                            'Try restarting Docker service'
+                        ]
+                    };
+                    window.wizardErrorDisplay.showError(errorData, 'System Check Failed');
+                }
             });
         }
         
@@ -245,6 +300,22 @@ function setupEventListeners() {
         if (stepId === 'configure') {
             loadConfigurationForm().catch(error => {
                 console.error('Failed to load configuration:', error);
+                
+                // Use shared error display if available
+                if (window.wizardErrorDisplay) {
+                    const errorData = {
+                        error: 'STATE_FILE_CORRUPT',
+                        message: 'Failed to load configuration',
+                        documentationLink: 'https://github.com/kaspanet/kaspa-all-in-one/blob/main/docs/guides/wizard-configuration-guide.md',
+                        troubleshootingSteps: [
+                            'Check if configuration files exist',
+                            'Verify file permissions',
+                            'Try running in fresh installation mode',
+                            'Contact support if the issue persists'
+                        ]
+                    };
+                    window.wizardErrorDisplay.showError(errorData, 'Configuration Load Failed');
+                }
             });
             // Setup form validation and new configuration features after a short delay to ensure DOM is ready
             setTimeout(() => {
@@ -267,7 +338,24 @@ function setupEventListeners() {
             setTimeout(() => {
                 startInstall().catch(error => {
                     console.error('Failed to start installation:', error);
-                    showNotification('Failed to start installation', 'error');
+                    
+                    // Use shared error display if available
+                    if (window.wizardErrorDisplay) {
+                        const errorData = {
+                            error: 'INSTALLATION_FAILED',
+                            message: 'Failed to start installation',
+                            documentationLink: 'https://github.com/kaspanet/kaspa-all-in-one/blob/main/docs/guides/troubleshooting.md#installation-issues',
+                            troubleshootingSteps: [
+                                'Check system requirements',
+                                'Verify Docker is running and accessible',
+                                'Ensure sufficient disk space and memory',
+                                'Review configuration settings'
+                            ]
+                        };
+                        window.wizardErrorDisplay.showError(errorData, 'Installation Start Failed');
+                    } else {
+                        showNotification('Failed to start installation', 'error');
+                    }
                 });
             }, 500);
         }

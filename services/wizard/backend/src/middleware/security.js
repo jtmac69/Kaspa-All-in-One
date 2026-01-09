@@ -148,45 +148,22 @@ function sanitizeConfig(config) {
 
 /**
  * Error handler middleware with security considerations
+ * Updated to use shared error patterns (Requirements 9.7, 9.8)
  */
 function secureErrorHandler(err, req, res, next) {
-  console.error('Error:', err);
-
-  // Don't leak sensitive information in production
-  const isDevelopment = process.env.NODE_ENV !== 'production';
-
-  // Determine status code
-  const statusCode = err.statusCode || err.status || 500;
-
-  // Generic error response
-  const response = {
-    success: false,
-    error: 'An error occurred',
-    timestamp: new Date().toISOString()
+  // Import error handler utilities
+  const { handleApiError } = require('../utils/error-handler');
+  
+  // Use shared error handling patterns
+  const context = {
+    method: req.method,
+    path: req.path,
+    ip: req.ip,
+    userAgent: req.get('User-Agent')
   };
-
-  // Add details in development mode
-  if (isDevelopment) {
-    response.message = err.message;
-    response.stack = err.stack;
-  } else {
-    // In production, only show safe error messages
-    if (statusCode === 400) {
-      response.error = 'Bad request';
-    } else if (statusCode === 401) {
-      response.error = 'Unauthorized';
-    } else if (statusCode === 403) {
-      response.error = 'Forbidden';
-    } else if (statusCode === 404) {
-      response.error = 'Not found';
-    } else if (statusCode === 429) {
-      response.error = 'Too many requests';
-    } else {
-      response.error = 'Internal server error';
-    }
-  }
-
-  res.status(statusCode).json(response);
+  
+  // Handle the error using shared patterns
+  handleApiError(res, err, context);
 }
 
 /**
@@ -214,7 +191,8 @@ function requestTimeout(timeoutMs = 30000) {
 }
 
 /**
- * Validate Docker socket access
+ * Validate Docker socket access with user-friendly error messages
+ * Updated to use shared error patterns (Requirements 9.7, 9.8)
  */
 async function validateDockerAccess(req, res, next) {
   try {
@@ -225,11 +203,11 @@ async function validateDockerAccess(req, res, next) {
     await docker.ping();
     next();
   } catch (error) {
-    res.status(503).json({
-      success: false,
-      error: 'Docker unavailable',
-      message: 'Cannot connect to Docker daemon. Ensure Docker is running and accessible.'
-    });
+    // Use shared error handling
+    const { createUserFriendlyError } = require('../utils/error-handler');
+    const userFriendlyError = createUserFriendlyError('DOCKER_UNAVAILABLE', error);
+    
+    res.status(503).json(userFriendlyError);
   }
 }
 

@@ -1,0 +1,75 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2026-01-06T20:10:00.398Z",
+  "lastModified": "2026-01-06T20:10:00.518Z",
+  "phase": "installing",
+  "profiles": {
+    "selected": [
+      "mining",
+      "mining",
+      "indexer-services",
+      "core",
+      "core"
+    ],
+    "count": 1
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": true,
+    "hasIndexers": false,
+    "hasArchive": true,
+    "hasMining": false,
+    "kaspaNodePort": 16111
+  },
+  "services": [
+    {
+      "name": "hq8",
+      "displayName": "$,X\\wd0",
+      "profile": "archive",
+      "running": true,
+      "exists": true,
+      "containerName": "~QA<nFcg1Q",
+      "ports": [
+        30467,
+        37767
+      ]
+    },
+    {
+      "name": "arz",
+      "displayName": ")]INy{",
+      "profile": "core",
+      "running": true,
+      "exists": true,
+      "containerName": "PM$f87[Hrk7?",
+      "ports": []
+    },
+    {
+      "name": "fd9v",
+      "displayName": "FM-nn/QT",
+      "profile": "indexer-services",
+      "running": true,
+      "exists": true,
+      "containerName": "\"dF,Q[Ki",
+      "ports": [
+        10969,
+        2532
+      ]
+    },
+    {
+      "name": "adt",
+      "displayName": "e\\ Son#xo]6",
+      "profile": "indexer-services",
+      "running": false,
+      "exists": true,
+      "containerName": null,
+      "ports": null
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "running": 2,
+    "stopped": 0,
+    "missing": 3
+  },
+  "wizardRunning": false
+}

@@ -139,12 +139,16 @@ class Dashboard {
         this.ws.on('configuration_changed', (data) => {
             console.log('Configuration changed:', data);
             
-            // Show notification about the change
+            // Show enhanced notification about the change with refresh option
             const message = data.error 
                 ? `Configuration changed but refresh failed: ${data.error}`
                 : data.message || 'Configuration updated';
             
-            this.ui.showNotification(message, data.error ? 'warning' : 'info');
+            if (data.error) {
+                this.ui.showConfigurationChangeNotification(message, true);
+            } else {
+                this.ui.showConfigurationChangeNotification(message, false);
+            }
             
             // Update services display
             if (data.hasInstallation) {
@@ -165,18 +169,22 @@ class Dashboard {
         this.ws.on('dashboard_refresh_needed', (data) => {
             console.log('Dashboard refresh needed:', data);
             
-            // Show notification
-            this.ui.showNotification('Configuration changed - refreshing dashboard...', 'info');
+            // Show notification with refresh button
+            this.ui.showConfigurationChangeNotification('Configuration changed - click to refresh dashboard', false);
             
-            // Refresh services after a short delay to allow file operations to complete
+            // Auto-refresh after a short delay to allow file operations to complete
             setTimeout(() => {
                 this.refreshServices();
-            }, 1000);
+                this.ui.showAutoRefreshNotification();
+            }, 2000);
         });
 
         // Handle manual refresh completion
         this.ws.on('manual_refresh_completed', (data) => {
             console.log('Manual refresh completed:', data);
+            
+            // Show success notification
+            this.ui.showNotification('Dashboard refreshed successfully', 'success');
             
             // Update services display
             if (data.hasInstallation) {
@@ -300,6 +308,10 @@ class Dashboard {
         try {
             const response = await this.api.getServiceStatus();
             
+            // Update last status check timestamp (Requirements 7.8)
+            const timestamp = new Date().toISOString();
+            this.ui.updateLastStatusCheck(timestamp);
+            
             // Check if no installation detected
             if (response.noInstallation) {
                 this.ui.showNoInstallation();
@@ -311,6 +323,9 @@ class Dashboard {
             this.ui.updateServices(services, this.currentFilter);
         } catch (error) {
             console.error('Failed to refresh services:', error);
+            // Still update timestamp even on error to show when last attempt was made
+            const timestamp = new Date().toISOString();
+            this.ui.updateLastStatusCheck(timestamp);
         }
     }
 
@@ -365,6 +380,15 @@ class Dashboard {
      */
     async loadKaspaInfo() {
         try {
+            // Load public network data (always available)
+            const publicNetworkData = await this.api.getPublicKaspaNetwork();
+            this.ui.updateKaspaNetworkStats(publicNetworkData);
+
+            // Load log-based sync status (more reliable than RPC)
+            const syncStatus = await this.api.getKaspaSyncStatus();
+            this.ui.updateNodeSyncStatus(syncStatus);
+
+            // Try to load additional node data if RPC is available
             const [info, stats, connectionStatus] = await Promise.all([
                 this.api.getKaspaNodeInfo(),
                 this.api.getKaspaNodeStats(),
@@ -372,14 +396,16 @@ class Dashboard {
             ]);
 
             if (!info.error) {
-                this.ui.updateNodeStatus(info, connectionStatus);
+                // Merge RPC data with log-based sync status
+                const mergedStatus = { ...syncStatus, ...info };
+                this.ui.updateNodeStatus(mergedStatus, connectionStatus);
             } else {
-                // Show connection troubleshooting if available
-                this.ui.updateNodeStatus(info, connectionStatus);
+                // Use only log-based sync status
+                this.ui.updateNodeStatus(syncStatus, connectionStatus);
             }
 
             if (!stats.error) {
-                this.ui.updateKaspaStats(stats);
+                this.ui.updateLocalKaspaStats(stats);
             }
         } catch (error) {
             console.error('Failed to load Kaspa info:', error);
@@ -627,6 +653,61 @@ class Dashboard {
                 await this.loadInitialData();
             }
         }, 30000);
+
+        // Start service status refresh every 10 seconds (Requirements 7.7)
+        this.startServiceStatusRefresh();
+        
+        // Start Kaspa info refresh every 15 seconds
+        this.startKaspaInfoRefresh();
+    }
+
+    /**
+     * Start service status refresh every 10 seconds
+     * Requirements 7.7: THE Dashboard SHALL refresh service status every 10 seconds
+     */
+    startServiceStatusRefresh() {
+        this.serviceStatusInterval = setInterval(async () => {
+            await this.refreshServiceStatus();
+        }, 10000); // 10 seconds as per requirements 7.7
+    }
+
+    /**
+     * Start Kaspa info refresh every 15 seconds
+     * Keeps network status and node sync status updated
+     */
+    startKaspaInfoRefresh() {
+        this.kaspaInfoInterval = setInterval(async () => {
+            await this.loadKaspaInfo();
+        }, 15000); // 15 seconds for Kaspa info
+    }
+
+    /**
+     * Refresh service status and update timestamp
+     * Requirements 7.7, 7.8: Refresh every 10 seconds and display timestamp
+     */
+    async refreshServiceStatus() {
+        try {
+            const response = await this.api.getServiceStatus();
+            
+            // Update last status check timestamp (Requirements 7.8)
+            const timestamp = new Date().toISOString();
+            this.ui.updateLastStatusCheck(timestamp);
+            
+            // Check if no installation detected
+            if (response.noInstallation) {
+                this.ui.showNoInstallation();
+                return;
+            }
+            
+            // Normal service display
+            const services = response.services || response;
+            this.ui.updateServices(services, this.currentFilter);
+        } catch (error) {
+            console.error('Failed to refresh service status:', error);
+            // Still update timestamp even on error to show when last attempt was made
+            const timestamp = new Date().toISOString();
+            this.ui.updateLastStatusCheck(timestamp);
+        }
     }
 
     /**
@@ -635,6 +716,9 @@ class Dashboard {
     destroy() {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
+        }
+        if (this.serviceStatusInterval) {
+            clearInterval(this.serviceStatusInterval);
         }
         this.ws.disconnect();
     }

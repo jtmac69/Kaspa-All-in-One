@@ -16,9 +16,9 @@ export async function runFullSystemCheck() {
     console.log('Running full system check...');
     
     try {
-        // Get required ports (excluding 3000 since wizard uses it)
+        // Get required ports (excluding 3000 since wizard uses it, and 8080 since Dashboard uses it)
         // Updated for Database-Per-Service Architecture: 5433 (k-social-db), 5434 (simply-kaspa-db)
-        const requiredPorts = [8080, 16110, 16111, 5433, 5434, 8081];
+        const requiredPorts = [16110, 16111, 5433, 5434];
         
         // Call backend API
         const results = await api.get(`/system-check?ports=${requiredPorts.join(',')}`);
@@ -351,8 +351,6 @@ function getPortsDetails(ports) {
     
     // Port descriptions
     const portDescriptions = {
-        8080: 'Dashboard (alternative)',
-        8081: 'Dashboard',
         5433: 'K-Social Database',
         5434: 'Simply Kaspa Database',
         16110: 'Kaspa Node (P2P)',

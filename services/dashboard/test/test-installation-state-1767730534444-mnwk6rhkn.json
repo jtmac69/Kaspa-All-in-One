@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-10-07T00:56:42.294Z",
+  "lastModified": "2026-01-06T20:15:34.519Z",
+  "phase": "installing",
+  "profiles": {
+    "selected": [
+      "archive",
+      "mining"
+    ],
+    "count": 3
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": true,
+    "hasIndexers": true,
+    "hasArchive": true,
+    "hasMining": false,
+    "kaspaNodePort": 16115
+  },
+  "services": [
+    {
+      "name": "qlh",
+      "displayName": null,
+      "profile": "mining",
+      "running": false,
+      "exists": true,
+      "containerName": "5d5QSe",
+      "ports": []
+    },
+    {
+      "name": "64g",
+      "displayName": "sXU!{",
+      "profile": "archive",
+      "running": true,
+      "exists": true,
+      "containerName": "[b%zrNL.1i-#e0,Jr*",
+      "ports": [
+        59256
+      ]
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "running": 2,
+    "stopped": 0,
+    "missing": 3
+  },
+  "wizardRunning": false
+}

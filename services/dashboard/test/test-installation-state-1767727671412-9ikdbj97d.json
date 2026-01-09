@@ -1,0 +1,61 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2026-01-06T19:27:51.384Z",
+  "lastModified": "2026-01-06T19:28:31.534Z",
+  "phase": "pending",
+  "profiles": {
+    "selected": [
+      "mining"
+    ],
+    "count": 3
+  },
+  "configuration": {
+    "network": "mainnet",
+    "publicNode": false,
+    "hasIndexers": false,
+    "hasArchive": false,
+    "hasMining": false,
+    "kaspaNodePort": 16111
+  },
+  "services": [
+    {
+      "name": "defineprot",
+      "displayName": "@g3!#z",
+      "profile": "core",
+      "running": true,
+      "exists": true,
+      "containerName": "L*X/7",
+      "ports": [
+        26397
+      ]
+    },
+    {
+      "name": "key",
+      "displayName": "key",
+      "profile": "archive",
+      "running": false,
+      "exists": false,
+      "containerName": "GU3h[@mv>]",
+      "ports": []
+    },
+    {
+      "name": "caller",
+      "displayName": "__defineSetter__",
+      "profile": "mining",
+      "running": false,
+      "exists": false,
+      "containerName": "k wfpPSg",
+      "ports": [
+        19678,
+        17740
+      ]
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "running": 2,
+    "stopped": 3,
+    "missing": 2
+  },
+  "wizardRunning": null
+}

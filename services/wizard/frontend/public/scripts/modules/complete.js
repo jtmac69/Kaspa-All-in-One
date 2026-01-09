@@ -42,10 +42,20 @@ export async function displayValidationResults() {
         
         // Call validation API
         console.log('Calling validation API with profiles:', selectedProfiles);
-        const validationData = await api.post('/install/validate', {
+        const apiResponse = await api.post('/install/validate', {
             profiles: selectedProfiles
         });
-        console.log('Received validation data:', validationData);
+        console.log('Received API response:', apiResponse);
+        
+        // Extract validation data from nested response structure
+        const validationData = {
+            services: apiResponse.services.services || apiResponse.services,
+            allRunning: apiResponse.services.allRunning,
+            anyFailed: apiResponse.services.anyFailed,
+            summary: apiResponse.services.summary,
+            timestamp: apiResponse.timestamp
+        };
+        console.log('Processed validation data:', validationData);
         
         // Store validation results in state
         stateManager.set('validationResults', validationData);
@@ -56,9 +66,7 @@ export async function displayValidationResults() {
         // Display service status list
         if (validationData && validationData.services) {
             console.log('Displaying service status list');
-            // Handle nested services structure from validateServices response
-            const servicesData = validationData.services.services || validationData.services;
-            displayServiceStatusList(servicesData);
+            displayServiceStatusList(validationData.services);
             serviceStatusList.style.display = 'block';
         } else {
             console.warn('No services data in validation response');
@@ -625,7 +633,7 @@ export function showServiceManagementGuide() {
 
 /**
  * Open dashboard in new tab
- * Provides dashboard URL for manual navigation instead of auto-opening
+ * Automatically starts dashboard if not running, then opens it
  */
 export async function openDashboard() {
     try {
@@ -635,25 +643,39 @@ export async function openDashboard() {
         // Check if dashboard is accessible
         showNotification('Checking dashboard status...', 'info');
         
-        try {
-            const response = await fetch(dashboardUrl, { 
-                method: 'HEAD',
-                mode: 'no-cors' // Avoid CORS issues for simple check
-            });
-            
-            // Dashboard is accessible, show success message
-            showNotification('Dashboard is ready! Click the link above to access it.', 'success');
-            
-        } catch (error) {
-            // Dashboard is not running, try to start it
+        const isDashboardRunning = await checkDashboardStatus();
+        
+        if (isDashboardRunning) {
+            // Dashboard is running - open it in new window
+            showNotification('Opening dashboard...', 'success');
+            window.open(dashboardUrl, '_blank');
+        } else {
+            // Dashboard is not running, start it
             showNotification('Dashboard not running. Starting dashboard service...', 'info');
             
             try {
                 // Call backend API to start dashboard service
-                const startResponse = await api.post('/wizard/start');
+                const startResponse = await fetch('/api/dashboard/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
                 
-                if (startResponse.success) {
-                    showNotification('Dashboard started successfully! Click the link above to access it.', 'success');
+                const result = await startResponse.json();
+                
+                if (result.success) {
+                    showNotification('Dashboard starting... Please wait...', 'info');
+                    
+                    // Wait for dashboard to be ready
+                    const isReady = await waitForDashboardReady();
+                    
+                    if (isReady) {
+                        showNotification('Dashboard started successfully! Opening...', 'success');
+                        window.open(dashboardUrl, '_blank');
+                    } else {
+                        showNotification('Dashboard failed to start within 30 seconds. Please start it manually: npm start in services/dashboard', 'error', 10000);
+                    }
                 } else {
                     showNotification('Failed to start dashboard. Please start it manually: npm start in services/dashboard', 'error', 10000);
                 }
@@ -668,6 +690,42 @@ export async function openDashboard() {
         console.error('Error checking dashboard:', error);
         showNotification('Error checking dashboard status', 'error');
     }
+}
+
+/**
+ * Check if dashboard is running
+ * @returns {Promise<boolean>} True if dashboard is accessible
+ */
+async function checkDashboardStatus() {
+    try {
+        const response = await fetch('http://localhost:8080/health', {
+            method: 'GET',
+            timeout: 3000
+        });
+        return response.ok;
+    } catch (error) {
+        console.log('Dashboard service not accessible:', error.message);
+        return false;
+    }
+}
+
+/**
+ * Wait for dashboard to be ready
+ * @returns {Promise<boolean>} True if dashboard becomes ready
+ */
+async function waitForDashboardReady() {
+    const maxAttempts = 30;
+    const delayMs = 1000;
+    
+    for (let i = 0; i < maxAttempts; i++) {
+        const isReady = await checkDashboardStatus();
+        if (isReady) {
+            return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+    
+    return false;
 }
 
 /**

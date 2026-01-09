@@ -19,7 +19,7 @@ class ServiceMonitor {
             { 
                 name: 'kaspa-node', 
                 displayName: 'Kaspa Node', 
-                url: 'http://kaspa-node:16111', 
+                url: 'http://localhost:16111', 
                 type: 'rpc', 
                 profile: 'core',
                 dependencies: [],
@@ -29,7 +29,7 @@ class ServiceMonitor {
             { 
                 name: 'dashboard', 
                 displayName: 'Dashboard', 
-                url: 'http://dashboard:8080', 
+                url: 'http://localhost:8080', 
                 type: 'http', 
                 profile: 'core',
                 dependencies: ['kaspa-node'],
@@ -268,12 +268,19 @@ class ServiceMonitor {
                 version: await this.getServiceVersion(service.name)
             };
         } catch (error) {
+            // For kaspa-node, if container is running but RPC not responding, it's likely syncing
+            const isSyncing = service.name === 'kaspa-node' && 
+                             containerInfo.isRunning && 
+                             (error.message.includes('Parse Error') || 
+                              error.message.includes('ECONNREFUSED') ||
+                              error.message.includes('timeout'));
+            
             return { 
                 ...service, 
-                status: 'unhealthy',
+                status: isSyncing ? 'syncing' : 'unhealthy',
                 state: containerInfo.state,
                 dockerStatus: containerInfo.status,
-                error: error.message, 
+                error: isSyncing ? 'Node is syncing with network' : error.message, 
                 lastCheck: new Date().toISOString(),
                 dependencyStatus,
                 uptime: await this.getServiceUptime(service.name)

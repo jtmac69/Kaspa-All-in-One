@@ -1,0 +1,52 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-07-29T09:06:59.328Z",
+  "lastModified": "2026-01-06T20:02:00.579Z",
+  "phase": "pending",
+  "profiles": {
+    "selected": [
+      "core",
+      "archive",
+      "indexer-services",
+      "indexer-services"
+    ],
+    "count": 2
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": true,
+    "hasIndexers": false,
+    "hasArchive": false,
+    "hasMining": false,
+    "kaspaNodePort": null
+  },
+  "services": [
+    {
+      "name": "qst",
+      "displayName": "<:g.4T8LfAX[=FH",
+      "profile": "core",
+      "running": false,
+      "exists": true,
+      "containerName": "n}*w='@hu$Qe",
+      "ports": [
+        41844
+      ]
+    },
+    {
+      "name": "015",
+      "displayName": "3k?N_x\\.",
+      "profile": "kaspa-user-applications",
+      "running": false,
+      "exists": false,
+      "containerName": "-Fu#nCz8)w$$H;|E",
+      "ports": null
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "running": 4,
+    "stopped": 4,
+    "missing": 5
+  },
+  "wizardRunning": true
+}

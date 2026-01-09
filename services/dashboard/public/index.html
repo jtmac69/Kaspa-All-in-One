@@ -13,14 +13,14 @@
         <header role="banner">
             <h1>⚡ Kaspa All-in-One Dashboard</h1>
             <nav class="header-controls" role="navigation" aria-label="Dashboard controls">
-                <label for="profile-filter" class="sr-only">Filter services by profile</label>
-                <select id="profile-filter" class="profile-selector" aria-label="Filter services by profile">
+                <label for="profile-filter" class="sr-only">Filter services by profile or type</label>
+                <select id="profile-filter" class="profile-selector" aria-label="Filter services by profile or type" title="Filter services by profile or type">
                     <option value="all">All Services</option>
                 </select>
                 
                 <!-- Wizard Navigation Elements -->
                 <div class="wizard-nav" role="toolbar" aria-label="Wizard navigation">
-                    <a href="#" id="wizard-link" class="btn-wizard-nav" title="Open Installation Wizard" aria-label="Open Installation Wizard">
+                    <a href="http://localhost:3000" id="wizard-link" class="btn-wizard-nav" title="Open Installation Wizard" aria-label="Open Installation Wizard">
                         🧙‍♂️ Wizard
                     </a>
                     <button id="reconfigure-btn" class="btn-reconfigure" title="Reconfigure System" aria-label="Reconfigure system settings">
@@ -54,29 +54,32 @@
             <section class="overview" aria-labelledby="overview-heading">
                 <h2 id="overview-heading" class="sr-only">System Overview</h2>
                 <article class="card kaspa-stats" role="region" aria-labelledby="kaspa-network-heading">
-                    <h2 id="kaspa-network-heading">Kaspa Network</h2>
+                    <h2 id="kaspa-network-heading">🌐 Kaspa Network</h2>
                     <div class="stats-grid" role="list" aria-label="Network statistics">
                         <div class="stat" role="listitem">
                             <span class="label">Block Height</span>
-                            <span class="value" id="block-height" aria-live="polite">-</span>
+                            <span class="value" id="block-height" aria-live="polite">Fetching...</span>
                         </div>
                         <div class="stat" role="listitem">
                             <span class="label">Network Hash Rate</span>
-                            <span class="value" id="hash-rate" aria-live="polite">-</span>
+                            <span class="value" id="hash-rate" aria-live="polite">Fetching...</span>
                         </div>
                         <div class="stat" role="listitem">
                             <span class="label">Difficulty</span>
-                            <span class="value" id="difficulty" aria-live="polite">-</span>
+                            <span class="value" id="difficulty" aria-live="polite">Fetching...</span>
                         </div>
                         <div class="stat" role="listitem">
-                            <span class="label">Peers</span>
-                            <span class="value" id="peer-count" aria-live="polite">-</span>
+                            <span class="label">Network</span>
+                            <span class="value" id="network-name" aria-live="polite">mainnet</span>
                         </div>
+                    </div>
+                    <div class="network-info">
+                        <small id="network-source" class="text-muted">Loading network data...</small>
                     </div>
                 </article>
 
                 <article class="card node-info" role="region" aria-labelledby="node-status-heading">
-                    <h2 id="node-status-heading">Local Node Status</h2>
+                    <h2 id="node-status-heading">🖥️ Local Node Status</h2>
                     <div class="node-status" id="node-status">
                         <div class="sync-status-container" id="sync-container">
                             <div class="sync-header">
@@ -91,6 +94,9 @@
                                     <span id="sync-percentage" aria-live="polite">0%</span>
                                     <span id="sync-eta" aria-live="polite">Calculating...</span>
                                 </div>
+                                <div class="sync-info">
+                                    <small id="sync-details" class="text-muted"></small>
+                                </div>
                             </div>
                             <div class="sync-notification" id="sync-notification" style="display: none;" role="alert">
                                 <span class="notification-icon" aria-hidden="true">⚠️</span>
@@ -98,37 +104,33 @@
                             </div>
                         </div>
                         
-                        <div class="node-stats-grid" role="list" aria-label="Node statistics">
+                        <div class="node-stats-grid" role="list" aria-label="Local node statistics">
                             <div class="status-item" role="listitem">
-                                <span class="label">Block Height</span>
+                                <span class="label">Local Height</span>
                                 <div class="value-container">
                                     <span class="value" id="current-height" aria-live="polite">-</span>
                                     <span class="network-height">/ <span id="network-height" aria-live="polite">-</span></span>
                                 </div>
                             </div>
                             <div class="status-item" role="listitem">
-                                <span class="label">Peers</span>
+                                <span class="label">Connected Peers</span>
                                 <span class="value" id="peer-count-node" aria-live="polite">-</span>
                             </div>
                             <div class="status-item" role="listitem">
-                                <span class="label">Version</span>
+                                <span class="label">Node Version</span>
                                 <span class="value" id="node-version" aria-live="polite">-</span>
                             </div>
                             <div class="status-item" role="listitem">
                                 <span class="label">Uptime</span>
                                 <span class="value" id="uptime" aria-live="polite">-</span>
                             </div>
+                            <div class="status-item" role="listitem">
+                                <span class="label">Last Block</span>
+                                <span class="value" id="last-block-time" aria-live="polite">-</span>
+                            </div>
                         </div>
                         
-                        <div class="network-stats" id="network-stats" role="list" aria-label="Network statistics">
-                            <div class="stat-row" role="listitem">
-                                <span class="label">Network Hash Rate:</span>
-                                <span class="value" id="network-hashrate" aria-live="polite">-</span>
-                            </div>
-                            <div class="stat-row" role="listitem">
-                                <span class="label">Difficulty:</span>
-                                <span class="value" id="network-difficulty" aria-live="polite">-</span>
-                            </div>
+                        <div class="network-stats" id="network-stats" role="list" aria-label="Local node network statistics">
                             <div class="stat-row" role="listitem">
                                 <span class="label">Mempool Size:</span>
                                 <span class="value" id="mempool-size" aria-live="polite">-</span>
@@ -143,6 +145,9 @@
                 <div class="services-header">
                     <h2 id="services-heading">Services Status</h2>
                     <div class="services-controls" role="toolbar" aria-label="Service controls">
+                        <span class="last-status-check" id="last-status-check" aria-live="polite" title="Last status check time">
+                            Last check: <span id="last-status-timestamp">-</span>
+                        </span>
                         <button id="toggle-view" class="btn-small" aria-label="Toggle service view layout">
                             📊 Toggle View
                         </button>
@@ -383,6 +388,6 @@
         </div>
     </footer>
 
-    <script type="module" src="scripts/dashboard.js"></script>
+    <script type="module" src="scripts/dashboard.js?v=20260108-2"></script>
 </body>
 </html>

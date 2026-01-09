@@ -1,0 +1,44 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-01-25T08:42:07.655Z",
+  "lastModified": "2026-01-06T19:53:16.277Z",
+  "phase": "installing",
+  "profiles": {
+    "selected": [
+      "mining",
+      "core",
+      "archive",
+      "core",
+      "mining"
+    ],
+    "count": 1
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": false,
+    "hasIndexers": false,
+    "hasArchive": false,
+    "hasMining": false,
+    "kaspaNodePort": 16111
+  },
+  "services": [
+    {
+      "name": "prototype",
+      "displayName": "ti.@8v,1V`1Gl",
+      "profile": "core",
+      "running": false,
+      "exists": false,
+      "containerName": "-<pVapplyo}__looku",
+      "ports": [
+        19951
+      ]
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "running": 4,
+    "stopped": 4,
+    "missing": 1
+  },
+  "wizardRunning": false
+}

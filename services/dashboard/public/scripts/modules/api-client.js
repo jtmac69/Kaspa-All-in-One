@@ -97,11 +97,41 @@ export class APIClient {
         }
     }
 
+    // Public Kaspa Network (independent of local node)
+    async getPublicKaspaNetwork() {
+        try {
+            return await this.request('/api/kaspa/network/public');
+        } catch (error) {
+            return { 
+                error: 'Network data unavailable', 
+                blockHeight: 'Unavailable',
+                difficulty: 'Unavailable',
+                networkHashRate: 'Unavailable',
+                network: 'mainnet'
+            };
+        }
+    }
+
     async getKaspaStats() {
         try {
             return await this.request('/api/kaspa/stats');
         } catch (error) {
             return { error: 'Stats not available', available: false };
+        }
+    }
+
+    // Kaspa Node Sync Status from Logs
+    async getKaspaSyncStatus() {
+        try {
+            return await this.request('/api/kaspa/node/sync-status');
+        } catch (error) {
+            return { 
+                isSynced: false,
+                syncPhase: 'unknown',
+                progress: 0,
+                error: 'Unable to get sync status',
+                message: error.message
+            };
         }
     }
 

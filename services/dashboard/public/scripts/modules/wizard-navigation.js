@@ -118,21 +118,499 @@ export class WizardNavigation {
      */
     async openWizard() {
         try {
-            // Get current installation state for context
-            const currentState = await this.getCurrentInstallationState();
-            const context = {
-                action: 'view',
-                returnUrl: window.location.href
-            };
+            // First check if wizard is accessible
+            const isWizardRunning = await this.checkWizardStatus();
             
-            const wizardUrl = this.crossLaunchNavigator.getWizardUrl(context);
-            this.navigateToWizard(wizardUrl);
+            if (!isWizardRunning) {
+                // Automatically start the wizard
+                await this.startWizardService();
+                return;
+            }
+
+            // Wizard is running - open it in a new window
+            const wizardUrl = this.crossLaunchNavigator.getWizardUrl();
+            window.open(wizardUrl, '_blank');
         } catch (error) {
-            console.error('Failed to get current state for wizard launch:', error);
+            console.error('Failed to open wizard:', error);
             // Fallback to basic wizard URL
             const wizardUrl = this.crossLaunchNavigator.getWizardUrl();
-            this.navigateToWizard(wizardUrl);
+            window.open(wizardUrl, '_blank');
         }
+    }
+
+    /**
+     * Check if the Wizard service is running
+     * @returns {boolean} True if wizard is accessible
+     */
+    async checkWizardStatus() {
+        try {
+            // Use dashboard's backend to check wizard status to avoid CSP issues
+            const response = await fetch('/api/wizard/status', {
+                method: 'GET',
+                timeout: 3000
+            });
+            const result = await response.json();
+            return result.running === true;
+        } catch (error) {
+            console.log('Wizard service not accessible:', error.message);
+            return false;
+        }
+    }
+
+    /**
+     * Start the Wizard service automatically
+     */
+    async startWizardService() {
+        // Show starting dialog
+        this.showWizardStartingDialog();
+        
+        try {
+            // Call API to start wizard
+            const response = await fetch('/api/wizard/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Wait for wizard to be ready
+                await this.waitForWizardReady();
+                
+                // Close starting dialog
+                this.closeStartingDialog();
+                
+                // Open wizard in new window
+                const wizardUrl = this.crossLaunchNavigator.getWizardUrl();
+                window.open(wizardUrl, '_blank');
+            } else {
+                this.showWizardStartError(result.error || 'Failed to start wizard');
+            }
+        } catch (error) {
+            console.error('Error starting wizard:', error);
+            this.showWizardStartError(error.message);
+        }
+    }
+
+    /**
+     * Wait for wizard to be ready
+     */
+    async waitForWizardReady() {
+        const maxAttempts = 30;
+        const delayMs = 1000;
+        
+        for (let i = 0; i < maxAttempts; i++) {
+            const isReady = await this.checkWizardStatus();
+            if (isReady) {
+                return true;
+            }
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+        
+        throw new Error('Wizard failed to start within 30 seconds');
+    }
+
+    /**
+     * Show wizard starting dialog
+     */
+    showWizardStartingDialog() {
+        // Remove any existing dialog
+        const existingDialog = document.getElementById('wizard-starting-dialog');
+        if (existingDialog) {
+            existingDialog.remove();
+        }
+
+        // Create dialog overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'wizard-starting-dialog';
+        overlay.className = 'wizard-nav-overlay';
+        overlay.innerHTML = `
+            <div class="wizard-nav-dialog">
+                <div class="wizard-nav-header">
+                    <h3>🧙‍♂️ Starting Installation Wizard</h3>
+                </div>
+                <div class="wizard-nav-content">
+                    <div class="wizard-starting-animation">
+                        <div class="spinner"></div>
+                        <p class="starting-message">Starting the Installation Wizard service...</p>
+                        <p class="starting-detail">This may take a few moments</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add enhanced styles
+        const style = document.createElement('style');
+        style.id = 'wizard-starting-styles';
+        style.textContent = `
+            .wizard-starting-animation {
+                text-align: center;
+                padding: 2rem;
+            }
+            
+            .spinner {
+                width: 50px;
+                height: 50px;
+                margin: 0 auto 1.5rem;
+                border: 4px solid var(--border, #e0e0e0);
+                border-top: 4px solid var(--kaspa-blue, #70C7BA);
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            .starting-message {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: var(--text-primary, #333);
+                margin: 0 0 0.5rem 0;
+            }
+            
+            .starting-detail {
+                font-size: 0.9rem;
+                color: var(--text-secondary, #666);
+                margin: 0;
+            }
+        `;
+        
+        document.head.appendChild(style);
+        document.body.appendChild(overlay);
+    }
+
+    /**
+     * Close starting dialog
+     */
+    closeStartingDialog() {
+        const dialog = document.getElementById('wizard-starting-dialog');
+        const styles = document.getElementById('wizard-starting-styles');
+        
+        if (dialog) dialog.remove();
+        if (styles) styles.remove();
+    }
+
+    /**
+     * Show wizard start error
+     */
+    showWizardStartError(errorMessage) {
+        this.closeStartingDialog();
+        this.showWizardStartDialog(errorMessage);
+    }
+
+    /**
+     * Show dialog when wizard service is not running or failed to start
+     */
+    showWizardStartDialog(errorMessage = null) {
+        // Remove any existing dialog
+        const existingDialog = document.getElementById('wizard-start-dialog');
+        if (existingDialog) {
+            existingDialog.remove();
+        }
+
+        const isError = errorMessage !== null;
+        const statusIcon = isError ? '❌' : '⚠️';
+        const statusTitle = isError ? 'Failed to Start Wizard' : 'Wizard Service Not Running';
+        const statusMessage = isError 
+            ? `Error: ${errorMessage}` 
+            : 'The Installation Wizard service needs to be started before you can access it.';
+
+        // Create dialog overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'wizard-start-dialog';
+        overlay.className = 'wizard-nav-overlay';
+        overlay.innerHTML = `
+            <div class="wizard-nav-dialog">
+                <div class="wizard-nav-header">
+                    <h3>🧙‍♂️ Installation Wizard</h3>
+                    <button class="wizard-nav-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="wizard-nav-content">
+                    <div class="wizard-status-info ${isError ? 'error' : ''}">
+                        <div class="status-icon">${statusIcon}</div>
+                        <div class="status-text">
+                            <h4>${statusTitle}</h4>
+                            <p>${statusMessage}</p>
+                        </div>
+                    </div>
+                    
+                    ${!isError ? `
+                    <div class="wizard-start-instructions">
+                        <h5>Manual Start Instructions:</h5>
+                        <ol>
+                            <li>Open a terminal in the project directory</li>
+                            <li>Run: <code>cd services/wizard/backend && npm start</code></li>
+                            <li>Wait for "Kaspa Installation Wizard backend running on port 3000"</li>
+                            <li>Click the button below to access the Wizard</li>
+                        </ol>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="wizard-nav-link-container">
+                        <button id="retry-start-wizard" class="wizard-nav-link">
+                            🔄 Try Starting Again
+                        </button>
+                        <a href="http://localhost:3000" target="_blank" class="wizard-nav-link wizard-nav-primary">
+                            🧙‍♂️ Open Wizard (if running)
+                        </a>
+                    </div>
+                    
+                    <p class="wizard-nav-note">
+                        <small><strong>Note:</strong> Both the Dashboard and Wizard run as separate services on the host system for Docker management capabilities.</small>
+                    </p>
+                </div>
+                <div class="wizard-nav-actions">
+                    <button class="wizard-nav-cancel">Close</button>
+                </div>
+            </div>
+        `;
+
+        // Add enhanced styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .wizard-nav-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                backdrop-filter: blur(2px);
+            }
+            
+            .wizard-nav-dialog {
+                background: var(--surface, white);
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+                max-width: 600px;
+                width: 90%;
+                max-height: 90vh;
+                overflow: auto;
+                border: 1px solid var(--border, #e0e0e0);
+            }
+            
+            .wizard-nav-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1.5rem 2rem;
+                border-bottom: 1px solid var(--border, #e0e0e0);
+                background: var(--surface-elevated, #f8f9fa);
+            }
+            
+            .wizard-nav-header h3 {
+                margin: 0;
+                color: var(--kaspa-blue, #70C7BA);
+                font-size: 1.25rem;
+                font-weight: 600;
+            }
+            
+            .wizard-nav-close {
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                cursor: pointer;
+                color: var(--text-secondary, #666);
+                padding: 0;
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 6px;
+                transition: all 0.2s;
+            }
+            
+            .wizard-nav-close:hover {
+                color: var(--text-primary, #333);
+                background: var(--hover-bg, #f0f0f0);
+            }
+            
+            .wizard-nav-content {
+                padding: 2rem;
+            }
+            
+            .wizard-status-info {
+                display: flex;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+                padding: 1rem;
+                background: rgba(245, 166, 35, 0.1);
+                border: 1px solid rgba(245, 166, 35, 0.3);
+                border-radius: 8px;
+            }
+            
+            .wizard-status-info.error {
+                background: rgba(208, 2, 27, 0.1);
+                border-color: rgba(208, 2, 27, 0.3);
+            }
+            
+            .status-icon {
+                font-size: 2rem;
+                flex-shrink: 0;
+            }
+            
+            .status-text h4 {
+                margin: 0 0 0.5rem 0;
+                color: var(--text-primary, #333);
+                font-size: 1.1rem;
+            }
+            
+            .status-text p {
+                margin: 0;
+                color: var(--text-secondary, #666);
+                line-height: 1.4;
+            }
+            
+            .wizard-start-instructions {
+                margin-bottom: 1.5rem;
+            }
+            
+            .wizard-start-instructions h5 {
+                margin: 0 0 0.75rem 0;
+                color: var(--text-primary, #333);
+                font-size: 1rem;
+                font-weight: 600;
+            }
+            
+            .wizard-start-instructions ol {
+                margin: 0;
+                padding-left: 1.5rem;
+                color: var(--text-primary, #333);
+                line-height: 1.6;
+            }
+            
+            .wizard-start-instructions li {
+                margin-bottom: 0.5rem;
+            }
+            
+            .wizard-start-instructions code {
+                background: var(--surface-elevated, #f8f9fa);
+                padding: 0.25rem 0.5rem;
+                border-radius: 4px;
+                font-family: 'Fira Code', 'JetBrains Mono', monospace;
+                font-size: 0.9rem;
+                border: 1px solid var(--border, #e0e0e0);
+            }
+            
+            .wizard-nav-link-container {
+                display: flex;
+                gap: 1rem;
+                justify-content: center;
+                margin: 1.5rem 0;
+                flex-wrap: wrap;
+            }
+            
+            .wizard-nav-link {
+                display: inline-block;
+                padding: 0.75rem 1.5rem;
+                background: var(--kaspa-blue, #70C7BA);
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 500;
+                transition: all 0.2s;
+                border: none;
+                cursor: pointer;
+                font-size: 0.95rem;
+            }
+            
+            .wizard-nav-link:hover {
+                background: var(--kaspa-dark, #49C8B5);
+                text-decoration: none;
+                color: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(112, 199, 186, 0.3);
+            }
+            
+            .wizard-nav-primary {
+                background: var(--kaspa-purple, #7B61FF) !important;
+            }
+            
+            .wizard-nav-primary:hover {
+                background: var(--kaspa-purple-dark, #5B41DF) !important;
+                box-shadow: 0 4px 12px rgba(123, 97, 255, 0.3);
+            }
+            
+            .wizard-nav-note {
+                font-size: 0.85rem;
+                color: var(--text-secondary, #666);
+                text-align: center;
+                line-height: 1.4;
+                margin-top: 1rem;
+            }
+            
+            .wizard-nav-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 0.75rem;
+                padding: 1rem 2rem 1.5rem;
+                border-top: 1px solid var(--border, #e0e0e0);
+            }
+            
+            .wizard-nav-cancel {
+                padding: 0.5rem 1rem;
+                background: none;
+                border: 1px solid var(--border, #e0e0e0);
+                border-radius: 6px;
+                cursor: pointer;
+                color: var(--text-secondary, #666);
+                transition: all 0.2s;
+            }
+            
+            .wizard-nav-cancel:hover {
+                background: var(--hover-bg, #f5f5f5);
+                border-color: var(--text-secondary, #666);
+            }
+        `;
+        
+        document.head.appendChild(style);
+        document.body.appendChild(overlay);
+
+        // Add event listeners
+        const closeBtn = overlay.querySelector('.wizard-nav-close');
+        const cancelBtn = overlay.querySelector('.wizard-nav-cancel');
+        const retryBtn = overlay.querySelector('#retry-start-wizard');
+        
+        const closeDialog = () => {
+            overlay.remove();
+            style.remove();
+        };
+
+        closeBtn.addEventListener('click', closeDialog);
+        cancelBtn.addEventListener('click', closeDialog);
+        
+        // Retry start functionality
+        if (retryBtn) {
+            retryBtn.addEventListener('click', async () => {
+                closeDialog();
+                await this.startWizardService();
+            });
+        }
+        
+        // Close on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                closeDialog();
+            }
+        });
+
+        // Close on escape key
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                closeDialog();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
     }
 
     /**
@@ -140,21 +618,60 @@ export class WizardNavigation {
      */
     async openReconfiguration() {
         try {
-            // Get current installation state for context
-            const currentState = await this.getCurrentInstallationState();
-            const context = {
-                action: 'modify',
-                returnUrl: window.location.href,
-                currentState: currentState
-            };
+            // First check if wizard is accessible
+            const isWizardRunning = await this.checkWizardStatus();
             
-            const reconfigureUrl = this.crossLaunchNavigator.getWizardUrl(context);
-            this.navigateToWizard(reconfigureUrl);
+            if (!isWizardRunning) {
+                // Automatically start the wizard
+                await this.startWizardServiceForReconfiguration();
+                return;
+            }
+
+            // Wizard is running - open it in reconfiguration mode in a new window
+            const reconfigureUrl = this.crossLaunchNavigator.getReconfigureUrl();
+            window.open(reconfigureUrl, '_blank');
         } catch (error) {
-            console.error('Failed to get current state for reconfiguration:', error);
+            console.error('Failed to open reconfiguration:', error);
             // Fallback to basic reconfiguration URL
             const reconfigureUrl = this.crossLaunchNavigator.getReconfigureUrl();
-            this.navigateToWizard(reconfigureUrl);
+            window.open(reconfigureUrl, '_blank');
+        }
+    }
+
+    /**
+     * Start the Wizard service for reconfiguration
+     */
+    async startWizardServiceForReconfiguration() {
+        // Show starting dialog
+        this.showWizardStartingDialog();
+        
+        try {
+            // Call API to start wizard
+            const response = await fetch('/api/wizard/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Wait for wizard to be ready
+                await this.waitForWizardReady();
+                
+                // Close starting dialog
+                this.closeStartingDialog();
+                
+                // Open wizard in reconfiguration mode in new window
+                const reconfigureUrl = this.crossLaunchNavigator.getReconfigureUrl();
+                window.open(reconfigureUrl, '_blank');
+            } else {
+                this.showWizardStartError(result.error || 'Failed to start wizard');
+            }
+        } catch (error) {
+            console.error('Error starting wizard:', error);
+            this.showWizardStartError(error.message);
         }
     }
 

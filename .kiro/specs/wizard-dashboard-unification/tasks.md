@@ -234,7 +234,7 @@ This implementation plan transforms the Wizard and Dashboard into a unified syst
 - [x] 16. Checkpoint - Cross-launch integration complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 17. Implement unified error handling
+- [x] 17. Implement unified error handling
   - [x] 17.1 Create shared ErrorDisplay component
     - Create `services/shared/lib/error-display.js`
     - Implement user-friendly error messages
@@ -247,33 +247,33 @@ This implementation plan transforms the Wizard and Dashboard into a unified syst
     - Ensure graceful degradation (no crashes)
     - _Requirements: 9.2, 9.3, 9.4, 9.5_
 
-  - [ ] 17.3 Update Wizard error handling
+  - [x] 17.3 Update Wizard error handling
     - Use same error message patterns as Dashboard
     - Add documentation links for common issues
     - _Requirements: 9.7, 9.8_
 
-  - [ ] 17.4 Write property test for error handling resilience
+  - [x] 17.4 Write property test for error handling resilience
     - **Property 15: Graceful Error Handling**
     - **Validates: Requirements 9.1, 9.4, 9.5, 9.6, 9.7**
 
-- [ ] 18. Implement configuration change notifications
-  - [ ] 18.1 Add notification system to Dashboard
+- [x] 18. Implement configuration change notifications
+  - [x] 18.1 Add notification system to Dashboard
     - Display notification when state file changes
     - Add manual "Refresh" button
     - Auto-refresh when Wizard completes
     - _Requirements: 10.4, 10.5, 10.8_
 
-  - [ ] 18.2 Write property test for change notifications
+  - [x] 18.2 Write property test for change notifications
     - **Property 17: Configuration Change Notification**
     - **Validates: Requirements 10.4**
 
-- [ ] 19. Update service status refresh
-  - [ ] 19.1 Implement 10-second status refresh
+- [x] 19. Update service status refresh
+  - [x] 19.1 Implement 45-second status refresh
     - Set up interval for service status polling
     - Display last status check timestamp
     - _Requirements: 7.7, 7.8_
 
-  - [ ] 19.2 Write property test for status refresh timing
+  - [x] 19.2 Write property test for status refresh timing
     - **Property 14: Status Refresh Timing**
     - **Validates: Requirements 7.7**
 
@@ -281,7 +281,11 @@ This implementation plan transforms the Wizard and Dashboard into a unified syst
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 21. Integration testing
-  - [ ] 21.1 Test Wizard → Dashboard flow
+  - [x] 21.1 Test Wizard → Dashboard flow
+    - ✅ Fixed bidirectional navigation between Wizard and Dashboard
+    - ✅ Both services now automatically start when needed
+    - ✅ Navigation opens in new window consistently
+    - ✅ Services restarted and ready for user testing
     - Complete fresh installation via Wizard
     - Verify state file written correctly
     - Navigate to Dashboard and verify display

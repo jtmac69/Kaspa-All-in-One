@@ -1,0 +1,41 @@
+{
+  "version": "1.0.0",
+  "installedAt": "2025-12-14T04:50:39.555Z",
+  "lastModified": "2026-01-06T19:12:36.029Z",
+  "phase": "complete",
+  "profiles": {
+    "selected": [
+      "mining",
+      "kaspa-user-applications",
+      "indexer-services",
+      "core"
+    ],
+    "count": 3
+  },
+  "configuration": {
+    "network": "testnet",
+    "publicNode": false,
+    "hasIndexers": true,
+    "hasArchive": true,
+    "hasMining": true,
+    "kaspaNodePort": 16115
+  },
+  "services": [
+    {
+      "name": "key",
+      "displayName": "ookupGetterz{|t",
+      "profile": "core",
+      "running": false,
+      "exists": false,
+      "containerName": "TiyV(6us!",
+      "ports": []
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "running": 9,
+    "stopped": 1,
+    "missing": 6
+  },
+  "wizardRunning": null
+}
