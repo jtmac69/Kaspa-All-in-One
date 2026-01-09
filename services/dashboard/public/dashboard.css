@@ -1,5 +1,5 @@
 /* ============================================================================
-   Kaspa All-in-One Dashboard - Unified Styles
+   Kaspa All-in-One Dashboard - Unified Styles with Dark Mode Support
    Imports shared design system and applies Kaspa branding
    
    Button Styles: Imported from shared/styles/buttons.css
@@ -23,6 +23,326 @@
    Dashboard-Specific Overrides and Extensions
    ============================================================================ */
 
+/* Container - More Compact Layout */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-compact-3) var(--space-compact-4);
+}
+
+/* Overview Section - Compact Grid */
+.overview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-compact-4);
+    margin-bottom: var(--space-compact-5);
+}
+
+@media (max-width: 768px) {
+    .overview {
+        grid-template-columns: 1fr;
+        gap: var(--space-compact-3);
+    }
+}
+
+/* Card Improvements - More Compact */
+.card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: var(--space-compact-4);
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card h2 {
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    margin: 0 0 var(--space-compact-3) 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+/* Network Info Source */
+.network-info {
+    margin-top: var(--space-compact-3);
+    padding-top: var(--space-compact-2);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.network-info small {
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    opacity: 0.8;
+}
+
+/* Network and Node Section Icons */
+.card h2::before {
+    margin-right: var(--space-2);
+}
+
+/* Improved Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-compact-3);
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.stat .label {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    font-weight: var(--font-medium);
+}
+
+.stat .value {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+/* Loading states */
+.stat .value:contains("Fetching") {
+    color: var(--kaspa-blue);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Node Status Grid - More Compact */
+.node-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-compact-3);
+    margin-bottom: var(--space-compact-3);
+}
+
+.status-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.status-item .label {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    font-weight: var(--font-medium);
+}
+
+.status-item .value {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+/* Sync Status Improvements */
+.sync-status-container {
+    margin-bottom: var(--space-compact-3);
+    padding: var(--space-compact-3);
+    background: rgba(112, 199, 186, 0.1);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(112, 199, 186, 0.3);
+    transition: all var(--transition-fast);
+}
+
+.sync-status-container.syncing {
+    background: rgba(255, 193, 7, 0.1);
+    border-color: rgba(255, 193, 7, 0.3);
+}
+
+.sync-status-container.healthy {
+    background: rgba(40, 167, 69, 0.1);
+    border-color: rgba(40, 167, 69, 0.3);
+}
+
+.sync-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+}
+
+.sync-label {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    font-weight: var(--font-medium);
+}
+
+.sync-value {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--kaspa-blue);
+}
+
+/* Enhanced Progress Bar */
+.sync-progress-bar {
+    margin-top: var(--space-2);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: var(--space-2);
+}
+
+.progress {
+    height: 100%;
+    background: linear-gradient(90deg, var(--kaspa-blue), var(--kaspa-purple));
+    border-radius: var(--radius-sm);
+    transition: width var(--transition-normal);
+    position: relative;
+}
+
+.progress::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.sync-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.sync-info {
+    margin-top: var(--space-1);
+    text-align: center;
+}
+
+.sync-info small {
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+}
+
+/* Sync Notification */
+.sync-notification {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: var(--radius-sm);
+    margin-top: var(--space-2);
+}
+
+.notification-icon {
+    font-size: var(--text-base);
+}
+
+.notification-text {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+/* Improved Button Styling - Material Design Inspired */
+.btn-small, .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    min-height: 32px;
+}
+
+.btn-small:hover:not(:disabled), .action-btn:hover:not(:disabled) {
+    background: var(--kaspa-blue);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--kaspa-blue);
+}
+
+.btn-small:active:not(:disabled), .action-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-small:disabled, .action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Service Action Buttons */
+.service-actions {
+    display: flex;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+    margin-top: var(--space-3);
+}
+
+.service-actions .btn-small {
+    flex: 1;
+    min-width: 70px;
+    justify-content: center;
+}
+
+/* Action Grid Buttons */
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+}
+
+.action-btn {
+    padding: var(--space-3) var(--space-4);
+    justify-content: center;
+    min-height: 48px;
+    font-size: var(--text-base);
+}
+
+/* Icon Improvements - Using Material Design Icons */
+.btn-small[data-action="start"]::before { content: "▶️"; }
+.btn-small[data-action="stop"]::before { content: "⏹️"; }
+.btn-small[data-action="restart"]::before { content: "🔄"; }
+.btn-small[data-action="logs"]::before { content: "📋"; }
+
+/* Replace emoji icons with better alternatives */
+#toggle-view::before { content: "📊"; }
+#refresh-services::before { content: "🔄"; }
+#restart-all-btn::before { content: "🔄"; }
+#update-services-btn::before { content: "⬆️"; }
+
 /* Body Background - Kaspa Gradient */
 body {
     font-family: var(--font-body);
@@ -33,22 +353,22 @@ body {
     padding: 0;
 }
 
-/* Header - Kaspa Branding */
+/* Header - Compact Kaspa Branding */
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: var(--surface);
-    padding: var(--space-5) var(--space-6);
+    padding: var(--space-compact-4) var(--space-compact-6);
     border-radius: var(--radius-lg);
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-compact-5);
     box-shadow: var(--shadow-lg);
     backdrop-filter: blur(10px);
 }
 
 header h1 {
     color: var(--kaspa-blue);
-    font-size: var(--text-h2);
+    font-size: var(--text-h4);
     font-weight: var(--font-bold);
     font-family: var(--font-heading);
     margin: 0;
@@ -57,11 +377,11 @@ header h1 {
     gap: var(--space-2);
 }
 
-/* Header Controls */
+/* Header Controls - More Compact */
 .header-controls {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-2);
 }
 
 /* Wizard Navigation */
@@ -459,18 +779,60 @@ body.wizard-running {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Main Content Area */
+/* Main Content Area - Compact Layout */
 main {
     display: flex;
     flex-direction: column;
-    gap: var(--space-6);
+    gap: var(--space-compact-5);
 }
 
-/* Overview Section - Using shared card styles */
+/* Overview Section - Horizontal Layout for Desktop */
 .overview {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-5);
+    gap: var(--space-compact-4);
+}
+
+/* Compact Kaspa Network Card */
+.kaspa-stats {
+    min-height: auto;
+}
+
+.kaspa-stats h2 {
+    font-size: var(--text-h5);
+    margin-bottom: var(--space-compact-3);
+}
+
+/* More Compact Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-compact-3);
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-compact-3);
+    background: rgba(112, 199, 186, 0.05);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--kaspa-blue);
+}
+
+.stat .label {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-compact-1);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: var(--font-medium);
+}
+
+.stat .value {
+    font-size: var(--text-h5);
+    font-weight: var(--font-bold);
+    color: var(--kaspa-blue);
+    font-family: var(--font-heading);
 }
 
 /* Card base styles - extends shared card component */
@@ -478,7 +840,7 @@ main {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: var(--space-6);
+    padding: var(--space-compact-5);
     box-shadow: var(--shadow-md);
     transition: all var(--transition-base);
 }
@@ -490,53 +852,21 @@ main {
 
 .card h2 {
     color: var(--kaspa-blue);
-    font-size: var(--text-h4);
+    font-size: var(--text-h5);
     font-weight: var(--font-semibold);
     font-family: var(--font-heading);
-    margin: 0 0 var(--space-4) 0;
+    margin: 0 0 var(--space-compact-3) 0;
 }
 
-/* Stats Grid */
-.stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-4);
-}
-
-.stat {
-    display: flex;
-    flex-direction: column;
-    padding: var(--space-3);
-    background: rgba(112, 199, 186, 0.05);
-    border-radius: var(--radius-md);
-    border-left: 4px solid var(--kaspa-blue);
-}
-
-.stat .label {
-    font-size: var(--text-xs);
-    color: var(--text-secondary);
-    margin-bottom: var(--space-1);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: var(--font-medium);
-}
-
-.stat .value {
-    font-size: var(--text-h4);
-    font-weight: var(--font-bold);
-    color: var(--kaspa-blue);
-    font-family: var(--font-heading);
-}
-
-/* Node Status */
+/* Node Status - More Compact */
 .node-status {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: var(--space-compact-3);
 }
 
 .sync-status-container {
-    padding: var(--space-3);
+    padding: var(--space-compact-3);
     background: rgba(112, 199, 186, 0.05);
     border-radius: var(--radius-md);
     border-left: 4px solid var(--kaspa-blue);
@@ -546,7 +876,7 @@ main {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--space-2);
+    margin-bottom: var(--space-compact-2);
 }
 
 .sync-label {
@@ -557,7 +887,7 @@ main {
 
 .sync-value {
     font-weight: var(--font-semibold);
-    padding: var(--space-1) var(--space-2);
+    padding: var(--space-compact-1) var(--space-compact-2);
     border-radius: var(--radius-sm);
     font-size: var(--text-sm);
 }
@@ -581,7 +911,7 @@ main {
 }
 
 .sync-progress-bar {
-    margin-top: var(--space-2);
+    margin-top: var(--space-compact-2);
 }
 
 /* Sync Progress - Using Kaspa gradient from shared styles */
@@ -590,10 +920,42 @@ main {
     transition: width 0.5s ease;
 }
 
+/* Indeterminate progress bar animation for syncing state */
+.progress.indeterminate {
+    position: relative;
+    overflow: hidden;
+    background: var(--gradient-primary);
+    animation: indeterminate-pulse 2s infinite ease-in-out;
+}
+
+.progress.indeterminate::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        transparent 100%);
+    animation: indeterminate-shine 2s infinite linear;
+}
+
+@keyframes indeterminate-pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+@keyframes indeterminate-shine {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
 .sync-details {
     display: flex;
     justify-content: space-between;
-    margin-top: var(--space-2);
+    margin-top: var(--space-compact-2);
     font-size: var(--text-xs);
     color: var(--text-secondary);
 }
@@ -603,8 +965,8 @@ main {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    margin-top: var(--space-2);
-    padding: var(--space-2) var(--space-3);
+    margin-top: var(--space-compact-2);
+    padding: var(--space-compact-2) var(--space-compact-3);
     background: rgba(245, 166, 35, 0.1);
     border: 1px solid rgba(245, 166, 35, 0.3);
     border-radius: var(--radius-md);
@@ -617,20 +979,21 @@ main {
     flex-shrink: 0;
 }
 
-/* Node Stats Grid */
+/* Node Stats Grid - More Compact */
 .node-stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-3);
+    gap: var(--space-compact-2);
 }
 
 .status-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-3);
+    padding: var(--space-compact-2);
     background: rgba(112, 199, 186, 0.05);
     border-radius: var(--radius-md);
+    font-size: var(--text-sm);
 }
 
 .value-container {
@@ -640,21 +1003,360 @@ main {
 }
 
 .network-height {
-    font-size: var(--text-sm);
+    font-size: var(--text-xs);
     color: var(--text-tertiary);
 }
 
-/* Services Section */
+/* Services Section - Compact Layout */
 .services-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-compact-4);
+}
+
+.services-header h2 {
+    color: var(--kaspa-blue);
+    font-size: var(--text-h5);
+    font-weight: var(--font-semibold);
+    font-family: var(--font-heading);
+    margin: 0;
 }
 
 .services-controls {
     display: flex;
     gap: var(--space-2);
+    align-items: center;
+}
+
+.last-status-check {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    margin-right: var(--space-2);
+    white-space: nowrap;
+}
+
+.last-status-check #last-status-timestamp {
+    font-weight: var(--font-medium);
+    color: var(--text-primary);
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-compact-4);
+    align-items: start;
+}
+
+/* Service Cards - Using shared card styles */
+.service-card {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-compact-4);
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.service-card:hover {
+    border-color: var(--kaspa-blue);
+    box-shadow: var(--shadow-kaspa);
+    transform: translateY(-2px);
+}
+
+.service-card.healthy {
+    border-left: 4px solid var(--success);
+}
+
+.service-card.unhealthy {
+    border-left: 4px solid var(--error);
+}
+
+.service-card.stopped {
+    border-left: 4px solid var(--text-disabled);
+    opacity: 0.8;
+}
+
+.service-card h3 {
+    color: var(--text-primary);
+    margin-bottom: var(--space-compact-3);
+    font-size: var(--text-h5);
+    font-weight: var(--font-semibold);
+    font-family: var(--font-heading);
+}
+
+/* Service Status - Using shared status indicator styles */
+.service-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-compact-2);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+}
+
+.service-status .indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--success);
+    box-shadow: 0 0 0 2px rgba(126, 211, 33, 0.2);
+    flex-shrink: 0;
+}
+
+.service-status.unhealthy .indicator {
+    background: var(--error);
+    box-shadow: 0 0 0 2px rgba(208, 2, 27, 0.2);
+}
+
+.service-status.stopped .indicator {
+    background: var(--text-disabled);
+    box-shadow: 0 0 0 2px rgba(153, 153, 153, 0.2);
+}
+
+.service-status.starting .indicator {
+    background: var(--warning);
+    box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.2);
+    animation: status-pulse 1.5s infinite;
+}
+
+@keyframes status-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.2);
+    }
+}
+
+/* Actions Grid - More Compact */
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-compact-3);
+}
+.resources {
+    margin-top: var(--space-compact-5);
+}
+
+.resources-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-compact-4);
+}
+
+.resources-header h2 {
+    color: var(--kaspa-blue);
+    font-size: var(--text-h5);
+    font-weight: var(--font-semibold);
+    font-family: var(--font-heading);
+    margin: 0;
+}
+
+.resource-controls {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+.monitoring-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-compact-2) var(--space-compact-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.monitoring-indicator:hover {
+    border-color: var(--kaspa-blue);
+    background: rgba(112, 199, 186, 0.05);
+}
+
+.resource-overview {
+    margin-bottom: var(--space-compact-4);
+}
+
+.system-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-compact-3) var(--space-compact-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.status-text {
+    font-weight: var(--font-medium);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+}
+
+/* Resource Cards - Horizontal Layout for Better Space Usage */
+.resource-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-compact-4);
+}
+
+.resource-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-compact-4);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+}
+
+.resource-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.resource-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-compact-3);
+}
+
+.resource-header h3 {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    margin: 0;
+    font-family: var(--font-heading);
+}
+
+.resource-value {
+    font-size: var(--text-h5);
+    font-weight: var(--font-bold);
+    color: var(--kaspa-blue);
+    font-family: var(--font-heading);
+}
+
+/* Progress Bar - Enhanced Visibility */
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--border-light);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-bottom: var(--space-compact-2);
+}
+
+.progress {
+    height: 100%;
+    background: var(--gradient-primary);
+    border-radius: var(--radius-full);
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.progress.warning {
+    background: linear-gradient(90deg, var(--warning) 0%, var(--warning-light) 100%);
+}
+
+.progress.danger {
+    background: linear-gradient(90deg, var(--error) 0%, var(--error-light) 100%);
+}
+
+/* Resource Details - Better Typography */
+.resource-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.load-average,
+.memory-info,
+.disk-info {
+    font-weight: var(--font-medium);
+}
+
+.threshold-indicator {
+    padding: var(--space-compact-1) var(--space-compact-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+}
+
+.threshold-indicator.normal {
+    background: rgba(126, 211, 33, 0.1);
+    color: var(--success-dark);
+}
+
+.threshold-indicator.warning {
+    background: rgba(245, 166, 35, 0.1);
+    color: var(--warning-dark);
+}
+
+.threshold-indicator.critical {
+    background: rgba(208, 2, 27, 0.1);
+    color: var(--error-dark);
+}
+
+/* System Metrics - Better Layout */
+.system-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-compact-2);
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--text-xs);
+}
+
+.metric-label {
+    color: var(--text-secondary);
+    font-weight: var(--font-medium);
+}
+
+.metric-value {
+    color: var(--text-primary);
+    font-weight: var(--font-semibold);
+}
+
+.uptime-value {
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+    color: var(--kaspa-blue);
+    font-family: var(--font-heading);
+}
+
+.services-controls {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+.last-status-check {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-right: var(--space-3);
+    white-space: nowrap;
+}
+
+.last-status-check #last-status-timestamp {
+    font-weight: 500;
+    color: var(--text-primary);
 }
 
 .services-grid {
@@ -756,10 +1458,20 @@ main {
     gap: var(--space-4);
 }
 
-/* Responsive Design */
+/* Responsive Design - Optimized for Desktop First */
+@media (max-width: 1200px) {
+    .resource-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 1024px) {
     .overview {
         grid-template-columns: 1fr;
+    }
+    
+    .resource-cards {
+        grid-template-columns: repeat(2, 1fr);
     }
     
     .services-grid {
@@ -768,14 +1480,18 @@ main {
 }
 
 @media (max-width: 768px) {
+    .container {
+        padding: var(--space-compact-3) var(--space-compact-4);
+    }
+    
     header {
         flex-direction: column;
-        gap: var(--space-3);
-        padding: var(--space-4);
+        gap: var(--space-compact-3);
+        padding: var(--space-compact-3);
     }
     
     header h1 {
-        font-size: var(--text-h3);
+        font-size: var(--text-h4);
     }
     
     .header-controls {
@@ -821,6 +1537,10 @@ main {
     .actions-grid {
         grid-template-columns: 1fr;
     }
+    
+    .resource-cards {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 480px) {
@@ -830,6 +1550,10 @@ main {
     
     .stat .value {
         font-size: var(--text-h5);
+    }
+    
+    .resource-cards {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -905,5 +1629,310 @@ main {
     
     .btn-icon.has-updates {
         animation: none;
+    }
+}
+/* ============================================================================
+   Enhanced Notification System
+   Requirements 10.4, 10.5, 10.8: Configuration change notifications
+   ============================================================================ */
+
+/* Notification Container */
+.notification-container {
+    position: fixed;
+    top: var(--space-4);
+    right: var(--space-4);
+    z-index: 1050;
+    max-width: 400px;
+    pointer-events: none;
+}
+
+/* Enhanced Notification Styles */
+.notification {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    border-left: 4px solid var(--kaspa-blue);
+    backdrop-filter: blur(10px);
+    pointer-events: auto;
+    animation: slideInRight 0.3s ease-out;
+    max-width: 100%;
+    word-wrap: break-word;
+}
+
+.notification.info {
+    border-left-color: var(--kaspa-blue);
+    background: rgba(112, 199, 186, 0.05);
+}
+
+.notification.success {
+    border-left-color: var(--success);
+    background: rgba(126, 211, 33, 0.05);
+}
+
+.notification.warning {
+    border-left-color: var(--warning);
+    background: rgba(245, 166, 35, 0.05);
+}
+
+.notification.error {
+    border-left-color: var(--error);
+    background: rgba(208, 2, 27, 0.05);
+}
+
+/* Notification Content */
+.notification-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-message {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--text-primary);
+    line-height: 1.4;
+    margin: 0;
+}
+
+/* Notification Actions */
+.notification-action {
+    align-self: flex-start;
+    margin-top: var(--space-1);
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+    background: var(--kaspa-blue);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-weight: var(--font-medium);
+}
+
+.notification-action:hover {
+    background: var(--kaspa-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.notification-action:active {
+    transform: translateY(0);
+}
+
+/* Notification Dismiss Button */
+.notification-dismiss {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-lg);
+    line-height: 1;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.notification-dismiss:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--text-primary);
+}
+
+.notification-dismiss:focus {
+    outline: 2px solid var(--kaspa-blue);
+    outline-offset: 2px;
+}
+
+/* Notification Animations */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive Notifications */
+@media (max-width: 768px) {
+    .notification-container {
+        top: var(--space-2);
+        right: var(--space-2);
+        left: var(--space-2);
+        max-width: none;
+    }
+    
+    .notification {
+        margin-bottom: var(--space-2);
+        padding: var(--space-3);
+    }
+    
+    .notification-message {
+        font-size: var(--text-xs);
+    }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+    .notification {
+        border-width: 2px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .notification-action {
+        border: 2px solid var(--kaspa-blue);
+    }
+    
+    .notification-dismiss {
+        border: 1px solid var(--text-tertiary);
+    }
+}
+
+/* Reduced Motion Support for Notifications */
+@media (prefers-reduced-motion: reduce) {
+    .notification {
+        animation: none;
+    }
+    
+    .notification-action:hover {
+        transform: none;
+    }
+}
+
+/* ============================================================================
+   Dark Mode Support - Following Wizard's Dark Mode Implementation
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Override neutral colors for dark mode with WCAG AA compliant contrast ratios */
+        --background: var(--background-dark);
+        --surface: var(--surface-dark);
+        --surface-elevated: var(--surface-elevated-dark);
+        --text-primary: var(--text-primary-dark);
+        --text-secondary: var(--text-secondary-dark);
+        --text-tertiary: var(--text-tertiary-dark);
+        --border: var(--border-dark);
+        --border-light: var(--border-light-dark);
+        
+        /* Enhanced gradients for dark mode */
+        --gradient-background: linear-gradient(180deg, #0F0F0F 0%, #1A1A1A 100%);
+        --gradient-primary: linear-gradient(135deg, var(--kaspa-blue) 0%, var(--kaspa-purple) 100%);
+        --gradient-secondary: linear-gradient(135deg, var(--kaspa-dark) 0%, var(--kaspa-blue) 100%);
+        
+        /* Adjust Kaspa colors for better dark mode contrast */
+        --kaspa-pale: rgba(112, 199, 186, 0.15);
+        
+        /* Enhanced shadows for dark mode depth */
+        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 8px rgba(112, 199, 186, 0.2);
+        --shadow-lg: 0 8px 16px rgba(112, 199, 186, 0.25);
+        --shadow-xl: 0 12px 24px rgba(112, 199, 186, 0.3);
+        --shadow-kaspa: 0 4px 16px rgba(112, 199, 186, 0.4);
+    }
+    
+    /* Body background for dark mode */
+    body {
+        background: var(--gradient-background);
+    }
+    
+    /* Enhanced cards for dark mode */
+    .card,
+    .service-card,
+    .resource-card {
+        background: var(--surface-elevated);
+        border-color: var(--border);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .card:hover,
+    .service-card:hover,
+    .resource-card:hover {
+        box-shadow: var(--shadow-kaspa);
+        border-color: var(--kaspa-blue);
+    }
+    
+    /* Enhanced buttons for dark mode */
+    .btn-wizard-nav,
+    .btn-reconfigure,
+    .btn-icon {
+        box-shadow: 0 4px 12px rgba(112, 199, 186, 0.3);
+    }
+    
+    .btn-wizard-nav:hover,
+    .btn-reconfigure:hover:not(:disabled),
+    .btn-icon:hover:not(:disabled) {
+        box-shadow: 0 6px 16px rgba(112, 199, 186, 0.4);
+    }
+    
+    /* Enhanced status indicators for dark mode */
+    .stat,
+    .status-item,
+    .sync-status-container {
+        background: rgba(112, 199, 186, 0.08);
+        border-color: rgba(112, 199, 186, 0.3);
+    }
+    
+    /* Progress bars for dark mode */
+    .progress-bar {
+        background: var(--border);
+    }
+    
+    /* Form elements for dark mode */
+    .profile-selector,
+    .monitoring-indicator {
+        background: var(--surface-elevated);
+        border-color: var(--border);
+        color: var(--text-primary);
+    }
+    
+    .profile-selector:hover,
+    .monitoring-indicator:hover {
+        border-color: var(--kaspa-blue);
+        background: rgba(112, 199, 186, 0.08);
+    }
+    
+    /* System status for dark mode */
+    .system-status {
+        background: var(--surface-elevated);
+        border-color: var(--border);
+    }
+    
+    /* Notification enhancements for dark mode */
+    .notification {
+        background: var(--surface-elevated);
+        box-shadow: var(--shadow-xl);
+    }
+    
+    .notification.info {
+        background: rgba(112, 199, 186, 0.08);
+    }
+    
+    .notification.success {
+        background: rgba(126, 211, 33, 0.08);
+    }
+    
+    .notification.warning {
+        background: rgba(245, 166, 35, 0.08);
+    }
+    
+    .notification.error {
+        background: rgba(208, 2, 27, 0.08);
     }
 }

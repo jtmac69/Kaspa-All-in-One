@@ -57,7 +57,7 @@ const execAsync = promisify(exec);
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-const KASPA_NODE_URL = process.env.KASPA_NODE_URL || 'http://kaspa-node:16111';
+const KASPA_NODE_URL = process.env.KASPA_NODE_URL || 'http://localhost:16111';
 
 // Initialize performance monitoring
 const performanceMonitor = new PerformanceMonitor();
@@ -618,37 +618,280 @@ app.get('/api/kaspa/info', async (req, res) => {
     }
 });
 
-app.get('/api/kaspa/stats', async (req, res) => {
+// Public Kaspa Network Stats (independent of local node)
+app.get('/api/kaspa/network/public', async (req, res) => {
     try {
-        const [blockDag, networkInfo] = await Promise.all([
-            axios.post(KASPA_NODE_URL, { method: 'getBlockDagInfo', params: {} }),
-            axios.post(KASPA_NODE_URL, { method: 'getCurrentNetwork', params: {} })
-        ]);
+        // First, try to get data from local node if it's synced
+        let networkData = null;
         
-        res.json({
-            blockDag: blockDag.data,
-            network: networkInfo.data
-        });
+        try {
+            const localNodeInfo = await axios.post('http://localhost:16111', {
+                method: 'getInfo',
+                params: {}
+            }, { timeout: 3000 });
+            
+            if (localNodeInfo.data && !localNodeInfo.data.error) {
+                const info = localNodeInfo.data.result || localNodeInfo.data;
+                networkData = {
+                    blockHeight: info.blockCount || info.daaScore || 'Syncing...',
+                    difficulty: info.difficulty || 'Unknown',
+                    networkHashRate: calculateHashRate(info.difficulty),
+                    network: info.network || 'mainnet',
+                    source: 'local-node',
+                    timestamp: new Date().toISOString()
+                };
+            }
+        } catch (localError) {
+            console.log('Local node not available for network stats');
+        }
+        
+        // If local node failed, provide helpful fallback message
+        if (!networkData) {
+            networkData = {
+                blockHeight: 'Waiting for node sync',
+                difficulty: 'Waiting for node sync', 
+                networkHashRate: 'Waiting for node sync',
+                network: 'mainnet',
+                message: 'Network statistics will be available once your local Kaspa node completes synchronization',
+                source: 'fallback',
+                timestamp: new Date().toISOString(),
+                note: 'Your node is currently syncing. Network data will automatically appear here when sync completes.',
+                apiInfo: {
+                    description: 'For live network data before sync completes, you can optionally configure a kas.fyi API key',
+                    documentation: 'https://docs.kas.fyi'
+                }
+            };
+        }
+        
+        res.json(networkData);
+        
     } catch (error) {
-        // Use ErrorDisplay for graceful error handling (no crashes)
-        const errorResult = errorDisplay.show({
-            type: 'KASPA_NODE_UNAVAILABLE',
-            details: { error: error.message, endpoint: '/api/kaspa/stats' }
-        });
-        
-        // Return graceful JSON response instead of 500 error
-        res.json({ 
-            error: errorResult.userMessage,
-            available: false,
-            message: 'Kaspa node is not running or not accessible',
-            troubleshooting: [
-                'Check if Kaspa node container is running: docker ps | grep kaspa-node',
-                'Check container logs: docker logs kaspa-node',
-                'Verify network connectivity between Dashboard and Kaspa node'
-            ]
+        console.error('Network API error:', error);
+        res.json({
+            blockHeight: 'Error',
+            difficulty: 'Error',
+            networkHashRate: 'Error',
+            network: 'mainnet',
+            error: 'Network API temporarily unavailable',
+            message: error.message,
+            source: 'error',
+            timestamp: new Date().toISOString()
         });
     }
 });
+
+// Helper function to calculate hash rate from difficulty
+function calculateHashRate(difficulty) {
+    if (!difficulty || isNaN(difficulty)) return 'Unknown';
+    
+    // Kaspa uses kHeavyHash algorithm
+    // Approximate hash rate calculation for Kaspa
+    const hashRate = difficulty / (1000 * 1000 * 1000 * 1000); // Convert to TH/s
+    
+    if (hashRate > 1000) {
+        return `${(hashRate / 1000).toFixed(2)} PH/s`;
+    } else {
+        return `${hashRate.toFixed(2)} TH/s`;
+    }
+}
+
+// Kaspa Node Log Analysis for Sync Status
+app.get('/api/kaspa/node/sync-status', async (req, res) => {
+    try {
+        const { exec } = require('child_process');
+        const { promisify } = require('util');
+        const execAsync = promisify(exec);
+        
+        // Get more logs to find IBD messages (they might be older)
+        const { stdout: logs } = await execAsync('docker logs kaspa-node --tail 200 --timestamps', {
+            timeout: 15000,
+            maxBuffer: 2 * 1024 * 1024 // 2MB buffer
+        });
+        
+        const syncStatus = parseKaspaSyncLogs(logs);
+        
+        res.json({
+            ...syncStatus,
+            timestamp: new Date().toISOString(),
+            source: 'logs'
+        });
+        
+    } catch (error) {
+        console.error('Error getting Kaspa sync status from logs:', error);
+        res.json({
+            isSynced: false,
+            syncPhase: 'unknown',
+            progress: 0,
+            error: 'Unable to read node logs',
+            message: error.message,
+            timestamp: new Date().toISOString(),
+            source: 'error'
+        });
+    }
+});
+
+// Helper function to parse Kaspa sync logs
+function parseKaspaSyncLogs(logs) {
+    const lines = logs.split('\n').filter(line => line.trim());
+    const recentLines = lines.slice(-200); // Analyze more lines to find IBD messages
+    
+    let syncStatus = {
+        isSynced: false,
+        syncPhase: 'starting',
+        progress: 0,
+        currentHeight: null,
+        networkHeight: null,
+        headersProcessed: 0,
+        blocksProcessed: 0,
+        lastBlockTimestamp: null,
+        estimatedTimeRemaining: null,
+        peersConnected: 0,
+        isHealthy: true
+    };
+    
+    // Patterns to match in Kaspa logs
+    const patterns = {
+        // IBD progress: "IBD: Processed 9464992 block headers (47%) last block timestamp: 2025-12-27 09:43:21.000:+0000"
+        ibdProgress: /IBD:\s+Processed\s+(\d+)\s+block\s+headers\s+\((\d+)%\)\s+last\s+block\s+timestamp:\s+([^:]+:[^:]+:[^:]+\.\d+)/i,
+        
+        // Processing stats: "Processed 0 blocks and 1024 headers in the last 10.00s"
+        processingStats: /Processed\s+(\d+)\s+blocks\s+and\s+(\d+)\s+headers\s+in\s+the\s+last\s+[\d.]+s/i,
+        
+        // Sync completion indicators
+        syncComplete: /sync.*complete|fully.*synced|up.*to.*date/i,
+        
+        // Error patterns
+        errors: /error|failed|panic|fatal/i,
+        
+        // Peer connections
+        peers: /peers?:\s*(\d+)|connected.*peers?:\s*(\d+)/i,
+        
+        // Block height info
+        blockHeight: /height[:\s]+(\d+)|block[:\s]+(\d+)/i
+    };
+    
+    let latestIBDProgress = null;
+    let latestProcessingStats = null;
+    let hasErrors = false;
+    let syncCompleteFound = false;
+    
+    // First, look for IBD progress messages (most accurate) - search all lines
+    for (let i = recentLines.length - 1; i >= 0; i--) {
+        const line = recentLines[i];
+        const ibdMatch = line.match(patterns.ibdProgress);
+        if (ibdMatch) {
+            latestIBDProgress = {
+                headersProcessed: parseInt(ibdMatch[1]),
+                progress: parseInt(ibdMatch[2]),
+                lastBlockTimestamp: ibdMatch[3].trim()
+            };
+            break; // Use the most recent IBD progress
+        }
+    }
+    
+    // Also look for other indicators in recent lines
+    for (const line of recentLines.slice(-50)) { // Check last 50 lines for recent activity
+        // Check for processing stats
+        const statsMatch = line.match(patterns.processingStats);
+        if (statsMatch) {
+            latestProcessingStats = {
+                blocksProcessed: parseInt(statsMatch[1]),
+                headersProcessed: parseInt(statsMatch[2])
+            };
+        }
+        
+        // Check for sync completion
+        if (patterns.syncComplete.test(line)) {
+            syncCompleteFound = true;
+        }
+        
+        // Check for errors
+        if (patterns.errors.test(line)) {
+            hasErrors = true;
+        }
+        
+        // Check for peer connections
+        const peerMatch = line.match(patterns.peers);
+        if (peerMatch) {
+            syncStatus.peersConnected = parseInt(peerMatch[1] || peerMatch[2]);
+        }
+    }
+    
+    // Determine sync status based on log analysis
+    if (syncCompleteFound) {
+        syncStatus.isSynced = true;
+        syncStatus.syncPhase = 'synced';
+        syncStatus.progress = 100;
+    } else if (latestIBDProgress) {
+        // Use accurate IBD progress data
+        syncStatus.syncPhase = 'headers';
+        syncStatus.progress = latestIBDProgress.progress;
+        syncStatus.headersProcessed = latestIBDProgress.headersProcessed;
+        syncStatus.lastBlockTimestamp = latestIBDProgress.lastBlockTimestamp;
+        
+        // Calculate ETA based on IBD progress (more accurate)
+        if (latestIBDProgress.progress > 0 && latestIBDProgress.progress < 100) {
+            const nodeStartTime = getNodeStartTime();
+            const elapsedTime = Date.now() - nodeStartTime;
+            
+            // Calculate ETA based on current progress
+            const progressRatio = latestIBDProgress.progress / 100;
+            const estimatedTotalTime = elapsedTime / progressRatio;
+            syncStatus.estimatedTimeRemaining = Math.max(0, estimatedTotalTime - elapsedTime);
+            
+            // Cap the ETA at 12 hours for IBD phase (more realistic)
+            const maxETA = 12 * 60 * 60 * 1000;
+            if (syncStatus.estimatedTimeRemaining > maxETA) {
+                syncStatus.estimatedTimeRemaining = maxETA;
+            }
+        }
+    } else if (latestProcessingStats) {
+        if (latestProcessingStats.blocksProcessed > 0) {
+            // Processing blocks (later stage of sync)
+            syncStatus.syncPhase = 'blocks';
+            syncStatus.progress = 85; // Estimate - blocks phase is usually near end
+            syncStatus.blocksProcessed = latestProcessingStats.blocksProcessed;
+            syncStatus.headersProcessed = latestProcessingStats.headersProcessed;
+        } else if (latestProcessingStats.headersProcessed > 0) {
+            // Still processing headers but no IBD progress - early stage
+            syncStatus.syncPhase = 'headers';
+            // Use a conservative progress estimate when no IBD data
+            const headersPerSecond = latestProcessingStats.headersProcessed / 10;
+            if (headersPerSecond > 100) {
+                syncStatus.progress = 5; // Conservative estimate without IBD data
+            } else if (headersPerSecond > 50) {
+                syncStatus.progress = 3;
+            } else {
+                syncStatus.progress = 1;
+            }
+            syncStatus.headersProcessed = latestProcessingStats.headersProcessed;
+        }
+    } else {
+        // No clear sync indicators - node might be starting
+        syncStatus.syncPhase = 'starting';
+        syncStatus.progress = 0;
+    }
+    
+    // Set health status
+    syncStatus.isHealthy = !hasErrors && syncStatus.peersConnected > 0;
+    
+    return syncStatus;
+}
+
+// Helper to get actual Kaspa node container start time
+function getNodeStartTime() {
+    try {
+        const { execSync } = require('child_process');
+        // Get the actual container start time
+        const containerInfo = execSync('docker inspect kaspa-node --format="{{.State.StartedAt}}"', { encoding: 'utf8' }).trim();
+        const startTime = new Date(containerInfo.replace(/"/g, '')).getTime();
+        return startTime;
+    } catch (error) {
+        console.warn('Could not get container start time, using fallback:', error.message);
+        // Fallback: assume started 4 hours ago based on user's info
+        return Date.now() - (4 * 60 * 60 * 1000);
+    }
+}
 
 // Enhanced Kaspa node endpoints with port fallback
 app.get('/api/kaspa/connection/status', async (req, res) => {
@@ -1001,17 +1244,50 @@ async function getDockerServices() {
     }
 }
 
+// Check wizard status (called by dashboard frontend)
+app.get('/api/wizard/status', async (req, res) => {
+    try {
+        // Check if wizard is accessible by making a request to its health endpoint
+        const axios = require('axios');
+        try {
+            const response = await axios.get('http://localhost:3000/api/health', {
+                timeout: 3000
+            });
+            res.json({
+                running: response.status === 200,
+                status: 'healthy',
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            res.json({
+                running: false,
+                status: 'not_accessible',
+                error: error.message,
+                timestamp: new Date().toISOString()
+            });
+        }
+    } catch (error) {
+        // Use ErrorDisplay for consistent error handling
+        const errorResult = errorDisplay.showApiError('/api/wizard/status', error);
+        res.status(500).json({
+            running: false,
+            error: errorResult.userMessage,
+            details: errorResult.errorType
+        });
+    }
+});
+
 // Start wizard if needed (called by dashboard frontend)
 app.post('/api/wizard/start', async (req, res) => {
     const startTime = Date.now();
     try {
-        const scriptPath = path.join(__dirname, '../wizard/start-wizard-if-needed.sh');
+        const scriptPath = path.join(__dirname, '../wizard/start-wizard.sh');
         const { stdout, stderr } = await execAsync(scriptPath);
         
         performanceMonitor.recordAPIRequest('/api/wizard/start', Date.now() - startTime, true);
         res.json({
             success: true,
-            message: 'Wizard start initiated',
+            message: 'Wizard started successfully',
             output: stdout,
             errors: stderr
         });

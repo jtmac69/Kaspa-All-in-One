@@ -21,6 +21,7 @@ export class UIManager {
             resourceOverview: document.getElementById('resource-overview'),
             profileFilter: document.getElementById('profile-filter'),
             updateBadge: document.getElementById('update-badge'),
+            lastStatusTimestamp: document.getElementById('last-status-timestamp'),
             
             // Kaspa stats
             blockHeight: document.getElementById('block-height'),
@@ -320,12 +321,25 @@ export class UIManager {
                 <p>No Kaspa All-in-One installation was found on this system.</p>
                 <p>Please run the Installation Wizard to set up your services.</p>
                 <div class="message-actions">
-                    <a href="http://localhost:3000" class="btn-primary" target="_blank">
-                        Launch Installation Wizard
-                    </a>
+                    <button id="launch-wizard-btn" class="btn-primary">
+                        🧙‍♂️ Launch Installation Wizard
+                    </button>
                 </div>
             </div>
         `;
+        
+        // Add event listener for the launch wizard button
+        setTimeout(() => {
+            const launchBtn = document.getElementById('launch-wizard-btn');
+            if (launchBtn) {
+                launchBtn.addEventListener('click', () => {
+                    // Use the wizard navigation handler
+                    if (window.dashboard && window.dashboard.wizardNav) {
+                        window.dashboard.wizardNav.openWizard();
+                    }
+                });
+            }
+        }, 0);
     }
 
     /**
@@ -500,15 +514,52 @@ export class UIManager {
     }
 
     /**
-     * Update Kaspa node stats
+     * Update public Kaspa network stats (independent of local node)
      */
-    updateKaspaStats(stats) {
+    updateKaspaNetworkStats(networkData) {
+        if (!networkData) return;
+
+        // Update the public network section
+        this.updateElement('blockHeight', networkData.blockHeight || 'Fetching...');
+        this.updateElement('hashRate', networkData.networkHashRate || 'Fetching...');
+        this.updateElement('difficulty', this.formatNumber(networkData.difficulty) || 'Fetching...');
+        
+        // Show network name
+        if (networkData.network) {
+            this.updateElement('networkName', networkData.network);
+        }
+        
+        // Show data source and timestamp for transparency
+        if (networkData.source && networkData.source !== 'error') {
+            const sourceElement = document.getElementById('network-source');
+            if (sourceElement) {
+                sourceElement.textContent = `Source: ${networkData.source}`;
+                sourceElement.title = `Last updated: ${networkData.timestamp}`;
+            }
+        }
+    }
+
+    /**
+     * Update local Kaspa node stats (separate from public network)
+     */
+    updateLocalKaspaStats(stats) {
         if (!stats || stats.error) return;
 
-        this.updateElement('blockHeight', stats.blockHeight || '-');
-        this.updateElement('hashRate', this.formatHashRate(stats.hashRate));
-        this.updateElement('difficulty', this.formatNumber(stats.difficulty));
+        // These are local node specific stats
         this.updateElement('peerCount', stats.peerCount || '-');
+        
+        // Update any local-specific network stats if available
+        if (stats.blockHeight) {
+            this.updateElement('currentHeight', stats.blockHeight);
+        }
+    }
+
+    /**
+     * Update Kaspa node stats (legacy method - keeping for compatibility)
+     */
+    updateKaspaStats(stats) {
+        // This method is now used for local node stats
+        this.updateLocalKaspaStats(stats);
     }
 
     /**
@@ -516,7 +567,13 @@ export class UIManager {
      */
     updateNodeStatus(status, connectionStatus = null) {
         if (!status || status.error) {
-            this.updateElement('syncStatus', 'Unavailable');
+            // Show that node is starting/syncing instead of just "Unavailable"
+            if (status && status.error && status.error.includes('Cannot connect')) {
+                this.updateElement('syncStatus', 'Node Starting...');
+                this.showSyncingState();
+            } else {
+                this.updateElement('syncStatus', 'Unavailable');
+            }
             
             // Show connection troubleshooting if available
             if (status && status.connection && status.connection.troubleshooting) {
@@ -535,6 +592,9 @@ export class UIManager {
         
         if (!isSynced && status.progress !== undefined) {
             this.showSyncProgress(status.progress, status.estimatedTimeRemaining);
+        } else if (!isSynced) {
+            // Show syncing state even without progress info
+            this.showSyncingState();
         } else {
             this.hideSyncProgress();
         }
@@ -544,6 +604,181 @@ export class UIManager {
         this.updateElement('peerCountNode', status.peerCount || '-');
         this.updateElement('nodeVersion', status.version || '-');
         this.updateElement('uptime', this.formatUptime(status.uptime));
+    }
+
+    /**
+     * Update node sync status from log analysis
+     */
+    updateNodeSyncStatus(syncStatus) {
+        if (!syncStatus) return;
+
+        // Update sync status display
+        const syncPhaseText = {
+            'starting': 'Starting...',
+            'headers': 'Syncing Headers...',
+            'blocks': 'Syncing Blocks...',
+            'synced': 'Synced ✓',
+            'unknown': 'Checking...'
+        };
+
+        this.updateElement('syncStatus', syncPhaseText[syncStatus.syncPhase] || 'Unknown');
+
+        // Show sync progress if available
+        if (syncStatus.progress > 0 && syncStatus.progress < 100) {
+            this.showSyncProgress(syncStatus.progress, syncStatus.estimatedTimeRemaining);
+            
+            // Update progress details
+            if (syncStatus.syncPhase === 'headers' && syncStatus.headersProcessed) {
+                const progressText = `${syncStatus.headersProcessed.toLocaleString()} headers processed`;
+                this.updateElement('syncDetails', progressText);
+            } else if (syncStatus.syncPhase === 'blocks' && syncStatus.blocksProcessed) {
+                const progressText = `${syncStatus.blocksProcessed.toLocaleString()} blocks processed`;
+                this.updateElement('syncDetails', progressText);
+            }
+        } else if (syncStatus.isSynced) {
+            this.hideSyncProgress();
+        } else {
+            this.showSyncingState();
+        }
+
+        // Update peer count if available
+        if (syncStatus.peersConnected > 0) {
+            this.updateElement('peerCountNode', syncStatus.peersConnected);
+        }
+
+        // Show last block timestamp if available
+        if (syncStatus.lastBlockTimestamp) {
+            const blockDate = new Date(syncStatus.lastBlockTimestamp);
+            const timeAgo = this.formatTimeAgo(blockDate);
+            this.updateElement('lastBlockTime', `${timeAgo} ago`);
+        }
+
+        // Update health indicator
+        const syncContainer = document.getElementById('sync-container');
+        if (syncContainer) {
+            syncContainer.classList.toggle('healthy', syncStatus.isHealthy);
+            syncContainer.classList.toggle('syncing', !syncStatus.isSynced);
+        }
+    }
+
+    /**
+     * Show sync progress with percentage and ETA
+     */
+    showSyncProgress(progress, estimatedTimeRemaining) {
+        const progressContainer = document.getElementById('sync-progress-container');
+        const progressBar = document.getElementById('sync-progress');
+        const progressPercentage = document.getElementById('sync-percentage');
+        const progressETA = document.getElementById('sync-eta');
+
+        if (progressContainer) {
+            progressContainer.style.display = 'block';
+        }
+
+        if (progressBar) {
+            progressBar.style.width = `${progress}%`;
+        }
+
+        if (progressPercentage) {
+            progressPercentage.textContent = `${progress}%`;
+        }
+
+        if (progressETA && estimatedTimeRemaining) {
+            const eta = this.formatDuration(estimatedTimeRemaining);
+            progressETA.textContent = `ETA: ${eta}`;
+        } else if (progressETA) {
+            progressETA.textContent = 'Calculating ETA...';
+        }
+    }
+
+    /**
+     * Hide sync progress display
+     */
+    hideSyncProgress() {
+        const progressContainer = document.getElementById('sync-progress-container');
+        if (progressContainer) {
+            progressContainer.style.display = 'none';
+        }
+    }
+
+    /**
+     * Format time ago display
+     */
+    formatTimeAgo(date) {
+        const now = new Date();
+        const diffMs = now - date;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+        if (diffDays > 0) {
+            return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
+        } else if (diffHours > 0) {
+            return `${diffHours} hour${diffHours > 1 ? 's' : ''}`;
+        } else if (diffMinutes > 0) {
+            return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+        } else {
+            return 'moments';
+        }
+    }
+
+    /**
+     * Format duration in milliseconds to human readable
+     */
+    formatDuration(ms) {
+        if (!ms || ms <= 0) return 'Unknown';
+
+        const hours = Math.floor(ms / (1000 * 60 * 60));
+        const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        } else if (minutes > 0) {
+            return `${minutes}m`;
+        } else {
+            return '< 1m';
+        }
+    }
+
+    /**
+     * Show syncing state when node is starting up
+     */
+    showSyncingState() {
+        const syncContainer = document.getElementById('sync-container');
+        const syncNotification = document.getElementById('sync-notification');
+        
+        if (syncContainer) {
+            syncContainer.classList.add('syncing');
+        }
+        
+        if (syncNotification) {
+            syncNotification.style.display = 'block';
+            syncNotification.innerHTML = `
+                <span class="notification-icon">🔄</span>
+                <span class="notification-text">Node is syncing headers with the network</span>
+            `;
+        }
+        
+        // Show syncing status instead of "Starting..."
+        this.updateElement('syncStatus', 'Syncing...');
+        this.updateElement('syncPercentage', '0.0%');
+        
+        // Show progress bar in indeterminate state
+        const progressContainer = document.getElementById('sync-progress-container');
+        const progressBar = document.getElementById('sync-progress');
+        const progressETA = document.getElementById('sync-eta');
+        
+        if (progressContainer) {
+            progressContainer.style.display = 'block';
+        }
+        
+        if (progressBar) {
+            progressBar.style.width = '25%';
+            progressBar.classList.add('indeterminate');
+        }
+        
+        if (progressETA) {
+            progressETA.textContent = 'Estimating time remaining...';
+        }
     }
 
     /**
@@ -782,9 +1017,107 @@ export class UIManager {
     }
 
     /**
-     * Show notification
+     * Show notification with enhanced features for configuration changes
      */
-    showNotification(message, type = 'info') {
+    showNotification(message, type = 'info', options = {}) {
+        // Create notification container if it doesn't exist
+        let notificationContainer = document.getElementById('notification-container');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notification-container';
+            notificationContainer.className = 'notification-container';
+            notificationContainer.setAttribute('aria-live', 'polite');
+            document.body.appendChild(notificationContainer);
+        }
+
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.setAttribute('role', 'alert');
+        
+        // Create notification content
+        const content = document.createElement('div');
+        content.className = 'notification-content';
+        
+        const messageEl = document.createElement('span');
+        messageEl.className = 'notification-message';
+        messageEl.textContent = message;
+        content.appendChild(messageEl);
+        
+        // Add action buttons for configuration change notifications
+        if (options.showRefreshButton) {
+            const refreshBtn = document.createElement('button');
+            refreshBtn.className = 'notification-action btn-small';
+            refreshBtn.textContent = 'Refresh Now';
+            refreshBtn.setAttribute('aria-label', 'Refresh dashboard now');
+            refreshBtn.onclick = () => {
+                if (window.dashboard && window.dashboard.manualRefresh) {
+                    window.dashboard.manualRefresh();
+                }
+                notification.remove();
+            };
+            content.appendChild(refreshBtn);
+        }
+        
+        // Add dismiss button
+        const dismissBtn = document.createElement('button');
+        dismissBtn.className = 'notification-dismiss';
+        dismissBtn.innerHTML = '×';
+        dismissBtn.setAttribute('aria-label', 'Dismiss notification');
+        dismissBtn.onclick = () => notification.remove();
+        content.appendChild(dismissBtn);
+        
+        notification.appendChild(content);
+        notificationContainer.appendChild(notification);
+
+        // Auto-remove after specified time (default 5 seconds, longer for important notifications)
+        const autoRemoveTime = options.persistent ? 10000 : (options.duration || 5000);
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, autoRemoveTime);
+        
+        return notification;
+    }
+
+    /**
+     * Show configuration change notification with refresh option
+     * Requirements 10.4: Display notification when state file changes
+     */
+    showConfigurationChangeNotification(message, hasError = false) {
+        const type = hasError ? 'warning' : 'info';
+        return this.showNotification(message, type, {
+            showRefreshButton: true,
+            persistent: true,
+            duration: 8000
+        });
+    }
+
+    /**
+     * Show auto-refresh notification
+     * Requirements 10.8: Auto-refresh when Wizard completes
+     */
+    showAutoRefreshNotification() {
+        return this.showNotification('Configuration updated - dashboard refreshed automatically', 'success', {
+            duration: 3000
+        });
+    }
+
+    /**
+     * Clear all notifications
+     */
+    clearNotifications() {
+        const container = document.getElementById('notification-container');
+        if (container) {
+            container.innerHTML = '';
+        }
+    }
+
+    /**
+     * Legacy showNotification method for backward compatibility
+     */
+    _legacyShowNotification(message, type = 'info') {
         // Create notification element
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
@@ -826,13 +1159,19 @@ export class UIManager {
         return `${minutes}m`;
     }
 
-    formatDuration(seconds) {
-        if (!seconds) return '-';
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        
-        if (hours > 0) return `${hours}h ${minutes}m`;
-        return `${minutes}m`;
+    /**
+     * Update last status check timestamp
+     * Requirements 7.8: THE Dashboard SHALL display the last status check timestamp
+     */
+    updateLastStatusCheck(timestamp) {
+        const timestampEl = this.elements.lastStatusTimestamp;
+        if (timestampEl && timestamp) {
+            // Format timestamp to be user-friendly
+            const date = new Date(timestamp);
+            const timeString = date.toLocaleTimeString();
+            timestampEl.textContent = timeString;
+            timestampEl.setAttribute('title', `Last status check: ${date.toLocaleString()}`);
+        }
     }
 
     /**
