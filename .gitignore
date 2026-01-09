@@ -111,6 +111,10 @@ test-results/
 screenshots/
 videos/
 
+# Temporary test files
+services/dashboard/test/test-installation-state-*.json
+services/wizard/test/test-installation-state-*.json
+
 # Build artifacts
 dist/
 build/
