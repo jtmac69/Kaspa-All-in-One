@@ -3,6 +3,26 @@
  * Handles all UI updates and DOM manipulation
  */
 
+/**
+ * Sync Phase Definitions with colors and icons
+ */
+const SYNC_PHASES = {
+    starting: { name: 'Starting', icon: '🔄', color: '#888888', order: -1 },
+    connecting: { name: 'Connecting', icon: '🌐', color: '#3498db', order: -1 },
+    proof: { name: 'Proof', icon: '🔐', color: '#9b59b6', order: 0 },
+    headers: { name: 'Headers', icon: '📋', color: '#f39c12', order: 1 },
+    utxo: { name: 'UTXO', icon: '💰', color: '#e74c3c', order: 2 },
+    blocks: { name: 'Blocks', icon: '📦', color: '#1abc9c', order: 3 },
+    virtual: { name: 'Virtual', icon: '🔗', color: '#2ecc71', order: 4 },
+    synced: { name: 'Synced', icon: '✅', color: '#27ae60', order: 5 },
+    unknown: { name: 'Unknown', icon: '❓', color: '#95a5a6', order: -1 }
+};
+
+/**
+ * Pipeline phases (visible in the pipeline UI)
+ */
+const PIPELINE_PHASES = ['proof', 'headers', 'utxo', 'blocks', 'virtual', 'synced'];
+
 export class UIManager {
     constructor() {
         this.elements = {};
@@ -607,50 +627,95 @@ export class UIManager {
     }
 
     /**
-     * Update node sync status from log analysis
+     * Update node sync status from log analysis - ENHANCED VERSION
+     * @param {Object} syncStatus - Sync status from /api/kaspa/node/sync-status
      */
     updateNodeSyncStatus(syncStatus) {
         if (!syncStatus) return;
 
-        // Update sync status display
-        const syncPhaseText = {
-            'starting': 'Starting...',
-            'headers': 'Syncing Headers...',
-            'blocks': 'Syncing Blocks...',
-            'synced': 'Synced ✓',
-            'unknown': 'Checking...'
-        };
-
-        this.updateElement('syncStatus', syncPhaseText[syncStatus.syncPhase] || 'Unknown');
-
-        // Show sync progress if available
-        if (syncStatus.progress > 0 && syncStatus.progress < 100) {
-            this.showSyncProgress(syncStatus.progress, syncStatus.estimatedTimeRemaining);
-            
-            // Update progress details
-            if (syncStatus.syncPhase === 'headers' && syncStatus.headersProcessed) {
-                const progressText = `${syncStatus.headersProcessed.toLocaleString()} headers processed`;
-                this.updateElement('syncDetails', progressText);
-            } else if (syncStatus.syncPhase === 'blocks' && syncStatus.blocksProcessed) {
-                const progressText = `${syncStatus.blocksProcessed.toLocaleString()} blocks processed`;
-                this.updateElement('syncDetails', progressText);
+        const phase = syncStatus.syncPhase || 'unknown';
+        const phaseConfig = SYNC_PHASES[phase] || SYNC_PHASES.unknown;
+        
+        // Update sync status text with phase name
+        const syncStatusEl = document.getElementById('sync-status') || this.elements.syncStatus;
+        if (syncStatusEl) {
+            if (syncStatus.isSynced) {
+                syncStatusEl.textContent = 'Synced ✓';
+                syncStatusEl.style.color = '#27ae60';
+                syncStatusEl.classList.remove('syncing');
+                syncStatusEl.classList.add('synced');
+            } else {
+                syncStatusEl.textContent = syncStatus.syncPhaseName || phaseConfig.name;
+                syncStatusEl.style.color = phaseConfig.color;
+                syncStatusEl.classList.add('syncing');
+                syncStatusEl.classList.remove('synced');
             }
+        }
+
+        // Update progress bar
+        if (syncStatus.progress > 0 && syncStatus.progress < 100 && !syncStatus.isSynced) {
+            this.showSyncProgress(syncStatus.progress, syncStatus.estimatedTimeRemaining);
         } else if (syncStatus.isSynced) {
             this.hideSyncProgress();
         } else {
             this.showSyncingState();
         }
 
-        // Update peer count if available
-        if (syncStatus.peersConnected > 0) {
-            this.updateElement('peerCountNode', syncStatus.peersConnected);
+        // Update sync detail/activity text
+        const detailEl = document.getElementById('sync-detail') || document.getElementById('syncDetails');
+        if (detailEl && syncStatus.detail) {
+            detailEl.textContent = syncStatus.detail;
         }
 
-        // Show last block timestamp if available
+        // Update ETA
+        const etaEl = document.getElementById('sync-eta');
+        if (etaEl) {
+            if (syncStatus.isSynced || !syncStatus.estimatedTimeRemaining) {
+                etaEl.style.display = 'none';
+            } else {
+                etaEl.textContent = `ETA: ${syncStatus.estimatedTimeRemaining}`;
+                etaEl.style.display = 'inline';
+            }
+        }
+
+        // Update sync notification/warning
+        const notificationEl = document.getElementById('sync-notification') || this.elements.syncNotification;
+        if (notificationEl) {
+            if (syncStatus.isSynced) {
+                notificationEl.style.display = 'none';
+            } else {
+                notificationEl.style.display = 'flex';
+                const textEl = notificationEl.querySelector('.notification-text, span:last-child');
+                if (textEl) {
+                    textEl.textContent = 'Node is syncing with the network';
+                }
+            }
+        }
+
+        // Render sync pipeline
+        this.renderSyncPipeline(phase);
+
+        // Update peer count
+        if (syncStatus.peersConnected > 0) {
+            this.updateElement('peerCountNode', syncStatus.peersConnected);
+            this.updateElement('peer-count-node', syncStatus.peersConnected);
+        }
+
+        // Update headers/blocks counts
+        if (syncStatus.headersProcessed > 0) {
+            this.updateElement('headersProcessed', syncStatus.headersProcessed.toLocaleString());
+        }
+        if (syncStatus.blocksProcessed > 0) {
+            this.updateElement('blocksProcessed', syncStatus.blocksProcessed.toLocaleString());
+        }
+
+        // Update last block timestamp
         if (syncStatus.lastBlockTimestamp) {
             const blockDate = new Date(syncStatus.lastBlockTimestamp);
-            const timeAgo = this.formatTimeAgo(blockDate);
-            this.updateElement('lastBlockTime', `${timeAgo} ago`);
+            if (!isNaN(blockDate.getTime())) {
+                const timeAgo = this.formatTimeAgo(blockDate);
+                this.updateElement('lastBlockTime', `${timeAgo} ago`);
+            }
         }
 
         // Update health indicator
@@ -779,6 +844,162 @@ export class UIManager {
         if (progressETA) {
             progressETA.textContent = 'Estimating time remaining...';
         }
+    }
+
+    /**
+     * Render the sync phase pipeline visualization
+     * @param {string} currentPhase - Current sync phase ID
+     */
+    renderSyncPipeline(currentPhase) {
+        const pipelineContainer = document.getElementById('sync-pipeline');
+        if (!pipelineContainer) return;
+
+        const currentOrder = SYNC_PHASES[currentPhase]?.order ?? -1;
+
+        let html = '';
+        PIPELINE_PHASES.forEach((phaseId, index) => {
+            const phase = SYNC_PHASES[phaseId];
+            const phaseOrder = phase.order;
+            
+            let status = 'pending';
+            let statusIcon = '○';
+            
+            if (phaseOrder < currentOrder || currentPhase === 'synced') {
+                status = 'completed';
+                statusIcon = '✓';
+            } else if (phaseOrder === currentOrder) {
+                status = 'current';
+                statusIcon = '▶';
+            }
+
+            html += `
+                <div class="pipeline-phase ${status}" data-phase="${phaseId}" title="${phase.name}">
+                    <span class="phase-status">${statusIcon}</span>
+                    <span class="phase-name">${phase.name}</span>
+                </div>
+            `;
+
+            // Add connector between phases (except after last)
+            if (index < PIPELINE_PHASES.length - 1) {
+                html += '<span class="pipeline-connector">→</span>';
+            }
+        });
+
+        pipelineContainer.innerHTML = html;
+    }
+
+    /**
+     * Update the Kaspa Node service card with sync status
+     * @param {Object} syncStatus - Sync status from API
+     */
+    updateKaspaServiceCardSync(syncStatus) {
+        if (!syncStatus) return;
+
+        // Find the Kaspa Node service card
+        const serviceCard = document.querySelector('[data-service="kaspa-node"]') ||
+                            document.querySelector('.service-card.kaspa-node') ||
+                            document.querySelector('.service-item[data-name="kaspa-node"]');
+        
+        if (!serviceCard) return;
+
+        const phase = syncStatus.syncPhase || 'unknown';
+        const phaseConfig = SYNC_PHASES[phase] || SYNC_PHASES.unknown;
+
+        // Update status badge
+        const badgeEl = serviceCard.querySelector('.service-status-badge, .status-badge, .badge');
+        if (badgeEl) {
+            if (syncStatus.isSynced) {
+                badgeEl.textContent = 'SYNCED';
+                badgeEl.className = 'service-status-badge synced';
+                badgeEl.style.borderColor = '#27ae60';
+            } else {
+                const progressText = syncStatus.progress > 0 ? ` ${syncStatus.progress}%` : '';
+                badgeEl.textContent = `${phaseConfig.name.toUpperCase()}${progressText}`;
+                badgeEl.className = 'service-status-badge syncing';
+                badgeEl.style.borderColor = phaseConfig.color;
+            }
+        }
+
+        // Update warning/sync message
+        const messageEl = serviceCard.querySelector('.service-sync-message, .sync-warning, .service-message');
+        if (messageEl) {
+            if (syncStatus.isSynced) {
+                messageEl.style.display = 'none';
+            } else {
+                messageEl.style.display = 'flex';
+                const textEl = messageEl.querySelector('.warning-text, span:last-child');
+                if (textEl) {
+                    textEl.textContent = syncStatus.detail || 'Node is syncing with network';
+                }
+            }
+        }
+
+        // Update or create mini progress bar
+        let progressContainer = serviceCard.querySelector('.service-progress-container');
+        if (!syncStatus.isSynced && syncStatus.progress > 0) {
+            if (!progressContainer) {
+                progressContainer = document.createElement('div');
+                progressContainer.className = 'service-progress-container';
+                progressContainer.innerHTML = '<div class="service-progress-bar"></div>';
+                
+                const insertPoint = messageEl || serviceCard.querySelector('.service-controls');
+                if (insertPoint) {
+                    insertPoint.parentNode.insertBefore(progressContainer, insertPoint);
+                } else {
+                    serviceCard.appendChild(progressContainer);
+                }
+            }
+            
+            const progressBar = progressContainer.querySelector('.service-progress-bar');
+            if (progressBar) {
+                // Calculate overall progress based on phase
+                const overallProgress = this.calculateOverallProgress(syncStatus);
+                progressBar.style.width = `${overallProgress}%`;
+            }
+        } else if (progressContainer && syncStatus.isSynced) {
+            progressContainer.remove();
+        }
+    }
+
+    /**
+     * Calculate overall sync progress across all phases
+     * @param {Object} syncStatus - Sync status object
+     * @returns {number} Overall progress 0-100
+     */
+    calculateOverallProgress(syncStatus) {
+        if (syncStatus.isSynced) return 100;
+        
+        const phase = syncStatus.syncPhase;
+        const phaseProgress = syncStatus.progress || 0;
+        
+        // Phase weights (based on typical duration)
+        const weights = {
+            starting: 1,
+            connecting: 2,
+            proof: 5,
+            headers: 50,  // Longest phase
+            utxo: 5,
+            blocks: 25,
+            virtual: 12
+        };
+        
+        const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+        let completedWeight = 0;
+        
+        const phaseOrder = ['starting', 'connecting', 'proof', 'headers', 'utxo', 'blocks', 'virtual'];
+        const currentIndex = phaseOrder.indexOf(phase);
+        
+        // Add weight for completed phases
+        for (let i = 0; i < currentIndex; i++) {
+            completedWeight += weights[phaseOrder[i]] || 0;
+        }
+        
+        // Add partial weight for current phase
+        if (weights[phase]) {
+            completedWeight += (weights[phase] * phaseProgress / 100);
+        }
+        
+        return Math.round((completedWeight / totalWeight) * 100);
     }
 
     /**

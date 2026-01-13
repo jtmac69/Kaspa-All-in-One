@@ -730,150 +730,217 @@ app.get('/api/kaspa/node/sync-status', async (req, res) => {
     }
 });
 
-// Helper function to parse Kaspa sync logs
+// Helper function to parse Kaspa sync logs - ENHANCED VERSION
 function parseKaspaSyncLogs(logs) {
     const lines = logs.split('\n').filter(line => line.trim());
     const recentLines = lines.slice(-200); // Analyze more lines to find IBD messages
+    const logContent = recentLines.join('\n');
     
     let syncStatus = {
         isSynced: false,
         syncPhase: 'starting',
+        syncPhaseName: 'Starting',
         progress: 0,
         currentHeight: null,
         networkHeight: null,
         headersProcessed: 0,
         blocksProcessed: 0,
+        utxoChunks: 0,
+        utxoCount: 0,
         lastBlockTimestamp: null,
         estimatedTimeRemaining: null,
         peersConnected: 0,
-        isHealthy: true
+        isHealthy: true,
+        detail: 'Initializing...'
     };
     
-    // Patterns to match in Kaspa logs
-    const patterns = {
-        // IBD progress: "IBD: Processed 9464992 block headers (47%) last block timestamp: 2025-12-27 09:43:21.000:+0000"
-        ibdProgress: /IBD:\s+Processed\s+(\d+)\s+block\s+headers\s+\((\d+)%\)\s+last\s+block\s+timestamp:\s+([^:]+:[^:]+:[^:]+\.\d+)/i,
-        
-        // Processing stats: "Processed 0 blocks and 1024 headers in the last 10.00s"
-        processingStats: /Processed\s+(\d+)\s+blocks\s+and\s+(\d+)\s+headers\s+in\s+the\s+last\s+[\d.]+s/i,
-        
-        // Sync completion indicators
-        syncComplete: /sync.*complete|fully.*synced|up.*to.*date/i,
-        
-        // Error patterns
-        errors: /error|failed|panic|fatal/i,
-        
-        // Peer connections
-        peers: /peers?:\s*(\d+)|connected.*peers?:\s*(\d+)/i,
-        
-        // Block height info
-        blockHeight: /height[:\s]+(\d+)|block[:\s]+(\d+)/i
-    };
-    
-    let latestIBDProgress = null;
-    let latestProcessingStats = null;
-    let hasErrors = false;
-    let syncCompleteFound = false;
-    
-    // First, look for IBD progress messages (most accurate) - search all lines
-    for (let i = recentLines.length - 1; i >= 0; i--) {
-        const line = recentLines[i];
-        const ibdMatch = line.match(patterns.ibdProgress);
-        if (ibdMatch) {
-            latestIBDProgress = {
-                headersProcessed: parseInt(ibdMatch[1]),
-                progress: parseInt(ibdMatch[2]),
-                lastBlockTimestamp: ibdMatch[3].trim()
-            };
-            break; // Use the most recent IBD progress
-        }
+    // Check for errors first
+    const hasErrors = /error|failed|panic|fatal/i.test(logContent) && 
+                      !/error.*0|failed.*0/i.test(logContent); // Ignore "0 errors" type messages
+
+    // Detect peer count
+    const peerMatch = logContent.match(/peers?:\s*(\d+)|connected.*?(\d+)\s*peers?|(\d+)\s*peers?\s*connected/i);
+    if (peerMatch) {
+        syncStatus.peersConnected = parseInt(peerMatch[1] || peerMatch[2] || peerMatch[3], 10);
     }
-    
-    // Also look for other indicators in recent lines
-    for (const line of recentLines.slice(-50)) { // Check last 50 lines for recent activity
-        // Check for processing stats
-        const statsMatch = line.match(patterns.processingStats);
-        if (statsMatch) {
-            latestProcessingStats = {
-                blocksProcessed: parseInt(statsMatch[1]),
-                headersProcessed: parseInt(statsMatch[2])
-            };
-        }
-        
-        // Check for sync completion
-        if (patterns.syncComplete.test(line)) {
-            syncCompleteFound = true;
-        }
-        
-        // Check for errors
-        if (patterns.errors.test(line)) {
-            hasErrors = true;
-        }
-        
-        // Check for peer connections
-        const peerMatch = line.match(patterns.peers);
-        if (peerMatch) {
-            syncStatus.peersConnected = parseInt(peerMatch[1] || peerMatch[2]);
-        }
-    }
-    
-    // Determine sync status based on log analysis
-    if (syncCompleteFound) {
+
+    // =========================================================================
+    // PHASE DETECTION - Check in reverse order (most advanced phase first)
+    // =========================================================================
+
+    // Check for SYNCED state
+    if (/IBD finished successfully|Node is fully synced|Sync complete/i.test(logContent)) {
         syncStatus.isSynced = true;
         syncStatus.syncPhase = 'synced';
+        syncStatus.syncPhaseName = 'Fully Synced';
         syncStatus.progress = 100;
-    } else if (latestIBDProgress) {
-        // Use accurate IBD progress data
-        syncStatus.syncPhase = 'headers';
-        syncStatus.progress = latestIBDProgress.progress;
-        syncStatus.headersProcessed = latestIBDProgress.headersProcessed;
-        syncStatus.lastBlockTimestamp = latestIBDProgress.lastBlockTimestamp;
-        
-        // Calculate ETA based on IBD progress (more accurate)
-        if (latestIBDProgress.progress > 0 && latestIBDProgress.progress < 100) {
-            const nodeStartTime = getNodeStartTime();
-            const elapsedTime = Date.now() - nodeStartTime;
-            
-            // Calculate ETA based on current progress
-            const progressRatio = latestIBDProgress.progress / 100;
-            const estimatedTotalTime = elapsedTime / progressRatio;
-            syncStatus.estimatedTimeRemaining = Math.max(0, estimatedTotalTime - elapsedTime);
-            
-            // Cap the ETA at 12 hours for IBD phase (more realistic)
-            const maxETA = 12 * 60 * 60 * 1000;
-            if (syncStatus.estimatedTimeRemaining > maxETA) {
-                syncStatus.estimatedTimeRemaining = maxETA;
-            }
-        }
-    } else if (latestProcessingStats) {
-        if (latestProcessingStats.blocksProcessed > 0) {
-            // Processing blocks (later stage of sync)
-            syncStatus.syncPhase = 'blocks';
-            syncStatus.progress = 85; // Estimate - blocks phase is usually near end
-            syncStatus.blocksProcessed = latestProcessingStats.blocksProcessed;
-            syncStatus.headersProcessed = latestProcessingStats.headersProcessed;
-        } else if (latestProcessingStats.headersProcessed > 0) {
-            // Still processing headers but no IBD progress - early stage
-            syncStatus.syncPhase = 'headers';
-            // Use a conservative progress estimate when no IBD data
-            const headersPerSecond = latestProcessingStats.headersProcessed / 10;
-            if (headersPerSecond > 100) {
-                syncStatus.progress = 5; // Conservative estimate without IBD data
-            } else if (headersPerSecond > 50) {
-                syncStatus.progress = 3;
-            } else {
-                syncStatus.progress = 1;
-            }
-            syncStatus.headersProcessed = latestProcessingStats.headersProcessed;
-        }
-    } else {
-        // No clear sync indicators - node might be starting
-        syncStatus.syncPhase = 'starting';
-        syncStatus.progress = 0;
+        syncStatus.detail = 'Node is fully synchronized with the network';
+        syncStatus.isHealthy = true;
+        return syncStatus;
     }
-    
-    // Set health status
-    syncStatus.isHealthy = !hasErrors && syncStatus.peersConnected > 0;
+
+    // Check for VIRTUAL phase: "Resolving virtual. Estimated progress: XX%"
+    const virtualMatch = logContent.match(/Resolving virtual[.\s]*(?:Estimated progress:\s*)?(\d+)?%?/i);
+    if (virtualMatch) {
+        syncStatus.syncPhase = 'virtual';
+        syncStatus.syncPhaseName = 'Resolving Virtual DAG';
+        syncStatus.progress = virtualMatch[1] ? parseInt(virtualMatch[1], 10) : 50;
+        syncStatus.detail = syncStatus.progress > 0 
+            ? `Resolving virtual DAG: ${syncStatus.progress}%`
+            : 'Resolving virtual DAG...';
+        syncStatus.estimatedTimeRemaining = '1-5 minutes';
+        syncStatus.isHealthy = !hasErrors;
+        return syncStatus;
+    }
+
+    // Check for BLOCKS phase: "Processed X blocks and 0 headers"
+    const blocksMatch = logContent.match(/Processed\s+(\d+)\s+blocks\s+and\s+0\s+headers/i);
+    if (blocksMatch) {
+        const blocksProcessed = parseInt(blocksMatch[1], 10);
+        if (blocksProcessed > 0) {
+            syncStatus.syncPhase = 'blocks';
+            syncStatus.syncPhaseName = 'Processing Blocks';
+            syncStatus.blocksProcessed = blocksProcessed;
+            syncStatus.progress = 50; // Blocks phase doesn't report percentage
+            syncStatus.detail = `Processed ${blocksProcessed.toLocaleString()} blocks`;
+            syncStatus.estimatedTimeRemaining = '5-20 minutes';
+            syncStatus.isHealthy = !hasErrors;
+            return syncStatus;
+        }
+    }
+
+    // Check for UTXO phase: "Received XXX UTXO set chunks"
+    if (/UTXO set chunks|Fetching the pruning point UTXO set/i.test(logContent)) {
+        syncStatus.syncPhase = 'utxo';
+        syncStatus.syncPhaseName = 'Fetching UTXO Set';
+        
+        // Check if finished
+        if (/Finished receiving the UTXO set/i.test(logContent)) {
+            syncStatus.progress = 100;
+            const totalMatch = logContent.match(/Total UTXOs:\s*([\d,]+)/i);
+            if (totalMatch) {
+                syncStatus.utxoCount = parseInt(totalMatch[1].replace(/,/g, ''), 10);
+                syncStatus.detail = `Received ${syncStatus.utxoCount.toLocaleString()} UTXOs`;
+            } else {
+                syncStatus.detail = 'UTXO set download complete';
+            }
+        } else {
+            // Still downloading
+            const chunkMatch = logContent.match(/Received\s+(\d+)\s+UTXO set chunks.*?totaling in\s+([\d,]+)\s+UTXOs/i);
+            if (chunkMatch) {
+                syncStatus.utxoChunks = parseInt(chunkMatch[1], 10);
+                syncStatus.utxoCount = parseInt(chunkMatch[2].replace(/,/g, ''), 10);
+                syncStatus.progress = 50;
+                syncStatus.detail = `Received ${syncStatus.utxoChunks.toLocaleString()} chunks (${syncStatus.utxoCount.toLocaleString()} UTXOs)`;
+            } else {
+                syncStatus.progress = 25;
+                syncStatus.detail = 'Fetching UTXO set...';
+            }
+        }
+        syncStatus.estimatedTimeRemaining = '2-3 minutes';
+        syncStatus.isHealthy = !hasErrors;
+        return syncStatus;
+    }
+
+    // Check for HEADERS/IBD phase: "IBD: Processed XXX block headers (N%)"
+    const ibdMatch = logContent.match(/IBD[:\s]*Processed\s+([\d,]+)\s+block\s+headers\s*\((\d+)%\)(?:\s+last\s+block\s+timestamp:\s+([^\n]+))?/i);
+    if (ibdMatch) {
+        syncStatus.syncPhase = 'headers';
+        syncStatus.syncPhaseName = 'Syncing Headers (IBD)';
+        syncStatus.headersProcessed = parseInt(ibdMatch[1].replace(/,/g, ''), 10);
+        syncStatus.progress = parseInt(ibdMatch[2], 10);
+        syncStatus.detail = `Processed ${syncStatus.headersProcessed.toLocaleString()} headers (${syncStatus.progress}%)`;
+        
+        if (ibdMatch[3]) {
+            syncStatus.lastBlockTimestamp = ibdMatch[3].trim();
+        }
+        
+        // Estimate time remaining based on percentage
+        if (syncStatus.progress >= 95) {
+            syncStatus.estimatedTimeRemaining = '< 5 minutes';
+        } else if (syncStatus.progress >= 80) {
+            syncStatus.estimatedTimeRemaining = '10-20 minutes';
+        } else if (syncStatus.progress >= 60) {
+            syncStatus.estimatedTimeRemaining = '20-40 minutes';
+        } else if (syncStatus.progress >= 40) {
+            syncStatus.estimatedTimeRemaining = '40-60 minutes';
+        } else if (syncStatus.progress >= 20) {
+            syncStatus.estimatedTimeRemaining = '1-2 hours';
+        } else {
+            syncStatus.estimatedTimeRemaining = '2+ hours';
+        }
+        
+        syncStatus.isHealthy = !hasErrors && syncStatus.peersConnected > 0;
+        return syncStatus;
+    }
+
+    // Check for early headers processing (no IBD percentage yet)
+    const earlyHeadersMatch = logContent.match(/Processed\s+0\s+blocks\s+and\s+(\d+)\s+headers/);
+    if (earlyHeadersMatch) {
+        const headerCount = parseInt(earlyHeadersMatch[1], 10);
+        if (headerCount > 0) {
+            syncStatus.syncPhase = 'headers';
+            syncStatus.syncPhaseName = 'Syncing Headers (IBD)';
+            syncStatus.headersProcessed = headerCount;
+            syncStatus.progress = Math.min(5, Math.floor(headerCount / 100000)); // Conservative estimate
+            syncStatus.detail = `Processing headers: ${headerCount.toLocaleString()} so far`;
+            syncStatus.estimatedTimeRemaining = '2+ hours';
+            syncStatus.isHealthy = !hasErrors;
+            return syncStatus;
+        }
+    }
+
+    // Check for PROOF phase: "pruning point proof"
+    if (/pruning point proof|pruning proof|Validating and applying pruning point proof/i.test(logContent)) {
+        syncStatus.syncPhase = 'proof';
+        syncStatus.syncPhaseName = 'Processing Pruning Proof';
+        
+        if (/Applying.*pruning/i.test(logContent)) {
+            syncStatus.progress = 75;
+            syncStatus.detail = 'Applying pruning point proof...';
+        } else if (/Validating.*pruning/i.test(logContent)) {
+            syncStatus.progress = 50;
+            syncStatus.detail = 'Validating pruning point proof...';
+        } else if (/download.*pruning|pruning.*download/i.test(logContent)) {
+            syncStatus.progress = 25;
+            syncStatus.detail = 'Downloading pruning point proof...';
+        } else {
+            syncStatus.progress = 10;
+            syncStatus.detail = 'Processing pruning point proof...';
+        }
+        syncStatus.estimatedTimeRemaining = '1-2 minutes';
+        syncStatus.isHealthy = !hasErrors;
+        return syncStatus;
+    }
+
+    // Check for CONNECTING phase
+    if (/Connecting to|Connected to peer|peer connection established/i.test(logContent)) {
+        syncStatus.syncPhase = 'connecting';
+        syncStatus.syncPhaseName = 'Connecting to Peers';
+        syncStatus.progress = 0;
+        syncStatus.detail = 'Establishing network connections...';
+        syncStatus.estimatedTimeRemaining = '< 1 minute';
+        syncStatus.isHealthy = !hasErrors;
+        return syncStatus;
+    }
+
+    // Check for STARTING phase
+    if (/Starting|Initializing|Loading database/i.test(logContent)) {
+        syncStatus.syncPhase = 'starting';
+        syncStatus.syncPhaseName = 'Node Starting';
+        syncStatus.progress = 0;
+        syncStatus.detail = 'Node is starting up...';
+        syncStatus.estimatedTimeRemaining = '< 1 minute';
+        syncStatus.isHealthy = !hasErrors;
+        return syncStatus;
+    }
+
+    // Default: unknown state
+    syncStatus.syncPhase = 'unknown';
+    syncStatus.syncPhaseName = 'Unknown State';
+    syncStatus.progress = 0;
+    syncStatus.detail = 'Unable to determine sync state';
+    syncStatus.isHealthy = false;
     
     return syncStatus;
 }

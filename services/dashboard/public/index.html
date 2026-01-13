@@ -102,6 +102,46 @@
                                 <span class="notification-icon" aria-hidden="true">⚠️</span>
                                 <span class="notification-text">Node is not synchronized with the network</span>
                             </div>
+                            
+                            <!-- Sync Phase Pipeline -->
+                            <div id="sync-pipeline" class="sync-pipeline">
+                                <!-- Pipeline will be rendered dynamically by JavaScript -->
+                                <div class="pipeline-phase pending">
+                                    <span class="phase-status">○</span>
+                                    <span class="phase-name">Proof</span>
+                                </div>
+                                <span class="pipeline-connector">→</span>
+                                <div class="pipeline-phase pending">
+                                    <span class="phase-status">○</span>
+                                    <span class="phase-name">Headers</span>
+                                </div>
+                                <span class="pipeline-connector">→</span>
+                                <div class="pipeline-phase pending">
+                                    <span class="phase-status">○</span>
+                                    <span class="phase-name">UTXO</span>
+                                </div>
+                                <span class="pipeline-connector">→</span>
+                                <div class="pipeline-phase pending">
+                                    <span class="phase-status">○</span>
+                                    <span class="phase-name">Blocks</span>
+                                </div>
+                                <span class="pipeline-connector">→</span>
+                                <div class="pipeline-phase pending">
+                                    <span class="phase-status">○</span>
+                                    <span class="phase-name">Virtual</span>
+                                </div>
+                                <span class="pipeline-connector">→</span>
+                                <div class="pipeline-phase pending">
+                                    <span class="phase-status">○</span>
+                                    <span class="phase-name">Synced</span>
+                                </div>
+                            </div>
+
+                            <!-- Sync Activity/Detail -->
+                            <div id="sync-activity" class="sync-activity">
+                                <span class="activity-label">Activity:</span>
+                                <span id="sync-detail" class="sync-detail">Initializing...</span>
+                            </div>
                         </div>
                         
                         <div class="node-stats-grid" role="list" aria-label="Local node statistics">

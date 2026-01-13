@@ -387,6 +387,9 @@ class Dashboard {
             // Load log-based sync status (more reliable than RPC)
             const syncStatus = await this.api.getKaspaSyncStatus();
             this.ui.updateNodeSyncStatus(syncStatus);
+            
+            // Update Services Status card
+            this.ui.updateKaspaServiceCardSync(syncStatus);
 
             // Try to load additional node data if RPC is available
             const [info, stats, connectionStatus] = await Promise.all([
