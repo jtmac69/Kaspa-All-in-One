@@ -724,6 +724,98 @@ export class UIManager {
             syncContainer.classList.toggle('healthy', syncStatus.isHealthy);
             syncContainer.classList.toggle('syncing', !syncStatus.isSynced);
         }
+
+        // ========================================================================
+        // FIX 1: Update Kaspa Node service card with sync status
+        // ========================================================================
+        this.updateKaspaNodeServiceCard(syncStatus);
+
+        // ========================================================================
+        // FIX 2: Populate lower information fields from RPC data
+        // ========================================================================
+        if (syncStatus.rpc) {
+            // Update NODE VERSION
+            const versionEl = document.querySelector('[data-node-version]') || document.getElementById('node-version');
+            if (versionEl && syncStatus.rpc.serverVersion) {
+                versionEl.textContent = syncStatus.rpc.serverVersion;
+            }
+            
+            // Update CONNECTED PEERS
+            const peersEl = document.querySelector('[data-connected-peers]') || document.getElementById('peer-count-node');
+            if (peersEl && syncStatus.rpc.connectedPeers !== undefined) {
+                peersEl.textContent = syncStatus.rpc.connectedPeers || '0';
+            }
+            
+            // Update UPTIME (if available from container stats)
+            const uptimeEl = document.querySelector('[data-node-uptime]') || document.getElementById('uptime');
+            if (uptimeEl && syncStatus.uptime) {
+                uptimeEl.textContent = this.formatUptime(syncStatus.uptime);
+            }
+            
+            // Update MEMPOOL SIZE
+            const mempoolEl = document.querySelector('[data-mempool-size]') || document.getElementById('mempool-size');
+            if (mempoolEl && syncStatus.rpc.mempoolSize !== undefined) {
+                mempoolEl.textContent = syncStatus.rpc.mempoolSize;
+            }
+        }
+        
+        if (syncStatus.dag) {
+            // Update LOCAL HEIGHT (virtualDaaScore or blockCount)
+            const heightEl = document.querySelector('[data-local-height]') || document.getElementById('current-height');
+            if (heightEl && syncStatus.dag.virtualDaaScore) {
+                heightEl.textContent = syncStatus.dag.virtualDaaScore.toLocaleString();
+            } else if (heightEl && syncStatus.dag.blockCount) {
+                heightEl.textContent = syncStatus.dag.blockCount.toLocaleString();
+            }
+            
+            // Update LAST BLOCK (if timestamp available)
+            const lastBlockEl = document.querySelector('[data-last-block]') || document.getElementById('last-block-time');
+            if (lastBlockEl && syncStatus.dag.tipTimestamp) {
+                const blockDate = new Date(parseInt(syncStatus.dag.tipTimestamp) * 1000);
+                const timeAgo = this.formatTimeAgo(blockDate);
+                lastBlockEl.textContent = `${timeAgo} ago`;
+            }
+        }
+    }
+
+    /**
+     * FIX 1: Update Kaspa Node service card with sync status
+     * @param {Object} syncStatus - Sync status object
+     */
+    updateKaspaNodeServiceCard(syncStatus) {
+        if (!syncStatus) return;
+
+        // Find the Kaspa Node service card
+        const kaspaCard = document.querySelector('[data-service="kaspa-node"]') ||
+                         Array.from(document.querySelectorAll('.service-card')).find(card => 
+                             card.textContent.includes('Kaspa Node') || card.textContent.includes('kaspa-node')
+                         );
+        
+        if (!kaspaCard) return;
+
+        const statusEl = kaspaCard.querySelector('.service-status, .status-badge');
+        const detailEl = kaspaCard.querySelector('.service-detail, .service-info');
+        
+        if (syncStatus.isSynced) {
+            // Node is fully synced
+            if (statusEl) {
+                statusEl.textContent = 'Running - Synced';
+                statusEl.className = 'status-badge healthy';
+            }
+            if (detailEl) {
+                detailEl.textContent = 'Node is fully synchronized';
+            }
+        } else if (syncStatus.syncPhase !== 'unknown') {
+            // Node is syncing
+            const phaseName = syncStatus.syncPhaseName || 'Syncing';
+            if (statusEl) {
+                statusEl.textContent = `Running - ${phaseName}`;
+                statusEl.className = 'status-badge unhealthy';
+            }
+            if (detailEl) {
+                detailEl.textContent = syncStatus.detail || 'Synchronizing with network';
+            }
+        }
     }
 
     /**

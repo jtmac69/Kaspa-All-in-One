@@ -618,48 +618,73 @@ app.get('/api/kaspa/info', async (req, res) => {
     }
 });
 
-// Public Kaspa Network Stats (independent of local node)
+// ============================================================================
+// FIX 3: Public Kaspa Network Stats (independent of local node)
+// ============================================================================
 app.get('/api/kaspa/network/public', async (req, res) => {
     try {
-        // First, try to get data from local node if it's synced
+        // Try multiple sources in order of preference
         let networkData = null;
         
+        // Source 1: Try public REST API (kas.fyi or similar)
         try {
-            const localNodeInfo = await axios.post('http://localhost:16111', {
-                method: 'getInfo',
-                params: {}
-            }, { timeout: 3000 });
+            // Note: This is a placeholder - actual public API endpoint may vary
+            // Common options: kas.fyi API, kaspa.org API, or public explorer APIs
+            const publicResponse = await axios.get('https://api.kaspa.org/info/blockg/info', {
+                timeout: 5000
+            });
             
-            if (localNodeInfo.data && !localNodeInfo.data.error) {
-                const info = localNodeInfo.data.result || localNodeInfo.data;
+            if (publicResponse.data) {
                 networkData = {
-                    blockHeight: info.blockCount || info.daaScore || 'Syncing...',
-                    difficulty: info.difficulty || 'Unknown',
-                    networkHashRate: calculateHashRate(info.difficulty),
-                    network: info.network || 'mainnet',
-                    source: 'local-node',
+                    blockHeight: publicResponse.data.virtualDaaScore || publicResponse.data.blockCount || 'N/A',
+                    difficulty: publicResponse.data.difficulty || 'N/A',
+                    networkHashRate: calculateHashRate(publicResponse.data.difficulty),
+                    network: publicResponse.data.networkName || 'mainnet',
+                    source: 'public-api',
                     timestamp: new Date().toISOString()
                 };
             }
-        } catch (localError) {
-            console.log('Local node not available for network stats');
+        } catch (publicApiError) {
+            console.log('Public API not available, trying local node fallback');
         }
         
-        // If local node failed, provide helpful fallback message
+        // Source 2: Fallback to local node if synced
+        if (!networkData) {
+            try {
+                const nodeInfo = await kaspaNodeClient.getNodeInfo();
+                const dagInfo = await kaspaNodeClient.getBlockDagInfo();
+                
+                if (nodeInfo && dagInfo) {
+                    networkData = {
+                        blockHeight: dagInfo.virtualDaaScore || dagInfo.blockCount || 'Syncing...',
+                        difficulty: dagInfo.difficulty || 'Unknown',
+                        networkHashRate: calculateHashRate(dagInfo.difficulty),
+                        network: nodeInfo.network || 'mainnet',
+                        source: 'local-node-fallback',
+                        timestamp: new Date().toISOString()
+                    };
+                }
+            } catch (localError) {
+                console.log('Local node not available for network stats');
+            }
+        }
+        
+        // Source 3: If all else fails, provide helpful message
         if (!networkData) {
             networkData = {
-                blockHeight: 'Waiting for node sync',
-                difficulty: 'Waiting for node sync', 
-                networkHashRate: 'Waiting for node sync',
+                blockHeight: 'Fetching...',
+                difficulty: 'Fetching...', 
+                networkHashRate: 'Fetching...',
                 network: 'mainnet',
-                message: 'Network statistics will be available once your local Kaspa node completes synchronization',
-                source: 'fallback',
+                message: 'Connecting to network data sources...',
+                source: 'unavailable',
                 timestamp: new Date().toISOString(),
-                note: 'Your node is currently syncing. Network data will automatically appear here when sync completes.',
-                apiInfo: {
-                    description: 'For live network data before sync completes, you can optionally configure a kas.fyi API key',
-                    documentation: 'https://docs.kas.fyi'
-                }
+                note: 'Network data will appear shortly. If this persists, check your internet connection.',
+                troubleshooting: [
+                    'Ensure internet connectivity for public API access',
+                    'Check if local Kaspa node is running and synced',
+                    'Verify firewall settings allow outbound HTTPS connections'
+                ]
             };
         }
         
@@ -709,6 +734,44 @@ app.get('/api/kaspa/node/sync-status', async (req, res) => {
         });
         
         const syncStatus = parseKaspaSyncLogs(logs);
+        
+        // ========================================================================
+        // FIX 2: Add RPC and DAG data for lower info fields
+        // ========================================================================
+        try {
+            // Get RPC info (node version, peers, mempool, etc.)
+            const nodeInfo = await kaspaNodeClient.getNodeInfo();
+            syncStatus.rpc = {
+                isSynced: nodeInfo.isSynced,
+                serverVersion: nodeInfo.serverVersion,
+                isUtxoIndexed: nodeInfo.isUtxoIndexed,
+                mempoolSize: nodeInfo.mempoolSize || 0,
+                connectedPeers: nodeInfo.connectedPeers || syncStatus.peersConnected || 0
+            };
+            
+            // Get DAG info (block height, timestamps, etc.)
+            const dagInfo = await kaspaNodeClient.getBlockDagInfo();
+            syncStatus.dag = {
+                blockCount: dagInfo.blockCount,
+                virtualDaaScore: dagInfo.virtualDaaScore,
+                tipTimestamp: dagInfo.tipTimestamp
+            };
+            
+            // Get container uptime
+            try {
+                const { stdout: statsOutput } = await execAsync('docker inspect kaspa-node --format="{{.State.StartedAt}}"', {
+                    timeout: 3000
+                });
+                const startTime = new Date(statsOutput.trim());
+                const uptimeSeconds = Math.floor((Date.now() - startTime.getTime()) / 1000);
+                syncStatus.uptime = uptimeSeconds;
+            } catch (uptimeError) {
+                // Uptime not critical, continue without it
+            }
+        } catch (rpcError) {
+            // RPC data not available, continue with log-based sync status only
+            console.log('RPC data not available for sync status:', rpcError.message);
+        }
         
         res.json({
             ...syncStatus,

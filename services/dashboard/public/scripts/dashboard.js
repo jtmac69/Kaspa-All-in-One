@@ -662,6 +662,31 @@ class Dashboard {
         
         // Start Kaspa info refresh every 15 seconds
         this.startKaspaInfoRefresh();
+        
+        // FIX 3: Start independent network data refresh every 30 seconds
+        this.startNetworkDataRefresh();
+    }
+
+    /**
+     * FIX 3: Start independent network data refresh
+     * Updates public network stats independently of local node status
+     */
+    startNetworkDataRefresh() {
+        this.networkDataInterval = setInterval(async () => {
+            await this.loadPublicNetworkData();
+        }, 30000); // 30 seconds for public network data
+    }
+
+    /**
+     * FIX 3: Load public network data independently
+     */
+    async loadPublicNetworkData() {
+        try {
+            const publicNetworkData = await this.api.getPublicKaspaNetwork();
+            this.ui.updateKaspaNetworkStats(publicNetworkData);
+        } catch (error) {
+            console.error('Failed to load public network data:', error);
+        }
     }
 
     /**
@@ -722,6 +747,12 @@ class Dashboard {
         }
         if (this.serviceStatusInterval) {
             clearInterval(this.serviceStatusInterval);
+        }
+        if (this.kaspaInfoInterval) {
+            clearInterval(this.kaspaInfoInterval);
+        }
+        if (this.networkDataInterval) {
+            clearInterval(this.networkDataInterval);
         }
         this.ws.disconnect();
     }
