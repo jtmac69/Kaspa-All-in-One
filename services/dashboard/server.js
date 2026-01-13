@@ -764,11 +764,11 @@ function parseKaspaSyncLogs(logs) {
         syncStatus.peersConnected = parseInt(peerMatch[1] || peerMatch[2] || peerMatch[3], 10);
     }
 
-    // =========================================================================
-    // PHASE DETECTION - Check in reverse order (most advanced phase first)
-    // =========================================================================
-
-    // Check for SYNCED state
+    // ========================================================================
+    // SYNCED STATE DETECTION
+    // ========================================================================
+    
+    // Pattern 1: Explicit sync completion messages
     if (/IBD finished successfully|Node is fully synced|Sync complete/i.test(logContent)) {
         syncStatus.isSynced = true;
         syncStatus.syncPhase = 'synced';
@@ -778,6 +778,37 @@ function parseKaspaSyncLogs(logs) {
         syncStatus.isHealthy = true;
         return syncStatus;
     }
+    
+    // Pattern 2: Normal operation - relay blocks without active sync messages
+    const hasRelayBlocks = /Accepted \d+ blocks.*via relay/i.test(logContent);
+    const hasNormalProcessing = /Processed \d+ blocks and \d+ headers in the last \d+\.\d+s/i.test(logContent);
+    const hasThroughputStats = /Tx throughput stats:/i.test(logContent);
+    
+    // Active sync phase indicators
+    const hasSyncMessages = /IBD.*Processed.*block headers|Received.*UTXO set chunks|Resolving virtual|pruning point proof|Validating|Applying.*proof|downloading.*proof/i.test(logContent);
+    
+    // If relay activity present AND no sync messages = SYNCED
+    if ((hasRelayBlocks || hasNormalProcessing || hasThroughputStats) && !hasSyncMessages) {
+        syncStatus.isSynced = true;
+        syncStatus.syncPhase = 'synced';
+        syncStatus.syncPhaseName = 'Fully Synced';
+        syncStatus.progress = 100;
+        syncStatus.detail = 'Processing blocks normally via relay';
+        syncStatus.isHealthy = true;
+        
+        // Extract block/header counts if available
+        const processedMatch = logContent.match(/Processed (\d+) blocks and (\d+) headers in the last/i);
+        if (processedMatch) {
+            syncStatus.blocksProcessed = parseInt(processedMatch[1], 10);
+            syncStatus.headersProcessed = parseInt(processedMatch[2], 10);
+        }
+        
+        return syncStatus;
+    }
+
+    // =========================================================================
+    // PHASE DETECTION - Check in reverse order (most advanced phase first)
+    // =========================================================================
 
     // Check for VIRTUAL phase: "Resolving virtual. Estimated progress: XX%"
     const virtualMatch = logContent.match(/Resolving virtual[.\s]*(?:Estimated progress:\s*)?(\d+)?%?/i);
