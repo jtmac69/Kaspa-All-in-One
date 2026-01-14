@@ -5,15 +5,15 @@ const axios = require('axios');
  * 
  * This service implements the port fallback strategy defined in Requirements 3.1-3.8:
  * 1. Try configured port first
- * 2. Fallback to 16110 (local RPC)
- * 3. Fallback to 16111 (public RPC)
+ * 2. Fallback to 16110 (standard RPC)
+ * 3. Fallback to 16111 (P2P/alternative)
  * 4. Cache working port for subsequent requests
  * 5. Retry every 30 seconds when unavailable
  */
 class PortFallbackService {
   constructor(options = {}) {
     this.configuredPort = options.configuredPort || 16110;
-    this.fallbackPorts = [16110, 16111];
+    this.fallbackPorts = [16110, 16111]; // Standard RPC ports
     this.cachedPort = null;
     this.retryInterval = options.retryInterval || 30000; // 30 seconds
     this.timeout = options.timeout || 5000; // 5 seconds for connection tests

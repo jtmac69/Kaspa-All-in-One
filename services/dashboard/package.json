@@ -23,6 +23,7 @@
     "helmet": "^7.1.0",
     "joi": "^17.11.0",
     "jsdom": "^23.0.1",
+    "kaspa-rpc-client": "^1.1.8",
     "ws": "^8.14.2"
   },
   "devDependencies": {
