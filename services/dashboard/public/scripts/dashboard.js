@@ -321,6 +321,18 @@ class Dashboard {
             // Normal service display
             const services = response.services || response;
             this.ui.updateServices(services, this.currentFilter);
+            
+            // IMPORTANT: After services are rendered, immediately update Kaspa node sync status
+            // This prevents flickering between Docker status and actual sync status
+            try {
+                const syncStatus = await this.api.getKaspaSyncStatus();
+                if (syncStatus) {
+                    this.ui.updateKaspaServiceCardSync(syncStatus);
+                }
+            } catch (syncError) {
+                // Sync status update failed, but don't break the service refresh
+                console.warn('Failed to update Kaspa sync status:', syncError);
+            }
         } catch (error) {
             console.error('Failed to refresh services:', error);
             // Still update timestamp even on error to show when last attempt was made
@@ -730,6 +742,18 @@ class Dashboard {
             // Normal service display
             const services = response.services || response;
             this.ui.updateServices(services, this.currentFilter);
+            
+            // IMPORTANT: After services are rendered, immediately update Kaspa node sync status
+            // This prevents flickering between Docker status and actual sync status
+            try {
+                const syncStatus = await this.api.getKaspaSyncStatus();
+                if (syncStatus) {
+                    this.ui.updateKaspaServiceCardSync(syncStatus);
+                }
+            } catch (syncError) {
+                // Sync status update failed, but don't break the service refresh
+                console.warn('Failed to update Kaspa sync status:', syncError);
+            }
         } catch (error) {
             console.error('Failed to refresh service status:', error);
             // Still update timestamp even on error to show when last attempt was made

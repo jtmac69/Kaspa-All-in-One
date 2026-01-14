@@ -1,149 +1,185 @@
-const axios = require('axios');
-const PortFallbackService = require('../../shared/lib/port-fallback');
+const { ClientWrapper } = require('kaspa-rpc-client');
 
+/**
+ * Kaspa Node Client using kaspa-rpc-client library
+ * Properly connects to Kaspa nodes using WebSocket RPC
+ */
 class KaspaNodeClient {
     constructor(options = {}) {
-        // Extract port from legacy rpcUrl if provided
-        const rpcUrl = options.rpcUrl || options || 'http://kaspa-node:16111';
-        let configuredPort = 16111; // default
+        // Determine hosts to connect to
+        const localHost = options.host || 'localhost';
+        const localPort = options.port || 16110;
         
-        if (typeof rpcUrl === 'string') {
-            const urlMatch = rpcUrl.match(/:(\d+)$/);
-            if (urlMatch) {
-                configuredPort = parseInt(urlMatch[1]);
-            }
-        }
+        // Build host list with fallbacks
+        this.hosts = [
+            `${localHost}:${localPort}`,
+            'seeder2.kaspad.net:16110', // Public fallback
+            'seeder1.kaspad.net:16110'  // Additional public fallback
+        ];
         
-        // Initialize port fallback service
-        this.portFallback = new PortFallbackService({
-            configuredPort: configuredPort,
-            host: 'kaspa-node',
-            timeout: 5000
-        });
-        
-        this.timeout = 10000; // 10 seconds for RPC calls
-        this.networkHeight = null;
-        this.lastNetworkHeightUpdate = 0;
-        this.networkHeightCacheTime = 60000; // Cache for 1 minute
-        this.currentUrl = null;
+        this.wrapper = null;
+        this.client = null;
+        this.connected = false;
         this.connectionStatus = {
             connected: false,
-            port: null,
+            host: null,
             lastAttempt: null,
             error: null
         };
     }
 
-    async makeRpcCall(method, params = {}) {
+    /**
+     * Initialize the client wrapper
+     */
+    async initialize() {
+        if (this.wrapper) {
+            return; // Already initialized
+        }
+
         try {
-            // Ensure we have a working connection
-            const connectionResult = await this.portFallback.connect();
+            this.wrapper = new ClientWrapper({
+                hosts: this.hosts,
+                verbose: false
+            });
             
-            if (!connectionResult.connected) {
-                this.connectionStatus = {
-                    connected: false,
-                    port: null,
-                    lastAttempt: new Date().toISOString(),
-                    error: connectionResult.error
-                };
-                throw new Error(`Cannot connect to Kaspa node: ${connectionResult.error}`);
-            }
+            await this.wrapper.initialize();
+            this.client = await this.wrapper.getClient();
             
-            // Update connection status
+            this.connected = true;
             this.connectionStatus = {
                 connected: true,
-                port: connectionResult.port,
+                host: this.client?.url || this.hosts[0],
                 lastAttempt: new Date().toISOString(),
                 error: null
             };
-            this.currentUrl = connectionResult.url;
-
-            const response = await axios.post(connectionResult.url, {
-                method,
-                params
-            }, { 
-                timeout: this.timeout,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.data.error) {
-                throw new Error(`RPC Error: ${response.data.error.message || 'Unknown error'}`);
-            }
-
-            return response.data.result || response.data;
+            
+            console.log(`Kaspa RPC client connected to: ${this.connectionStatus.host}`);
         } catch (error) {
-            if (error.code === 'ECONNREFUSED') {
-                // Clear cached port and update status
-                this.portFallback.clearCache();
-                this.connectionStatus = {
-                    connected: false,
-                    port: null,
-                    lastAttempt: new Date().toISOString(),
-                    error: 'Connection refused - service may be down'
-                };
-                throw new Error('Cannot connect to Kaspa node - service may be down');
-            } else if (error.code === 'ETIMEDOUT') {
-                this.connectionStatus = {
-                    connected: false,
-                    port: this.connectionStatus.port,
-                    lastAttempt: new Date().toISOString(),
-                    error: 'Request timed out'
-                };
-                throw new Error('Kaspa node request timed out');
-            }
-            throw error;
+            this.connected = false;
+            this.connectionStatus = {
+                connected: false,
+                host: null,
+                lastAttempt: new Date().toISOString(),
+                error: error.message
+            };
+            throw new Error(`Failed to initialize Kaspa RPC client: ${error.message}`);
         }
     }
 
+    /**
+     * Ensure client is initialized
+     */
+    async ensureConnected() {
+        if (!this.wrapper || !this.client) {
+            await this.initialize();
+        }
+        return this.client;
+    }
+
+    /**
+     * Get node info
+     */
     async getNodeInfo() {
-        const info = await this.makeRpcCall('getInfo');
-        return {
-            serverVersion: info.serverVersion,
-            isSynced: info.isSynced,
-            peerCount: info.peerCount || 0,
-            networkName: info.networkName || 'mainnet',
-            mempoolSize: info.mempoolSize || 0,
-            hasUtxoIndex: info.hasUtxoIndex || false,
-            isArchivalNode: info.isArchivalNode || false
-        };
-    }
-
-    async getBlockDagInfo() {
-        const blockDag = await this.makeRpcCall('getBlockDagInfo');
-        return {
-            virtualSelectedParentBlueScore: blockDag.virtualSelectedParentBlueScore,
-            difficulty: blockDag.difficulty,
-            tipHashes: blockDag.tipHashes || [],
-            virtualDaaScore: blockDag.virtualDaaScore,
-            pruningPointHash: blockDag.pruningPointHash,
-            virtualParentHashes: blockDag.virtualParentHashes || []
-        };
-    }
-
-    async getCurrentNetwork() {
+        const client = await this.ensureConnected();
+        
         try {
-            const network = await this.makeRpcCall('getCurrentNetwork');
+            const info = await client.getInfo();
+            
+            return {
+                serverVersion: info.serverVersion,
+                isSynced: info.isSynced,
+                peerCount: info.peerCount || 0,
+                connectedPeers: info.peerCount || 0, // Add connectedPeers for consistency
+                networkName: info.networkName || 'mainnet',
+                mempoolSize: info.mempoolSize || 0,
+                hasUtxoIndex: info.hasUtxoIndex || false,
+                isUtxoIndexed: info.hasUtxoIndex || false, // Add isUtxoIndexed for consistency
+                isArchivalNode: false
+            };
+        } catch (error) {
+            throw new Error(`Failed to get node info: ${error.message}`);
+        }
+    }
+
+    /**
+     * Get block DAG info
+     */
+    async getBlockDagInfo() {
+        const client = await this.ensureConnected();
+        
+        try {
+            const blockDag = await client.getBlockDagInfo();
+            
+            // For synced nodes, use current time as tip timestamp (close approximation)
+            // For unsynced nodes, estimate from DAA score
+            let tipTimestamp = null;
+            
+            try {
+                // Check if node is synced
+                const info = await client.getInfo();
+                
+                if (info.isSynced) {
+                    // Node is synced, tip is very recent (within last few seconds)
+                    tipTimestamp = Math.floor(Date.now() / 1000); // Current time in seconds
+                } else {
+                    // Node is syncing, estimate from DAA score
+                    // Kaspa has ~1 block per second, genesis was Nov 7, 2021
+                    const kaspaGenesis = new Date('2021-11-07T00:00:00Z').getTime();
+                    const daaScore = blockDag.virtualDaaScore || blockDag.virtualSelectedParentBlueScore;
+                    if (daaScore) {
+                        tipTimestamp = Math.floor((kaspaGenesis + (parseInt(daaScore) * 1000)) / 1000); // Convert to seconds
+                    }
+                }
+            } catch (timestampError) {
+                console.log('Could not determine tip timestamp:', timestampError.message);
+                // Last fallback: use current time
+                tipTimestamp = Math.floor(Date.now() / 1000);
+            }
+            
+            return {
+                virtualSelectedParentBlueScore: blockDag.virtualSelectedParentBlueScore,
+                difficulty: blockDag.difficulty,
+                tipHashes: blockDag.tipHashes || [],
+                virtualDaaScore: blockDag.virtualDaaScore,
+                blockCount: blockDag.virtualSelectedParentBlueScore, // Use blue score as block count
+                tipTimestamp: tipTimestamp, // Timestamp of the tip block (in seconds)
+                pruningPointHash: blockDag.pruningPointHash,
+                virtualParentHashes: blockDag.virtualParentHashes || []
+            };
+        } catch (error) {
+            throw new Error(`Failed to get block DAG info: ${error.message}`);
+        }
+    }
+
+    /**
+     * Get current network
+     */
+    async getCurrentNetwork() {
+        const client = await this.ensureConnected();
+        
+        try {
+            const network = await client.getCurrentNetwork();
             return network;
         } catch (error) {
-            // Fallback to mainnet if the call fails
             return { networkName: 'mainnet' };
         }
     }
 
+    /**
+     * Get peer info
+     */
     async getPeerInfo() {
+        const client = await this.ensureConnected();
+        
         try {
-            const peers = await this.makeRpcCall('getPeerAddresses');
-            const connectedPeers = await this.makeRpcCall('getConnectedPeerInfo');
+            const connectedPeers = await client.getConnectedPeerInfo();
             
             return {
-                knownAddresses: peers?.addresses?.length || 0,
+                knownAddresses: 0,
                 connectedPeers: connectedPeers?.infos?.length || 0,
                 peerDetails: connectedPeers?.infos || []
             };
         } catch (error) {
-            // Return basic info if detailed peer info fails
             const nodeInfo = await this.getNodeInfo();
             return {
                 knownAddresses: 0,
@@ -153,6 +189,9 @@ class KaspaNodeClient {
         }
     }
 
+    /**
+     * Get sync status
+     */
     async getSyncStatus() {
         const [nodeInfo, blockDag] = await Promise.all([
             this.getNodeInfo(),
@@ -169,8 +208,6 @@ class KaspaNodeClient {
             progress = Math.min((currentHeight / networkHeight) * 100, 100);
             
             if (!nodeInfo.isSynced && progress < 100) {
-                // Estimate time remaining based on sync progress
-                // This is a rough estimate - actual sync speed varies
                 const blocksRemaining = networkHeight - currentHeight;
                 const avgBlockTime = 1; // Kaspa has ~1 second block time
                 estimatedTimeRemaining = blocksRemaining * avgBlockTime;
@@ -181,45 +218,38 @@ class KaspaNodeClient {
             isSynced: nodeInfo.isSynced,
             currentHeight,
             networkHeight,
-            progress: Math.round(progress * 100) / 100, // Round to 2 decimal places
+            progress: Math.round(progress * 100) / 100,
             estimatedTimeRemaining,
             syncState: this.determineSyncState(nodeInfo.isSynced, progress)
         };
     }
 
+    /**
+     * Get network height (estimate)
+     */
     async getNetworkHeight() {
-        const now = Date.now();
-        
-        // Use cached network height if it's recent
-        if (this.networkHeight && (now - this.lastNetworkHeightUpdate) < this.networkHeightCacheTime) {
-            return this.networkHeight;
-        }
-
         try {
-            // Try to get network height from a public API or estimate
-            // For now, we'll use the current node height as a baseline
             const blockDag = await this.getBlockDagInfo();
             const nodeInfo = await this.getNodeInfo();
             
             if (nodeInfo.isSynced) {
-                this.networkHeight = blockDag.virtualSelectedParentBlueScore;
-                this.lastNetworkHeightUpdate = now;
+                return blockDag.virtualSelectedParentBlueScore;
             } else {
-                // If not synced, estimate based on time since genesis
-                // This is a rough approximation
+                // Estimate based on time since genesis
                 const kaspaGenesis = new Date('2021-11-07T00:00:00Z').getTime();
-                const secondsSinceGenesis = (now - kaspaGenesis) / 1000;
-                const estimatedBlocks = Math.floor(secondsSinceGenesis / 1); // ~1 second per block
-                this.networkHeight = Math.max(estimatedBlocks, blockDag.virtualSelectedParentBlueScore);
+                const secondsSinceGenesis = (Date.now() - kaspaGenesis) / 1000;
+                const estimatedBlocks = Math.floor(secondsSinceGenesis / 1);
+                return Math.max(estimatedBlocks, blockDag.virtualSelectedParentBlueScore);
             }
-            
-            return this.networkHeight;
         } catch (error) {
             console.warn('Failed to get network height:', error.message);
             return null;
         }
     }
 
+    /**
+     * Determine sync state
+     */
     determineSyncState(isSynced, progress) {
         if (isSynced) {
             return 'synced';
@@ -234,6 +264,9 @@ class KaspaNodeClient {
         }
     }
 
+    /**
+     * Get network stats
+     */
     async getNetworkStats() {
         try {
             const [blockDag, nodeInfo, peerInfo] = await Promise.all([
@@ -257,32 +290,26 @@ class KaspaNodeClient {
         }
     }
 
+    /**
+     * Estimate hash rate from difficulty
+     */
     estimateHashRate(difficulty) {
-        // This is a rough estimation - actual hash rate calculation is complex
-        // Kaspa uses a different difficulty algorithm than Bitcoin
         if (!difficulty || difficulty === 0) {
             return 0;
         }
         
-        // Simplified hash rate estimation (this would need refinement for accuracy)
-        const hashRate = difficulty * Math.pow(2, 32) / 1000000000000; // Convert to TH/s
-        return Math.round(hashRate * 100) / 100; // Round to 2 decimal places
+        const hashRate = difficulty * Math.pow(2, 32) / 1000000000000;
+        return Math.round(hashRate * 100) / 100;
     }
 
-    async getNodeUptime() {
-        try {
-            const info = await this.getNodeInfo();
-            // If the node provides uptime info, use it
-            // Otherwise, we'll need to track this separately
-            return info.uptime || null;
-        } catch (error) {
-            return null;
-        }
-    }
-
+    /**
+     * Get mempool info
+     */
     async getMempoolInfo() {
+        const client = await this.ensureConnected();
+        
         try {
-            const mempoolEntries = await this.makeRpcCall('getMempoolEntries');
+            const mempoolEntries = await client.getMempoolEntries();
             const nodeInfo = await this.getNodeInfo();
             
             return {
@@ -291,7 +318,6 @@ class KaspaNodeClient {
                 totalSize: mempoolEntries?.entries?.length || 0
             };
         } catch (error) {
-            // Fallback to basic mempool info
             const nodeInfo = await this.getNodeInfo();
             return {
                 transactionCount: nodeInfo.mempoolSize,
@@ -301,6 +327,9 @@ class KaspaNodeClient {
         }
     }
 
+    /**
+     * Get comprehensive node status
+     */
     async getComprehensiveNodeStatus() {
         try {
             const [nodeInfo, syncStatus, networkStats, mempoolInfo] = await Promise.all([
@@ -323,10 +352,13 @@ class KaspaNodeClient {
         }
     }
 
-    // Utility method to check if node is accessible
+    /**
+     * Ping the node
+     */
     async ping() {
         try {
-            await this.makeRpcCall('ping');
+            const client = await this.ensureConnected();
+            await client.ping();
             return true;
         } catch (error) {
             return false;
@@ -334,84 +366,55 @@ class KaspaNodeClient {
     }
 
     /**
-     * Get current connection status including port information
-     * @returns {Object} Connection status with port details
+     * Get connection status
      */
     getConnectionStatus() {
         return {
             ...this.connectionStatus,
-            workingPort: this.portFallback.getWorkingPort(),
-            workingUrl: this.portFallback.getWorkingUrl(),
-            portChain: this.portFallback.getPortChain(),
-            fallbackStatus: this.portFallback.getStatus()
+            workingHost: this.client?.url || null,
+            hosts: this.hosts
         };
     }
 
     /**
-     * Force reconnection by clearing cache and testing connection
-     * @returns {Promise<Object>} Connection result
+     * Force reconnect
      */
     async forceReconnect() {
-        this.portFallback.clearCache();
-        const result = await this.portFallback.connect();
+        this.wrapper = null;
+        this.client = null;
+        this.connected = false;
         
-        this.connectionStatus = {
-            connected: result.connected,
-            port: result.port,
-            lastAttempt: new Date().toISOString(),
-            error: result.error || null
-        };
-        
-        if (result.connected) {
-            this.currentUrl = result.url;
-        }
-        
-        return result;
-    }
-
-    /**
-     * Start automatic retry when node becomes unavailable
-     * @param {Function} onReconnect - Callback when connection is restored
-     */
-    startRetry(onReconnect) {
-        this.portFallback.startRetry((result) => {
-            this.connectionStatus = {
+        try {
+            await this.initialize();
+            return {
                 connected: true,
-                port: result.port,
-                lastAttempt: new Date().toISOString(),
+                host: this.connectionStatus.host,
                 error: null
             };
-            this.currentUrl = result.url;
-            
-            if (onReconnect) {
-                onReconnect(result);
-            }
-        });
-    }
-
-    /**
-     * Stop automatic retry
-     */
-    stopRetry() {
-        this.portFallback.stopRetry();
-    }
-
-    /**
-     * Update configured port from installation state
-     * @param {number} port - New configured port
-     */
-    updateConfiguredPort(port) {
-        this.portFallback.setConfiguredPort(port);
+        } catch (error) {
+            return {
+                connected: false,
+                host: null,
+                error: error.message
+            };
+        }
     }
 
     /**
      * Cleanup resources
      */
     destroy() {
-        this.portFallback.destroy();
+        if (this.wrapper) {
+            // kaspa-rpc-client handles cleanup internally
+            this.wrapper = null;
+            this.client = null;
+            this.connected = false;
+        }
     }
 
-    // Format uptime in human-readable format
+    /**
+     * Format uptime
+     */
     formatUptime(seconds) {
         if (!seconds || seconds < 0) {
             return 'Unknown';
@@ -430,7 +433,9 @@ class KaspaNodeClient {
         }
     }
 
-    // Format hash rate in human-readable format
+    /**
+     * Format hash rate
+     */
     formatHashRate(hashRate) {
         if (!hashRate || hashRate === 0) {
             return '0 H/s';

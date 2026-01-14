@@ -619,6 +619,119 @@ app.get('/api/kaspa/info', async (req, res) => {
 });
 
 // ============================================================================
+// NEW: Kaspa Network Stats with 3-Tier Fallback
+// ============================================================================
+app.get('/api/kaspa/network', async (req, res) => {
+    let networkData = null;
+    let source = 'unknown';
+    
+    // ========================================================================
+    // ATTEMPT 1: Local Node (fastest if available)
+    // ========================================================================
+    try {
+        console.log('Attempting to fetch from local node...');
+        
+        const dagInfo = await kaspaNodeClient.getBlockDagInfo();
+        const nodeInfo = await kaspaNodeClient.getNodeInfo();
+        
+        networkData = {
+            blockHeight: dagInfo.virtualDaaScore || dagInfo.virtualSelectedParentBlueScore,
+            difficulty: dagInfo.difficulty,
+            networkHashrate: kaspaNodeClient.estimateHashRate(dagInfo.difficulty),
+            networkName: nodeInfo.networkName || 'mainnet',
+            tipHashes: dagInfo.tipHashes?.length || 0
+        };
+        source = 'local-node';
+        console.log('✓ Local node successful');
+    } catch (localError) {
+        console.log('✗ Local node failed:', localError.message);
+    }
+    
+    // ========================================================================
+    // ATTEMPT 2: Public REST API (kas.fyi)
+    // ========================================================================
+    if (!networkData) {
+        try {
+            console.log('Attempting to fetch from public REST API...');
+            
+            const response = await axios.get('https://api.kas.fyi/info/blockdag', {
+                timeout: 5000,
+                headers: {
+                    'User-Agent': 'Kaspa-Dashboard/1.0',
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (response.data) {
+                networkData = {
+                    blockHeight: response.data.virtualDaaScore || response.data.blockCount,
+                    difficulty: response.data.difficulty,
+                    networkHashrate: response.data.hashrate || 'N/A',
+                    networkName: response.data.networkName || 'mainnet',
+                    tipHashes: response.data.tipHashes?.length || 0
+                };
+                source = 'public-rest-api';
+                console.log('✓ Public REST API successful');
+            }
+        } catch (apiError) {
+            console.log('✗ Public REST API failed:', apiError.message);
+        }
+    }
+    
+    // ========================================================================
+    // ATTEMPT 3: Public Kaspa Node (seeder2.kaspad.net)
+    // ========================================================================
+    if (!networkData) {
+        try {
+            console.log('Attempting to fetch from public Kaspa node...');
+            
+            // The kaspa-rpc-client will automatically use public nodes as fallback
+            // if local node is not available
+            const publicClient = new (require('./lib/KaspaNodeClient'))({
+                host: 'seeder2.kaspad.net',
+                port: 16110
+            });
+            
+            await publicClient.initialize();
+            const dagInfo = await publicClient.getBlockDagInfo();
+            const nodeInfo = await publicClient.getNodeInfo();
+            
+            networkData = {
+                blockHeight: dagInfo.virtualDaaScore || dagInfo.virtualSelectedParentBlueScore,
+                difficulty: dagInfo.difficulty,
+                networkHashrate: publicClient.estimateHashRate(dagInfo.difficulty),
+                networkName: nodeInfo.networkName || 'mainnet',
+                tipHashes: dagInfo.tipHashes?.length || 0
+            };
+            source = 'public-kaspa-node';
+            console.log('✓ Public Kaspa node successful');
+            
+            publicClient.destroy();
+        } catch (publicError) {
+            console.log('✗ Public Kaspa node failed:', publicError.message);
+        }
+    }
+    
+    // ========================================================================
+    // Return Result or Error
+    // ========================================================================
+    if (networkData) {
+        res.json({
+            ...networkData,
+            source: source,
+            timestamp: new Date().toISOString()
+        });
+    } else {
+        console.error('All network data sources failed');
+        res.status(503).json({
+            error: 'Network data unavailable',
+            message: 'All data sources (local node, public API, public node) failed',
+            sources_tried: ['local-node', 'public-rest-api', 'public-kaspa-node']
+        });
+    }
+});
+
+// ============================================================================
 // FIX 3: Public Kaspa Network Stats (independent of local node)
 // ============================================================================
 app.get('/api/kaspa/network/public', async (req, res) => {
@@ -1806,21 +1919,24 @@ const stateManager = new SharedStateManager(path.join(__dirname, '../../.kaspa-a
 const serviceMonitor = new ServiceMonitor();
 const resourceMonitor = new ResourceMonitor();
 
-// Initialize KaspaNodeClient with port from installation state
+// Initialize KaspaNodeClient
 let kaspaNodeClient;
 async function initializeKaspaNodeClient() {
     try {
-        const installationState = await stateManager.readState();
-        const configuredPort = installationState?.configuration?.kaspaNodePort || 16111;
-        
         kaspaNodeClient = new (require('./lib/KaspaNodeClient'))({
-            configuredPort: configuredPort
+            host: 'localhost',
+            port: 16110
         });
         
-        console.log(`KaspaNodeClient initialized with configured port: ${configuredPort}`);
+        await kaspaNodeClient.initialize();
+        console.log(`KaspaNodeClient initialized successfully`);
     } catch (error) {
-        console.warn('Failed to read installation state for Kaspa node port, using default:', error.message);
-        kaspaNodeClient = new (require('./lib/KaspaNodeClient'))();
+        console.warn('Failed to initialize Kaspa node client, will retry on first request:', error.message);
+        // Create client anyway, it will try to connect on first use
+        kaspaNodeClient = new (require('./lib/KaspaNodeClient'))({
+            host: 'localhost',
+            port: 16110
+        });
     }
 }
 

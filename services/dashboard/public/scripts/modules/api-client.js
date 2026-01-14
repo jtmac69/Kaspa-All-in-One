@@ -100,14 +100,15 @@ export class APIClient {
     // Public Kaspa Network (independent of local node)
     async getPublicKaspaNetwork() {
         try {
-            return await this.request('/api/kaspa/network/public');
+            // Use the new 3-tier fallback endpoint
+            return await this.request('/api/kaspa/network');
         } catch (error) {
             return { 
                 error: 'Network data unavailable', 
                 blockHeight: 'Unavailable',
                 difficulty: 'Unavailable',
-                networkHashRate: 'Unavailable',
-                network: 'mainnet'
+                networkHashrate: 'Unavailable',
+                networkName: 'mainnet'
             };
         }
     }

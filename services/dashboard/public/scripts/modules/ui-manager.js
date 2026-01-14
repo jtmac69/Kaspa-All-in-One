@@ -376,7 +376,7 @@ export class UIManager {
         const profileClass = this.getProfileClass(profile);
         
         return `
-            <article class="service-card ${statusClass}" role="region" aria-label="${service.displayName} service">
+            <article class="service-card ${statusClass}" data-service="${service.name}" role="region" aria-label="${service.displayName} service">
                 <div class="service-header">
                     <h3>${service.displayName}</h3>
                     <span class="status-badge ${statusClass}">${service.status}</span>
@@ -541,13 +541,14 @@ export class UIManager {
 
         // Update the public network section
         this.updateElement('blockHeight', networkData.blockHeight || 'Fetching...');
-        this.updateElement('hashRate', networkData.networkHashRate || 'Fetching...');
+        // Fix: API returns 'networkHashrate' not 'networkHashRate'
+        const hashrate = networkData.networkHashrate || networkData.networkHashRate;
+        this.updateElement('hashRate', this.formatHashRate(hashrate) || 'Fetching...');
         this.updateElement('difficulty', this.formatNumber(networkData.difficulty) || 'Fetching...');
         
-        // Show network name
-        if (networkData.network) {
-            this.updateElement('networkName', networkData.network);
-        }
+        // Show network name - fix field name
+        const networkName = networkData.networkName || networkData.network || 'mainnet';
+        this.updateElement('networkName', networkName);
         
         // Show data source and timestamp for transparency
         if (networkData.source && networkData.source !== 'error') {
@@ -762,10 +763,15 @@ export class UIManager {
         if (syncStatus.dag) {
             // Update LOCAL HEIGHT (virtualDaaScore or blockCount)
             const heightEl = document.querySelector('[data-local-height]') || document.getElementById('current-height');
-            if (heightEl && syncStatus.dag.virtualDaaScore) {
-                heightEl.textContent = syncStatus.dag.virtualDaaScore.toLocaleString();
-            } else if (heightEl && syncStatus.dag.blockCount) {
-                heightEl.textContent = syncStatus.dag.blockCount.toLocaleString();
+            if (heightEl) {
+                if (syncStatus.dag.virtualDaaScore) {
+                    const height = typeof syncStatus.dag.virtualDaaScore === 'string' 
+                        ? parseInt(syncStatus.dag.virtualDaaScore) 
+                        : syncStatus.dag.virtualDaaScore;
+                    heightEl.textContent = height.toLocaleString();
+                } else if (syncStatus.dag.blockCount) {
+                    heightEl.textContent = syncStatus.dag.blockCount.toLocaleString();
+                }
             }
             
             // Update LAST BLOCK (if timestamp available)
@@ -1001,18 +1007,32 @@ export class UIManager {
         const badgeEl = serviceCard.querySelector('.service-status-badge, .status-badge, .badge');
         if (badgeEl) {
             if (syncStatus.isSynced) {
-                badgeEl.textContent = 'SYNCED';
-                badgeEl.className = 'service-status-badge synced';
-                badgeEl.style.borderColor = '#27ae60';
+                badgeEl.textContent = 'healthy';
+                badgeEl.className = 'status-badge healthy';
             } else {
                 const progressText = syncStatus.progress > 0 ? ` ${syncStatus.progress}%` : '';
-                badgeEl.textContent = `${phaseConfig.name.toUpperCase()}${progressText}`;
-                badgeEl.className = 'service-status-badge syncing';
-                badgeEl.style.borderColor = phaseConfig.color;
+                badgeEl.textContent = 'syncing';
+                badgeEl.className = 'status-badge unhealthy';
             }
         }
 
-        // Update warning/sync message
+        // Hide/show the error message div based on sync status
+        const errorEl = serviceCard.querySelector('.service-error');
+        if (errorEl) {
+            if (syncStatus.isSynced) {
+                // Node is synced - hide the error/warning message
+                errorEl.style.display = 'none';
+            } else {
+                // Node is syncing - show the message with updated text
+                errorEl.style.display = 'flex';
+                const errorTextEl = errorEl.querySelector('.error-text');
+                if (errorTextEl) {
+                    errorTextEl.textContent = syncStatus.detail || 'Node is syncing with network';
+                }
+            }
+        }
+
+        // Update warning/sync message (if exists separately)
         const messageEl = serviceCard.querySelector('.service-sync-message, .sync-warning, .service-message');
         if (messageEl) {
             if (syncStatus.isSynced) {
@@ -1034,7 +1054,7 @@ export class UIManager {
                 progressContainer.className = 'service-progress-container';
                 progressContainer.innerHTML = '<div class="service-progress-bar"></div>';
                 
-                const insertPoint = messageEl || serviceCard.querySelector('.service-controls');
+                const insertPoint = messageEl || errorEl || serviceCard.querySelector('.service-actions');
                 if (insertPoint) {
                     insertPoint.parentNode.insertBefore(progressContainer, insertPoint);
                 } else {
