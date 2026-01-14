@@ -57,22 +57,45 @@
                     <h2 id="kaspa-network-heading">🌐 Kaspa Network</h2>
                     <div class="stats-grid" role="list" aria-label="Network statistics">
                         <div class="stat" role="listitem">
-                            <span class="label">Block Height</span>
-                            <span class="value" id="block-height" aria-live="polite">Fetching...</span>
+                            <span class="label">TPS 📊</span>
+                            <span class="value" id="network-tps" aria-live="polite">-</span>
                         </div>
                         <div class="stat" role="listitem">
-                            <span class="label">Network Hash Rate</span>
-                            <span class="value" id="hash-rate" aria-live="polite">Fetching...</span>
+                            <span class="label">BPS 🧊</span>
+                            <span class="value" id="network-bps" aria-live="polite">-</span>
                         </div>
                         <div class="stat" role="listitem">
-                            <span class="label">Difficulty</span>
-                            <span class="value" id="difficulty" aria-live="polite">Fetching...</span>
+                            <span class="label">Mempool 🔄</span>
+                            <span class="value" id="network-mempool" aria-live="polite">-</span>
                         </div>
                         <div class="stat" role="listitem">
-                            <span class="label">Network</span>
-                            <span class="value" id="network-name" aria-live="polite">mainnet</span>
+                            <span class="label">Hashrate 💪</span>
+                            <span class="value" id="hash-rate" aria-live="polite">-</span>
+                            <span class="sub-value">Network</span>
+                        </div>
+                        <div class="stat" role="listitem">
+                            <span class="label">Circulating 📊</span>
+                            <span class="value" id="network-circulating" aria-live="polite">-</span>
+                            <span class="sub-value" id="network-percent-mined">-</span>
+                        </div>
+                        <div class="stat" role="listitem">
+                            <span class="label">Block reward 💰</span>
+                            <span class="value" id="network-block-reward" aria-live="polite">-</span>
                         </div>
                     </div>
+                    <details class="network-technical-details">
+                        <summary>📋 Technical Details</summary>
+                        <div class="stats-grid">
+                            <div class="stat" role="listitem">
+                                <span class="label">Block Height</span>
+                                <span class="value" id="block-height" aria-live="polite">-</span>
+                            </div>
+                            <div class="stat" role="listitem">
+                                <span class="label">Difficulty</span>
+                                <span class="value" id="difficulty" aria-live="polite">-</span>
+                            </div>
+                        </div>
+                    </details>
                     <div class="network-info">
                         <small id="network-source" class="text-muted">Loading network data...</small>
                     </div>

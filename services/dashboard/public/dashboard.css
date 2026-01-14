@@ -1458,6 +1458,76 @@ main {
     gap: var(--space-4);
 }
 
+/* ============================================================================
+   Enhanced Network Stats Grid
+   ============================================================================ */
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.stat .label {
+    font-size: 0.85rem;
+    color: #70d4ff;
+    font-weight: 600;
+}
+
+.stat .value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.stat .sub-value {
+    font-size: 0.75rem;
+    color: #b0b0b0;
+}
+
+/* Technical Details Collapsible Section */
+.network-technical-details {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.network-technical-details summary {
+    cursor: pointer;
+    color: #70d4ff;
+    font-weight: 600;
+    list-style: none;
+    user-select: none;
+}
+
+.network-technical-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.network-technical-details summary::before {
+    content: '▶ ';
+    display: inline-block;
+    transition: transform 0.2s;
+}
+
+.network-technical-details[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.network-technical-details .stats-grid {
+    margin-top: 1rem;
+}
+
 /* Responsive Design - Optimized for Desktop First */
 @media (max-width: 1200px) {
     .resource-cards {

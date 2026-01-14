@@ -392,9 +392,21 @@ class Dashboard {
      */
     async loadKaspaInfo() {
         try {
-            // Load public network data (always available)
-            const publicNetworkData = await this.api.getPublicKaspaNetwork();
-            this.ui.updateKaspaNetworkStats(publicNetworkData);
+            // Load enhanced network data with all stats
+            const enhancedNetworkData = await this.api.getEnhancedNetworkStats();
+            if (!enhancedNetworkData.error) {
+                this.ui.updateEnhancedNetworkStats(enhancedNetworkData);
+            } else {
+                // Fallback to basic network data
+                const publicNetworkData = await this.api.getPublicKaspaNetwork();
+                this.ui.updateKaspaNetworkStats(publicNetworkData);
+            }
+
+            // Load enhanced node status
+            const enhancedNodeStatus = await this.api.getEnhancedNodeStatus();
+            if (!enhancedNodeStatus.error) {
+                this.ui.updateLocalNodeStatus(enhancedNodeStatus);
+            }
 
             // Load log-based sync status (more reliable than RPC)
             const syncStatus = await this.api.getKaspaSyncStatus();
@@ -694,8 +706,15 @@ class Dashboard {
      */
     async loadPublicNetworkData() {
         try {
-            const publicNetworkData = await this.api.getPublicKaspaNetwork();
-            this.ui.updateKaspaNetworkStats(publicNetworkData);
+            // Try enhanced endpoint first
+            const enhancedNetworkData = await this.api.getEnhancedNetworkStats();
+            if (!enhancedNetworkData.error) {
+                this.ui.updateEnhancedNetworkStats(enhancedNetworkData);
+            } else {
+                // Fallback to basic network data
+                const publicNetworkData = await this.api.getPublicKaspaNetwork();
+                this.ui.updateKaspaNetworkStats(publicNetworkData);
+            }
         } catch (error) {
             console.error('Failed to load public network data:', error);
         }

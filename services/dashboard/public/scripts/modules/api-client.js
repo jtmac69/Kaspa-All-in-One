@@ -113,6 +113,31 @@ export class APIClient {
         }
     }
 
+    // Enhanced Kaspa Network Stats
+    async getEnhancedNetworkStats() {
+        try {
+            return await this.request('/api/kaspa/network/enhanced');
+        } catch (error) {
+            return { 
+                error: 'Enhanced network data unavailable',
+                source: 'error'
+            };
+        }
+    }
+
+    // Enhanced Node Status
+    async getEnhancedNodeStatus() {
+        try {
+            return await this.request('/api/kaspa/node/status/enhanced');
+        } catch (error) {
+            return { 
+                error: 'Node status unavailable',
+                localHeight: '-',
+                connectedPeers: '-'
+            };
+        }
+    }
+
     async getKaspaStats() {
         try {
             return await this.request('/api/kaspa/stats');

@@ -1508,6 +1508,54 @@ export class UIManager {
     }
 
     /**
+     * Update enhanced network stats with all new fields
+     */
+    updateEnhancedNetworkStats(networkData) {
+        if (!networkData) return;
+        
+        this.updateElement('network-tps', networkData.tps || '-');
+        this.updateElement('network-bps', networkData.bps || '-');
+        this.updateElement('network-mempool', networkData.mempoolSize || 0);
+        this.updateElement('hash-rate', networkData.networkHashRate || '-');
+        this.updateElement('network-circulating', networkData.circulatingSupply || '-');
+        this.updateElement('network-percent-mined', `Mined: ${networkData.percentMined || '-'}`);
+        this.updateElement('network-block-reward', `₭ ${(networkData.currentBlockReward || 0).toFixed(2)}`);
+        this.updateElement('block-height', this.formatNumber(networkData.blockHeight));
+        this.updateElement('difficulty', this.formatNumber(networkData.difficulty));
+        
+        // Update source indicator
+        const sourceElement = document.getElementById('network-source');
+        if (sourceElement && networkData.source) {
+            sourceElement.textContent = `Source: ${networkData.source}`;
+            sourceElement.title = `Last updated: ${networkData.timestamp}`;
+        }
+    }
+
+    /**
+     * Update local node status with enhanced fields
+     */
+    updateLocalNodeStatus(nodeStatus) {
+        if (!nodeStatus || nodeStatus.error) {
+            this.updateElement('current-height', '-');
+            this.updateElement('network-height', '-');
+            this.updateElement('peer-count-node', '-');
+            this.updateElement('node-version', '-');
+            this.updateElement('uptime', '-');
+            this.updateElement('last-block-time', '-');
+            this.updateElement('mempool-size', '-');
+            return;
+        }
+        
+        this.updateElement('current-height', this.formatNumber(nodeStatus.localHeight));
+        this.updateElement('network-height', this.formatNumber(nodeStatus.networkHeight));
+        this.updateElement('peer-count-node', nodeStatus.connectedPeers);
+        this.updateElement('node-version', nodeStatus.nodeVersion);
+        this.updateElement('uptime', nodeStatus.uptime);
+        this.updateElement('last-block-time', nodeStatus.lastBlockTime);
+        this.updateElement('mempool-size', nodeStatus.mempoolSize);
+    }
+
+    /**
      * Event emitter
      */
     emit(event, data) {
