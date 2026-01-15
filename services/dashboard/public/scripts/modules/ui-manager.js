@@ -3,6 +3,8 @@
  * Handles all UI updates and DOM manipulation
  */
 
+import IconManager from './icon-manager.js';
+
 /**
  * Sync Phase Definitions with colors and icons
  */
@@ -79,6 +81,9 @@ export class UIManager {
 
         // Setup event listeners
         this.setupEventListeners();
+        
+        // Initialize blocks/hour chart
+        this.initBlocksPerHourChart();
     }
 
     /**
@@ -201,6 +206,9 @@ export class UIManager {
         } else {
             grid.innerHTML = `<div class="services-grid">${filteredServices.map(service => this.createServiceCard(service)).join('')}</div>`;
         }
+        
+        // Update icons in service cards
+        this.updateServiceCardIcons();
     }
 
     /**
@@ -336,30 +344,39 @@ export class UIManager {
 
         grid.innerHTML = `
             <div class="no-installation-message" role="alert">
-                <div class="message-icon">⚠️</div>
+                <div class="message-icon"></div>
                 <h2>No Installation Detected</h2>
                 <p>No Kaspa All-in-One installation was found on this system.</p>
                 <p>Please run the Installation Wizard to set up your services.</p>
                 <div class="message-actions">
                     <button id="launch-wizard-btn" class="btn-primary">
-                        🧙‍♂️ Launch Installation Wizard
+                        Launch Installation Wizard
                     </button>
                 </div>
             </div>
         `;
         
-        // Add event listener for the launch wizard button
-        setTimeout(() => {
-            const launchBtn = document.getElementById('launch-wizard-btn');
-            if (launchBtn) {
-                launchBtn.addEventListener('click', () => {
-                    // Use the wizard navigation handler
-                    if (window.dashboard && window.dashboard.wizardNav) {
-                        window.dashboard.wizardNav.openWizard();
-                    }
-                });
-            }
-        }, 0);
+        // Add warning icon
+        const messageIcon = grid.querySelector('.message-icon');
+        if (messageIcon) {
+            const icon = IconManager.createIcon('warning', { size: 'xl', color: 'warning' });
+            messageIcon.appendChild(icon);
+        }
+        
+        // Add wizard icon to button
+        const launchBtn = document.getElementById('launch-wizard-btn');
+        if (launchBtn) {
+            const icon = IconManager.createIcon('wand', { size: 'sm' });
+            launchBtn.insertBefore(icon, launchBtn.firstChild);
+            launchBtn.insertBefore(document.createTextNode(' '), launchBtn.childNodes[1]);
+            
+            launchBtn.addEventListener('click', () => {
+                // Use the wizard navigation handler
+                if (window.dashboard && window.dashboard.wizardNav) {
+                    window.dashboard.wizardNav.openWizard();
+                }
+            });
+        }
     }
 
     /**
@@ -404,29 +421,29 @@ export class UIManager {
                             data-original-title="Start ${service.displayName || service.name}"
                             title="Start ${service.displayName || service.name}"
                             ${service.status === 'healthy' ? 'disabled' : ''}>
-                        ▶️ Start
+                        Start
                     </button>
                     <button class="btn-small" data-action="stop" data-service="${service.name}"
                             data-original-title="Stop ${service.displayName || service.name}"
                             title="Stop ${service.displayName || service.name}"
                             ${service.status === 'stopped' ? 'disabled' : ''}>
-                        ⏹️ Stop
+                        Stop
                     </button>
                     <button class="btn-small" data-action="restart" data-service="${service.name}"
                             data-original-title="Restart ${service.displayName || service.name}"
                             title="Restart ${service.displayName || service.name}"
                             ${service.status === 'stopped' ? 'disabled' : ''}>
-                        🔄 Restart
+                        Restart
                     </button>
                     <button class="btn-small" data-action="logs" data-service="${service.name}"
                             data-original-title="View logs for ${service.displayName || service.name}"
                             title="View logs for ${service.displayName || service.name}">
-                        📋 Logs
+                        Logs
                     </button>
                 </div>
                 ${service.error ? `
                 <div class="service-error" role="alert">
-                    <span class="error-icon">⚠️</span>
+                    <span class="error-icon"></span>
                     <span class="error-text">${service.error}</span>
                 </div>
                 ` : ''}
@@ -534,6 +551,16 @@ export class UIManager {
     }
 
     /**
+     * Update service card icons after rendering
+     */
+    updateServiceCardIcons() {
+        const serviceCards = document.querySelectorAll('.service-card');
+        serviceCards.forEach(card => {
+            IconManager.updateServiceCard(card);
+        });
+    }
+
+    /**
      * Update public Kaspa network stats (independent of local node)
      */
     updateKaspaNetworkStats(networkData) {
@@ -623,7 +650,7 @@ export class UIManager {
         this.updateElement('currentHeight', status.currentHeight || '-');
         this.updateElement('networkHeight', status.networkHeight || '-');
         this.updateElement('peerCountNode', status.peerCount || '-');
-        this.updateElement('nodeVersion', status.version || '-');
+        this.updateElement('nodeVersion', status.version || status.nodeVersion || '-');
         this.updateElement('uptime', this.formatUptime(status.uptime));
     }
 
@@ -782,6 +809,50 @@ export class UIManager {
                 lastBlockEl.textContent = `${timeAgo} ago`;
             }
         }
+        
+        // Update blocks per hour with chart
+        if (syncStatus.blocksPerHour) {
+            const blocksEl = document.getElementById('blocks-per-hour-value');
+            if (blocksEl) {
+                blocksEl.textContent = this.formatNumber(syncStatus.blocksPerHour.rate || 36000);
+            }
+            
+            if (syncStatus.blocksPerHour.chartData && syncStatus.blocksPerHour.chartData.length > 0) {
+                this.drawBlocksChart(syncStatus.blocksPerHour.chartData);
+            }
+        }
+        
+        // Update network height from top-level fields
+        if (syncStatus.networkHeight) {
+            const networkHeightEl = document.getElementById('network-height');
+            if (networkHeightEl) {
+                networkHeightEl.textContent = this.formatNumber(syncStatus.networkHeight);
+            }
+        }
+        
+        // Update local height from top-level fields
+        if (syncStatus.localHeight) {
+            const localHeightEl = document.getElementById('current-height');
+            if (localHeightEl) {
+                localHeightEl.textContent = this.formatNumber(syncStatus.localHeight);
+            }
+        }
+        
+        // Update connected peers from top-level fields
+        if (syncStatus.connectedPeers !== undefined && syncStatus.connectedPeers !== null) {
+            const peersEl = document.getElementById('peer-count-node');
+            if (peersEl) {
+                peersEl.textContent = syncStatus.connectedPeers;
+            }
+        }
+        
+        // Update node version from top-level fields
+        if (syncStatus.nodeVersion) {
+            const versionEl = document.getElementById('node-version');
+            if (versionEl) {
+                versionEl.textContent = syncStatus.nodeVersion;
+            }
+        }
     }
 
     /**
@@ -900,6 +971,63 @@ export class UIManager {
         } else {
             return '< 1m';
         }
+    }
+
+    /**
+     * Initialize blocks per hour chart
+     */
+    initBlocksPerHourChart() {
+        const canvas = document.getElementById('blocks-hour-chart');
+        if (!canvas) return;
+        this.blocksChartCtx = canvas.getContext('2d');
+        this.blocksChartData = new Array(60).fill(36000);
+    }
+
+    /**
+     * Draw blocks per hour chart
+     */
+    drawBlocksChart(data) {
+        const canvas = document.getElementById('blocks-hour-chart');
+        if (!canvas || !this.blocksChartCtx) return;
+        
+        const ctx = this.blocksChartCtx;
+        const width = canvas.width, height = canvas.height;
+        ctx.clearRect(0, 0, width, height);
+        
+        if (!data || data.length === 0) data = this.blocksChartData;
+        else this.blocksChartData = data;
+        
+        const minVal = Math.min(...data) * 0.95;
+        const maxVal = Math.max(...data) * 1.05;
+        const range = maxVal - minVal || 1;
+        
+        // Gradient fill
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, 'rgba(72, 187, 120, 0.4)');
+        gradient.addColorStop(1, 'rgba(72, 187, 120, 0.05)');
+        
+        ctx.beginPath();
+        ctx.moveTo(0, height);
+        data.forEach((val, i) => {
+            const x = (i / (data.length - 1)) * width;
+            const y = height - ((val - minVal) / range) * height;
+            ctx.lineTo(x, y);
+        });
+        ctx.lineTo(width, height);
+        ctx.closePath();
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        
+        // Line
+        ctx.beginPath();
+        data.forEach((val, i) => {
+            const x = (i / (data.length - 1)) * width;
+            const y = height - ((val - minVal) / range) * height;
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = 'rgba(72, 187, 120, 0.9)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
     }
 
     /**

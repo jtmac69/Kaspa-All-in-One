@@ -20,6 +20,58 @@ const ResourceMonitor = require('./lib/ResourceMonitor');
 const WizardIntegration = require('./lib/WizardIntegration');
 const ConfigurationSynchronizer = require('./lib/ConfigurationSynchronizer');
 
+// Block rate tracking for accurate Blocks/Hour
+const blockRateHistory = {
+    samples: [],
+    maxSamples: 360,
+    lastUpdate: 0
+};
+
+function trackBlockRate(daaScore) {
+    const now = Date.now();
+    if (now - blockRateHistory.lastUpdate < 10000) return;
+    
+    blockRateHistory.samples.push({ timestamp: now, daaScore: parseInt(daaScore) });
+    if (blockRateHistory.samples.length > blockRateHistory.maxSamples) {
+        blockRateHistory.samples.shift();
+    }
+    blockRateHistory.lastUpdate = now;
+}
+
+function calculateAccurateBlocksPerHour() {
+    const samples = blockRateHistory.samples;
+    if (samples.length < 2) return { rate: 36000, accurate: false, chartData: [] };
+    
+    const now = Date.now();
+    const recentSamples = samples.filter(s => s.timestamp >= now - 3600000);
+    
+    if (recentSamples.length < 2) {
+        const oldest = samples[0], newest = samples[samples.length - 1];
+        const hours = (newest.timestamp - oldest.timestamp) / 3600000;
+        const rate = hours > 0 ? Math.round((newest.daaScore - oldest.daaScore) / hours) : 36000;
+        return { rate, accurate: false, chartData: [] };
+    }
+    
+    const oldest = recentSamples[0], newest = recentSamples[recentSamples.length - 1];
+    const hours = (newest.timestamp - oldest.timestamp) / 3600000;
+    const rate = Math.round((newest.daaScore - oldest.daaScore) / hours);
+    
+    // Generate 60-point chart data (one per minute)
+    const chartData = [];
+    for (let i = 59; i >= 0; i--) {
+        const minStart = now - (i + 1) * 60000, minEnd = now - i * 60000;
+        const minSamples = recentSamples.filter(s => s.timestamp >= minStart && s.timestamp < minEnd);
+        if (minSamples.length >= 2) {
+            const blocks = minSamples[minSamples.length - 1].daaScore - minSamples[0].daaScore;
+            chartData.push(blocks * 60);
+        } else {
+            chartData.push(chartData.length > 0 ? chartData[chartData.length - 1] : 36000);
+        }
+    }
+    
+    return { rate, accurate: true, chartData };
+}
+
 // Shared modules
 const { SharedStateManager } = require('../shared/lib/state-manager');
 const ErrorDisplay = require('../shared/lib/error-display');
@@ -1077,6 +1129,11 @@ app.get('/api/kaspa/node/sync-status', async (req, res) => {
                 tipTimestamp: dagInfo.tipTimestamp
             };
             
+            // Track block rate for accurate Blocks/Hour calculation
+            if (syncStatus.dag?.virtualDaaScore) {
+                trackBlockRate(syncStatus.dag.virtualDaaScore);
+            }
+            
             // Get container uptime
             try {
                 const { stdout: statsOutput } = await execAsync('docker inspect kaspa-node --format="{{.State.StartedAt}}"', {
@@ -1093,8 +1150,17 @@ app.get('/api/kaspa/node/sync-status', async (req, res) => {
             console.log('RPC data not available for sync status:', rpcError.message);
         }
         
+        // Calculate blocks per hour with chart data
+        const blockRateData = calculateAccurateBlocksPerHour();
+        
         res.json({
             ...syncStatus,
+            localHeight: syncStatus.dag?.virtualDaaScore || syncStatus.dag?.blockCount || null,
+            networkHeight: syncStatus.dag?.virtualDaaScore || null,
+            connectedPeers: syncStatus.rpc?.connectedPeers ?? syncStatus.peersConnected ?? null,
+            nodeVersion: syncStatus.rpc?.serverVersion || null,
+            blocksPerHour: blockRateData,
+            mempoolSize: syncStatus.rpc?.mempoolSize || 0,
             timestamp: new Date().toISOString(),
             source: 'logs'
         });

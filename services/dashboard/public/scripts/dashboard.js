@@ -7,6 +7,7 @@ import { APIClient } from './modules/api-client.js';
 import { WebSocketManager } from './modules/websocket-manager.js';
 import { UIManager } from './modules/ui-manager.js';
 import { WizardNavigation } from './modules/wizard-navigation.js';
+import IconManager from './modules/icon-manager.js';
 
 class Dashboard {
     constructor() {
@@ -14,6 +15,7 @@ class Dashboard {
         this.ws = new WebSocketManager();
         this.ui = new UIManager();
         this.wizardNav = new WizardNavigation();
+        this.iconManager = IconManager;
         
         this.currentFilter = 'all';
         this.updateInterval = null;
@@ -24,6 +26,9 @@ class Dashboard {
      */
     async init() {
         console.log('Initializing Kaspa Dashboard...');
+
+        // Initialize icon system first
+        this.iconManager.init();
 
         // Initialize UI
         this.ui.init();

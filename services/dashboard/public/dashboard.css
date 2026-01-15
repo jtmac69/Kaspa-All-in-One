@@ -14,10 +14,17 @@
    Status Styles: Imported from shared/styles/status.css
    - .status-dot, .status-badge, .status-indicator
    - .progress-bar, .health-status
+   
+   Icon Styles: Imported from shared/icons/lucide-icons.css
+   - Lucide icon system with Kaspa brand colors
+   - Icon animations and states
    ============================================================================ */
 
 /* Import Shared Design System */
 @import '/shared/styles/index.css';
+
+/* Import Shared Icon System */
+@import '/shared/icons/lucide-icons.css';
 
 /* ============================================================================
    Dashboard-Specific Overrides and Extensions
@@ -145,6 +152,43 @@
     font-weight: var(--font-semibold);
     color: var(--text-primary);
     font-family: var(--font-mono);
+}
+
+/* Blocks/Hour Widget */
+.blocks-hour-widget {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.blocks-hour-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.blocks-hour-header .label {
+    font-size: 0.75rem;
+    color: var(--text-muted, #9ca3af);
+}
+
+.blocks-hour-header .value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary, #e5e7eb);
+}
+
+.blocks-hour-chart-container {
+    width: 100%;
+    height: 30px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.blocks-hour-chart-container canvas {
+    width: 100%;
+    height: 100%;
 }
 
 /* Sync Status Improvements */
@@ -331,19 +375,19 @@
     font-size: var(--text-base);
 }
 
-/* Icon Improvements - Using Material Design Icons */
-.btn-small[data-action="start"]::before { content: "▶️"; }
-.btn-small[data-action="stop"]::before { content: "⏹️"; }
-.btn-small[data-action="restart"]::before { content: "🔄"; }
-.btn-small[data-action="logs"]::before { content: "📋"; }
+/* Service Action Buttons */
+.service-actions {
+    display: flex;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+    margin-top: var(--space-3);
+}
 
-/* Replace emoji icons with better alternatives */
-#toggle-view::before { content: "📊"; }
-#refresh-services::before { content: "🔄"; }
-#restart-all-btn::before { content: "🔄"; }
-#update-services-btn::before { content: "⬆️"; }
-
-/* Body Background - Kaspa Gradient */
+.service-actions .btn-small {
+    flex: 1;
+    min-width: 70px;
+    justify-content: center;
+}
 body {
     font-family: var(--font-body);
     background: var(--gradient-primary);

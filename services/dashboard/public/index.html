@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaspa All-in-One Dashboard</title>
+    <!-- Shared Icon System -->
+    <link rel="stylesheet" href="/shared/icons/lucide-icons.css">
     <link rel="stylesheet" href="dashboard.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 </head>
@@ -187,9 +189,14 @@
                                 <span class="label">Uptime</span>
                                 <span class="value" id="uptime" aria-live="polite">-</span>
                             </div>
-                            <div class="status-item" role="listitem">
-                                <span class="label">Last Block</span>
-                                <span class="value" id="last-block-time" aria-live="polite">-</span>
+                            <div class="status-item blocks-hour-widget" role="listitem">
+                                <div class="blocks-hour-header">
+                                    <span class="label">Blocks/Hour</span>
+                                    <span class="value" id="blocks-per-hour-value" aria-live="polite">-</span>
+                                </div>
+                                <div class="blocks-hour-chart-container">
+                                    <canvas id="blocks-hour-chart" width="120" height="30"></canvas>
+                                </div>
                             </div>
                         </div>
                         
@@ -451,6 +458,6 @@
         </div>
     </footer>
 
-    <script type="module" src="scripts/dashboard.js?v=20260108-2"></script>
+    <script type="module" src="scripts/dashboard.js?v=20260115-3"></script>
 </body>
 </html>
