@@ -635,8 +635,8 @@ body.wizard-running {
     align-items: center;
     gap: var(--space-2);
     padding: var(--space-3) var(--space-4);
-    background: var(--kaspa-light);
-    color: var(--text-primary);
+    background: var(--kaspa-dark);
+    color: white;
     border: 2px solid var(--kaspa-blue);
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
@@ -663,6 +663,11 @@ body.wizard-running {
 .context-action-btn .icon {
     font-size: var(--text-lg);
     flex-shrink: 0;
+    color: var(--kaspa-blue);
+}
+
+.context-action-btn:hover .icon {
+    color: white;
 }
 
 .context-action-btn .content {
@@ -672,11 +677,13 @@ body.wizard-running {
 .context-action-btn .title {
     font-weight: var(--font-bold);
     margin-bottom: var(--space-1);
+    color: white;
 }
 
 .context-action-btn .description {
     font-size: var(--text-xs);
-    opacity: 0.8;
+    opacity: 0.9;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .profile-selector {
@@ -1321,9 +1328,10 @@ main {
 .resource-details {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-end;
     font-size: var(--text-xs);
     color: var(--text-secondary);
+    margin-top: var(--space-compact-2);
 }
 
 .load-average,
@@ -2362,5 +2370,141 @@ main {
     
     .pipeline-connector {
         font-size: 0.7rem;
+    }
+}
+
+/* Docker Limits Modal */
+.docker-limits-content {
+    padding: var(--space-4);
+}
+
+.docker-limits-table {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.docker-limits-table table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--space-3);
+}
+
+.docker-limits-table th,
+.docker-limits-table td {
+    padding: var(--space-3);
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.docker-limits-table th {
+    background: var(--surface-elevated);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+}
+
+.docker-limits-table td {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+}
+
+.docker-limits-table tr:hover {
+    background: var(--surface-hover);
+}
+
+.docker-limits-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Monitoring status button */
+.monitoring-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.monitoring-indicator.monitoring-active {
+    background: rgba(126, 211, 33, 0.1);
+    border-color: var(--success);
+}
+
+/* Services Grid - List View Toggle */
+.services-container {
+    transition: all var(--transition-base);
+}
+
+/* Default Grid View */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-4);
+}
+
+/* List View - Single column with compact cards */
+.services-grid.list-view {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.services-grid.list-view .service-card {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 2fr;
+    gap: var(--space-4);
+    align-items: center;
+    padding: var(--space-3);
+}
+
+.services-grid.list-view .service-header {
+    margin-bottom: 0;
+}
+
+.services-grid.list-view .service-badges {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: flex-start;
+}
+
+.services-grid.list-view .service-info {
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
+}
+
+.services-grid.list-view .info-row {
+    margin-bottom: 0;
+}
+
+.services-grid.list-view .service-actions {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: flex-end;
+}
+
+.services-grid.list-view .service-actions button {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-xs);
+}
+
+/* List view for grouped services */
+.services-grid.list-view .service-group {
+    margin-bottom: var(--space-4);
+}
+
+.services-grid.list-view .service-group .services-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+/* Responsive adjustments for list view */
+@media (max-width: 768px) {
+    .services-grid.list-view .service-card {
+        grid-template-columns: 1fr;
+        gap: var(--space-2);
+    }
+    
+    .services-grid.list-view .service-actions {
+        justify-content: flex-start;
     }
 }

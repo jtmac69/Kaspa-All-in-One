@@ -1379,11 +1379,17 @@ export class UIManager {
             this.updateResourceBar('memory', resources.memory);
             this.updateElement('memoryText', `${resources.memory.toFixed(1)}%`);
         }
+        if (resources.memoryInfo) {
+            this.updateElement('memory-info', resources.memoryInfo);
+        }
 
         // Disk
         if (resources.disk !== undefined) {
             this.updateResourceBar('disk', resources.disk);
             this.updateElement('diskText', `${resources.disk.toFixed(1)}%`);
+        }
+        if (resources.diskInfo) {
+            this.updateElement('disk-info', resources.diskInfo);
         }
 
         // System uptime
@@ -1475,6 +1481,55 @@ export class UIManager {
             modal.style.display = 'none';
             modal.setAttribute('aria-hidden', 'true');
         }
+    }
+
+    /**
+     * Show Docker limits modal
+     */
+    showDockerLimitsModal(content) {
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('docker-limits-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'docker-limits-modal';
+            modal.className = 'modal';
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-labelledby', 'docker-limits-title');
+            modal.setAttribute('aria-hidden', 'true');
+            
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <button class="close" id="close-docker-limits-btn" aria-label="Close Docker limits modal">&times;</button>
+                    <h2 id="docker-limits-title">Docker Container Resource Limits</h2>
+                    <div id="docker-limits-content" class="docker-limits-content">
+                        ${content}
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Add close button handler
+            const closeBtn = modal.querySelector('#close-docker-limits-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => this.closeModal(modal));
+            }
+            
+            // Close on background click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.closeModal(modal);
+                }
+            });
+        } else {
+            // Update existing modal content
+            const contentEl = modal.querySelector('#docker-limits-content');
+            if (contentEl) {
+                contentEl.innerHTML = content;
+            }
+        }
+        
+        this.showModal('docker-limits-modal');
     }
 
     /**

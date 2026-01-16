@@ -121,6 +121,27 @@ class Dashboard {
                 }
             });
         });
+
+        // Resource monitoring controls
+        const monitoringBtn = document.getElementById('monitoring-status');
+        if (monitoringBtn) {
+            monitoringBtn.addEventListener('click', () => this.toggleResourceMonitoring());
+        }
+
+        const quickCheckBtn = document.getElementById('quick-check-btn');
+        if (quickCheckBtn) {
+            quickCheckBtn.addEventListener('click', () => this.quickResourceCheck());
+        }
+
+        const dockerLimitsBtn = document.getElementById('docker-limits-btn');
+        if (dockerLimitsBtn) {
+            dockerLimitsBtn.addEventListener('click', () => this.showDockerLimits());
+        }
+
+        const containerCountEl = document.getElementById('container-count');
+        if (containerCountEl) {
+            this.updateContainerCount();
+        }
     }
 
     /**
@@ -603,8 +624,17 @@ class Dashboard {
      */
     toggleServiceView() {
         const grid = document.getElementById('services-grid');
+        const toggleBtn = document.getElementById('toggle-view');
+        
         if (grid) {
             grid.classList.toggle('list-view');
+            
+            // Update button text to reflect current view
+            if (toggleBtn) {
+                const isListView = grid.classList.contains('list-view');
+                toggleBtn.textContent = isListView ? '📊 Grid View' : '📋 List View';
+                toggleBtn.title = isListView ? 'Switch to grid view' : 'Switch to list view';
+            }
         }
     }
 
@@ -783,6 +813,163 @@ class Dashboard {
             // Still update timestamp even on error to show when last attempt was made
             const timestamp = new Date().toISOString();
             this.ui.updateLastStatusCheck(timestamp);
+        }
+    }
+
+    /**
+     * Toggle resource monitoring on/off
+     */
+    async toggleResourceMonitoring() {
+        const monitoringBtn = document.getElementById('monitoring-status');
+        if (!monitoringBtn) return;
+
+        const isCurrentlyOff = monitoringBtn.textContent.includes('Off');
+        
+        try {
+            if (isCurrentlyOff) {
+                // Turn monitoring ON
+                this.ui.showNotification('Starting resource monitoring...', 'info');
+                const result = await this.api.post('/api/wizard/monitoring/start');
+                
+                if (result.success) {
+                    monitoringBtn.textContent = '🟢 Monitoring: On';
+                    monitoringBtn.classList.add('monitoring-active');
+                    this.ui.showNotification('Resource monitoring started', 'success');
+                    
+                    // Show historical data sections
+                    this.showResourceHistorySections(true);
+                    
+                    // Update icon
+                    this.iconManager.updateMonitoringStatus(true);
+                } else {
+                    throw new Error(result.message || 'Failed to start monitoring');
+                }
+            } else {
+                // Turn monitoring OFF
+                this.ui.showNotification('Stopping resource monitoring...', 'info');
+                monitoringBtn.textContent = '🔴 Monitoring: Off';
+                monitoringBtn.classList.remove('monitoring-active');
+                this.ui.showNotification('Resource monitoring stopped', 'success');
+                
+                // Hide historical data sections
+                this.showResourceHistorySections(false);
+                
+                // Update icon
+                this.iconManager.updateMonitoringStatus(false);
+            }
+        } catch (error) {
+            console.error('Failed to toggle resource monitoring:', error);
+            this.ui.showNotification('Failed to toggle monitoring: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * Show or hide resource history sections
+     */
+    showResourceHistorySections(show) {
+        const serviceResources = document.getElementById('service-resources');
+        const resourceTrends = document.getElementById('resource-trends');
+        
+        if (serviceResources) {
+            serviceResources.style.display = show ? 'block' : 'none';
+        }
+        
+        if (resourceTrends) {
+            resourceTrends.style.display = show ? 'block' : 'none';
+        }
+        
+        if (show) {
+            // Load historical data when showing
+            this.loadResourceHistory();
+        }
+    }
+
+    /**
+     * Load resource history and trends
+     */
+    async loadResourceHistory() {
+        try {
+            // This would load historical data from the backend
+            // For now, just show a placeholder message
+            this.ui.showNotification('Historical data collection starting...', 'info');
+            
+            // TODO: Implement actual historical data loading
+            // - Fetch per-service resource usage
+            // - Fetch resource trends for charts
+            // - Render charts using Chart.js or similar
+        } catch (error) {
+            console.error('Failed to load resource history:', error);
+        }
+    }
+
+    /**
+     * Show Docker container resource limits
+     */
+    async showDockerLimits() {
+        try {
+            this.ui.showNotification('Loading Docker container limits...', 'info');
+            
+            // Fetch Docker limits from the backend
+            const response = await this.api.request('/api/system/docker-limits');
+            
+            if (response.error) {
+                throw new Error(response.error);
+            }
+
+            // Create modal content
+            const limitsHtml = this.createDockerLimitsModal(response.limits || []);
+            
+            // Show in a modal
+            this.ui.showDockerLimitsModal(limitsHtml);
+            
+        } catch (error) {
+            console.error('Failed to load Docker limits:', error);
+            this.ui.showNotification('Failed to load Docker limits: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * Create Docker limits modal HTML
+     */
+    createDockerLimitsModal(limits) {
+        if (!limits || limits.length === 0) {
+            return '<p>No Docker containers found or limits not configured.</p>';
+        }
+
+        let html = '<div class="docker-limits-table"><table><thead><tr>';
+        html += '<th>Container</th><th>Memory Limit</th><th>CPU Limit</th>';
+        html += '</tr></thead><tbody>';
+
+        limits.forEach(limit => {
+            html += '<tr>';
+            html += `<td>${limit.name}</td>`;
+            html += `<td>${limit.memoryLimit || 'Unlimited'}</td>`;
+            html += `<td>${limit.cpuLimit || 'Unlimited'}</td>`;
+            html += '</tr>';
+        });
+
+        html += '</tbody></table></div>';
+        return html;
+    }
+
+    /**
+     * Update container count
+     */
+    async updateContainerCount() {
+        try {
+            const response = await this.api.request('/api/system/container-count');
+            const count = response.count || 0;
+            
+            const containerCountEl = document.getElementById('container-count');
+            if (containerCountEl) {
+                containerCountEl.textContent = count;
+            }
+        } catch (error) {
+            console.warn('Failed to get container count:', error);
+            const containerCountEl = document.getElementById('container-count');
+            if (containerCountEl) {
+                containerCountEl.textContent = '-';
+            }
         }
     }
 

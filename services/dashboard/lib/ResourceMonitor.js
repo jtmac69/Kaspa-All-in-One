@@ -38,12 +38,14 @@ class ResourceMonitor {
 
     async getSystemResources() {
         try {
-            const [cpu, memory, disk, loadAverage, uptime] = await Promise.all([
+            const [cpu, memory, disk, loadAverage, uptime, memoryInfo, diskInfo] = await Promise.all([
                 this.getCpuUsage(),
                 this.getMemoryUsage(),
                 this.getDiskUsage(),
                 this.getLoadAverage(),
-                this.getSystemUptime()
+                this.getSystemUptime(),
+                this.getMemoryInfo(),
+                this.getDiskInfo()
             ]);
 
             const metrics = {
@@ -52,6 +54,8 @@ class ResourceMonitor {
                 disk,
                 loadAverage,
                 uptime,
+                memoryInfo,
+                diskInfo,
                 timestamp: new Date().toISOString()
             };
 
@@ -112,20 +116,40 @@ class ResourceMonitor {
         }
     }
 
+    async getMemoryInfo() {
+        try {
+            const { stdout } = await execAsync(
+                "free -h | grep Mem | awk '{print $3 \" / \" $2}'"
+            );
+            return stdout.trim() || '-';
+        } catch (error) {
+            console.warn('Failed to get memory info:', error.message);
+            return '-';
+        }
+    }
+
+    async getDiskInfo() {
+        try {
+            const { stdout } = await execAsync(
+                "df -h / | tail -1 | awk '{print $3 \" / \" $2}'"
+            );
+            return stdout.trim() || '-';
+        } catch (error) {
+            console.warn('Failed to get disk info:', error.message);
+            return '-';
+        }
+    }
+
     async getLoadAverage() {
         try {
             const { stdout } = await execAsync(
                 "uptime | awk -F'load average:' '{print $2}'"
             );
             const loads = stdout.trim().split(',').map(x => parseFloat(x.trim()));
-            return {
-                '1min': loads[0] || 0,
-                '5min': loads[1] || 0,
-                '15min': loads[2] || 0
-            };
+            return loads.length >= 3 ? loads : [0, 0, 0];
         } catch (error) {
             console.warn('Failed to get load average:', error.message);
-            return { '1min': 0, '5min': 0, '15min': 0 };
+            return [0, 0, 0];
         }
     }
 
