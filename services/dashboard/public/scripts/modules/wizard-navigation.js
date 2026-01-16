@@ -17,7 +17,7 @@ export class WizardNavigation {
      */
     initializeCrossLaunchNavigator() {
         // Simple cross-launch navigator implementation
-        this.crossLaunchNavigator = {
+        const navigator = {
             getWizardUrl: (context = {}) => {
                 const baseUrl = 'http://localhost:3000';
                 
@@ -51,28 +51,30 @@ export class WizardNavigation {
             },
 
             getReconfigureUrl: () => {
-                return this.getWizardUrl({
+                return navigator.getWizardUrl({
                     action: 'modify',
-                    returnUrl: this.getDashboardUrl()
+                    returnUrl: navigator.getDashboardUrl()
                 });
             },
 
             getAddProfileUrl: (profileName) => {
-                return this.getWizardUrl({
+                return navigator.getWizardUrl({
                     action: 'add',
                     profile: profileName,
-                    returnUrl: this.getDashboardUrl()
+                    returnUrl: navigator.getDashboardUrl()
                 });
             },
 
             getModifyProfileUrl: (profileName) => {
-                return this.getWizardUrl({
+                return navigator.getWizardUrl({
                     action: 'modify',
                     profile: profileName,
-                    returnUrl: this.getDashboardUrl()
+                    returnUrl: navigator.getDashboardUrl()
                 });
             }
         };
+        
+        this.crossLaunchNavigator = navigator;
     }
 
     /**

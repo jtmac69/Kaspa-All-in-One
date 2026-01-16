@@ -1702,9 +1702,13 @@ export class UIManager {
         this.updateElement('hash-rate', networkData.networkHashRate || '-');
         this.updateElement('network-circulating', networkData.circulatingSupply || '-');
         this.updateElement('network-percent-mined', `Mined: ${networkData.percentMined || '-'}`);
-        this.updateElement('network-block-reward', `₭ ${(networkData.currentBlockReward || 0).toFixed(2)}`);
-        this.updateElement('block-height', this.formatNumber(networkData.blockHeight));
-        this.updateElement('difficulty', this.formatNumber(networkData.difficulty));
+        this.updateElement('network-block-reward', `𐤊 ${(networkData.currentBlockReward || 0).toFixed(2)}`);
+        
+        // Technical Details
+        this.updateElement('daa-score', this.formatNumber(networkData.blockHeight));
+        this.updateElement('last-block-coinbase', networkData.lastBlockCoinbase 
+            ? `𐤊 ${networkData.lastBlockCoinbase.toFixed(2)}` 
+            : '-');
         
         // Update source indicator
         const sourceElement = document.getElementById('network-source');

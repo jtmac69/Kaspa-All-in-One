@@ -928,14 +928,79 @@ const KASPA_CONSTANTS = {
 };
 
 /**
- * Extract block reward from actual block data
- * Most reliable method - gets actual coinbase transaction
+ * Get block reward from kaspa.org API (most accurate)
+ * Falls back to local calculation if API unavailable
+ */
+async function getBlockRewardFromAPI() {
+    try {
+        const response = await axios.get('https://api.kaspa.org/info/blockreward', {
+            timeout: 5000
+        });
+        
+        if (response.data && response.data.blockreward) {
+            // API returns value directly in KAS (not sompi)
+            const rewardKAS = parseFloat(response.data.blockreward);
+            
+            console.log(`✓ Block reward from API: ${rewardKAS} KAS`);
+            return {
+                blockReward: rewardKAS,
+                source: 'kaspa-api',
+                accurate: true
+            };
+        }
+        throw new Error('Invalid API response');
+        
+    } catch (error) {
+        console.warn('API block reward fetch failed:', error.message);
+        return null;
+    }
+}
+
+/**
+ * Get block reward (subsidy only, NOT including fees)
+ * 
+ * CRITICAL: The coinbase transaction contains BOTH subsidy AND fees.
+ * We must calculate the subsidy separately to match explorer displays.
+ * 
+ * Options:
+ * 1. Calculate from DAA score (deterministic, accurate)
+ * 2. Fetch from kaspa.org API (external dependency)
  */
 async function getBlockRewardFromNode(kaspaNodeClient) {
     try {
-        const dagInfo = await kaspaNodeClient.getBlockDagInfo();
+        // First try API (most accurate)
+        const apiResult = await getBlockRewardFromAPI();
+        if (apiResult) {
+            return apiResult;
+        }
         
-        // Use the first tip hash (most recent block)
+        // Fallback to calculated value
+        const dagInfo = await kaspaNodeClient.getBlockDagInfo();
+        const daaScore = dagInfo.virtualSelectedParentBlueScore || dagInfo.virtualDaaScore;
+        const blockReward = calculateBlockReward(daaScore);
+        
+        console.log(`✓ Block reward (calculated): ${blockReward.toFixed(4)} KAS (DAA: ${daaScore})`);
+        
+        return {
+            blockReward: blockReward,
+            source: 'calculated-subsidy',
+            accurate: true,
+            daaScore: daaScore
+        };
+        
+    } catch (error) {
+        console.error('Failed to get block reward:', error.message);
+        return null;
+    }
+}
+
+/**
+ * OPTIONAL: Get total coinbase payout (subsidy + fees)
+ * Useful for detailed block analysis, but NOT for "Block Reward" display
+ */
+async function getTotalCoinbaseFromNode(kaspaNodeClient) {
+    try {
+        const dagInfo = await kaspaNodeClient.getBlockDagInfo();
         const blockHash = dagInfo.tipHashes && dagInfo.tipHashes.length > 0 
             ? dagInfo.tipHashes[0] 
             : null;
@@ -944,35 +1009,33 @@ async function getBlockRewardFromNode(kaspaNodeClient) {
             throw new Error('No tip hash available');
         }
         
-        // Get the actual block with transactions
         const block = await kaspaNodeClient.getBlock(blockHash, true);
         
         if (!block || !block.transactions || block.transactions.length === 0) {
             throw new Error('Block has no transactions');
         }
         
-        // First transaction is always coinbase (block reward)
+        // First transaction is coinbase (subsidy + fees)
         const coinbase = block.transactions[0];
         
-        // Sum all coinbase outputs (reward in sompi)
-        let totalRewardSompi = 0;
+        let totalCoinbaseSompi = 0;
         for (const output of coinbase.outputs) {
-            totalRewardSompi += parseInt(output.amount || 0);
+            totalCoinbaseSompi += parseInt(output.amount || 0);
         }
         
-        // Convert sompi to KAS (1 KAS = 100,000,000 sompi)
-        const blockRewardKAS = totalRewardSompi / 100000000;
-        
-        console.log(`✓ Block reward extracted from node: ${blockRewardKAS} KAS`);
+        const totalCoinbaseKAS = totalCoinbaseSompi / 100000000;
+        const subsidy = calculateBlockReward(dagInfo.virtualSelectedParentBlueScore);
+        const fees = totalCoinbaseKAS - subsidy;
         
         return {
-            blockReward: blockRewardKAS,
-            source: 'node-block-data',
-            accurate: true
+            totalCoinbase: totalCoinbaseKAS,
+            subsidy: subsidy,
+            fees: Math.max(0, fees), // Ensure non-negative
+            source: 'node-block-data'
         };
         
     } catch (error) {
-        console.error('Failed to extract block reward from node:', error.message);
+        console.error('Failed to get coinbase data:', error.message);
         return null;
     }
 }
@@ -1147,6 +1210,10 @@ app.get('/api/kaspa/network/enhanced', async (req, res) => {
         const blockRewardSource = blockRewardData ? blockRewardData.source : 'calculated';
         const blockRewardAccurate = blockRewardData ? blockRewardData.accurate : false;
         
+        // Get total coinbase (subsidy + fees) for last block
+        const coinbaseData = await getTotalCoinbaseFromNode(kaspaNodeClient);
+        const lastBlockCoinbase = coinbaseData ? coinbaseData.totalCoinbase : null;
+        
         // Calculate hash rate (kaspa.org formula)
         const hashRate = calculateNetworkHashRate(dagInfo.difficulty);
         
@@ -1173,6 +1240,9 @@ app.get('/api/kaspa/network/enhanced', async (req, res) => {
             currentBlockReward: blockReward,
             blockRewardSource: blockRewardSource,
             blockRewardAccurate: blockRewardAccurate,
+            
+            // Last block coinbase (subsidy + fees)
+            lastBlockCoinbase: lastBlockCoinbase,
             
             // Next reduction
             nextReduction: {
@@ -1215,6 +1285,10 @@ app.get('/api/kaspa/network/enhanced', async (req, res) => {
             const blockRewardSource = blockRewardData ? blockRewardData.source : 'calculated';
             const blockRewardAccurate = blockRewardData ? blockRewardData.accurate : false;
             
+            // Get total coinbase for last block
+            const coinbaseData = await getTotalCoinbaseFromNode(publicClient);
+            const lastBlockCoinbase = coinbaseData ? coinbaseData.totalCoinbase : null;
+            
             const hashRate = calculateNetworkHashRate(dagInfo.difficulty);
             const nextReduction = calculateNextReduction(daaScore, blockReward);
             const circulating = calculateCirculatingSupply(daaScore);
@@ -1227,6 +1301,7 @@ app.get('/api/kaspa/network/enhanced', async (req, res) => {
                 currentBlockReward: blockReward,
                 blockRewardSource: blockRewardSource,
                 blockRewardAccurate: blockRewardAccurate,
+                lastBlockCoinbase: lastBlockCoinbase,
                 nextReduction: {
                     reward: nextReduction.reward,
                     timeRemaining: nextReduction.timeRemaining,
@@ -1251,6 +1326,36 @@ app.get('/api/kaspa/network/enhanced', async (req, res) => {
                 timestamp: new Date().toISOString()
             });
         }
+    }
+});
+
+// ============================================================================
+// DETAILED BLOCK REWARD BREAKDOWN - Including Fees
+// ============================================================================
+/**
+ * Detailed block reward breakdown including fees
+ */
+app.get('/api/kaspa/block/reward-details', async (req, res) => {
+    try {
+        const coinbaseData = await getTotalCoinbaseFromNode(kaspaNodeClient);
+        const dagInfo = await kaspaNodeClient.getBlockDagInfo();
+        const daaScore = dagInfo.virtualSelectedParentBlueScore || dagInfo.virtualDaaScore;
+        
+        res.json({
+            daaScore: daaScore,
+            blockSubsidy: calculateBlockReward(daaScore),
+            totalCoinbase: coinbaseData ? coinbaseData.totalCoinbase : null,
+            transactionFees: coinbaseData ? coinbaseData.fees : null,
+            note: 'blockSubsidy is the emission-based reward. totalCoinbase includes transaction fees.',
+            source: coinbaseData ? 'node-data' : 'calculated',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            error: 'Failed to get block reward details',
+            message: error.message
+        });
     }
 });
 

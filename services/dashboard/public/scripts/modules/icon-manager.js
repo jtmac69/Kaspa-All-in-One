@@ -167,7 +167,7 @@ export class IconManager {
             'Mempool 🔄': { icon: 'refresh', text: 'Mempool' },
             'Hashrate 💪': { icon: 'cpu', text: 'Hashrate' },
             'Circulating 📊': { icon: 'trending', text: 'Circulating' },
-            'Block reward 💰': { icon: 'coins', text: 'Block reward' }
+            'Recent Block Reward': { icon: 'coins', text: 'Recent Block Reward' }
         };
 
         document.querySelectorAll('.stat .label').forEach(label => {
