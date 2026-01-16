@@ -571,6 +571,45 @@ app.get('/api/system/resources', async (req, res) => {
     }
 });
 
+// Get Docker container resource limits
+app.get('/api/system/docker-limits', async (req, res) => {
+    try {
+        const limits = await resourceMonitor.getDockerResourceLimits();
+        
+        // Convert Map to array for JSON response
+        const limitsArray = Array.from(limits.entries()).map(([name, limit]) => ({
+            name,
+            memoryLimit: limit.memory ? `${(limit.memory / 1024 / 1024 / 1024).toFixed(2)} GB` : 'Unlimited',
+            cpuLimit: limit.cpuQuota && limit.cpuPeriod 
+                ? `${((limit.cpuQuota / limit.cpuPeriod) * 100).toFixed(0)}%` 
+                : 'Unlimited'
+        }));
+        
+        res.json({ limits: limitsArray });
+    } catch (error) {
+        const errorResult = errorDisplay.showApiError('/api/system/docker-limits', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            details: errorResult.errorType 
+        });
+    }
+});
+
+// Get Docker container count
+app.get('/api/system/container-count', async (req, res) => {
+    try {
+        const { stdout } = await execAsync('docker ps -q | wc -l');
+        const count = parseInt(stdout.trim()) || 0;
+        res.json({ count });
+    } catch (error) {
+        const errorResult = errorDisplay.showApiError('/api/system/container-count', error);
+        res.status(500).json({ 
+            error: errorResult.userMessage,
+            count: 0
+        });
+    }
+});
+
 // Get environment configuration with masking
 app.get('/api/config', 
     createMaskingMiddleware('config'),
@@ -889,6 +928,56 @@ const KASPA_CONSTANTS = {
 };
 
 /**
+ * Extract block reward from actual block data
+ * Most reliable method - gets actual coinbase transaction
+ */
+async function getBlockRewardFromNode(kaspaNodeClient) {
+    try {
+        const dagInfo = await kaspaNodeClient.getBlockDagInfo();
+        
+        // Use the first tip hash (most recent block)
+        const blockHash = dagInfo.tipHashes && dagInfo.tipHashes.length > 0 
+            ? dagInfo.tipHashes[0] 
+            : null;
+        
+        if (!blockHash) {
+            throw new Error('No tip hash available');
+        }
+        
+        // Get the actual block with transactions
+        const block = await kaspaNodeClient.getBlock(blockHash, true);
+        
+        if (!block || !block.transactions || block.transactions.length === 0) {
+            throw new Error('Block has no transactions');
+        }
+        
+        // First transaction is always coinbase (block reward)
+        const coinbase = block.transactions[0];
+        
+        // Sum all coinbase outputs (reward in sompi)
+        let totalRewardSompi = 0;
+        for (const output of coinbase.outputs) {
+            totalRewardSompi += parseInt(output.amount || 0);
+        }
+        
+        // Convert sompi to KAS (1 KAS = 100,000,000 sompi)
+        const blockRewardKAS = totalRewardSompi / 100000000;
+        
+        console.log(`✓ Block reward extracted from node: ${blockRewardKAS} KAS`);
+        
+        return {
+            blockReward: blockRewardKAS,
+            source: 'node-block-data',
+            accurate: true
+        };
+        
+    } catch (error) {
+        console.error('Failed to extract block reward from node:', error.message);
+        return null;
+    }
+}
+
+/**
  * Calculate network hash rate from difficulty
  * Kaspa formula: hashrate (H/s) = difficulty * 20
  * This is derived from: (difficulty * 2^32) / (target_block_time * 2^32 / 20)
@@ -985,6 +1074,56 @@ function calculateCirculatingSupply(daaScore) {
     };
 }
 
+/**
+ * Calculate next reward reduction
+ * Kaspa reduces rewards monthly in the deflationary phase
+ */
+function calculateNextReduction(daaScore, currentBlockReward) {
+    const DEFLATIONARY_PHASE_DAA = 15778800;
+    const CRESCENDO_HARDFORK_DAA = 110165000;
+    const SECONDS_PER_MONTH = 2628000; // 30.4375 days
+    
+    if (daaScore < DEFLATIONARY_PHASE_DAA) {
+        return {
+            reward: currentBlockReward / 2,
+            timeRemaining: 'N/A',
+            blocksRemaining: 0
+        };
+    }
+    
+    const daaFromDeflationary = daaScore - DEFLATIONARY_PHASE_DAA;
+    
+    // Calculate seconds elapsed since deflationary phase started
+    let secondsElapsed;
+    if (daaScore < CRESCENDO_HARDFORK_DAA) {
+        // Before Crescendo: 1 block per second
+        secondsElapsed = daaFromDeflationary;
+    } else {
+        // After Crescendo: 10 blocks per second
+        const daaBeforeCrescendo = CRESCENDO_HARDFORK_DAA - DEFLATIONARY_PHASE_DAA;
+        const daaAfterCrescendo = daaScore - CRESCENDO_HARDFORK_DAA;
+        secondsElapsed = daaBeforeCrescendo + (daaAfterCrescendo / 10);
+    }
+    
+    // Time until next reduction
+    const secondsIntoMonth = secondsElapsed % SECONDS_PER_MONTH;
+    const secondsUntilNext = SECONDS_PER_MONTH - secondsIntoMonth;
+    
+    // Calculate blocks until next reduction
+    const bps = daaScore >= CRESCENDO_HARDFORK_DAA ? 10 : 1;
+    const blocksUntilNext = Math.floor(secondsUntilNext * bps);
+    
+    // Format time remaining
+    const days = Math.floor(secondsUntilNext / 86400);
+    const hours = Math.floor((secondsUntilNext % 86400) / 3600);
+    
+    return {
+        reward: currentBlockReward / 2,
+        timeRemaining: days > 0 ? `${days}d ${hours}h` : `${hours}h`,
+        blocksRemaining: blocksUntilNext
+    };
+}
+
 // Legacy function for backward compatibility
 function calculateHashRate(difficulty) {
     return calculateNetworkHashRate(difficulty);
@@ -993,44 +1132,125 @@ function calculateHashRate(difficulty) {
 // ============================================================================
 // ENHANCED NETWORK API - With Complete Stats
 // ============================================================================
+// ENHANCED NETWORK API - With Complete Stats (Self-Contained)
+// ============================================================================
 app.get('/api/kaspa/network/enhanced', async (req, res) => {
     try {
+        // Get DAG info
         const dagInfo = await kaspaNodeClient.getBlockDagInfo();
         const nodeInfo = await kaspaNodeClient.getNodeInfo();
         const daaScore = dagInfo.virtualSelectedParentBlueScore || dagInfo.virtualDaaScore;
         
+        // Get block reward from actual block data
+        const blockRewardData = await getBlockRewardFromNode(kaspaNodeClient);
+        const blockReward = blockRewardData ? blockRewardData.blockReward : calculateBlockReward(daaScore);
+        const blockRewardSource = blockRewardData ? blockRewardData.source : 'calculated';
+        const blockRewardAccurate = blockRewardData ? blockRewardData.accurate : false;
+        
+        // Calculate hash rate (kaspa.org formula)
         const hashRate = calculateNetworkHashRate(dagInfo.difficulty);
-        const blockReward = calculateBlockReward(daaScore);
+        
+        // Calculate next reduction
+        const nextReduction = calculateNextReduction(daaScore, blockReward);
+        
+        // Calculate circulating supply
         const circulating = calculateCirculatingSupply(daaScore);
         
         // Calculate actual TPS and BPS from recent blocks (requires block analysis)
         // For now, using target values - should be enhanced to analyze recent blocks
-        // TPS = transactions in recent blocks / time period
-        // BPS = blocks in recent time period / time period
         const tps = 10; // TODO: Calculate from recent block transaction counts
-        const bps = 10; // TODO: Calculate from recent block timestamps
+        const bps = daaScore >= KASPA_CONSTANTS.CRESCENDO_HARDFORK_DAA ? 10 : 1;
         
         res.json({
             blockHeight: daaScore,
             difficulty: dagInfo.difficulty,
+            networkName: nodeInfo.networkName || 'mainnet',
+            
+            // Hash rate (kaspa.org formula)
             networkHashRate: hashRate,
-            network: nodeInfo.networkName || 'mainnet',
-            tps: tps, // Dynamic - fluctuates with network activity
-            bps: bps, // Dynamic - fluctuates around target of 10 BPS
+            
+            // Block reward (from actual block or calculated)
+            currentBlockReward: blockReward,
+            blockRewardSource: blockRewardSource,
+            blockRewardAccurate: blockRewardAccurate,
+            
+            // Next reduction
+            nextReduction: {
+                reward: nextReduction.reward,
+                timeRemaining: nextReduction.timeRemaining,
+                blocksRemaining: nextReduction.blocksRemaining
+            },
+            
+            // Other stats
             circulatingSupply: circulating.formatted,
             percentMined: circulating.percentageFormatted,
-            currentBlockReward: blockReward,
             mempoolSize: nodeInfo.mempoolSize || 0,
             connectedPeers: nodeInfo.connectedPeers || 0,
+            
+            // TPS/BPS
+            tps: tps,
+            bps: bps,
+            
             source: 'local-node',
             timestamp: new Date().toISOString()
         });
     } catch (error) {
-        res.status(503).json({ 
-            error: error.message,
-            source: 'error',
-            timestamp: new Date().toISOString()
-        });
+        console.error('Enhanced network endpoint error:', error);
+        
+        // Fallback to public node
+        try {
+            const publicClient = new KaspaNodeClient({
+                host: 'seeder2.kaspad.net',
+                port: 16110
+            });
+            await publicClient.initialize();
+            
+            // Repeat same logic with public client
+            const dagInfo = await publicClient.getBlockDagInfo();
+            const nodeInfo = await publicClient.getNodeInfo();
+            const daaScore = dagInfo.virtualSelectedParentBlueScore || dagInfo.virtualDaaScore;
+            
+            const blockRewardData = await getBlockRewardFromNode(publicClient);
+            const blockReward = blockRewardData ? blockRewardData.blockReward : calculateBlockReward(daaScore);
+            const blockRewardSource = blockRewardData ? blockRewardData.source : 'calculated';
+            const blockRewardAccurate = blockRewardData ? blockRewardData.accurate : false;
+            
+            const hashRate = calculateNetworkHashRate(dagInfo.difficulty);
+            const nextReduction = calculateNextReduction(daaScore, blockReward);
+            const circulating = calculateCirculatingSupply(daaScore);
+            const bps = daaScore >= KASPA_CONSTANTS.CRESCENDO_HARDFORK_DAA ? 10 : 1;
+            
+            res.json({
+                blockHeight: daaScore,
+                difficulty: dagInfo.difficulty,
+                networkHashRate: hashRate,
+                currentBlockReward: blockReward,
+                blockRewardSource: blockRewardSource,
+                blockRewardAccurate: blockRewardAccurate,
+                nextReduction: {
+                    reward: nextReduction.reward,
+                    timeRemaining: nextReduction.timeRemaining,
+                    blocksRemaining: nextReduction.blocksRemaining
+                },
+                circulatingSupply: circulating.formatted,
+                percentMined: circulating.percentageFormatted,
+                mempoolSize: nodeInfo.mempoolSize || 0,
+                connectedPeers: nodeInfo.connectedPeers || 0,
+                tps: 10,
+                bps: bps,
+                source: 'public-node',
+                timestamp: new Date().toISOString()
+            });
+            
+            publicClient.destroy();
+            
+        } catch (fallbackError) {
+            res.status(503).json({
+                error: 'Network data unavailable',
+                message: 'Both local and public nodes failed',
+                timestamp: new Date().toISOString()
+            });
+        }
     }
 });
 

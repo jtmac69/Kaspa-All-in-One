@@ -138,6 +138,7 @@ class KaspaNodeClient {
             
             return {
                 virtualSelectedParentBlueScore: blockDag.virtualSelectedParentBlueScore,
+                virtualSelectedParentBlueHash: blockDag.virtualSelectedParentBlueHash,
                 difficulty: blockDag.difficulty,
                 tipHashes: blockDag.tipHashes || [],
                 virtualDaaScore: blockDag.virtualDaaScore,
@@ -148,6 +149,32 @@ class KaspaNodeClient {
             };
         } catch (error) {
             throw new Error(`Failed to get block DAG info: ${error.message}`);
+        }
+    }
+
+    /**
+     * Get block by hash
+     * @param {string} blockHash - The hash of the block to retrieve
+     * @param {boolean} includeTransactions - Whether to include full transaction data
+     */
+    async getBlock(blockHash, includeTransactions = false) {
+        const client = await this.ensureConnected();
+        
+        try {
+            const blockRequest = {
+                hash: blockHash,
+                includeTransactions: includeTransactions
+            };
+            const response = await client.getBlock(blockRequest);
+            
+            // The response has { block, error } structure
+            if (response.error) {
+                throw new Error(response.error);
+            }
+            
+            return response.block || response;
+        } catch (error) {
+            throw new Error(`Failed to get block: ${error.message}`);
         }
     }
 
