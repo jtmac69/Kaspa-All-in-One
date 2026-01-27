@@ -39,46 +39,49 @@ describe('Property Test: Service Filtering Consistency', () => {
         // Initialize state manager with test path
         stateManager = new SharedStateManager(testStatePath);
 
-        // Service to profile mapping (from Dashboard server.js)
+        // Service to profile mapping (NEW profile IDs)
         const serviceToProfile = {
-            'kaspa-node': 'core',
-            'dashboard': 'core',
-            'wallet': 'core',
-            'kaspa-archive-node': 'archive-node',
-            'timescaledb': 'indexer-services',
-            'indexer-db': 'indexer-services',
-            'k-indexer': 'indexer-services',
-            'kasia-indexer': 'indexer-services',
-            'simply-kaspa-indexer': 'indexer-services',
-            'archive-indexer': 'indexer-services',
-            'kasia-app': 'kaspa-user-applications',
-            'k-social': 'kaspa-user-applications',
-            'kaspa-explorer': 'kaspa-user-applications',
-            'kaspa-nginx': 'kaspa-user-applications',
-            'kaspa-stratum': 'mining',
+            'kaspa-node': 'kaspa-node',
+            'kaspa-archive-node': 'kaspa-archive-node',
+            'kasia-app': 'kasia-app',
+            'k-social': 'k-social-app',
+            'kaspa-explorer': 'kaspa-explorer-bundle',
+            'simply-kaspa-indexer': 'kaspa-explorer-bundle',
+            'timescaledb-explorer': 'kaspa-explorer-bundle',
+            'kasia-indexer': 'kasia-indexer',
+            'k-indexer': 'k-indexer-bundle',
+            'timescaledb-kindexer': 'k-indexer-bundle',
+            'kaspa-stratum': 'kaspa-stratum',
             'portainer': 'management',
-            'pgadmin': 'management'
+            'pgadmin': 'management',
+            // Legacy mappings for test compatibility
+            'timescaledb': 'k-indexer-bundle',
+            'indexer-db': 'k-indexer-bundle',
+            'dashboard': 'management',
+            'wallet': 'kaspa-node',
+            'kaspa-nginx': 'management'
         };
         
-        // Service to type mapping (from Dashboard server.js)
+        // Service to type mapping
         const serviceToType = {
             'kaspa-node': 'Node',
             'kaspa-archive-node': 'Node',
-            'dashboard': 'Management',
-            'wallet': 'Wallet',
-            'timescaledb': 'Database',
-            'indexer-db': 'Database',
-            'k-indexer': 'Indexer',
-            'kasia-indexer': 'Indexer',
-            'simply-kaspa-indexer': 'Indexer',
-            'archive-indexer': 'Indexer',
             'kasia-app': 'Application',
             'k-social': 'Application',
             'kaspa-explorer': 'Application',
-            'kaspa-nginx': 'Proxy',
+            'kasia-indexer': 'Indexer',
+            'k-indexer': 'Indexer',
+            'simply-kaspa-indexer': 'Indexer',
+            'timescaledb-explorer': 'Database',
+            'timescaledb-kindexer': 'Database',
+            'timescaledb': 'Database',
+            'indexer-db': 'Database',
             'kaspa-stratum': 'Mining',
             'portainer': 'Management',
-            'pgadmin': 'Management'
+            'pgadmin': 'Management',
+            'dashboard': 'Management',
+            'wallet': 'Wallet',
+            'kaspa-nginx': 'Proxy'
         };
 
         // Add test endpoint that mimics Dashboard's profiles API
@@ -205,17 +208,23 @@ describe('Property Test: Service Filtering Consistency', () => {
      * Generator for valid service entries with known service names
      */
     const knownServiceArbitrary = fc.constantFrom(
-        'kaspa-node', 'dashboard', 'wallet', 'kaspa-archive-node',
-        'timescaledb', 'indexer-db', 'k-indexer', 'kasia-indexer',
-        'simply-kaspa-indexer', 'archive-indexer', 'kasia-app',
-        'k-social', 'kaspa-explorer', 'kaspa-nginx', 'kaspa-stratum',
-        'portainer', 'pgadmin'
+        'kaspa-node', 'kaspa-archive-node', 'kasia-app', 'k-social',
+        'kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer',
+        'kasia-indexer', 'k-indexer', 'timescaledb-kindexer',
+        'kaspa-stratum', 'portainer', 'pgadmin',
+        // Legacy service names for backward compatibility testing
+        'timescaledb', 'indexer-db', 'dashboard', 'wallet', 'kaspa-nginx'
     );
 
     const serviceEntryArbitrary = fc.record({
         name: knownServiceArbitrary,
         displayName: fc.option(fc.string({ minLength: 3, maxLength: 30 })),
-        profile: fc.option(fc.constantFrom('core', 'kaspa-user-applications', 'indexer-services', 'mining', 'archive-node', 'management')),
+        profile: fc.option(fc.constantFrom(
+            'kaspa-node', 'kasia-app', 'k-social-app', 'kaspa-explorer-bundle',
+            'kasia-indexer', 'k-indexer-bundle', 'kaspa-archive-node', 'kaspa-stratum', 'management',
+            // Legacy profiles for backward compatibility testing
+            'core', 'kaspa-user-applications', 'indexer-services', 'mining', 'archive-node'
+        )),
         type: fc.option(fc.constantFrom('Node', 'Management', 'Wallet', 'Database', 'Indexer', 'Application', 'Proxy', 'Mining')),
         running: fc.boolean(),
         exists: fc.boolean(),
@@ -232,8 +241,11 @@ describe('Property Test: Service Filtering Consistency', () => {
         lastModified: fc.integer({ min: Date.now() - 30 * 24 * 60 * 60 * 1000, max: Date.now() }).map(timestamp => new Date(timestamp).toISOString()),
         phase: fc.constantFrom('pending', 'installing', 'complete', 'error'),
         profiles: fc.record({
-            selected: fc.array(fc.constantFrom('core', 'kaspa-user-applications', 'indexer-services', 'mining', 'archive-node', 'management'), { minLength: 1, maxLength: 6 }),
-            count: fc.integer({ min: 1, max: 6 })
+            selected: fc.array(fc.constantFrom(
+                'kaspa-node', 'kasia-app', 'k-social-app', 'kaspa-explorer-bundle',
+                'kasia-indexer', 'k-indexer-bundle', 'kaspa-archive-node', 'kaspa-stratum', 'management'
+            ), { minLength: 1, maxLength: 9 }),
+            count: fc.integer({ min: 1, max: 9 })
         }),
         configuration: fc.record({
             network: fc.constantFrom('mainnet', 'testnet'),
@@ -425,7 +437,10 @@ describe('Property Test: Service Filtering Consistency', () => {
         await fc.assert(
             fc.asyncProperty(
                 installationStateArbitrary,
-                fc.constantFrom('core', 'kaspa-user-applications', 'indexer-services', 'mining', 'archive-node', 'management'),
+                fc.constantFrom(
+                    'kaspa-node', 'kasia-app', 'k-social-app', 'kaspa-explorer-bundle',
+                    'kasia-indexer', 'k-indexer-bundle', 'kaspa-archive-node', 'kaspa-stratum', 'management'
+                ),
                 async (installationState, filterProfile) => {
                     // Ensure service names are unique and we have services of the filter profile
                     const uniqueServices = [];
@@ -553,44 +568,47 @@ describe('Property Test: Service Filtering Consistency', () => {
         const serviceToType = {
             'kaspa-node': 'Node',
             'kaspa-archive-node': 'Node',
-            'dashboard': 'Management',
-            'wallet': 'Wallet',
-            'timescaledb': 'Database',
-            'indexer-db': 'Database',
-            'k-indexer': 'Indexer',
-            'kasia-indexer': 'Indexer',
-            'simply-kaspa-indexer': 'Indexer',
-            'archive-indexer': 'Indexer',
             'kasia-app': 'Application',
             'k-social': 'Application',
             'kaspa-explorer': 'Application',
-            'kaspa-nginx': 'Proxy',
+            'kasia-indexer': 'Indexer',
+            'k-indexer': 'Indexer',
+            'simply-kaspa-indexer': 'Indexer',
+            'timescaledb-explorer': 'Database',
+            'timescaledb-kindexer': 'Database',
+            'timescaledb': 'Database',
+            'indexer-db': 'Database',
             'kaspa-stratum': 'Mining',
             'portainer': 'Management',
-            'pgadmin': 'Management'
+            'pgadmin': 'Management',
+            'dashboard': 'Management',
+            'wallet': 'Wallet',
+            'kaspa-nginx': 'Proxy'
         };
         return serviceToType[serviceName] || 'Other';
     }
 
     function getServiceProfile(serviceName) {
         const serviceToProfile = {
-            'kaspa-node': 'core',
-            'dashboard': 'core',
-            'wallet': 'core',
-            'kaspa-archive-node': 'archive-node',
-            'timescaledb': 'indexer-services',
-            'indexer-db': 'indexer-services',
-            'k-indexer': 'indexer-services',
-            'kasia-indexer': 'indexer-services',
-            'simply-kaspa-indexer': 'indexer-services',
-            'archive-indexer': 'indexer-services',
-            'kasia-app': 'kaspa-user-applications',
-            'k-social': 'kaspa-user-applications',
-            'kaspa-explorer': 'kaspa-user-applications',
-            'kaspa-nginx': 'kaspa-user-applications',
-            'kaspa-stratum': 'mining',
+            'kaspa-node': 'kaspa-node',
+            'kaspa-archive-node': 'kaspa-archive-node',
+            'kasia-app': 'kasia-app',
+            'k-social': 'k-social-app',
+            'kaspa-explorer': 'kaspa-explorer-bundle',
+            'simply-kaspa-indexer': 'kaspa-explorer-bundle',
+            'timescaledb-explorer': 'kaspa-explorer-bundle',
+            'kasia-indexer': 'kasia-indexer',
+            'k-indexer': 'k-indexer-bundle',
+            'timescaledb-kindexer': 'k-indexer-bundle',
+            'kaspa-stratum': 'kaspa-stratum',
             'portainer': 'management',
-            'pgadmin': 'management'
+            'pgadmin': 'management',
+            // Legacy
+            'timescaledb': 'k-indexer-bundle',
+            'indexer-db': 'k-indexer-bundle',
+            'dashboard': 'management',
+            'wallet': 'kaspa-node',
+            'kaspa-nginx': 'management'
         };
         return serviceToProfile[serviceName];
     }

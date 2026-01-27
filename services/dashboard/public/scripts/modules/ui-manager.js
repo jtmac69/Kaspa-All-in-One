@@ -293,12 +293,23 @@ export class UIManager {
     getGroupDisplayName(groupName, groupBy) {
         if (groupBy === 'profile') {
             const profileNames = {
+                // New profile IDs
+                'kaspa-node': 'Kaspa Node',
+                'kasia-app': 'Kasia Application',
+                'k-social-app': 'K-Social Application',
+                'kaspa-explorer-bundle': 'Kaspa Explorer',
+                'kasia-indexer': 'Kasia Indexer',
+                'k-indexer-bundle': 'K-Indexer',
+                'kaspa-archive-node': 'Archive Node',
+                'kaspa-stratum': 'Kaspa Stratum',
+                'management': 'Management Tools',
+                
+                // Legacy profile IDs
                 'core': 'Core Services',
                 'archive-node': 'Archive Node',
                 'indexer-services': 'Indexer Services',
                 'kaspa-user-applications': 'User Applications',
-                'mining': 'Mining',
-                'management': 'Management Tools'
+                'mining': 'Mining'
             };
             return profileNames[groupName] || groupName;
         }
@@ -323,12 +334,23 @@ export class UIManager {
             return typeClasses[groupName] || 'type-other';
         } else if (groupBy === 'profile') {
             const profileClasses = {
+                // New profile IDs
+                'kaspa-node': 'profile-node',
+                'kasia-app': 'profile-app',
+                'k-social-app': 'profile-app',
+                'kaspa-explorer-bundle': 'profile-explorer',
+                'kasia-indexer': 'profile-indexer',
+                'k-indexer-bundle': 'profile-indexer',
+                'kaspa-archive-node': 'profile-archive',
+                'kaspa-stratum': 'profile-mining',
+                'management': 'profile-management',
+                
+                // Legacy profile IDs
                 'core': 'profile-core',
                 'archive-node': 'profile-archive',
                 'indexer-services': 'profile-indexer',
                 'kaspa-user-applications': 'profile-applications',
-                'mining': 'profile-mining',
-                'management': 'profile-management'
+                'mining': 'profile-mining'
             };
             return profileClasses[groupName] || 'profile-other';
         }

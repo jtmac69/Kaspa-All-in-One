@@ -41,66 +41,108 @@ class ProfileStateManager {
     // Track if periodic refresh has been started
     this.periodicRefreshStarted = false;
     
-    // Profile definitions with service mappings
+    // Profile definitions with service mappings (NEW 8-profile structure)
     this.profileDefinitions = {
-      'core': {
-        id: 'core',
-        name: 'Core Profile',
-        description: 'Kaspa node (public/private) with optional wallet',
-        services: ['kaspa-node', 'dashboard', 'nginx'],
-        configKeys: ['KASPA_NODE_RPC_PORT', 'KASPA_NODE_P2P_PORT', 'PUBLIC_NODE', 'DASHBOARD_PORT'],
+      'kaspa-node': {
+        id: 'kaspa-node',
+        name: 'Kaspa Node',
+        description: 'Standard pruning Kaspa node with optional wallet',
+        services: ['kaspa-node'],
+        configKeys: ['KASPA_NODE_RPC_PORT', 'KASPA_NODE_P2P_PORT', 'KASPA_NODE_WRPC_PORT', 'PUBLIC_NODE', 'WALLET_ENABLED', 'UTXO_INDEX'],
         dockerComposeServices: ['kaspa-node'],
         healthCheckEndpoints: [
           { service: 'kaspa-node', url: 'http://localhost:16110', type: 'rpc' }
         ]
       },
-      'kaspa-user-applications': {
-        id: 'kaspa-user-applications',
-        name: 'Kaspa User Applications',
-        description: 'User-facing apps (Kasia, K-Social, Kaspa Explorer)',
-        services: ['kasia-app', 'k-social', 'kaspa-explorer'],
-        configKeys: ['KASIA_APP_PORT', 'KSOCIAL_APP_PORT', 'KASPA_EXPLORER_PORT'],
-        dockerComposeServices: ['kasia-app', 'k-social', 'kaspa-explorer'],
+      'kasia-app': {
+        id: 'kasia-app',
+        name: 'Kasia Application',
+        description: 'Kasia messaging and wallet application',
+        services: ['kasia-app'],
+        configKeys: ['KASIA_APP_PORT', 'KASIA_INDEXER_MODE', 'REMOTE_KASIA_INDEXER_URL'],
+        dockerComposeServices: ['kasia-app'],
         healthCheckEndpoints: [
-          { service: 'kasia-app', url: 'http://localhost:3001', type: 'http' },
-          { service: 'k-social', url: 'http://localhost:3002', type: 'http' },
-          { service: 'kaspa-explorer', url: 'http://localhost:3003', type: 'http' }
+          { service: 'kasia-app', url: 'http://localhost:3001', type: 'http' }
         ]
       },
-      'indexer-services': {
-        id: 'indexer-services',
-        name: 'Indexer Services',
-        description: 'Local indexers (Kasia, K-Indexer, Simply-Kaspa)',
-        services: ['timescaledb', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
-        configKeys: ['TIMESCALEDB_PORT', 'KASIA_INDEXER_PORT', 'K_INDEXER_PORT', 'SIMPLY_KASPA_INDEXER_PORT'],
-        dockerComposeServices: ['k-social-db', 'simply-kaspa-db', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
+      'k-social-app': {
+        id: 'k-social-app',
+        name: 'K-Social Application',
+        description: 'K-Social decentralized social application',
+        services: ['k-social'],  // Docker container name is k-social
+        configKeys: ['KSOCIAL_APP_PORT', 'KSOCIAL_INDEXER_MODE', 'REMOTE_KSOCIAL_INDEXER_URL'],
+        dockerComposeServices: ['k-social'],
         healthCheckEndpoints: [
-          { service: 'k-social-db', url: 'postgresql://localhost:5432', type: 'database' },
-          { service: 'simply-kaspa-db', url: 'postgresql://localhost:5433', type: 'database' }
+          { service: 'k-social', url: 'http://localhost:3003', type: 'http' }
         ]
       },
-      'archive-node': {
-        id: 'archive-node',
-        name: 'Archive Node Profile',
-        description: 'Non-pruning Kaspa node for complete blockchain history',
+      'kaspa-explorer-bundle': {
+        id: 'kaspa-explorer-bundle',
+        name: 'Kaspa Explorer',
+        description: 'Block explorer with Simply-Kaspa indexer and database',
+        services: ['kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer'],
+        configKeys: ['KASPA_EXPLORER_PORT', 'SIMPLY_KASPA_INDEXER_PORT', 'TIMESCALEDB_EXPLORER_PORT', 'POSTGRES_USER_EXPLORER'],
+        dockerComposeServices: ['kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer'],
+        healthCheckEndpoints: [
+          { service: 'kaspa-explorer', url: 'http://localhost:3004', type: 'http' },
+          { service: 'simply-kaspa-indexer', url: 'http://localhost:3005', type: 'http' },
+          { service: 'timescaledb-explorer', url: 'postgresql://localhost:5434', type: 'database' }
+        ]
+      },
+      'kasia-indexer': {
+        id: 'kasia-indexer',
+        name: 'Kasia Indexer',
+        description: 'Kasia indexer with embedded database',
+        services: ['kasia-indexer'],
+        configKeys: ['KASIA_INDEXER_PORT', 'KASIA_NODE_MODE', 'KASIA_NODE_WRPC_URL'],
+        dockerComposeServices: ['kasia-indexer'],
+        healthCheckEndpoints: [
+          { service: 'kasia-indexer', url: 'http://localhost:3002', type: 'http' }
+        ]
+      },
+      'k-indexer-bundle': {
+        id: 'k-indexer-bundle',
+        name: 'K-Indexer',
+        description: 'K-Indexer with TimescaleDB database',
+        services: ['k-indexer', 'timescaledb-kindexer'],
+        configKeys: ['K_INDEXER_PORT', 'TIMESCALEDB_KINDEXER_PORT', 'POSTGRES_USER_KINDEXER', 'K_INDEXER_NODE_MODE'],
+        dockerComposeServices: ['k-indexer', 'timescaledb-kindexer'],
+        healthCheckEndpoints: [
+          { service: 'k-indexer', url: 'http://localhost:3006', type: 'http' },
+          { service: 'timescaledb-kindexer', url: 'postgresql://localhost:5433', type: 'database' }
+        ]
+      },
+      'kaspa-archive-node': {
+        id: 'kaspa-archive-node',
+        name: 'Kaspa Archive Node',
+        description: 'Non-pruning archive node for complete blockchain history',
         services: ['kaspa-archive-node'],
-        configKeys: ['KASPA_ARCHIVE_RPC_PORT', 'KASPA_ARCHIVE_P2P_PORT'],
-        dockerComposeServices: ['archive-db', 'archive-indexer'],
+        configKeys: ['KASPA_NODE_RPC_PORT', 'KASPA_NODE_P2P_PORT', 'KASPA_NODE_WRPC_PORT', 'PUBLIC_NODE', 'ARCHIVE_MODE'],
+        dockerComposeServices: ['kaspa-archive-node'],
         healthCheckEndpoints: [
-          { service: 'archive-indexer', url: 'http://localhost:16120', type: 'rpc' }
+          { service: 'kaspa-archive-node', url: 'http://localhost:16110', type: 'rpc' }
         ]
       },
-      'mining': {
-        id: 'mining',
-        name: 'Mining Profile',
-        description: 'Local mining stratum pointed to local node',
+      'kaspa-stratum': {
+        id: 'kaspa-stratum',
+        name: 'Kaspa Stratum',
+        description: 'Stratum bridge for mining hardware',
         services: ['kaspa-stratum'],
-        configKeys: ['KASPA_STRATUM_PORT', 'MINING_ADDRESS'],
+        configKeys: ['STRATUM_PORT', 'MINING_ADDRESS', 'VAR_DIFF', 'POOL_MODE'],
         dockerComposeServices: ['kaspa-stratum'],
         healthCheckEndpoints: [
           { service: 'kaspa-stratum', url: 'http://localhost:5555', type: 'stratum' }
         ]
       }
+    };
+
+    // Legacy profile ID mappings for backward compatibility
+    this.legacyProfileMapping = {
+      'core': 'kaspa-node',
+      'kaspa-user-applications': ['kasia-app', 'k-social-app'],
+      'indexer-services': ['kasia-indexer', 'k-indexer-bundle', 'kaspa-explorer-bundle'],
+      'archive-node': 'kaspa-archive-node',
+      'mining': 'kaspa-stratum'
     };
     
     // Store singleton instance
@@ -729,6 +771,40 @@ class ProfileStateManager {
       refreshInterval: this.stateCache.refreshInterval,
       isRefreshing: this.stateCache.isRefreshing
     };
+  }
+
+  /**
+   * Get profile definition (handles legacy profile IDs)
+   * @param {string} profileId - Profile ID (new or legacy)
+   * @returns {Object|null} Profile definition or null
+   */
+  getProfileDefinition(profileId) {
+    // Check new profiles first
+    if (this.profileDefinitions[profileId]) {
+      return this.profileDefinitions[profileId];
+    }
+    
+    // Check legacy mapping
+    if (this.legacyProfileMapping[profileId]) {
+      const mapped = this.legacyProfileMapping[profileId];
+      // Return first mapped profile for legacy IDs
+      const newId = Array.isArray(mapped) ? mapped[0] : mapped;
+      return this.profileDefinitions[newId] || null;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Migrate legacy profile ID to new profile ID(s)
+   * @param {string} profileId - Profile ID
+   * @returns {string|string[]} New profile ID(s)
+   */
+  migrateProfileId(profileId) {
+    if (this.profileDefinitions[profileId]) {
+      return profileId;
+    }
+    return this.legacyProfileMapping[profileId] || profileId;
   }
 
   /**

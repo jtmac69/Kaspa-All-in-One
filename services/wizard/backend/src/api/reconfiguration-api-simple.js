@@ -699,42 +699,110 @@ router.get('/profiles/:profileId/services', async (req, res) => {
       });
     }
     
-    // Define profile information
+    // Define profile information (NEW profile IDs)
     const profileDefinitions = {
+      'kaspa-node': {
+        id: 'kaspa-node',
+        displayName: 'Kaspa Node',
+        description: 'Standard pruning Kaspa node',
+        icon: '🖥️',
+        services: ['kaspa-node']
+      },
+      'kasia-app': {
+        id: 'kasia-app',
+        displayName: 'Kasia Application',
+        description: 'Kasia messaging and wallet app',
+        icon: '💬',
+        services: ['kasia-app']
+      },
+      'k-social-app': {
+        id: 'k-social-app',
+        displayName: 'K-Social Application',
+        description: 'K-Social decentralized social app',
+        icon: '👥',
+        services: ['k-social']
+      },
+      'kaspa-explorer-bundle': {
+        id: 'kaspa-explorer-bundle',
+        displayName: 'Kaspa Explorer',
+        description: 'Block explorer with indexer and database',
+        icon: '🔍',
+        services: ['kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer']
+      },
+      'kasia-indexer': {
+        id: 'kasia-indexer',
+        displayName: 'Kasia Indexer',
+        description: 'Kasia indexer service',
+        icon: '📊',
+        services: ['kasia-indexer']
+      },
+      'k-indexer-bundle': {
+        id: 'k-indexer-bundle',
+        displayName: 'K-Indexer',
+        description: 'K-Indexer with database',
+        icon: '📈',
+        services: ['k-indexer', 'timescaledb-kindexer']
+      },
+      'kaspa-archive-node': {
+        id: 'kaspa-archive-node',
+        displayName: 'Kaspa Archive Node',
+        description: 'Non-pruning archive node',
+        icon: '🗄️',
+        services: ['kaspa-archive-node']
+      },
+      'kaspa-stratum': {
+        id: 'kaspa-stratum',
+        displayName: 'Kaspa Stratum',
+        description: 'Stratum bridge for mining',
+        icon: '⛏️',
+        services: ['kaspa-stratum']
+      },
+      
+      // Legacy profile IDs (for backward compatibility)
       'core': {
         id: 'core',
         displayName: 'Core Profile',
         description: 'Essential Kaspa node and basic services',
         icon: '⚡',
-        services: ['kaspa-node']
+        services: ['kaspa-node'],
+        _isLegacy: true,
+        _migratesTo: 'kaspa-node'
       },
       'kaspa-user-applications': {
         id: 'kaspa-user-applications',
         displayName: 'Kaspa User Applications',
         description: 'Explorer and user-facing applications',
         icon: '📱',
-        services: ['kaspa-explorer', 'kasia']
+        services: ['kasia-app', 'k-social', 'kaspa-explorer'],
+        _isLegacy: true,
+        _migratesTo: ['kasia-app', 'k-social-app']
       },
       'indexer-services': {
         id: 'indexer-services',
         displayName: 'Indexer Services',
-        description: 'K-Indexer and Simply Kaspa indexer services',
+        description: 'Indexer services with databases',
         icon: '🔍',
-        services: ['k-indexer', 'simply-kaspa-indexer', 'timescaledb']
+        services: ['kasia-indexer', 'k-indexer', 'simply-kaspa-indexer', 'timescaledb'],
+        _isLegacy: true,
+        _migratesTo: ['kasia-indexer', 'k-indexer-bundle', 'kaspa-explorer-bundle']
       },
       'archive-node': {
         id: 'archive-node',
         displayName: 'Archive Node',
         description: 'Full historical data archive',
         icon: '📚',
-        services: ['kaspa-node-archive']
+        services: ['kaspa-archive-node'],
+        _isLegacy: true,
+        _migratesTo: 'kaspa-archive-node'
       },
       'mining': {
         id: 'mining',
         displayName: 'Mining Profile',
-        description: 'Mining pool and stratum server',
+        description: 'Mining stratum server',
         icon: '⛏️',
-        services: ['kaspa-stratum']
+        services: ['kaspa-stratum'],
+        _isLegacy: true,
+        _migratesTo: 'kaspa-stratum'
       }
     };
     

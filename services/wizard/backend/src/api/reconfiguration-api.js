@@ -1176,10 +1176,22 @@ function getProfileServices(profileId) {
 
 function getProfileVolumes(profileId) {
   const volumeMap = {
+    // New profile IDs
+    'kaspa-node': ['kaspa-node-data'],
+    'kaspa-archive-node': ['kaspa-archive-node-data'],
+    'kasia-indexer': ['kasia-indexer-data'],
+    'k-indexer-bundle': ['k-indexer-data', 'timescaledb-kindexer-data'],
+    'kaspa-explorer-bundle': ['simply-kaspa-indexer-data', 'timescaledb-explorer-data'],
+    'kasia-app': [],
+    'k-social-app': [],
+    'kaspa-stratum': [],
+    'management': [],
+    
+    // Legacy profile IDs (for backward compatibility)
     'core': ['kaspa-node-data'],
     'kaspa-user-applications': [],
-    'indexer-services': ['timescaledb-data', 'kasia-indexer-data', 'k-indexer-data'],
-    'archive-node': ['kaspa-archive-data'],
+    'indexer-services': ['timescaledb-data', 'kasia-indexer-data', 'k-indexer-data', 'simply-kaspa-indexer-data'],
+    'archive-node': ['kaspa-archive-node-data'],
     'mining': []
   };
   return volumeMap[profileId] || [];
@@ -1213,18 +1225,31 @@ function calculateConfigDiff(oldConfig, newConfig) {
 function determineAffectedServices(configDiff, profiles) {
   const affectedServices = new Set();
   
-  // Simple mapping of config keys to services
+  // Mapping of config key prefixes to services (updated for new structure)
   const serviceKeyMap = {
     'KASPA_NODE': ['kaspa-node'],
-    'KASIA': ['kasia-app', 'kasia-indexer'],
+    'KASPA_ARCHIVE': ['kaspa-archive-node'],
+    'KASIA_APP': ['kasia-app'],
+    'KASIA_INDEXER': ['kasia-indexer'],
     'KSOCIAL': ['k-social'],
-    'DASHBOARD': ['dashboard'],
-    'POSTGRES': ['timescaledb']
+    'K_INDEXER': ['k-indexer', 'timescaledb-kindexer'],
+    'KASPA_EXPLORER': ['kaspa-explorer'],
+    'SIMPLY_KASPA': ['simply-kaspa-indexer', 'timescaledb-explorer'],
+    'STRATUM': ['kaspa-stratum'],
+    'MINING': ['kaspa-stratum'],
+    'POSTGRES_USER_KINDEXER': ['timescaledb-kindexer'],
+    'POSTGRES_USER_EXPLORER': ['timescaledb-explorer'],
+    'TIMESCALEDB_KINDEXER': ['timescaledb-kindexer'],
+    'TIMESCALEDB_EXPLORER': ['timescaledb-explorer'],
+    // Legacy mappings
+    'DASHBOARD': [],  // Dashboard no longer containerized
+    'POSTGRES': ['timescaledb-kindexer', 'timescaledb-explorer'],  // Legacy shared
+    'KASIA': ['kasia-app', 'kasia-indexer']  // Legacy combined prefix
   };
   
   for (const change of configDiff.changes) {
     for (const [prefix, services] of Object.entries(serviceKeyMap)) {
-      if (change.key.startsWith(prefix)) {
+      if (change.key.startsWith(prefix) || change.key === prefix) {
         services.forEach(s => affectedServices.add(s));
       }
     }
@@ -1236,20 +1261,30 @@ function determineAffectedServices(configDiff, profiles) {
 function removeProfileConfiguration(config, profiles) {
   const cleanedConfig = { ...config };
   
-  // Remove profile-specific configuration keys
+  // Profile-specific configuration key prefixes (NEW profile IDs)
   const profileKeyPrefixes = {
-    'core': ['KASPA_NODE_', 'DASHBOARD_'],
+    'kaspa-node': ['KASPA_NODE_', 'KASPA_NETWORK', 'PUBLIC_NODE', 'WALLET_', 'UTXO_INDEX'],
+    'kasia-app': ['KASIA_APP_', 'KASIA_INDEXER_MODE'],
+    'k-social-app': ['KSOCIAL_APP_', 'KSOCIAL_INDEXER_MODE', 'KSOCIAL_NODE_MODE'],
+    'kaspa-explorer-bundle': ['KASPA_EXPLORER_', 'SIMPLY_KASPA_', 'POSTGRES_USER_EXPLORER', 'POSTGRES_DB_EXPLORER', 'TIMESCALEDB_EXPLORER_'],
+    'kasia-indexer': ['KASIA_INDEXER_', 'KASIA_NODE_MODE', 'KASIA_NODE_WRPC_'],
+    'k-indexer-bundle': ['K_INDEXER_', 'POSTGRES_USER_KINDEXER', 'POSTGRES_DB_KINDEXER', 'TIMESCALEDB_KINDEXER_'],
+    'kaspa-archive-node': ['KASPA_ARCHIVE_', 'ARCHIVE_MODE'],
+    'kaspa-stratum': ['STRATUM_', 'MINING_', 'KASPA_STRATUM_', 'VAR_DIFF', 'POOL_MODE', 'SHARES_PER_MIN', 'BLOCK_WAIT_TIME'],
+    
+    // Legacy profile IDs (for backward compatibility)
+    'core': ['KASPA_NODE_', 'DASHBOARD_', 'KASPA_NETWORK', 'PUBLIC_NODE', 'WALLET_'],
     'kaspa-user-applications': ['KASIA_APP_', 'KSOCIAL_', 'KASPA_EXPLORER_'],
-    'indexer-services': ['KASIA_INDEXER_', 'K_INDEXER_', 'SIMPLY_KASPA_INDEXER_', 'TIMESCALEDB_'],
+    'indexer-services': ['KASIA_INDEXER_', 'K_INDEXER_', 'SIMPLY_KASPA_INDEXER_', 'TIMESCALEDB_', 'POSTGRES_'],
     'archive-node': ['KASPA_ARCHIVE_'],
-    'mining': ['KASPA_STRATUM_']
+    'mining': ['KASPA_STRATUM_', 'STRATUM_', 'MINING_']
   };
   
   for (const profile of profiles) {
     const prefixes = profileKeyPrefixes[profile] || [];
     for (const prefix of prefixes) {
       Object.keys(cleanedConfig).forEach(key => {
-        if (key.startsWith(prefix)) {
+        if (key.startsWith(prefix) || key === prefix) {
           delete cleanedConfig[key];
         }
       });

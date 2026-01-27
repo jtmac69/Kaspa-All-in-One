@@ -4,29 +4,822 @@ const router = express.Router();
 /**
  * Simple Template API - Bypasses ProfileManager circular reference issues
  * Provides direct template data without complex object relationships
+ * 
+ * Updated for Phase 1, Step 3: New 8-profile architecture with 12 templates
  */
 
-// Valid profile definitions (from ProfileManager)
-const VALID_PROFILES = ['core', 'kaspa-user-applications', 'indexer-services', 'archive-node', 'mining'];
+/**
+ * Valid profile IDs (NEW - 8 granular profiles)
+ */
+const VALID_PROFILES = [
+  'kaspa-node',
+  'kasia-app',
+  'k-social-app',
+  'kaspa-explorer-bundle',
+  'kasia-indexer',
+  'k-indexer-bundle',
+  'kaspa-archive-node',
+  'kaspa-stratum'
+];
 
-// Profile dependencies and conflicts (from ProfileManager)
+/**
+ * Legacy profile IDs (for backward compatibility)
+ */
+const LEGACY_PROFILES = ['core', 'kaspa-user-applications', 'indexer-services', 'archive-node', 'mining'];
+
+/**
+ * Profile ID migration mapping
+ */
+const PROFILE_ID_MIGRATION = {
+  'core': 'kaspa-node',
+  'kaspa-user-applications': ['kasia-app', 'k-social-app'],
+  'indexer-services': ['kasia-indexer', 'k-indexer-bundle'],
+  'archive-node': 'kaspa-archive-node',
+  'mining': 'kaspa-stratum'
+};
+
+/**
+ * Check if a profile ID is valid (includes legacy support)
+ */
+function isValidProfile(profileId) {
+  return VALID_PROFILES.includes(profileId) || LEGACY_PROFILES.includes(profileId);
+}
+
+/**
+ * Migrate legacy profile ID to new profile ID(s)
+ */
+function migrateProfileId(profileId) {
+  if (VALID_PROFILES.includes(profileId)) {
+    return profileId;
+  }
+  return PROFILE_ID_MIGRATION[profileId] || profileId;
+}
+
+/**
+ * Migrate array of profile IDs (flattens arrays)
+ */
+function migrateProfileIds(profileIds) {
+  const result = [];
+  for (const id of profileIds) {
+    const migrated = migrateProfileId(id);
+    if (Array.isArray(migrated)) {
+      result.push(...migrated);
+    } else {
+      result.push(migrated);
+    }
+  }
+  return [...new Set(result)]; // Remove duplicates
+}
+
+/**
+ * Profile dependencies
+ * Format: { profileId: { requires: [...], requiresAny: boolean } }
+ */
 const PROFILE_DEPENDENCIES = {
-  'mining': ['core', 'archive-node'] // Mining requires either core or archive-node
+  // Stratum requires a local node (either standard or archive)
+  'kaspa-stratum': {
+    requires: ['kaspa-node', 'kaspa-archive-node'],
+    requiresAny: true,  // Only ONE of these is needed
+    message: 'Kaspa Stratum requires a local Kaspa node (standard or archive)'
+  }
 };
 
+/**
+ * Profile prerequisites (soft dependencies - recommended but not required)
+ * These profiles work better with a node but can use remote
+ */
+const PROFILE_PREREQUISITES = {
+  'kasia-indexer': {
+    recommends: ['kaspa-node', 'kaspa-archive-node'],
+    recommendsAny: true,
+    canUseRemote: true,
+    remoteConfigKey: 'REMOTE_KASPA_NODE_WRPC_URL'
+  },
+  'k-indexer-bundle': {
+    recommends: ['kaspa-node', 'kaspa-archive-node'],
+    recommendsAny: true,
+    canUseRemote: true,
+    remoteConfigKey: 'REMOTE_KASPA_NODE_WRPC_URL'
+  },
+  'kaspa-explorer-bundle': {
+    recommends: ['kaspa-node', 'kaspa-archive-node'],
+    recommendsAny: true,
+    canUseRemote: true,
+    remoteConfigKey: 'REMOTE_KASPA_NODE_WRPC_URL'
+  }
+};
+
+/**
+ * Profile conflicts (mutually exclusive profiles)
+ */
 const PROFILE_CONFLICTS = {
-  'archive-node': ['core'], // Archive node conflicts with core
-  'core': ['archive-node']  // Core conflicts with archive node
+  'kaspa-node': ['kaspa-archive-node'],
+  'kaspa-archive-node': ['kaspa-node']
 };
 
-// Required configuration fields per profile
+/**
+ * Check if profile selection has conflicts
+ */
+function checkProfileConflicts(profileIds) {
+  const conflicts = [];
+  const migratedIds = migrateProfileIds(profileIds);
+  
+  for (const profileId of migratedIds) {
+    const conflictingProfiles = PROFILE_CONFLICTS[profileId] || [];
+    for (const conflictId of conflictingProfiles) {
+      if (migratedIds.includes(conflictId)) {
+        conflicts.push({
+          profile1: profileId,
+          profile2: conflictId,
+          message: `${profileId} conflicts with ${conflictId} (they use the same ports)`
+        });
+      }
+    }
+  }
+  
+  // Remove duplicate conflicts (A conflicts B === B conflicts A)
+  const uniqueConflicts = [];
+  const seen = new Set();
+  for (const c of conflicts) {
+    const key = [c.profile1, c.profile2].sort().join('|');
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueConflicts.push(c);
+    }
+  }
+  
+  return uniqueConflicts;
+}
+
+/**
+ * Required configuration fields per profile
+ */
 const PROFILE_CONFIG_REQUIREMENTS = {
-  'core': ['KASPA_NODE_RPC_PORT', 'KASPA_NODE_P2P_PORT'],
-  'archive-node': ['KASPA_NODE_RPC_PORT', 'KASPA_NODE_P2P_PORT'],
-  'indexer-services': ['POSTGRES_USER', 'TIMESCALEDB_PORT'],
-  'mining': ['STRATUM_PORT', 'MINING_ADDRESS'],
-  'kaspa-user-applications': [] // No required config fields
+  'kaspa-node': ['KASPA_NETWORK'],
+  'kasia-app': [],
+  'k-social-app': [],
+  'kaspa-explorer-bundle': [],
+  'kasia-indexer': [],
+  'k-indexer-bundle': [],
+  'kaspa-archive-node': ['KASPA_NETWORK'],
+  'kaspa-stratum': ['MINING_ADDRESS']  // User MUST provide
 };
+
+/**
+ * Optional configuration fields per profile
+ */
+const PROFILE_CONFIG_OPTIONAL = {
+  'kaspa-node': ['PUBLIC_NODE', 'WALLET_ENABLED', 'WALLET_MODE', 'UTXO_INDEX', 'EXTERNAL_IP'],
+  'kasia-app': ['KASIA_INDEXER_MODE', 'REMOTE_KASIA_INDEXER_URL'],
+  'k-social-app': ['KSOCIAL_INDEXER_MODE', 'REMOTE_KSOCIAL_INDEXER_URL'],
+  'kaspa-explorer-bundle': ['SIMPLY_KASPA_NODE_MODE', 'REMOTE_KASPA_NODE_WRPC_URL'],
+  'kasia-indexer': ['KASIA_NODE_MODE', 'REMOTE_KASPA_NODE_WRPC_URL'],
+  'k-indexer-bundle': ['K_INDEXER_NODE_MODE', 'REMOTE_KASPA_NODE_WRPC_URL'],
+  'kaspa-archive-node': ['PUBLIC_NODE', 'EXTERNAL_IP'],
+  'kaspa-stratum': ['STRATUM_PORT', 'VAR_DIFF', 'POOL_MODE']
+};
+
+/**
+ * Get default configuration values for a profile
+ * @param {string} profileId - Profile ID (supports legacy IDs)
+ * @returns {Object} Default configuration values
+ */
+function getProfileDefaults(profileId) {
+  // Handle legacy profile IDs
+  const migrated = migrateProfileId(profileId);
+  const actualId = Array.isArray(migrated) ? migrated[0] : migrated;
+  
+  const defaults = {
+    'kaspa-node': {
+      KASPA_NETWORK: 'mainnet',
+      KASPA_NODE_RPC_PORT: 16110,
+      KASPA_NODE_P2P_PORT: 16111,
+      KASPA_NODE_WRPC_PORT: 17110,
+      PUBLIC_NODE: false,
+      WALLET_ENABLED: false,
+      WALLET_MODE: 'none',
+      UTXO_INDEX: true
+    },
+    'kasia-app': {
+      KASIA_APP_PORT: 3001,
+      KASIA_INDEXER_MODE: 'auto',
+      KASIA_INDEXER_URL: 'http://kasia-indexer:8080',
+      REMOTE_KASIA_INDEXER_URL: 'https://api.kasia.io',
+      REMOTE_KASPA_NODE_WRPC_URL: 'wss://wrpc.kasia.fyi'
+    },
+    'k-social-app': {
+      KSOCIAL_APP_PORT: 3003,
+      KSOCIAL_INDEXER_MODE: 'auto',
+      KSOCIAL_INDEXER_URL: 'http://k-indexer:8080',
+      REMOTE_KSOCIAL_INDEXER_URL: 'https://indexer0.kaspatalk.net/',
+      KSOCIAL_NODE_MODE: 'auto',
+      KSOCIAL_NODE_WRPC_URL: 'ws://kaspa-node:17110',
+      REMOTE_KASPA_NODE_WRPC_URL: 'wss://wrpc.kasia.fyi'
+    },
+    'kaspa-explorer-bundle': {
+      KASPA_EXPLORER_PORT: 3004,
+      SIMPLY_KASPA_INDEXER_PORT: 3005,
+      SIMPLY_KASPA_NODE_MODE: 'local',
+      SIMPLY_KASPA_NODE_WRPC_URL: 'ws://kaspa-node:17110',
+      TIMESCALEDB_EXPLORER_PORT: 5434,
+      POSTGRES_USER_EXPLORER: 'kaspa_explorer',
+      POSTGRES_DB_EXPLORER: 'simply_kaspa'
+    },
+    'kasia-indexer': {
+      KASIA_INDEXER_PORT: 3002,
+      KASIA_NODE_MODE: 'local',
+      KASIA_NODE_WRPC_URL: 'ws://kaspa-node:17110'
+    },
+    'k-indexer-bundle': {
+      K_INDEXER_PORT: 3006,
+      K_INDEXER_NODE_MODE: 'local',
+      K_INDEXER_NODE_WRPC_URL: 'ws://kaspa-node:17110',
+      TIMESCALEDB_KINDEXER_PORT: 5433,
+      POSTGRES_USER_KINDEXER: 'k_indexer',
+      POSTGRES_DB_KINDEXER: 'k_indexer'
+    },
+    'kaspa-archive-node': {
+      KASPA_NETWORK: 'mainnet',
+      KASPA_NODE_RPC_PORT: 16110,
+      KASPA_NODE_P2P_PORT: 16111,
+      KASPA_NODE_WRPC_PORT: 17110,
+      PUBLIC_NODE: true,
+      ARCHIVE_MODE: true,
+      UTXO_INDEX: true
+    },
+    'kaspa-stratum': {
+      STRATUM_PORT: 5555,
+      KASPA_NODE_RPC_URL: 'http://kaspa-node:16110',
+      EXTRA_NONCE_SIZE: 0,
+      MIN_SHARE_DIFF: 4,
+      VAR_DIFF: true,
+      SHARES_PER_MIN: 20,
+      VAR_DIFF_STATS: false,
+      BLOCK_WAIT_TIME: 500,
+      POOL_MODE: false
+    }
+  };
+  
+  return defaults[actualId] || {};
+}
+
+
+/**
+ * Template definitions (no circular references)
+ * These mirror ProfileManager templates but are self-contained for API use
+ */
+const templates = {
+  // =========================================================================
+  // BEGINNER TEMPLATES (4)
+  // =========================================================================
+  
+  'kaspa-node': {
+    id: 'kaspa-node',
+    name: 'Kaspa Node',
+    description: 'Run your own Kaspa node and contribute to network decentralization.',
+    longDescription: 'A standard pruning Kaspa node that syncs with the network and validates transactions. Includes optional wallet functionality. This is the foundation for most Kaspa setups and the recommended starting point for beginners.',
+    profiles: ['kaspa-node'],
+    category: 'beginner',
+    useCase: 'personal',
+    estimatedSetupTime: '10 minutes',
+    syncTime: '2-4 hours',
+    icon: '🖥️',
+    config: {
+      KASPA_NETWORK: 'mainnet',
+      KASPA_NODE_RPC_PORT: 16110,
+      KASPA_NODE_P2P_PORT: 16111,
+      KASPA_NODE_WRPC_PORT: 17110,
+      PUBLIC_NODE: false,
+      WALLET_ENABLED: false,
+      UTXO_INDEX: true
+    },
+    resources: {
+      minMemory: 4,
+      minCpu: 2,
+      minDisk: 100,
+      recommendedMemory: 8,
+      recommendedCpu: 4,
+      recommendedDisk: 200
+    },
+    features: ['Full Kaspa node with network sync', 'Optional wallet functionality', 'Low resource requirements', 'Foundation for other services'],
+    benefits: ['Support network decentralization', 'Validate your own transactions', 'No external dependencies', 'Privacy for your operations'],
+    customizable: true,
+    tags: ['node', 'beginner', 'personal', 'kaspa', 'blockchain'],
+    displayOrder: 1
+  },
+
+  'quick-start': {
+    id: 'quick-start',
+    name: 'Quick Start',
+    description: 'Get started instantly with Kaspa applications using public infrastructure.',
+    longDescription: 'Run both Kasia and K-Social applications locally while connecting to public indexers. This is the fastest way to experience Kaspa applications with minimal setup and resource requirements.',
+    profiles: ['kasia-app', 'k-social-app'],
+    category: 'beginner',
+    useCase: 'personal',
+    estimatedSetupTime: '5 minutes',
+    syncTime: 'Not required',
+    icon: '🚀',
+    config: {
+      KASPA_NETWORK: 'mainnet',
+      KASIA_APP_PORT: 3001,
+      KASIA_INDEXER_MODE: 'public',
+      REMOTE_KASIA_INDEXER_URL: 'https://api.kasia.io',
+      REMOTE_KASPA_NODE_WRPC_URL: 'wss://wrpc.kasia.fyi',
+      KSOCIAL_APP_PORT: 3003,
+      KSOCIAL_INDEXER_MODE: 'public',
+      REMOTE_KSOCIAL_INDEXER_URL: 'https://indexer0.kaspatalk.net/'
+    },
+    resources: {
+      minMemory: 2,
+      minCpu: 1,
+      minDisk: 10,
+      recommendedMemory: 4,
+      recommendedCpu: 2,
+      recommendedDisk: 20
+    },
+    features: ['Both Kasia and K-Social apps', 'Uses public indexers', 'Minimal resource requirements', 'Instant setup'],
+    benefits: ['Try Kaspa apps immediately', 'No infrastructure to maintain', 'Lowest resource requirements', 'Easy upgrade path'],
+    customizable: true,
+    tags: ['apps', 'beginner', 'quick', 'public', 'minimal'],
+    displayOrder: 2
+  },
+
+  'kasia-lite': {
+    id: 'kasia-lite',
+    name: 'Kasia Lite',
+    description: 'Run the Kasia messaging app using public infrastructure.',
+    longDescription: 'The Kasia application for Kaspa messaging and wallet functionality, connecting to public indexers. Perfect for users who want Kasia without running their own indexer infrastructure.',
+    profiles: ['kasia-app'],
+    category: 'beginner',
+    useCase: 'personal',
+    estimatedSetupTime: '5 minutes',
+    syncTime: 'Not required',
+    icon: '💬',
+    config: {
+      KASPA_NETWORK: 'mainnet',
+      KASIA_APP_PORT: 3001,
+      KASIA_INDEXER_MODE: 'public',
+      REMOTE_KASIA_INDEXER_URL: 'https://api.kasia.io',
+      REMOTE_KASPA_NODE_WRPC_URL: 'wss://wrpc.kasia.fyi'
+    },
+    resources: {
+      minMemory: 1,
+      minCpu: 1,
+      minDisk: 5,
+      recommendedMemory: 2,
+      recommendedCpu: 2,
+      recommendedDisk: 10
+    },
+    features: ['Kasia messaging application', 'Uses public Kasia indexer', 'Minimal resource requirements', 'No sync time required'],
+    benefits: ['Simple Kasia-only setup', 'Instant messaging access', 'Very low resources', 'Easy to upgrade later'],
+    customizable: true,
+    tags: ['kasia', 'app', 'beginner', 'messaging', 'lite'],
+    displayOrder: 3
+  },
+
+  'k-social-lite': {
+    id: 'k-social-lite',
+    name: 'K-Social Lite',
+    description: 'Run the K-Social decentralized social app using public infrastructure.',
+    longDescription: 'The K-Social decentralized social media application, connecting to public indexers. Perfect for users who want to participate in Kaspa social features without running their own indexer infrastructure.',
+    profiles: ['k-social-app'],
+    category: 'beginner',
+    useCase: 'personal',
+    estimatedSetupTime: '5 minutes',
+    syncTime: 'Not required',
+    icon: '👥',
+    config: {
+      KASPA_NETWORK: 'mainnet',
+      KSOCIAL_APP_PORT: 3003,
+      KSOCIAL_INDEXER_MODE: 'public',
+      REMOTE_KSOCIAL_INDEXER_URL: 'https://indexer0.kaspatalk.net/',
+      REMOTE_KASPA_NODE_WRPC_URL: 'wss://wrpc.kasia.fyi'
+    },
+    resources: {
+      minMemory: 1,
+      minCpu: 1,
+      minDisk: 5,
+      recommendedMemory: 2,
+      recommendedCpu: 2,
+      recommendedDisk: 10
+    },
+    features: ['K-Social decentralized social app', 'Uses public K-Social indexer', 'Minimal resource requirements', 'No sync time required'],
+    benefits: ['Simple K-Social-only setup', 'Instant social access', 'Very low resources', 'Easy to upgrade later'],
+    customizable: true,
+    tags: ['k-social', 'app', 'beginner', 'social', 'lite'],
+    displayOrder: 4
+  },
+
+  // =========================================================================
+  // INTERMEDIATE TEMPLATES (4)
+  // =========================================================================
+  
+  'kasia-suite': {
+    id: 'kasia-suite',
+    name: 'Kasia Suite',
+    description: 'Full Kasia experience with your own local indexer.',
+    longDescription: 'Run the Kasia application with your own local Kasia indexer. This provides complete independence from public infrastructure, better performance, and full privacy.',
+    profiles: ['kasia-app', 'kasia-indexer'],
+    category: 'intermediate',
+    useCase: 'personal',
+    estimatedSetupTime: '15 minutes',
+    syncTime: '2-6 hours',
+    icon: '💬🔧',
+    config: {
+      KASPA_NETWORK: 'mainnet',
+      KASIA_APP_PORT: 3001,
+      KASIA_INDEXER_MODE: 'local',
+      KASIA_INDEXER_URL: 'http://kasia-indexer:8080',
+      KASIA_INDEXER_PORT: 3002,
+      KASIA_NODE_MODE: 'public',
+      REMOTE_KASPA_NODE_WRPC_URL: 'wss://wrpc.kasia.fyi'
+    },
+    resources: {
+      minMemory: 5,
+      minCpu: 2,
+      minDisk: 205,
+      recommendedMemory: 10,
+      recommendedCpu: 4,
+      recommendedDisk: 410
+    },
+    features: ['Kasia messaging application', 'Local Kasia indexer (embedded database)', 'Independence from public indexers', 'Better performance and privacy'],
+    benefits: ['Full Kasia independence', 'No reliance on public infrastructure', 'Better performance', 'Complete privacy'],
+    customizable: true,
+    tags: ['kasia', 'indexer', 'intermediate', 'suite', 'local'],
+    displayOrder: 5
+  },
+
+  'k-social-suite': {
+    id: 'k-social-suite',
+    name: 'K-Social Suite',
+    description: 'Full K-Social experience with your own local indexer and database.',
+    longDescription: 'Run the K-Social application with your own local K-Indexer and dedicated TimescaleDB database. This provides complete independence from public infrastructure.',
+    profiles: ['k-social-app', 'k-indexer-bundle'],
+    category: 'intermediate',
+    useCase: 'personal',
+    estimatedSetupTime: '20 minutes',
+    syncTime: '4-12 hours',
+    icon: '👥🔧',
+    config: {
+      KASPA_NETWORK: 'mainnet',
+      KSOCIAL_APP_PORT: 3003,
+      KSOCIAL_INDEXER_MODE: 'local',
+      KSOCIAL_INDEXER_URL: 'http://k-indexer:8080',
+      K_INDEXER_PORT: 3006,
+      K_INDEXER_NODE_MODE: 'public',
+      REMOTE_KASPA_NODE_WRPC_URL: 'wss://wrpc.kasia.fyi',
+      TIMESCALEDB_KINDEXER_PORT: 5433,
+      POSTGRES_USER_KINDEXER: 'k_indexer',
+      POSTGRES_DB_KINDEXER: 'k_indexer'
+    },
+    resources: {
+      minMemory: 9,
+      minCpu: 2,
+      minDisk: 305,
+      recommendedMemory: 18,
+      recommendedCpu: 4,
+      recommendedDisk: 510
+    },
+    features: ['K-Social decentralized social app', 'Local K-Indexer with TimescaleDB', 'Independence from public indexers', 'Better performance and privacy'],
+    benefits: ['Full K-Social independence', 'No reliance on public infrastructure', 'Your data stays local', 'Better query performance'],
+    customizable: true,
+    tags: ['k-social', 'indexer', 'intermediate', 'suite', 'local', 'timescaledb'],
+    displayOrder: 6
+  },
+
+  'solo-miner': {
+    id: 'solo-miner',
+    name: 'Solo Miner',
+    description: 'Solo mining setup with your own node and stratum bridge.',
+    longDescription: 'A complete solo mining setup including a Kaspa node and stratum bridge. Connect your mining hardware directly to your own node for solo mining.',
+    profiles: ['kaspa-node', 'kaspa-stratum'],
+    category: 'intermediate',
+    useCase: 'mining',
+    estimatedSetupTime: '15 minutes',
+    syncTime: '2-4 hours',
+    icon: '⛏️',
+    config: {
+      KASPA_NETWORK: 'mainnet',
+      KASPA_NODE_RPC_PORT: 16110,
+      KASPA_NODE_P2P_PORT: 16111,
+      KASPA_NODE_WRPC_PORT: 17110,
+      PUBLIC_NODE: false,
+      WALLET_ENABLED: true,
+      UTXO_INDEX: true,
+      STRATUM_PORT: 5555,
+      MINING_ADDRESS: '',
+      EXTRA_NONCE_SIZE: 0,
+      MIN_SHARE_DIFF: 4,
+      VAR_DIFF: true,
+      SHARES_PER_MIN: 20,
+      BLOCK_WAIT_TIME: 500,
+      POOL_MODE: false
+    },
+    resources: {
+      minMemory: 6,
+      minCpu: 2,
+      minDisk: 110,
+      recommendedMemory: 12,
+      recommendedCpu: 4,
+      recommendedDisk: 220
+    },
+    features: ['Full Kaspa node', 'Stratum bridge for mining hardware', 'Solo mining (not pool)', 'Direct block rewards'],
+    benefits: ['Keep all block rewards', 'No pool fees', 'Direct network participation', 'Full control over mining'],
+    customizable: true,
+    tags: ['mining', 'stratum', 'node', 'intermediate', 'solo'],
+    requiredConfig: ['MINING_ADDRESS'],
+    displayOrder: 7
+  },
+
+  'block-explorer': {
+    id: 'block-explorer',
+    name: 'Block Explorer',
+    description: 'Run your own blockchain explorer with integrated indexer.',
+    longDescription: 'A complete blockchain explorer with the Simply-Kaspa indexer and dedicated TimescaleDB database. Browse blocks, transactions, and addresses on your own infrastructure.',
+    profiles: ['kaspa-explorer-bundle'],
+    category: 'intermediate',
+    useCase: 'development',
+    estimatedSetupTime: '20 minutes',
+    syncTime: '6-24 hours',
+    icon: '🔍',
+    config: {
+      KASPA_NETWORK: 'mainnet',
+      KASPA_EXPLORER_PORT: 3004,
+      SIMPLY_KASPA_INDEXER_PORT: 3005,
+      SIMPLY_KASPA_NODE_MODE: 'public',
+      REMOTE_KASPA_NODE_WRPC_URL: 'wss://wrpc.kasia.fyi',
+      TIMESCALEDB_EXPLORER_PORT: 5434,
+      POSTGRES_USER_EXPLORER: 'kaspa_explorer',
+      POSTGRES_DB_EXPLORER: 'simply_kaspa'
+    },
+    resources: {
+      minMemory: 8,
+      minCpu: 2,
+      minDisk: 300,
+      recommendedMemory: 16,
+      recommendedCpu: 4,
+      recommendedDisk: 500
+    },
+    features: ['Full blockchain explorer UI', 'Simply-Kaspa indexer with TimescaleDB', 'Block, transaction, and address lookup', 'Independent verification capability'],
+    benefits: ['Verify transactions yourself', 'No reliance on public explorers', 'Development and debugging tool', 'Complete blockchain visibility'],
+    customizable: true,
+    tags: ['explorer', 'indexer', 'intermediate', 'development', 'blockchain'],
+    displayOrder: 8
+  },
+
+  // =========================================================================
+  // ADVANCED TEMPLATES (4)
+  // =========================================================================
+  
+  'kaspa-sovereignty': {
+    id: 'kaspa-sovereignty',
+    name: 'Kaspa Sovereignty',
+    description: 'Complete Kaspa independence. Your own node, all apps, all indexers.',
+    longDescription: 'The ultimate self-sovereign Kaspa setup. Run your own node with all applications (Kasia, K-Social, Explorer) and all their indexers locally. Complete independence from any external infrastructure.',
+    profiles: ['kaspa-node', 'kasia-app', 'kasia-indexer', 'k-social-app', 'k-indexer-bundle', 'kaspa-explorer-bundle'],
+    category: 'advanced',
+    useCase: 'personal',
+    estimatedSetupTime: '30 minutes',
+    syncTime: '12-48 hours',
+    icon: '👑',
+    config: {
+      KASPA_NETWORK: 'mainnet',
+      KASPA_NODE_RPC_PORT: 16110,
+      KASPA_NODE_P2P_PORT: 16111,
+      KASPA_NODE_WRPC_PORT: 17110,
+      PUBLIC_NODE: false,
+      WALLET_ENABLED: true,
+      UTXO_INDEX: true,
+      KASIA_APP_PORT: 3001,
+      KASIA_INDEXER_MODE: 'local',
+      KASIA_INDEXER_URL: 'http://kasia-indexer:8080',
+      KASIA_INDEXER_PORT: 3002,
+      KASIA_NODE_MODE: 'local',
+      KASIA_NODE_WRPC_URL: 'ws://kaspa-node:17110',
+      KSOCIAL_APP_PORT: 3003,
+      KSOCIAL_INDEXER_MODE: 'local',
+      KSOCIAL_INDEXER_URL: 'http://k-indexer:8080',
+      K_INDEXER_PORT: 3006,
+      K_INDEXER_NODE_MODE: 'local',
+      K_INDEXER_NODE_WRPC_URL: 'ws://kaspa-node:17110',
+      TIMESCALEDB_KINDEXER_PORT: 5433,
+      POSTGRES_USER_KINDEXER: 'k_indexer',
+      POSTGRES_DB_KINDEXER: 'k_indexer',
+      KASPA_EXPLORER_PORT: 3004,
+      SIMPLY_KASPA_INDEXER_PORT: 3005,
+      SIMPLY_KASPA_NODE_MODE: 'local',
+      SIMPLY_KASPA_NODE_WRPC_URL: 'ws://kaspa-node:17110',
+      TIMESCALEDB_EXPLORER_PORT: 5434,
+      POSTGRES_USER_EXPLORER: 'kaspa_explorer',
+      POSTGRES_DB_EXPLORER: 'simply_kaspa'
+    },
+    resources: {
+      minMemory: 26,
+      minCpu: 2,
+      minDisk: 910,
+      recommendedMemory: 52,
+      recommendedCpu: 4,
+      recommendedDisk: 1620
+    },
+    features: ['Full Kaspa node', 'Kasia app with local indexer', 'K-Social app with local indexer + TimescaleDB', 'Full blockchain explorer', 'Complete independence'],
+    benefits: ['Total sovereignty', 'Maximum privacy', 'No external dependencies', 'Best possible performance'],
+    customizable: true,
+    tags: ['sovereignty', 'full-stack', 'advanced', 'complete', 'independent'],
+    displayOrder: 9
+  },
+
+  'archival-node': {
+    id: 'archival-node',
+    name: 'Archival Node',
+    description: 'Non-pruning archive node storing complete blockchain history.',
+    longDescription: 'A non-pruning Kaspa node that stores the complete blockchain history. Required for historical data analysis, advanced indexing operations, and infrastructure providers.',
+    profiles: ['kaspa-archive-node'],
+    category: 'advanced',
+    useCase: 'production',
+    estimatedSetupTime: '15 minutes',
+    syncTime: '24-72 hours',
+    icon: '🗄️',
+    config: {
+      KASPA_NETWORK: 'mainnet',
+      KASPA_NODE_RPC_PORT: 16110,
+      KASPA_NODE_P2P_PORT: 16111,
+      KASPA_NODE_WRPC_PORT: 17110,
+      PUBLIC_NODE: true,
+      ARCHIVE_MODE: true,
+      UTXO_INDEX: true,
+      EXTERNAL_IP: ''
+    },
+    resources: {
+      minMemory: 16,
+      minCpu: 8,
+      minDisk: 1000,
+      recommendedMemory: 32,
+      recommendedCpu: 16,
+      recommendedDisk: 5000
+    },
+    features: ['Complete blockchain history (non-pruning)', 'Suitable for historical queries', 'Required for some advanced indexer operations', 'Typically run as a public node'],
+    benefits: ['Access to complete history', 'Support advanced use cases', 'Provide infrastructure for others', 'Historical analysis capability'],
+    customizable: true,
+    tags: ['archive', 'node', 'advanced', 'production', 'history'],
+    displayOrder: 10
+  },
+
+  'archival-miner': {
+    id: 'archival-miner',
+    name: 'Archival Miner',
+    description: 'Archive node with mining capability. Full history plus solo mining.',
+    longDescription: 'Combines a non-pruning archive node with stratum bridge for mining. Useful for miners who also want to maintain complete blockchain history.',
+    profiles: ['kaspa-archive-node', 'kaspa-stratum'],
+    category: 'advanced',
+    useCase: 'production',
+    estimatedSetupTime: '20 minutes',
+    syncTime: '24-72 hours',
+    icon: '🗄️⛏️',
+    config: {
+      KASPA_NETWORK: 'mainnet',
+      KASPA_NODE_RPC_PORT: 16110,
+      KASPA_NODE_P2P_PORT: 16111,
+      KASPA_NODE_WRPC_PORT: 17110,
+      PUBLIC_NODE: false,
+      ARCHIVE_MODE: true,
+      UTXO_INDEX: true,
+      STRATUM_PORT: 5555,
+      MINING_ADDRESS: '',
+      EXTRA_NONCE_SIZE: 0,
+      MIN_SHARE_DIFF: 4,
+      VAR_DIFF: true,
+      SHARES_PER_MIN: 20,
+      BLOCK_WAIT_TIME: 500,
+      POOL_MODE: false
+    },
+    resources: {
+      minMemory: 18,
+      minCpu: 8,
+      minDisk: 1010,
+      recommendedMemory: 36,
+      recommendedCpu: 16,
+      recommendedDisk: 5020
+    },
+    features: ['Complete blockchain history', 'Stratum bridge for mining hardware', 'Solo mining capability', 'Historical data for verification'],
+    benefits: ['Mine while maintaining history', 'Research and verification', 'Maximum infrastructure capability', 'Full control'],
+    customizable: true,
+    tags: ['archive', 'mining', 'stratum', 'advanced', 'production'],
+    requiredConfig: ['MINING_ADDRESS'],
+    displayOrder: 11
+  },
+
+  'custom-setup': {
+    id: 'custom-setup',
+    name: 'Custom Setup',
+    description: 'Build your own configuration by selecting individual profiles.',
+    longDescription: 'Create a custom installation by selecting exactly which profiles you want. Choose any combination of services (respecting conflicts). Resources are calculated dynamically based on your selections.',
+    profiles: [],
+    category: 'advanced',
+    useCase: 'development',
+    estimatedSetupTime: 'Variable',
+    syncTime: 'Variable',
+    icon: '🛠️',
+    config: {},
+    resources: {
+      minMemory: 0,
+      minCpu: 0,
+      minDisk: 0,
+      recommendedMemory: 0,
+      recommendedCpu: 0,
+      recommendedDisk: 0
+    },
+    features: ['Select any combination of profiles', 'Conflict detection', 'Dependency recommendations', 'Dynamic resource calculation', 'Add or remove profiles'],
+    benefits: ['Maximum flexibility', 'Exactly what you need', 'Expert-level control', 'Modify existing installations'],
+    customizable: true,
+    isDynamic: true,
+    tags: ['custom', 'advanced', 'flexible', 'development'],
+    displayOrder: 12
+  }
+};
+
+
+/**
+ * Legacy template aliases for backward compatibility
+ * These map old template IDs to new ones
+ */
+const LEGACY_TEMPLATE_ALIASES = {
+  'beginner-setup': 'quick-start',
+  'home-node': 'kaspa-node',
+  'public-node': 'kaspa-node',
+  'full-node': 'kaspa-sovereignty',
+  'full-stack': 'kaspa-sovereignty',
+  'developer-setup': 'custom-setup',
+  'developer': 'custom-setup',
+  'mining-rig': 'solo-miner',
+  'miner-node': 'solo-miner',
+  'mining-setup': 'solo-miner'
+};
+
+/**
+ * Get template by ID (with legacy alias support)
+ * @param {string} templateId - Template ID (supports legacy IDs)
+ * @returns {Object|null} Template object or null
+ */
+function getTemplate(templateId) {
+  // Check for direct match
+  if (templates[templateId]) {
+    return templates[templateId];
+  }
+  
+  // Check for legacy alias
+  const aliasedId = LEGACY_TEMPLATE_ALIASES[templateId];
+  if (aliasedId && templates[aliasedId]) {
+    console.warn(`Template '${templateId}' is deprecated. Use '${aliasedId}' instead.`);
+    // Return the new template but with the old ID for compatibility
+    return {
+      ...templates[aliasedId],
+      _originalId: aliasedId,
+      _requestedId: templateId,
+      _isLegacyAlias: true
+    };
+  }
+  
+  return null;
+}
+
+/**
+ * Get all templates (excludes legacy aliases)
+ * @returns {Object[]} Array of template objects
+ */
+function getAllTemplates() {
+  return Object.values(templates)
+    .filter(t => !t._isLegacyAlias)
+    .sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99));
+}
+
+/**
+ * Get templates by category
+ * @param {string} category - Category filter
+ * @returns {Object[]} Array of template objects
+ */
+function getTemplatesByCategory(category) {
+  return getAllTemplates().filter(t => t.category === category);
+}
+
+/**
+ * Get templates by use case
+ * @param {string} useCase - Use case filter
+ * @returns {Object[]} Array of template objects
+ */
+function getTemplatesByUseCase(useCase) {
+  return getAllTemplates().filter(t => t.useCase === useCase);
+}
+
+/**
+ * Search templates by tags
+ * @param {string[]} tags - Tags to search for
+ * @returns {Object[]} Array of matching template objects
+ */
+function searchTemplatesByTags(tags) {
+  return getAllTemplates().filter(t => 
+    t.tags && t.tags.some(tag => tags.includes(tag))
+  );
+}
 
 /**
  * Comprehensive template validation function
@@ -35,14 +828,14 @@ const PROFILE_CONFIG_REQUIREMENTS = {
  * @returns {Object} Validation result with errors, warnings, and fallback options
  */
 function validateTemplate(templateId, systemResources = null) {
-  const template = templates[templateId];
+  const template = getTemplate(templateId);
   
   if (!template) {
     return {
       valid: false,
       errors: ['Template not found'],
       warnings: [],
-      fallbackOptions: ['build-custom'],
+      fallbackOptions: ['custom-setup'],
       templateId
     };
   }
@@ -51,206 +844,127 @@ function validateTemplate(templateId, systemResources = null) {
   const warnings = [];
   const fallbackOptions = [];
   
-  // 1. Validate template structure
-  if (!template.id || template.id !== templateId) {
-    errors.push('Template ID mismatch or missing');
+  // 1. Warn if using legacy template ID
+  if (template._isLegacyAlias) {
+    warnings.push(`Template ID '${templateId}' is deprecated. Consider using '${template._originalId}' instead.`);
+  }
+  
+  // 2. Validate template structure
+  if (!template.id) {
+    errors.push('Template ID is missing');
   }
   
   if (!template.name || typeof template.name !== 'string') {
     errors.push('Template name is required and must be a string');
   }
   
-  if (!template.description || typeof template.description !== 'string') {
-    errors.push('Template description is required and must be a string');
+  if (!template.profiles || !Array.isArray(template.profiles)) {
+    errors.push('Template must have profiles array');
   }
   
-  if (!template.profiles || !Array.isArray(template.profiles) || template.profiles.length === 0) {
-    errors.push('Template must have at least one profile defined');
-  }
-  
-  if (!template.config || typeof template.config !== 'object') {
-    errors.push('Template configuration object is required');
-  }
-  
-  if (!template.resources || typeof template.resources !== 'object') {
-    errors.push('Template resources specification is required');
-  }
-  
-  // 2. Validate profile references
-  if (template.profiles && Array.isArray(template.profiles)) {
-    const invalidProfiles = template.profiles.filter(p => !VALID_PROFILES.includes(p));
-    if (invalidProfiles.length > 0) {
-      errors.push(`Template references invalid profiles: ${invalidProfiles.join(', ')}`);
-      errors.push(`Valid profiles are: ${VALID_PROFILES.join(', ')}`);
+  // 3. Validate profile references (skip for dynamic templates)
+  if (!template.isDynamic && template.profiles) {
+    for (const profileId of template.profiles) {
+      if (!isValidProfile(profileId)) {
+        errors.push(`Template references unknown profile: ${profileId}`);
+      }
     }
     
     // Check for profile conflicts
-    const profileConflicts = [];
-    for (const profile of template.profiles) {
-      if (PROFILE_CONFLICTS[profile]) {
-        const conflicts = PROFILE_CONFLICTS[profile].filter(c => template.profiles.includes(c));
-        if (conflicts.length > 0) {
-          profileConflicts.push(`${profile} conflicts with: ${conflicts.join(', ')}`);
-        }
+    const conflicts = checkProfileConflicts(template.profiles);
+    if (conflicts.length > 0) {
+      for (const conflict of conflicts) {
+        errors.push(conflict.message);
       }
-    }
-    if (profileConflicts.length > 0) {
-      errors.push(`Profile conflicts detected: ${profileConflicts.join('; ')}`);
-    }
-    
-    // Check for missing dependencies
-    const missingDependencies = [];
-    for (const profile of template.profiles) {
-      if (PROFILE_DEPENDENCIES[profile]) {
-        const hasRequiredDep = PROFILE_DEPENDENCIES[profile].some(dep => template.profiles.includes(dep));
-        if (!hasRequiredDep) {
-          missingDependencies.push(`${profile} requires one of: ${PROFILE_DEPENDENCIES[profile].join(', ')}`);
-        }
-      }
-    }
-    if (missingDependencies.length > 0) {
-      errors.push(`Missing profile dependencies: ${missingDependencies.join('; ')}`);
     }
   }
   
-  // 3. Validate configuration requirements
-  if (template.config && template.profiles) {
-    const missingConfigFields = [];
-    for (const profile of template.profiles) {
-      const requiredFields = PROFILE_CONFIG_REQUIREMENTS[profile] || [];
-      for (const field of requiredFields) {
-        if (!template.config[field]) {
-          missingConfigFields.push(`${profile} profile requires ${field} configuration`);
-        }
+  // 4. Check required config fields
+  if (template.requiredConfig && template.requiredConfig.length > 0) {
+    for (const field of template.requiredConfig) {
+      if (!template.config || !template.config[field] || template.config[field] === '') {
+        warnings.push(`Template requires user to provide: ${field}`);
       }
     }
-    if (missingConfigFields.length > 0) {
-      warnings.push(`Missing configuration fields: ${missingConfigFields.join('; ')}`);
-    }
   }
   
-  // 4. Validate resource requirements
-  if (template.resources) {
-    const { minMemory, minCpu, minDisk, recommendedMemory, recommendedCpu, recommendedDisk } = template.resources;
-    
-    // Check for reasonable resource values
-    if (minMemory && (minMemory < 1 || minMemory > 1024)) {
-      warnings.push(`Unusual minimum memory requirement: ${minMemory}GB`);
-    }
-    
-    if (minCpu && (minCpu < 1 || minCpu > 128)) {
-      warnings.push(`Unusual minimum CPU requirement: ${minCpu} cores`);
-    }
-    
-    if (minDisk && (minDisk < 1 || minDisk > 100000)) {
-      warnings.push(`Unusual minimum disk requirement: ${minDisk}GB`);
-    }
-    
-    // Check recommended vs minimum
-    if (recommendedMemory && minMemory && recommendedMemory < minMemory) {
-      warnings.push('Recommended memory is less than minimum memory');
-    }
-    
-    if (recommendedCpu && minCpu && recommendedCpu < minCpu) {
-      warnings.push('Recommended CPU is less than minimum CPU');
-    }
-    
-    if (recommendedDisk && minDisk && recommendedDisk < minDisk) {
-      warnings.push('Recommended disk is less than minimum disk');
-    }
-    
-    // Resource requirement warnings
-    if (minMemory > 32) {
-      warnings.push(`Template requires significant memory: ${minMemory}GB RAM`);
-    }
-    
-    if (minDisk > 2000) {
-      warnings.push(`Template requires significant disk space: ${minDisk}GB`);
-    }
-    
-    if (minCpu > 16) {
-      warnings.push(`Template requires significant CPU: ${minCpu} cores`);
-    }
-  }
-  
-  // 5. System compatibility check (if system resources provided)
+  // 5. Validate resources (if provided)
   if (systemResources && template.resources) {
-    const compatibility = [];
-    
     if (systemResources.memory < template.resources.minMemory) {
-      errors.push(`Insufficient memory: requires ${template.resources.minMemory}GB, available ${systemResources.memory}GB`);
-      compatibility.push('insufficient-memory');
-    } else if (systemResources.memory < template.resources.recommendedMemory) {
-      warnings.push(`Below recommended memory: ${template.resources.recommendedMemory}GB recommended, ${systemResources.memory}GB available`);
-    }
-    
-    if (systemResources.cpu < template.resources.minCpu) {
-      errors.push(`Insufficient CPU: requires ${template.resources.minCpu} cores, available ${systemResources.cpu} cores`);
-      compatibility.push('insufficient-cpu');
-    } else if (systemResources.cpu < template.resources.recommendedCpu) {
-      warnings.push(`Below recommended CPU: ${template.resources.recommendedCpu} cores recommended, ${systemResources.cpu} cores available`);
+      warnings.push(`System has ${systemResources.memory}GB RAM, template requires ${template.resources.minMemory}GB minimum`);
+      fallbackOptions.push('quick-start', 'kasia-lite', 'k-social-lite');
     }
     
     if (systemResources.disk < template.resources.minDisk) {
-      errors.push(`Insufficient disk space: requires ${template.resources.minDisk}GB, available ${systemResources.disk}GB`);
-      compatibility.push('insufficient-disk');
-    } else if (systemResources.disk < template.resources.recommendedDisk) {
-      warnings.push(`Below recommended disk space: ${template.resources.recommendedDisk}GB recommended, ${systemResources.disk}GB available`);
+      warnings.push(`System has ${systemResources.disk}GB disk, template requires ${template.resources.minDisk}GB minimum`);
     }
-    
-    if (compatibility.length > 0) {
-      fallbackOptions.push('build-custom', 'upgrade-system');
-    }
-  }
-  
-  // 6. Template-specific validations
-  if (template.category && !['beginner', 'intermediate', 'advanced'].includes(template.category)) {
-    warnings.push(`Unknown template category: ${template.category}`);
-  }
-  
-  if (template.useCase && !['personal', 'development', 'mining', 'community', 'advanced'].includes(template.useCase)) {
-    warnings.push(`Unknown use case: ${template.useCase}`);
-  }
-  
-  // 7. Determine fallback options
-  if (errors.length > 0) {
-    fallbackOptions.push('build-custom');
-    
-    // Suggest alternative templates if this one fails
-    const alternativeTemplates = Object.keys(templates).filter(id => 
-      id !== templateId && 
-      templates[id].category === 'beginner'
-    );
-    if (alternativeTemplates.length > 0) {
-      fallbackOptions.push('try-alternative-template');
-    }
-  }
-  
-  const valid = errors.length === 0;
-  
-  console.log(`[TEMPLATE-VALIDATION] Template ${templateId} validation: ${valid ? 'PASSED' : 'FAILED'}`);
-  if (errors.length > 0) {
-    console.log(`[TEMPLATE-VALIDATION] Errors: ${errors.join('; ')}`);
-  }
-  if (warnings.length > 0) {
-    console.log(`[TEMPLATE-VALIDATION] Warnings: ${warnings.join('; ')}`);
   }
   
   return {
-    valid,
-    template,
+    valid: errors.length === 0,
     errors,
     warnings,
-    templateId,
-    profiles: template.profiles || [],
-    config: template.config || {},
-    fallbackOptions: [...new Set(fallbackOptions)], // Remove duplicates
-    systemCompatibility: systemResources ? {
-      memoryOk: !systemResources || !template.resources || systemResources.memory >= template.resources.minMemory,
-      cpuOk: !systemResources || !template.resources || systemResources.cpu >= template.resources.minCpu,
-      diskOk: !systemResources || !template.resources || systemResources.disk >= template.resources.minDisk
-    } : null
+    fallbackOptions: [...new Set(fallbackOptions)],
+    templateId: template._originalId || template.id,
+    template
   };
+}
+
+/**
+ * Enhanced configuration merging with conflict resolution
+ * @param {Object} baseConfig - Base configuration
+ * @param {Object} templateConfig - Template configuration
+ * @param {Object} template - Full template object for context
+ * @returns {Object} Merged configuration
+ */
+function mergeConfigurations(baseConfig, templateConfig, template) {
+  const merged = { ...baseConfig };
+  const conflicts = [];
+  const overrides = [];
+  
+  // Merge template config, tracking conflicts and overrides
+  for (const [key, templateValue] of Object.entries(templateConfig)) {
+    if (baseConfig.hasOwnProperty(key) && baseConfig[key] !== templateValue) {
+      conflicts.push({
+        key,
+        baseValue: baseConfig[key],
+        templateValue,
+        resolved: 'template-wins'
+      });
+      overrides.push(`${key}: ${baseConfig[key]} → ${templateValue}`);
+    }
+    merged[key] = templateValue;
+  }
+  
+  // Log configuration merging details
+  if (conflicts.length > 0) {
+    console.log(`[CONFIG-MERGE] Configuration conflicts resolved (template wins): ${overrides.join(', ')}`);
+  }
+  
+  // Add profile-specific defaults if not present
+  if (template.profiles) {
+    for (const profile of template.profiles) {
+      const profileDefaults = getProfileDefaults(profile);
+      for (const [key, defaultValue] of Object.entries(profileDefaults)) {
+        if (!merged.hasOwnProperty(key)) {
+          merged[key] = defaultValue;
+          console.log(`[CONFIG-MERGE] Added profile default for ${profile}: ${key} = ${defaultValue}`);
+        }
+      }
+    }
+  }
+  
+  // Store merge metadata
+  merged._configMergeMetadata = {
+    conflicts,
+    overrides,
+    mergedAt: new Date().toISOString(),
+    baseConfigSize: Object.keys(baseConfig).length,
+    templateConfigSize: Object.keys(templateConfig).length,
+    finalConfigSize: Object.keys(merged).length
+  };
+  
+  return merged;
 }
 
 /**
@@ -333,7 +1047,7 @@ function applyTemplate(templateId, baseConfig = {}, systemResources = null) {
       success: false,
       message: `Template application failed: ${error.message}`,
       errors: [error.message],
-      fallbackOptions: ['build-custom'],
+      fallbackOptions: ['custom-setup'],
       template: template ? {
         id: template.id,
         name: template.name
@@ -342,469 +1056,134 @@ function applyTemplate(templateId, baseConfig = {}, systemResources = null) {
   }
 }
 
-/**
- * Enhanced configuration merging with conflict resolution
- * @param {Object} baseConfig - Base configuration
- * @param {Object} templateConfig - Template configuration
- * @param {Object} template - Full template object for context
- * @returns {Object} Merged configuration
- */
-function mergeConfigurations(baseConfig, templateConfig, template) {
-  const merged = { ...baseConfig };
-  const conflicts = [];
-  const overrides = [];
-  
-  // Merge template config, tracking conflicts and overrides
-  for (const [key, templateValue] of Object.entries(templateConfig)) {
-    if (baseConfig.hasOwnProperty(key) && baseConfig[key] !== templateValue) {
-      conflicts.push({
-        key,
-        baseValue: baseConfig[key],
-        templateValue,
-        resolved: 'template-wins'
-      });
-      overrides.push(`${key}: ${baseConfig[key]} → ${templateValue}`);
-    }
-    merged[key] = templateValue;
-  }
-  
-  // Log configuration merging details
-  if (conflicts.length > 0) {
-    console.log(`[CONFIG-MERGE] Configuration conflicts resolved (template wins): ${overrides.join(', ')}`);
-  }
-  
-  // Add profile-specific defaults if not present
-  if (template.profiles) {
-    for (const profile of template.profiles) {
-      const profileDefaults = getProfileDefaults(profile);
-      for (const [key, defaultValue] of Object.entries(profileDefaults)) {
-        if (!merged.hasOwnProperty(key)) {
-          merged[key] = defaultValue;
-          console.log(`[CONFIG-MERGE] Added profile default for ${profile}: ${key} = ${defaultValue}`);
-        }
-      }
-    }
-  }
-  
-  // Store merge metadata
-  merged._configMergeMetadata = {
-    conflicts,
-    overrides,
-    mergedAt: new Date().toISOString(),
-    baseConfigSize: Object.keys(baseConfig).length,
-    templateConfigSize: Object.keys(templateConfig).length,
-    finalConfigSize: Object.keys(merged).length
-  };
-  
-  return merged;
-}
 
-/**
- * Get default configuration values for a profile
- * @param {string} profileId - Profile ID
- * @returns {Object} Default configuration values
- */
-function getProfileDefaults(profileId) {
-  const defaults = {
-    'core': {
-      KASPA_NODE_RPC_PORT: 16110,
-      KASPA_NODE_P2P_PORT: 16111,
-      KASPA_NETWORK: 'mainnet',
-      PUBLIC_NODE: 'false',
-      ENABLE_MONITORING: 'true'
-    },
-    'archive-node': {
-      KASPA_NODE_RPC_PORT: 16110,
-      KASPA_NODE_P2P_PORT: 16111,
-      KASPA_NETWORK: 'mainnet',
-      PUBLIC_NODE: 'false',
-      ENABLE_MONITORING: 'true',
-      PRUNING_ENABLED: 'false'
-    },
-    'kaspa-user-applications': {
-      KASIA_APP_PORT: 3002,
-      KSOCIAL_APP_PORT: 3003,
-      EXPLORER_PORT: 3008,
-      INDEXER_CHOICE: 'public'
-    },
-    'indexer-services': {
-      TIMESCALEDB_PORT: 5433,
-      POSTGRES_USER: 'kaspauser',
-      ENABLE_INDEXER_MONITORING: 'true'
-    },
-    'mining': {
-      STRATUM_PORT: 5555,
-      POOL_MODE: 'false'
-    }
-  };
-  
-  return defaults[profileId] || {};
-}
+// =============================================================================
+// ROUTER ENDPOINTS
+// =============================================================================
 
-// Template definitions (no circular references)
-const templates = {
-  'beginner-setup': {
-    id: 'beginner-setup',
-    name: 'Beginner Setup',
-    description: 'Simple setup for new users',
-    longDescription: 'Perfect for users who want to get started quickly with Kaspa applications without running their own node.',
-    profiles: ['kaspa-user-applications'],
-    category: 'beginner',
-    useCase: 'personal',
-    estimatedSetupTime: '5 minutes',
-    syncTime: 'Not required',
-    icon: '🚀',
-    config: {
-      INDEXER_CHOICE: 'public',
-      KASIA_APP_PORT: 3002,
-      KSOCIAL_APP_PORT: 3003,
-      EXPLORER_PORT: 3008,
-      REMOTE_KASIA_INDEXER_URL: 'https://api.kaspa.org/kasia',
-      REMOTE_KSOCIAL_INDEXER_URL: 'https://api.kaspa.org/ksocial',
-      REMOTE_KASPA_NODE_WBORSH_URL: 'wss://api.kaspa.org/ws'
-    },
-    resources: {
-      minMemory: 4,
-      minCpu: 2,
-      minDisk: 50,
-      recommendedMemory: 8,
-      recommendedCpu: 4,
-      recommendedDisk: 200
-    },
-    features: [
-      'Easy setup',
-      'User applications',
-      'Public indexers',
-      'No node required'
-    ],
-    benefits: [
-      'Quick start',
-      'No complex configuration',
-      'Low resource usage',
-      'Immediate access'
-    ],
-    customizable: true,
-    tags: ['beginner', 'personal', 'applications', 'public']
-  },
-  'full-node': {
-    id: 'full-node',
-    name: 'Full Node',
-    description: 'Complete Kaspa node with all services',
-    longDescription: 'Complete Kaspa setup with local node and indexers for maximum performance and privacy.',
-    profiles: ['core', 'kaspa-user-applications', 'indexer-services'],
-    category: 'advanced',
-    useCase: 'advanced',
-    estimatedSetupTime: '15 minutes',
-    syncTime: '2-4 hours',
-    icon: '⚡',
-    config: {
-      PUBLIC_NODE: 'false',
-      ENABLE_MONITORING: 'true',
-      KASPA_NODE_RPC_PORT: 16110,
-      KASPA_NODE_P2P_PORT: 16111,
-      KASPA_NETWORK: 'mainnet',
-      POSTGRES_USER: 'kaspauser',
-      TIMESCALEDB_PORT: 5433,
-      KASIA_APP_PORT: 3002,
-      KSOCIAL_APP_PORT: 3003,
-      EXPLORER_PORT: 3008,
-      K_SOCIAL_DB_PASSWORD: 'auto-generated-password-123',
-      SIMPLY_KASPA_DB_PASSWORD: 'auto-generated-password-456'
-    },
-    resources: {
-      minMemory: 16,
-      minCpu: 4,
-      minDisk: 500,
-      recommendedMemory: 32,
-      recommendedCpu: 8,
-      recommendedDisk: 2000
-    },
-    features: [
-      'Full node',
-      'Local indexers',
-      'All applications',
-      'Complete privacy'
-    ],
-    benefits: [
-      'Complete control',
-      'Best performance',
-      'Full privacy',
-      'Network support'
-    ],
-    customizable: true,
-    tags: ['advanced', 'node', 'indexers', 'applications']
-  },
-  'home-node': {
-    id: 'home-node',
-    name: 'Home Node',
-    description: 'Basic Kaspa node for personal use',
-    longDescription: 'A simple setup with just the Kaspa node running locally. Ideal for developers, enthusiasts, or anyone wanting to support the network.',
-    profiles: ['core'],
-    category: 'intermediate',
-    useCase: 'personal',
-    estimatedSetupTime: '10-15 minutes',
-    syncTime: '2-4 hours',
-    icon: '🏠',
-    config: {
-      PUBLIC_NODE: 'false',
-      ENABLE_MONITORING: 'true',
-      KASPA_NODE_RPC_PORT: 16110,
-      KASPA_NODE_P2P_PORT: 16111,
-      KASPA_NETWORK: 'mainnet'
-    },
-    resources: {
-      minMemory: 4,
-      minCpu: 2,
-      minDisk: 100,
-      recommendedMemory: 8,
-      recommendedCpu: 4,
-      recommendedDisk: 500
-    },
-    features: [
-      'Local Kaspa node',
-      'Web dashboard',
-      'Basic monitoring',
-      'Wallet support'
-    ],
-    benefits: [
-      'Support the Kaspa network',
-      'Learn about blockchain technology',
-      'Private node access',
-      'No external dependencies'
-    ],
-    customizable: true,
-    tags: ['intermediate', 'personal', 'node', 'wallet']
-  },
-  'public-node': {
-    id: 'public-node',
-    name: 'Public Node',
-    description: 'Public-facing Kaspa node with indexer services',
-    longDescription: 'A robust setup that provides public access to your Kaspa node and indexer services. Perfect for contributing to the ecosystem.',
-    profiles: ['core', 'indexer-services'],
-    category: 'advanced',
-    useCase: 'community',
-    estimatedSetupTime: '20-30 minutes',
-    syncTime: '4-8 hours',
-    icon: '🌐',
-    config: {
-      PUBLIC_NODE: 'true',
-      ENABLE_MONITORING: 'true',
-      ENABLE_SSL: 'true',
-      KASPA_NODE_RPC_PORT: 16110,
-      KASPA_NODE_P2P_PORT: 16111,
-      KASPA_NETWORK: 'mainnet',
-      POSTGRES_USER: 'kaspauser',
-      TIMESCALEDB_PORT: 5433
-    },
-    resources: {
-      minMemory: 12,
-      minCpu: 6,
-      minDisk: 600,
-      recommendedMemory: 24,
-      recommendedCpu: 12,
-      recommendedDisk: 2000
-    },
-    features: [
-      'Public Kaspa node',
-      'Local indexer services',
-      'TimescaleDB database',
-      'SSL/TLS encryption',
-      'Advanced monitoring'
-    ],
-    benefits: [
-      'Contribute to network infrastructure',
-      'Provide reliable public endpoints',
-      'Support dApp developers',
-      'Enhanced data availability'
-    ],
-    customizable: true,
-    tags: ['advanced', 'public', 'indexers', 'community']
-  },
-  'developer-setup': {
-    id: 'developer-setup',
-    name: 'Developer Setup',
-    description: 'Complete development environment with debugging tools',
-    longDescription: 'A comprehensive setup designed for Kaspa developers. Includes all services, development tools, and debugging features.',
-    profiles: ['core', 'kaspa-user-applications', 'indexer-services'],
-    category: 'advanced',
-    useCase: 'development',
-    estimatedSetupTime: '30-45 minutes',
-    syncTime: '4-8 hours',
-    icon: '👨‍💻',
-    config: {
-      PUBLIC_NODE: 'false',
-      ENABLE_MONITORING: 'true',
-      KASPA_NODE_RPC_PORT: 16110,
-      KASPA_NODE_P2P_PORT: 16111,
-      KASPA_NETWORK: 'testnet',
-      POSTGRES_USER: 'devuser',
-      TIMESCALEDB_PORT: 5433,
-      KASIA_APP_PORT: 3002,
-      KSOCIAL_APP_PORT: 3003,
-      EXPLORER_PORT: 3008,
-      LOG_LEVEL: 'debug',
-      ENABLE_PORTAINER: 'true',
-      ENABLE_PGADMIN: 'true',
-      ENABLE_LOG_ACCESS: 'true'
-    },
-    resources: {
-      minMemory: 16,
-      minCpu: 8,
-      minDisk: 650,
-      recommendedMemory: 32,
-      recommendedCpu: 16,
-      recommendedDisk: 2500
-    },
-    features: [
-      'All Kaspa services',
-      'Development tools',
-      'Debug logging',
-      'Portainer (Docker UI)',
-      'pgAdmin (Database UI)',
-      'Testnet configuration'
-    ],
-    benefits: [
-      'Complete development environment',
-      'Easy debugging and inspection',
-      'Test applications safely',
-      'Rapid prototyping'
-    ],
-    developerMode: true,
-    customizable: true,
-    tags: ['advanced', 'development', 'debugging', 'testnet']
-  },
-  'mining-setup': {
-    id: 'mining-setup',
-    name: 'Mining Setup',
-    description: 'Kaspa node with mining stratum for solo mining',
-    longDescription: 'Complete mining setup with local Kaspa node and stratum server. Perfect for solo miners who want full control.',
-    profiles: ['core', 'mining'],
-    category: 'advanced',
-    useCase: 'mining',
-    estimatedSetupTime: '20-30 minutes',
-    syncTime: '2-4 hours',
-    icon: '⛏️',
-    config: {
-      PUBLIC_NODE: 'false',
-      ENABLE_MONITORING: 'true',
-      KASPA_NODE_RPC_PORT: 16110,
-      KASPA_NODE_P2P_PORT: 16111,
-      KASPA_NETWORK: 'mainnet',
-      STRATUM_PORT: 5555,
-      MINING_ADDRESS: '',
-      POOL_MODE: 'false'
-    },
-    resources: {
-      minMemory: 6,
-      minCpu: 4,
-      minDisk: 110,
-      recommendedMemory: 12,
-      recommendedCpu: 8,
-      recommendedDisk: 550
-    },
-    features: [
-      'Local Kaspa node',
-      'Mining stratum server',
-      'Solo mining support',
-      'Mining monitoring'
-    ],
-    benefits: [
-      'Full mining control',
-      'No pool fees',
-      'Direct block rewards',
-      'Mining privacy'
-    ],
-    customizable: true,
-    tags: ['advanced', 'mining', 'stratum', 'solo']
-  }
-};
-
-// GET /api/simple-templates/all - Get all templates
+// GET /all - Get all templates
 router.get('/all', (req, res) => {
   try {
-    console.log('[TEMPLATE-API] Fetching all templates');
-    const templateList = Object.values(templates);
-    console.log(`[TEMPLATE-API] Returning ${templateList.length} templates`);
-    res.json({ 
-      templates: templateList,
-      count: templateList.length,
-      categories: [...new Set(templateList.map(t => t.category))]
-    });
+    const allTemplates = getAllTemplates();
+    res.json(allTemplates);
   } catch (error) {
-    console.error('[TEMPLATE-API] Error fetching all templates:', error);
-    res.status(500).json({
-      error: 'Failed to get templates',
-      message: error.message,
-      fallbackOptions: ['build-custom']
-    });
+    console.error('Error getting templates:', error);
+    res.status(500).json({ error: 'Failed to get templates' });
   }
 });
 
-// GET /api/simple-templates/category/:category - Get templates by category
+// GET /category/:category - Get templates by category
 router.get('/category/:category', (req, res) => {
   try {
     const { category } = req.params;
-    console.log(`[TEMPLATE-API] Fetching templates for category: ${category}`);
-    
-    const filteredTemplates = Object.values(templates).filter(template => 
-      template.category === category
-    );
-    
-    console.log(`[TEMPLATE-API] Found ${filteredTemplates.length} templates in category ${category}`);
-    
-    res.json({ 
-      templates: filteredTemplates,
-      category,
-      count: filteredTemplates.length
-    });
+    const categoryTemplates = getTemplatesByCategory(category);
+    res.json(categoryTemplates);
   } catch (error) {
-    console.error(`[TEMPLATE-API] Error fetching templates for category ${req.params.category}:`, error);
-    res.status(500).json({
-      error: 'Failed to get templates by category',
-      message: error.message,
-      fallbackOptions: ['build-custom']
-    });
+    console.error('Error getting templates by category:', error);
+    res.status(500).json({ error: 'Failed to get templates' });
   }
 });
 
-// GET /api/simple-templates/:templateId - Get specific template
-router.get('/:templateId', (req, res) => {
+// GET /usecase/:useCase - Get templates by use case
+router.get('/usecase/:useCase', (req, res) => {
   try {
-    const { templateId } = req.params;
-    console.log(`[TEMPLATE-API] Fetching template: ${templateId}`);
-    
-    const template = templates[templateId];
+    const { useCase } = req.params;
+    const useCaseTemplates = getTemplatesByUseCase(useCase);
+    res.json(useCaseTemplates);
+  } catch (error) {
+    console.error('Error getting templates by use case:', error);
+    res.status(500).json({ error: 'Failed to get templates' });
+  }
+});
+
+// GET /:id - Get specific template
+router.get('/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const template = getTemplate(id);
     
     if (!template) {
-      console.warn(`[TEMPLATE-API] Template not found: ${templateId}`);
-      return res.status(404).json({
-        success: false,
-        message: 'Template not found',
-        templateId,
-        availableTemplates: Object.keys(templates),
-        fallbackOptions: ['build-custom']
-      });
+      return res.status(404).json({ error: 'Template not found' });
     }
     
-    console.log(`[TEMPLATE-API] Successfully retrieved template: ${template.name}`);
-    
-    res.json({
-      success: true,
-      template,
-      templateId
-    });
+    res.json(template);
   } catch (error) {
-    console.error(`[TEMPLATE-API] Error fetching template ${req.params.templateId}:`, error);
+    console.error('Error getting template:', error);
+    res.status(500).json({ error: 'Failed to get template' });
+  }
+});
+
+// POST /search - Search templates by tags
+router.post('/search', (req, res) => {
+  try {
+    const { tags } = req.body;
+    
+    if (!tags || !Array.isArray(tags)) {
+      return res.status(400).json({ error: 'Tags array is required' });
+    }
+    
+    const results = searchTemplatesByTags(tags);
+    res.json(results);
+  } catch (error) {
+    console.error('Error searching templates:', error);
+    res.status(500).json({ error: 'Failed to search templates' });
+  }
+});
+
+// POST /:id/validate - Validate template
+router.post('/:id/validate', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { systemResources } = req.body;
+    
+    const validation = validateTemplate(id, systemResources);
+    res.json(validation);
+  } catch (error) {
+    console.error('Error validating template:', error);
+    res.status(500).json({ error: 'Failed to validate template' });
+  }
+});
+
+// GET /:id/validate - Validate template (GET version for backward compatibility)
+router.get('/:id/validate', (req, res) => {
+  try {
+    const { id } = req.params;
+    const validation = validateTemplate(id);
+    res.json(validation);
+  } catch (error) {
+    console.error('Error validating template:', error);
+    res.status(500).json({ error: 'Failed to validate template' });
+  }
+});
+
+// POST /:id/apply - Apply template
+router.post('/:id/apply', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { baseConfig, systemResources } = req.body;
+    
+    console.log(`[TEMPLATE-API] Applying template ${id} with base config keys: ${Object.keys(baseConfig || {}).join(', ')}`);
+    
+    const applicationResult = applyTemplate(id, baseConfig || {}, systemResources);
+    
+    if (!applicationResult.success) {
+      const statusCode = applicationResult.errors && applicationResult.errors.some(e => e.includes('not found')) ? 404 : 400;
+      return res.status(statusCode).json(applicationResult);
+    }
+    
+    res.json(applicationResult);
+  } catch (error) {
+    console.error(`[TEMPLATE-API] Error in apply endpoint for ${req.params.id}:`, error);
     res.status(500).json({
-      error: 'Failed to get template',
-      message: error.message,
-      templateId: req.params.templateId,
-      fallbackOptions: ['build-custom']
+      success: false,
+      message: `Template application failed: ${error.message}`,
+      errors: [error.message],
+      fallbackOptions: ['custom-setup']
     });
   }
 });
 
-// POST /api/simple-templates/recommendations - Get template recommendations
+// POST /recommendations - Get template recommendations based on system resources
 router.post('/recommendations', (req, res) => {
   try {
     const { systemResources, useCase } = req.body;
@@ -814,13 +1193,13 @@ router.post('/recommendations', (req, res) => {
       return res.status(400).json({
         error: 'Invalid request',
         message: 'System resources are required',
-        fallbackOptions: ['build-custom']
+        fallbackOptions: ['custom-setup']
       });
     }
     
     const recommendations = [];
     
-    for (const template of Object.values(templates)) {
+    for (const template of getAllTemplates()) {
       let score = 0;
       let suitability = 'suitable';
       const reasons = [];
@@ -887,73 +1266,38 @@ router.post('/recommendations', (req, res) => {
     res.status(500).json({
       error: 'Failed to get template recommendations',
       message: error.message,
-      fallbackOptions: ['build-custom']
+      fallbackOptions: ['custom-setup']
     });
   }
 });
 
-// GET /api/simple-templates/:templateId/validate - Validate template (GET version for tests)
-router.get('/:templateId/validate', (req, res) => {
-  try {
-    const { templateId } = req.params;
-    const validationResult = validateTemplate(templateId);
-    
-    res.json(validationResult);
-  } catch (error) {
-    console.error(`[TEMPLATE-VALIDATION] Error validating template ${templateId}:`, error);
-    res.status(500).json({
-      valid: false,
-      errors: ['Validation service error'],
-      message: error.message,
-      fallbackOptions: ['build-custom']
-    });
-  }
-});
-
-// POST /api/simple-templates/:templateId/validate - Validate template
-router.post('/:templateId/validate', (req, res) => {
-  try {
-    const { templateId } = req.params;
-    const { systemResources } = req.body;
-    const validationResult = validateTemplate(templateId, systemResources);
-    
-    res.json(validationResult);
-  } catch (error) {
-    console.error(`[TEMPLATE-VALIDATION] Error validating template ${templateId}:`, error);
-    // Always return JSON, never HTML
-    res.status(500).json({
-      valid: false,
-      errors: [`Validation service error: ${error.message}`],
-      fallbackOptions: ['build-custom']
-    });
-  }
-});
-
-// POST /api/simple-templates/:templateId/apply - Apply template
-router.post('/:templateId/apply', (req, res) => {
-  try {
-    const { templateId } = req.params;
-    const { baseConfig, systemResources } = req.body;
-    
-    console.log(`[TEMPLATE-API] Applying template ${templateId} with base config keys: ${Object.keys(baseConfig || {}).join(', ')}`);
-    
-    const applicationResult = applyTemplate(templateId, baseConfig || {}, systemResources);
-    
-    if (!applicationResult.success) {
-      const statusCode = applicationResult.errors && applicationResult.errors.some(e => e.includes('not found')) ? 404 : 400;
-      return res.status(statusCode).json(applicationResult);
-    }
-    
-    res.json(applicationResult);
-  } catch (error) {
-    console.error(`[TEMPLATE-API] Error in apply endpoint for ${req.params.templateId}:`, error);
-    res.status(500).json({
-      success: false,
-      message: `Template application failed: ${error.message}`,
-      errors: [error.message],
-      fallbackOptions: ['build-custom']
-    });
-  }
-});
+// =============================================================================
+// MODULE EXPORTS
+// =============================================================================
 
 module.exports = router;
+
+// Also export functions for use in other modules
+module.exports.templates = templates;
+module.exports.VALID_PROFILES = VALID_PROFILES;
+module.exports.LEGACY_PROFILES = LEGACY_PROFILES;
+module.exports.PROFILE_ID_MIGRATION = PROFILE_ID_MIGRATION;
+module.exports.PROFILE_CONFLICTS = PROFILE_CONFLICTS;
+module.exports.PROFILE_DEPENDENCIES = PROFILE_DEPENDENCIES;
+module.exports.PROFILE_PREREQUISITES = PROFILE_PREREQUISITES;
+module.exports.PROFILE_CONFIG_REQUIREMENTS = PROFILE_CONFIG_REQUIREMENTS;
+module.exports.PROFILE_CONFIG_OPTIONAL = PROFILE_CONFIG_OPTIONAL;
+module.exports.LEGACY_TEMPLATE_ALIASES = LEGACY_TEMPLATE_ALIASES;
+module.exports.getTemplate = getTemplate;
+module.exports.getAllTemplates = getAllTemplates;
+module.exports.getTemplatesByCategory = getTemplatesByCategory;
+module.exports.getTemplatesByUseCase = getTemplatesByUseCase;
+module.exports.searchTemplatesByTags = searchTemplatesByTags;
+module.exports.validateTemplate = validateTemplate;
+module.exports.applyTemplate = applyTemplate;
+module.exports.getProfileDefaults = getProfileDefaults;
+module.exports.isValidProfile = isValidProfile;
+module.exports.migrateProfileId = migrateProfileId;
+module.exports.migrateProfileIds = migrateProfileIds;
+module.exports.checkProfileConflicts = checkProfileConflicts;
+module.exports.mergeConfigurations = mergeConfigurations;

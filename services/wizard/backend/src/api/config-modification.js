@@ -537,31 +537,74 @@ function extractProfileConfiguration(profileId, completeConfig) {
 
 /**
  * Get configuration fields available for a profile
+ * @param {string} profileId - Profile ID (supports legacy IDs)
+ * @returns {Object[]} Array of field definitions
  */
 function getProfileConfigurationFields(profileId) {
   const fieldDefinitions = {
-    'core': [
+    // New profile IDs
+    'kaspa-node': [
+      { key: 'KASPA_DATA_DIR', label: 'Kaspa Data Directory', type: 'text' },
       { key: 'KASPA_NODE_RPC_PORT', label: 'RPC Port', type: 'number', min: 1024, max: 65535 },
       { key: 'KASPA_NODE_P2P_PORT', label: 'P2P Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'KASPA_NODE_WRPC_PORT', label: 'wRPC Port', type: 'number', min: 1024, max: 65535 },
       { key: 'KASPA_NETWORK', label: 'Network', type: 'select', options: ['mainnet', 'testnet'] },
-      { key: 'KASPA_DATA_DIR', label: 'Data Directory', type: 'text' },
       { key: 'PUBLIC_NODE', label: 'Public Node', type: 'boolean' },
-      { key: 'EXTERNAL_IP', label: 'External IP', type: 'text' },
-      { key: 'KASPA_WALLET_ENABLED', label: 'Enable Wallet', type: 'boolean' },
-      { key: 'KASPA_MINING_ADDRESS', label: 'Mining Address', type: 'text' }
+      { key: 'WALLET_ENABLED', label: 'Enable Wallet', type: 'boolean' }
+    ],
+    'kasia-app': [
+      { key: 'KASIA_APP_PORT', label: 'Kasia App Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'KASIA_INDEXER_MODE', label: 'Indexer Mode', type: 'select', options: ['auto', 'local', 'public'] },
+      { key: 'REMOTE_KASIA_INDEXER_URL', label: 'Remote Indexer URL', type: 'text' }
+    ],
+    'k-social-app': [
+      { key: 'KSOCIAL_APP_PORT', label: 'K-Social App Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'KSOCIAL_INDEXER_MODE', label: 'Indexer Mode', type: 'select', options: ['auto', 'local', 'public'] },
+      { key: 'REMOTE_KSOCIAL_INDEXER_URL', label: 'Remote Indexer URL', type: 'text' }
+    ],
+    'kaspa-explorer-bundle': [
+      { key: 'KASPA_EXPLORER_PORT', label: 'Explorer Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'SIMPLY_KASPA_INDEXER_PORT', label: 'Indexer Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'TIMESCALEDB_EXPLORER_PORT', label: 'Database Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'POSTGRES_PASSWORD_EXPLORER', label: 'Database Password', type: 'password' }
+    ],
+    'kasia-indexer': [
+      { key: 'KASIA_INDEXER_PORT', label: 'Kasia Indexer Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'KASIA_NODE_MODE', label: 'Node Mode', type: 'select', options: ['auto', 'local', 'public'] }
+    ],
+    'k-indexer-bundle': [
+      { key: 'K_INDEXER_PORT', label: 'K-Indexer Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'TIMESCALEDB_KINDEXER_PORT', label: 'Database Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'POSTGRES_PASSWORD_KINDEXER', label: 'Database Password', type: 'password' },
+      { key: 'K_INDEXER_NODE_MODE', label: 'Node Mode', type: 'select', options: ['auto', 'local', 'public'] }
+    ],
+    'kaspa-archive-node': [
+      { key: 'KASPA_ARCHIVE_DATA_DIR', label: 'Archive Data Directory', type: 'text' },
+      { key: 'KASPA_NODE_RPC_PORT', label: 'RPC Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'KASPA_NODE_P2P_PORT', label: 'P2P Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'KASPA_NETWORK', label: 'Network', type: 'select', options: ['mainnet', 'testnet'] }
+    ],
+    'kaspa-stratum': [
+      { key: 'STRATUM_PORT', label: 'Stratum Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'MINING_ADDRESS', label: 'Mining Address', type: 'text' },
+      { key: 'VAR_DIFF', label: 'Variable Difficulty', type: 'boolean' },
+      { key: 'POOL_MODE', label: 'Pool Mode', type: 'boolean' }
+    ],
+    
+    // Legacy profile IDs (for backward compatibility)
+    'core': [
+      { key: 'KASPA_DATA_DIR', label: 'Kaspa Data Directory', type: 'text' },
+      { key: 'KASPA_NODE_RPC_PORT', label: 'RPC Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'KASPA_NODE_P2P_PORT', label: 'P2P Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'KASPA_NETWORK', label: 'Network', type: 'select', options: ['mainnet', 'testnet'] }
     ],
     'kaspa-user-applications': [
-      { key: 'REMOTE_KASIA_INDEXER_URL', label: 'Kasia Indexer URL', type: 'url' },
-      { key: 'REMOTE_KSOCIAL_INDEXER_URL', label: 'K-Social Indexer URL', type: 'url' },
-      { key: 'REMOTE_SIMPLY_KASPA_INDEXER_URL', label: 'Simply Kaspa Indexer URL', type: 'url' },
-      { key: 'REMOTE_KASPA_NODE_WBORSH_URL', label: 'Kaspa Node WebSocket URL', type: 'url' },
       { key: 'KASIA_APP_PORT', label: 'Kasia App Port', type: 'number', min: 1024, max: 65535 },
-      { key: 'KSOCIAL_APP_PORT', label: 'K-Social App Port', type: 'number', min: 1024, max: 65535 }
+      { key: 'KSOCIAL_APP_PORT', label: 'K-Social App Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'KASPA_EXPLORER_PORT', label: 'Explorer Port', type: 'number', min: 1024, max: 65535 }
     ],
     'indexer-services': [
       { key: 'TIMESCALEDB_DATA_DIR', label: 'TimescaleDB Data Directory', type: 'text' },
-      { key: 'K_SOCIAL_DB_PASSWORD', label: 'K-Social DB Password', type: 'password' },
-      { key: 'SIMPLY_KASPA_DB_PASSWORD', label: 'Simply Kaspa DB Password', type: 'password' },
       { key: 'KASIA_INDEXER_PORT', label: 'Kasia Indexer Port', type: 'number', min: 1024, max: 65535 },
       { key: 'K_INDEXER_PORT', label: 'K-Indexer Port', type: 'number', min: 1024, max: 65535 },
       { key: 'SIMPLY_KASPA_INDEXER_PORT', label: 'Simply Kaspa Indexer Port', type: 'number', min: 1024, max: 65535 }
@@ -573,8 +616,8 @@ function getProfileConfigurationFields(profileId) {
       { key: 'KASPA_NETWORK', label: 'Network', type: 'select', options: ['mainnet', 'testnet'] }
     ],
     'mining': [
-      { key: 'KASPA_STRATUM_PORT', label: 'Stratum Port', type: 'number', min: 1024, max: 65535 },
-      { key: 'KASPA_MINING_ADDRESS', label: 'Mining Address', type: 'text' }
+      { key: 'STRATUM_PORT', label: 'Stratum Port', type: 'number', min: 1024, max: 65535 },
+      { key: 'MINING_ADDRESS', label: 'Mining Address', type: 'text' }
     ]
   };
   
@@ -583,9 +626,22 @@ function getProfileConfigurationFields(profileId) {
 
 /**
  * Get profile display name
+ * @param {string} profileId - Profile ID (supports legacy IDs)
+ * @returns {string} Display name
  */
 function getProfileName(profileId) {
   const names = {
+    // New profile IDs
+    'kaspa-node': 'Kaspa Node',
+    'kasia-app': 'Kasia Application',
+    'k-social-app': 'K-Social Application',
+    'kaspa-explorer-bundle': 'Kaspa Explorer',
+    'kasia-indexer': 'Kasia Indexer',
+    'k-indexer-bundle': 'K-Indexer',
+    'kaspa-archive-node': 'Kaspa Archive Node',
+    'kaspa-stratum': 'Kaspa Stratum',
+    
+    // Legacy profile IDs
     'core': 'Core Profile',
     'kaspa-user-applications': 'Kaspa User Applications',
     'indexer-services': 'Indexer Services',
@@ -635,12 +691,25 @@ async function getProfileServiceStatus(profileId) {
 
 /**
  * Get services for a profile
+ * @param {string} profileId - Profile ID (supports legacy IDs)
+ * @returns {string[]} Array of service names
  */
 function getServicesForProfile(profileId) {
   const serviceMap = {
-    'core': ['kaspa-node', 'dashboard'],
-    'kaspa-user-applications': ['kasia-app', 'k-social'],
-    'indexer-services': ['timescaledb', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
+    // New profile IDs
+    'kaspa-node': ['kaspa-node'],
+    'kasia-app': ['kasia-app'],
+    'k-social-app': ['k-social'],
+    'kaspa-explorer-bundle': ['kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer'],
+    'kasia-indexer': ['kasia-indexer'],
+    'k-indexer-bundle': ['k-indexer', 'timescaledb-kindexer'],
+    'kaspa-archive-node': ['kaspa-archive-node'],
+    'kaspa-stratum': ['kaspa-stratum'],
+    
+    // Legacy profile IDs
+    'core': ['kaspa-node'],
+    'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],
+    'indexer-services': ['kasia-indexer', 'k-indexer', 'simply-kaspa-indexer', 'timescaledb'],
     'archive-node': ['kaspa-archive-node'],
     'mining': ['kaspa-stratum']
   };

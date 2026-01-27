@@ -11,6 +11,163 @@ const fs = require('fs').promises;
 const compression = require('compression');
 const helmet = require('helmet');
 
+// ============================================================================
+// Profile ID Migration Constants (Phase 1, Step 4)
+// ============================================================================
+
+/**
+ * Profile ID migration mapping
+ * Maps old profile IDs to new profile IDs
+ */
+const PROFILE_ID_MIGRATION = {
+    'core': 'kaspa-node',
+    'kaspa-user-applications': ['kasia-app', 'k-social-app'],
+    'indexer-services': ['kasia-indexer', 'k-indexer-bundle'],
+    'archive-node': 'kaspa-archive-node',
+    'mining': 'kaspa-stratum'
+};
+
+/**
+ * Reverse mapping: New profile ID → Old profile ID
+ * Used for backward compatibility with existing state files
+ */
+const PROFILE_ID_REVERSE = {
+    'kaspa-node': 'core',
+    'kasia-app': 'kaspa-user-applications',
+    'k-social-app': 'kaspa-user-applications',
+    'kaspa-explorer-bundle': 'kaspa-user-applications',
+    'kasia-indexer': 'indexer-services',
+    'k-indexer-bundle': 'indexer-services',
+    'kaspa-archive-node': 'archive-node',
+    'kaspa-stratum': 'mining'
+};
+
+/**
+ * Valid new profile IDs
+ */
+const VALID_PROFILE_IDS = [
+    'kaspa-node',
+    'kasia-app',
+    'k-social-app',
+    'kaspa-explorer-bundle',
+    'kasia-indexer',
+    'k-indexer-bundle',
+    'kaspa-archive-node',
+    'kaspa-stratum'
+];
+
+/**
+ * Legacy profile IDs (for backward compatibility)
+ */
+const LEGACY_PROFILE_IDS = [
+    'core',
+    'kaspa-user-applications',
+    'indexer-services',
+    'archive-node',
+    'mining'
+];
+
+// ============================================================================
+// Profile Migration Helper Functions
+// ============================================================================
+
+/**
+ * Migrate legacy profile ID to new profile ID
+ * @param {string} profileId - Profile ID (may be legacy)
+ * @returns {string|string[]} New profile ID(s)
+ */
+function migrateProfileId(profileId) {
+    if (VALID_PROFILE_IDS.includes(profileId)) {
+        return profileId;
+    }
+    return PROFILE_ID_MIGRATION[profileId] || profileId;
+}
+
+/**
+ * Migrate array of profile IDs to new profile IDs
+ * @param {string[]} profileIds - Array of profile IDs
+ * @returns {string[]} Array of new profile IDs (flattened, unique)
+ */
+function migrateProfileIds(profileIds) {
+    const result = [];
+    for (const id of profileIds) {
+        const migrated = migrateProfileId(id);
+        if (Array.isArray(migrated)) {
+            result.push(...migrated);
+        } else {
+            result.push(migrated);
+        }
+    }
+    return [...new Set(result)];
+}
+
+/**
+ * Check if a profile ID is a legacy ID
+ * @param {string} profileId - Profile ID to check
+ * @returns {boolean} True if legacy
+ */
+function isLegacyProfileId(profileId) {
+    return LEGACY_PROFILE_IDS.includes(profileId);
+}
+
+/**
+ * Get profile display name
+ * @param {string} profileId - Profile ID (new or legacy)
+ * @returns {string} Display name
+ */
+function getProfileDisplayName(profileId) {
+    const names = {
+        // New profile names
+        'kaspa-node': 'Kaspa Node',
+        'kasia-app': 'Kasia Application',
+        'k-social-app': 'K-Social Application',
+        'kaspa-explorer-bundle': 'Kaspa Explorer',
+        'kasia-indexer': 'Kasia Indexer',
+        'k-indexer-bundle': 'K-Indexer',
+        'kaspa-archive-node': 'Kaspa Archive Node',
+        'kaspa-stratum': 'Kaspa Stratum',
+        'management': 'Management Tools',
+        
+        // Legacy names (for backward compat)
+        'core': 'Core Profile',
+        'kaspa-user-applications': 'Kaspa User Applications',
+        'indexer-services': 'Indexer Services',
+        'archive-node': 'Archive Node',
+        'mining': 'Mining'
+    };
+    return names[profileId] || profileId;
+}
+
+/**
+ * Get services belonging to a profile
+ * @param {string} profileId - Profile ID
+ * @returns {string[]} Array of service names
+ */
+function getServicesForProfile(profileId) {
+    const profileServices = {
+        'kaspa-node': ['kaspa-node'],
+        'kasia-app': ['kasia-app'],
+        'k-social-app': ['k-social'],
+        'kaspa-explorer-bundle': ['kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer'],
+        'kasia-indexer': ['kasia-indexer'],
+        'k-indexer-bundle': ['k-indexer', 'timescaledb-kindexer'],
+        'kaspa-archive-node': ['kaspa-archive-node'],
+        'kaspa-stratum': ['kaspa-stratum'],
+        'management': ['portainer', 'pgadmin']
+    };
+    
+    // Handle legacy profile IDs
+    if (isLegacyProfileId(profileId)) {
+        const migrated = migrateProfileId(profileId);
+        if (Array.isArray(migrated)) {
+            return migrated.flatMap(id => profileServices[id] || []);
+        }
+        return profileServices[migrated] || [];
+    }
+    
+    return profileServices[profileId] || [];
+}
+
 // Dashboard modules
 const WebSocketManager = require('./lib/WebSocketManager');
 const UpdateBroadcaster = require('./lib/UpdateBroadcaster');
@@ -215,46 +372,85 @@ app.get('/api/profiles', async (req, res) => {
             return res.json([]);
         }
         
-        // Service to profile mapping
+        // Service to profile mapping (NEW profile IDs)
+        // Note: Docker container names unchanged, but profile IDs are new
         const serviceToProfile = {
-            'kaspa-node': 'core',
-            'dashboard': 'core',
-            'wallet': 'core',
-            'kaspa-archive-node': 'archive-node',
-            'timescaledb': 'indexer-services',
-            'indexer-db': 'indexer-services',
-            'k-indexer': 'indexer-services',
-            'kasia-indexer': 'indexer-services',
-            'simply-kaspa-indexer': 'indexer-services',
-            'archive-indexer': 'indexer-services',
-            'kasia-app': 'kaspa-user-applications',
-            'k-social': 'kaspa-user-applications',
-            'kaspa-explorer': 'kaspa-user-applications',
-            'kaspa-nginx': 'kaspa-user-applications',
-            'kaspa-stratum': 'mining',
+            // Kaspa Node Profile
+            'kaspa-node': 'kaspa-node',
+            
+            // Kaspa Archive Node Profile
+            'kaspa-archive-node': 'kaspa-archive-node',
+            
+            // Kasia App Profile
+            'kasia-app': 'kasia-app',
+            
+            // K-Social App Profile (container name is 'k-social', not 'k-social-app')
+            'k-social': 'k-social-app',
+            
+            // Kaspa Explorer Bundle Profile (includes explorer + simply-kaspa-indexer + timescaledb)
+            'kaspa-explorer': 'kaspa-explorer-bundle',
+            'simply-kaspa-indexer': 'kaspa-explorer-bundle',
+            'timescaledb-explorer': 'kaspa-explorer-bundle',
+            
+            // Kasia Indexer Profile
+            'kasia-indexer': 'kasia-indexer',
+            
+            // K-Indexer Bundle Profile (includes k-indexer + timescaledb)
+            'k-indexer': 'k-indexer-bundle',
+            'timescaledb-kindexer': 'k-indexer-bundle',
+            
+            // Kaspa Stratum Profile
+            'kaspa-stratum': 'kaspa-stratum',
+            
+            // Management services (not tied to specific profile)
             'portainer': 'management',
-            'pgadmin': 'management'
+            'pgadmin': 'management',
+            
+            // Legacy service names (for backward compatibility)
+            'timescaledb': 'k-indexer-bundle',      // Old shared DB → now part of k-indexer-bundle
+            'indexer-db': 'k-indexer-bundle',       // Old alias
+            'simply-kaspa-db': 'kaspa-explorer-bundle', // Old alias
+            'k-social-db': 'k-indexer-bundle',      // Old alias
+            'archive-indexer': 'kaspa-archive-node', // Old alias
+            'wallet': 'kaspa-node',                 // Wallet is now part of kaspa-node config
+            'dashboard': 'management',              // Dashboard is now local (not containerized)
+            'kaspa-nginx': 'management'             // Nginx built into apps now
         };
         
         // Service to type mapping
         const serviceToType = {
+            // Nodes
             'kaspa-node': 'Node',
             'kaspa-archive-node': 'Node',
-            'dashboard': 'Management',
-            'wallet': 'Wallet',
-            'timescaledb': 'Database',
-            'indexer-db': 'Database',
-            'k-indexer': 'Indexer',
-            'kasia-indexer': 'Indexer',
-            'simply-kaspa-indexer': 'Indexer',
-            'archive-indexer': 'Indexer',
+            
+            // Applications
             'kasia-app': 'Application',
             'k-social': 'Application',
             'kaspa-explorer': 'Application',
-            'kaspa-nginx': 'Proxy',
+            
+            // Indexers
+            'kasia-indexer': 'Indexer',
+            'k-indexer': 'Indexer',
+            'simply-kaspa-indexer': 'Indexer',
+            
+            // Databases
+            'timescaledb-explorer': 'Database',
+            'timescaledb-kindexer': 'Database',
+            'timescaledb': 'Database',        // Legacy
+            'indexer-db': 'Database',         // Legacy
+            'simply-kaspa-db': 'Database',    // Legacy
+            'k-social-db': 'Database',        // Legacy
+            
+            // Mining
             'kaspa-stratum': 'Mining',
+            
+            // Management
             'portainer': 'Management',
-            'pgadmin': 'Management'
+            'pgadmin': 'Management',
+            'dashboard': 'Management',        // Legacy (now local)
+            'wallet': 'Wallet',               // Legacy (now config option)
+            'kaspa-nginx': 'Proxy',           // Legacy (now built into apps)
+            'archive-indexer': 'Indexer'      // Legacy
         };
         
         const services = installationState.services || [];
@@ -286,16 +482,21 @@ app.get('/api/profiles', async (req, res) => {
         // Group by profile
         const profiles = {};
         services.forEach(service => {
-            const profile = service.profile || serviceToProfile[service.name];
+            let profile = service.profile || serviceToProfile[service.name];
             if (profile) {
+                // Normalize to new profile ID if it's a legacy mapping
+                if (isLegacyProfileId(profile)) {
+                    const migrated = migrateProfileId(profile);
+                    profile = Array.isArray(migrated) ? migrated[0] : migrated;
+                }
                 profiles[profile] = (profiles[profile] || 0) + 1;
             }
         });
         
-        // Add profile filters
+        // Add profile filters with display names
         Object.entries(profiles).forEach(([profile, count]) => {
             filterOptions.push({
-                name: `${profile} Profile`,
+                name: getProfileDisplayName(profile),
                 value: `profile:${profile}`,
                 count: count
             });

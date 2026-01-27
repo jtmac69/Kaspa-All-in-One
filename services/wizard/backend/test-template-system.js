@@ -50,13 +50,15 @@ async function runTests() {
             throw new Error('getAllTemplates should return an array');
         }
         
-        if (templates.length < 4) {
-            throw new Error(`Expected at least 4 templates, got ${templates.length}`);
+        if (templates.length !== 12) {
+            throw new Error(`Expected 12 templates, got ${templates.length}`);
         }
         
-        // Check for required templates
+        // Check for required new templates
         const templateIds = templates.map(t => t.id);
-        const requiredTemplates = ['home-node', 'public-node', 'developer-setup', 'full-stack'];
+        const requiredTemplates = ['kaspa-node', 'quick-start', 'kasia-lite', 'k-social-lite', 
+                                   'kasia-suite', 'k-social-suite', 'solo-miner', 'block-explorer',
+                                   'kaspa-sovereignty', 'archival-node', 'archival-miner', 'custom-setup'];
         
         for (const required of requiredTemplates) {
             if (!templateIds.includes(required)) {
@@ -75,25 +77,39 @@ async function runTests() {
     logInfo('Test 2: Get templates by category');
     try {
         const beginnerTemplates = profileManager.getTemplatesByCategory('beginner');
+        const intermediateTemplates = profileManager.getTemplatesByCategory('intermediate');
         const advancedTemplates = profileManager.getTemplatesByCategory('advanced');
         
         if (!Array.isArray(beginnerTemplates) || !Array.isArray(advancedTemplates)) {
             throw new Error('getTemplatesByCategory should return arrays');
         }
         
-        // Home node should be beginner
-        const homeNode = beginnerTemplates.find(t => t.id === 'home-node');
-        if (!homeNode) {
-            throw new Error('Home node template should be in beginner category');
+        // Should have 4 templates in each category
+        if (beginnerTemplates.length !== 4) {
+            throw new Error(`Expected 4 beginner templates, got ${beginnerTemplates.length}`);
         }
         
-        // Full stack should be advanced
-        const fullStack = advancedTemplates.find(t => t.id === 'full-stack');
-        if (!fullStack) {
-            throw new Error('Full stack template should be in advanced category');
+        if (intermediateTemplates.length !== 4) {
+            throw new Error(`Expected 4 intermediate templates, got ${intermediateTemplates.length}`);
         }
         
-        logSuccess(`Category filtering works: ${beginnerTemplates.length} beginner, ${advancedTemplates.length} advanced`);
+        if (advancedTemplates.length !== 4) {
+            throw new Error(`Expected 4 advanced templates, got ${advancedTemplates.length}`);
+        }
+        
+        // kaspa-node should be beginner
+        const kaspaNode = beginnerTemplates.find(t => t.id === 'kaspa-node');
+        if (!kaspaNode) {
+            throw new Error('kaspa-node template should be in beginner category');
+        }
+        
+        // kaspa-sovereignty should be advanced
+        const sovereignty = advancedTemplates.find(t => t.id === 'kaspa-sovereignty');
+        if (!sovereignty) {
+            throw new Error('kaspa-sovereignty template should be in advanced category');
+        }
+        
+        logSuccess(`Category filtering works: ${beginnerTemplates.length} beginner, ${intermediateTemplates.length} intermediate, ${advancedTemplates.length} advanced`);
         testsPassed++;
     } catch (error) {
         logError(`Test 2 failed: ${error.message}`);
@@ -105,24 +121,31 @@ async function runTests() {
     try {
         const personalTemplates = profileManager.getTemplatesByUseCase('personal');
         const productionTemplates = profileManager.getTemplatesByUseCase('production');
+        const miningTemplates = profileManager.getTemplatesByUseCase('mining');
         
         if (!Array.isArray(personalTemplates) || !Array.isArray(productionTemplates)) {
             throw new Error('getTemplatesByUseCase should return arrays');
         }
         
-        // Home node should be personal
-        const homeNode = personalTemplates.find(t => t.id === 'home-node');
-        if (!homeNode) {
-            throw new Error('Home node template should be for personal use case');
+        // kaspa-node should be personal
+        const kaspaNode = personalTemplates.find(t => t.id === 'kaspa-node');
+        if (!kaspaNode) {
+            throw new Error('kaspa-node template should be for personal use case');
         }
         
-        // Full stack should be production
-        const fullStack = productionTemplates.find(t => t.id === 'full-stack');
-        if (!fullStack) {
-            throw new Error('Full stack template should be for production use case');
+        // archival-node should be production
+        const archivalNode = productionTemplates.find(t => t.id === 'archival-node');
+        if (!archivalNode) {
+            throw new Error('archival-node template should be for production use case');
         }
         
-        logSuccess(`Use case filtering works: ${personalTemplates.length} personal, ${productionTemplates.length} production`);
+        // solo-miner should be mining
+        const soloMiner = miningTemplates.find(t => t.id === 'solo-miner');
+        if (!soloMiner) {
+            throw new Error('solo-miner template should be for mining use case');
+        }
+        
+        logSuccess(`Use case filtering works: ${personalTemplates.length} personal, ${productionTemplates.length} production, ${miningTemplates.length} mining`);
         testsPassed++;
     } catch (error) {
         logError(`Test 3 failed: ${error.message}`);
@@ -162,7 +185,7 @@ async function runTests() {
             EXISTING_SETTING: 'value'
         };
         
-        const config = profileManager.applyTemplate('home-node', baseConfig);
+        const config = profileManager.applyTemplate('kaspa-node', baseConfig);
         
         if (typeof config !== 'object') {
             throw new Error('applyTemplate should return an object');
@@ -174,8 +197,8 @@ async function runTests() {
         }
         
         // Should apply template settings
-        if (config.PUBLIC_NODE !== 'false') {
-            throw new Error('Should apply template configuration (PUBLIC_NODE should be false for home-node)');
+        if (config.PUBLIC_NODE !== false) {
+            throw new Error('Should apply template configuration (PUBLIC_NODE should be false for kaspa-node)');
         }
         
         if (config.KASPA_NODE_RPC_PORT !== 16110) {
@@ -192,7 +215,7 @@ async function runTests() {
     // Test 6: Validate template
     logInfo('Test 6: Validate template');
     try {
-        const validation = profileManager.validateTemplate('home-node');
+        const validation = profileManager.validateTemplate('kaspa-node');
         
         if (typeof validation !== 'object') {
             throw new Error('validateTemplate should return an object');
@@ -206,6 +229,15 @@ async function runTests() {
         const invalidValidation = profileManager.validateTemplate('non-existent');
         if (invalidValidation.valid !== false) {
             throw new Error('Invalid template should fail validation');
+        }
+        
+        // Test legacy template validation (should work with deprecation warning)
+        const legacyValidation = profileManager.validateTemplate('home-node');
+        if (legacyValidation.valid !== true) {
+            throw new Error('Legacy template validation should pass');
+        }
+        if (!legacyValidation.warnings || legacyValidation.warnings.length === 0) {
+            throw new Error('Legacy template validation should include deprecation warning');
         }
         
         logSuccess('Template validation works correctly');
@@ -222,7 +254,7 @@ async function runTests() {
             id: 'test-custom',
             name: 'Test Custom Template',
             description: 'A test custom template',
-            profiles: ['core'],
+            profiles: ['kaspa-node'],
             config: {
                 TEST_SETTING: 'test_value'
             },
@@ -309,25 +341,42 @@ async function runTests() {
         testsFailed++;
     }
     
-    // Test 9: Developer mode template
-    logInfo('Test 9: Developer mode template');
+    // Test 9: Legacy template backward compatibility
+    logInfo('Test 9: Legacy template backward compatibility');
     try {
-        const config = profileManager.applyTemplate('developer-setup');
-        
-        // Developer setup template should enable developer mode
-        if (config.LOG_LEVEL !== 'debug') {
-            throw new Error('Developer template should enable debug logging');
+        // Test that legacy template IDs still work via aliases
+        const legacyTemplate = profileManager.getTemplate('home-node');
+        if (!legacyTemplate) {
+            throw new Error('Legacy home-node template should be accessible');
         }
         
-        if (config.ENABLE_PORTAINER !== 'true') {
-            throw new Error('Developer template should enable Portainer');
+        if (legacyTemplate._aliasOf !== 'kaspa-node') {
+            throw new Error('Legacy home-node should alias to kaspa-node');
         }
         
-        if (config.KASPA_NETWORK !== 'testnet') {
-            throw new Error('Developer template should use testnet');
+        // Test migrateTemplateId
+        const migratedId = profileManager.migrateTemplateId('full-node');
+        if (migratedId !== 'kaspa-sovereignty') {
+            throw new Error('full-node should migrate to kaspa-sovereignty');
         }
         
-        logSuccess('Developer mode template configuration works');
+        // Test isLegacyTemplateId
+        if (!profileManager.isLegacyTemplateId('home-node')) {
+            throw new Error('home-node should be identified as legacy');
+        }
+        
+        if (profileManager.isLegacyTemplateId('kaspa-node')) {
+            throw new Error('kaspa-node should NOT be identified as legacy');
+        }
+        
+        // Test that legacy templates are excluded from getAllTemplates
+        const allTemplates = profileManager.getAllTemplates();
+        const hasLegacy = allTemplates.some(t => t._isLegacyAlias);
+        if (hasLegacy) {
+            throw new Error('Legacy aliases should be excluded from getAllTemplates');
+        }
+        
+        logSuccess('Legacy template backward compatibility works');
         testsPassed++;
     } catch (error) {
         logError(`Test 9 failed: ${error.message}`);

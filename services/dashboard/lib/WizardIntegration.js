@@ -489,12 +489,24 @@ class WizardIntegration {
         try {
             const allServices = await this.getServiceStatus();
             
-            // Map services to profiles based on naming patterns and known configurations
+            // Map services to profiles (NEW profile IDs)
             const profileServiceMap = {
-                'core': ['kaspa-node', 'dashboard', 'nginx'],
+                // New profile IDs
+                'kaspa-node': ['kaspa-node'],
+                'kasia-app': ['kasia-app'],
+                'k-social-app': ['k-social'],
+                'kaspa-explorer-bundle': ['kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer'],
+                'kasia-indexer': ['kasia-indexer'],
+                'k-indexer-bundle': ['k-indexer', 'timescaledb-kindexer'],
+                'kaspa-archive-node': ['kaspa-archive-node'],
+                'kaspa-stratum': ['kaspa-stratum'],
+                'management': ['portainer', 'pgadmin'],
+                
+                // Legacy profile IDs (for backward compatibility)
+                'core': ['kaspa-node'],
                 'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],
-                'indexer-services': ['kasia-indexer', 'k-indexer', 'simply-kaspa-indexer', 'indexer-db'],
-                'archive-node': ['archive-indexer', 'archive-db'],
+                'indexer-services': ['kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
+                'archive-node': ['kaspa-archive-node'],
                 'mining': ['kaspa-stratum'],
                 'developer-mode': ['portainer', 'pgadmin']
             };

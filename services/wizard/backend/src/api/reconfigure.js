@@ -963,9 +963,11 @@ function determineAffectedServices(diff, profiles) {
     'KSOCIAL': ['k-social'],
     'K_INDEXER': ['k-indexer'],
     'SIMPLY_KASPA': ['simply-kaspa-indexer'],
-    'POSTGRES': ['timescaledb'],
+    'POSTGRES': ['timescaledb-kindexer', 'timescaledb-explorer'],
     'DASHBOARD': ['dashboard'],
-    'KASPA_STRATUM': ['kaspa-stratum']
+    'KASPA_STRATUM': ['kaspa-stratum'],
+    'STRATUM': ['kaspa-stratum'],
+    'KASPA_EXPLORER': ['kaspa-explorer']
   };
   
   // Check each change
@@ -979,11 +981,22 @@ function determineAffectedServices(diff, profiles) {
   
   // If no specific services detected, assume all services in selected profiles need restart
   if (affectedServices.size === 0) {
-    // Add all services from profiles
+    // Add all services from profiles (NEW profile IDs)
     const profileServiceMap = {
-      'core': ['kaspa-node', 'dashboard'],
-      'kaspa-user-applications': ['kasia-app', 'k-social'],
-      'indexer-services': ['kasia-indexer', 'k-indexer', 'simply-kaspa-indexer', 'k-social-db', 'simply-kaspa-db'],
+      // New profile IDs
+      'kaspa-node': ['kaspa-node'],
+      'kasia-app': ['kasia-app'],
+      'k-social-app': ['k-social'],
+      'kaspa-explorer-bundle': ['kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer'],
+      'kasia-indexer': ['kasia-indexer'],
+      'k-indexer-bundle': ['k-indexer', 'timescaledb-kindexer'],
+      'kaspa-archive-node': ['kaspa-archive-node'],
+      'kaspa-stratum': ['kaspa-stratum'],
+      
+      // Legacy profile IDs (for backward compatibility)
+      'core': ['kaspa-node'],
+      'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],
+      'indexer-services': ['kasia-indexer', 'k-indexer', 'simply-kaspa-indexer', 'timescaledb-kindexer', 'timescaledb-explorer'],
       'archive-node': ['kaspa-archive-node'],
       'mining': ['kaspa-stratum']
     };

@@ -530,22 +530,60 @@ class ProfileAddition {
 
   /**
    * Get which profile a configuration key belongs to
+   * @param {string} key - Configuration key
+   * @param {string[]} profiles - Active profiles
+   * @returns {string} Profile ID
    */
   getProfileForConfigKey(key, profiles) {
     const keyMappings = {
-      'KASPA_NODE_': ['core', 'archive-node'],
-      'KASIA_': ['kaspa-user-applications', 'indexer-services'],
-      'KSOCIAL_': ['kaspa-user-applications'],
-      'K_INDEXER_': ['indexer-services'],
-      'SIMPLY_KASPA_': ['indexer-services'],
-      'POSTGRES_': ['indexer-services'],
-      'TIMESCALEDB_': ['indexer-services'],
-      'STRATUM_': ['mining'],
-      'MINING_': ['mining']
+      // Node-related keys
+      'KASPA_NODE_': ['kaspa-node', 'kaspa-archive-node'],
+      'KASPA_NETWORK': ['kaspa-node', 'kaspa-archive-node'],
+      'PUBLIC_NODE': ['kaspa-node', 'kaspa-archive-node'],
+      'WALLET_': ['kaspa-node'],
+      'UTXO_INDEX': ['kaspa-node', 'kaspa-archive-node'],
+      'ARCHIVE_': ['kaspa-archive-node'],
+      
+      // Kasia-related keys
+      'KASIA_APP_': ['kasia-app'],
+      'KASIA_INDEXER_MODE': ['kasia-app'],
+      'REMOTE_KASIA_': ['kasia-app'],
+      'KASIA_INDEXER_PORT': ['kasia-indexer'],
+      'KASIA_NODE_': ['kasia-indexer'],
+      
+      // K-Social related keys
+      'KSOCIAL_': ['k-social-app'],
+      'REMOTE_KSOCIAL_': ['k-social-app'],
+      
+      // Explorer bundle keys
+      'KASPA_EXPLORER_': ['kaspa-explorer-bundle'],
+      'SIMPLY_KASPA_': ['kaspa-explorer-bundle'],
+      'POSTGRES_USER_EXPLORER': ['kaspa-explorer-bundle'],
+      'POSTGRES_PASSWORD_EXPLORER': ['kaspa-explorer-bundle'],
+      'TIMESCALEDB_EXPLORER_': ['kaspa-explorer-bundle'],
+      
+      // K-Indexer bundle keys
+      'K_INDEXER_': ['k-indexer-bundle'],
+      'POSTGRES_USER_KINDEXER': ['k-indexer-bundle'],
+      'POSTGRES_PASSWORD_KINDEXER': ['k-indexer-bundle'],
+      'TIMESCALEDB_KINDEXER_': ['k-indexer-bundle'],
+      
+      // Mining keys
+      'STRATUM_': ['kaspa-stratum'],
+      'MINING_': ['kaspa-stratum'],
+      'VAR_DIFF': ['kaspa-stratum'],
+      'POOL_MODE': ['kaspa-stratum'],
+      'SHARES_PER_MIN': ['kaspa-stratum'],
+      
+      // Legacy mappings (for backward compat)
+      'POSTGRES_USER': ['k-indexer-bundle', 'kaspa-explorer-bundle'],
+      'POSTGRES_PASSWORD': ['k-indexer-bundle', 'kaspa-explorer-bundle'],
+      'TIMESCALEDB_PORT': ['k-indexer-bundle', 'kaspa-explorer-bundle'],
+      'TIMESCALEDB_DATA_DIR': ['k-indexer-bundle', 'kaspa-explorer-bundle']
     };
     
     for (const [prefix, profileIds] of Object.entries(keyMappings)) {
-      if (key.startsWith(prefix)) {
+      if (key.startsWith(prefix) || key === prefix) {
         return profileIds.find(p => profiles.includes(p)) || profileIds[0];
       }
     }

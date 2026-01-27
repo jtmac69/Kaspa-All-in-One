@@ -159,9 +159,80 @@ class ProfileRemoval {
 
   /**
    * Get profile-specific configuration keys for removal
+   * @param {string} profileId - Profile ID (supports legacy IDs)
+   * @returns {string[]} Array of config keys
    */
   getProfileSpecificConfigKeys(profileId) {
     const keyMappings = {
+      // New profile IDs
+      'kaspa-node': [
+        'KASPA_NODE_RPC_PORT',
+        'KASPA_NODE_P2P_PORT',
+        'KASPA_NODE_WRPC_PORT',
+        'KASPA_NETWORK',
+        'KASPA_DATA_DIR',
+        'PUBLIC_NODE',
+        'WALLET_ENABLED',
+        'WALLET_MODE',
+        'UTXO_INDEX'
+      ],
+      'kasia-app': [
+        'KASIA_APP_PORT',
+        'KASIA_INDEXER_MODE',
+        'KASIA_INDEXER_URL',
+        'REMOTE_KASIA_INDEXER_URL'
+      ],
+      'k-social-app': [
+        'KSOCIAL_APP_PORT',
+        'KSOCIAL_INDEXER_MODE',
+        'KSOCIAL_INDEXER_URL',
+        'REMOTE_KSOCIAL_INDEXER_URL',
+        'KSOCIAL_NODE_MODE'
+      ],
+      'kaspa-explorer-bundle': [
+        'KASPA_EXPLORER_PORT',
+        'SIMPLY_KASPA_INDEXER_PORT',
+        'SIMPLY_KASPA_NODE_MODE',
+        'TIMESCALEDB_EXPLORER_PORT',
+        'POSTGRES_USER_EXPLORER',
+        'POSTGRES_PASSWORD_EXPLORER',
+        'POSTGRES_DB_EXPLORER'
+      ],
+      'kasia-indexer': [
+        'KASIA_INDEXER_PORT',
+        'KASIA_NODE_MODE',
+        'KASIA_NODE_WRPC_URL'
+      ],
+      'k-indexer-bundle': [
+        'K_INDEXER_PORT',
+        'K_INDEXER_NODE_MODE',
+        'K_INDEXER_NODE_WRPC_URL',
+        'TIMESCALEDB_KINDEXER_PORT',
+        'POSTGRES_USER_KINDEXER',
+        'POSTGRES_PASSWORD_KINDEXER',
+        'POSTGRES_DB_KINDEXER'
+      ],
+      'kaspa-archive-node': [
+        'KASPA_NODE_RPC_PORT',
+        'KASPA_NODE_P2P_PORT',
+        'KASPA_NODE_WRPC_PORT',
+        'KASPA_ARCHIVE_DATA_DIR',
+        'ARCHIVE_MODE',
+        'PUBLIC_NODE',
+        'EXTERNAL_IP'
+      ],
+      'kaspa-stratum': [
+        'STRATUM_PORT',
+        'MINING_ADDRESS',
+        'VAR_DIFF',
+        'MIN_SHARE_DIFF',
+        'SHARES_PER_MIN',
+        'POOL_MODE',
+        'EXTRA_NONCE_SIZE',
+        'BLOCK_WAIT_TIME'
+      ],
+      
+      // Legacy profile IDs (for backward compatibility)
       'core': [
         'KASPA_NODE_RPC_PORT',
         'KASPA_NODE_P2P_PORT',
@@ -173,31 +244,30 @@ class ProfileRemoval {
       'kaspa-user-applications': [
         'KASIA_APP_PORT',
         'KSOCIAL_APP_PORT',
-        'EXPLORER_PORT',
+        'KASPA_EXPLORER_PORT',
         'KASIA_INDEXER_URL',
         'K_INDEXER_URL',
         'SIMPLY_KASPA_INDEXER_URL',
-        'USE_LOCAL_INDEXERS'
+        'USE_LOCAL_INDEXERS',
+        'INDEXER_CONNECTION_MODE'
       ],
       'indexer-services': [
         'POSTGRES_USER',
         'POSTGRES_PASSWORD',
         'TIMESCALEDB_PORT',
         'TIMESCALEDB_DATA_DIR',
-        'KASIA_INDEXER_NODE',
-        'K_INDEXER_NODE',
-        'SIMPLY_KASPA_INDEXER_NODE'
+        'KASIA_INDEXER_PORT',
+        'K_INDEXER_PORT',
+        'SIMPLY_KASPA_INDEXER_PORT'
       ],
       'archive-node': [
         'KASPA_ARCHIVE_DATA_DIR',
-        'ARCHIVE_NODE_RPC_PORT',
-        'ARCHIVE_NODE_P2P_PORT'
+        'ARCHIVE_MODE'
       ],
       'mining': [
         'STRATUM_PORT',
         'MINING_ADDRESS',
-        'POOL_MODE',
-        'MINING_NODE_TYPE'
+        'POOL_MODE'
       ]
     };
     
@@ -253,48 +323,137 @@ class ProfileRemoval {
   }
 
   /**
-   * Get data types associated with a profile
+   * Get data types associated with a profile (for removal options)
+   * @param {string} profileId - Profile ID
+   * @returns {Object[]} Array of data type descriptions
    */
   getProfileDataTypes(profileId) {
     const dataTypeMappings = {
+      // New profile IDs
+      'kaspa-node': [
+        {
+          type: 'blockchain',
+          name: 'Blockchain Data',
+          description: 'Kaspa blockchain data (pruned)',
+          estimatedSize: '50-150GB',
+          critical: true
+        }
+      ],
+      'kasia-app': [
+        {
+          type: 'app-data',
+          name: 'Application Data',
+          description: 'Kasia app local storage',
+          estimatedSize: '< 100MB',
+          critical: false
+        }
+      ],
+      'k-social-app': [
+        {
+          type: 'app-data',
+          name: 'Application Data',
+          description: 'K-Social app local storage',
+          estimatedSize: '< 100MB',
+          critical: false
+        }
+      ],
+      'kaspa-explorer-bundle': [
+        {
+          type: 'database',
+          name: 'Explorer Database',
+          description: 'Simply-Kaspa indexer TimescaleDB data',
+          estimatedSize: '100-500GB',
+          critical: true
+        },
+        {
+          type: 'indexer',
+          name: 'Indexer Cache',
+          description: 'Simply-Kaspa indexer cache files',
+          estimatedSize: '1-10GB',
+          critical: false
+        }
+      ],
+      'kasia-indexer': [
+        {
+          type: 'indexer',
+          name: 'Kasia Indexer Data',
+          description: 'Kasia indexer embedded database',
+          estimatedSize: '50-200GB',
+          critical: true
+        }
+      ],
+      'k-indexer-bundle': [
+        {
+          type: 'database',
+          name: 'K-Indexer Database',
+          description: 'K-Indexer TimescaleDB data',
+          estimatedSize: '100-500GB',
+          critical: true
+        }
+      ],
+      'kaspa-archive-node': [
+        {
+          type: 'blockchain',
+          name: 'Archive Blockchain Data',
+          description: 'Complete non-pruned blockchain history',
+          estimatedSize: '500GB-5TB',
+          critical: true
+        }
+      ],
+      'kaspa-stratum': [
+        {
+          type: 'config',
+          name: 'Mining Configuration',
+          description: 'Mining configuration and statistics',
+          estimatedSize: '< 10MB',
+          critical: false
+        }
+      ],
+      
+      // Legacy profile IDs
       'core': [
         {
-          type: 'blockchain-data',
-          location: '/data/kaspa',
-          description: 'Kaspa blockchain data and wallet files',
-          estimatedSize: '50-200GB'
+          type: 'blockchain',
+          name: 'Blockchain Data',
+          description: 'Kaspa blockchain data',
+          estimatedSize: '50-150GB',
+          critical: true
         }
       ],
       'kaspa-user-applications': [
         {
           type: 'app-data',
-          location: '/data/apps',
-          description: 'Application configuration and user data',
-          estimatedSize: '1-10MB'
+          name: 'Application Data',
+          description: 'User application local storage',
+          estimatedSize: '< 1GB',
+          critical: false
         }
       ],
       'indexer-services': [
         {
-          type: 'database-data',
-          location: '/data/timescaledb',
-          description: 'TimescaleDB database with indexed blockchain data',
-          estimatedSize: '10-100GB'
+          type: 'database',
+          name: 'Indexer Databases',
+          description: 'TimescaleDB data for all indexers',
+          estimatedSize: '100-500GB',
+          critical: true
         }
       ],
       'archive-node': [
         {
-          type: 'blockchain-data',
-          location: '/data/kaspa-archive',
-          description: 'Complete Kaspa blockchain archive data',
-          estimatedSize: '500GB-2TB'
+          type: 'blockchain',
+          name: 'Archive Data',
+          description: 'Complete blockchain history',
+          estimatedSize: '500GB-5TB',
+          critical: true
         }
       ],
       'mining': [
         {
-          type: 'mining-data',
-          location: '/data/mining',
-          description: 'Mining configuration and statistics',
-          estimatedSize: '1-10MB'
+          type: 'config',
+          name: 'Mining Data',
+          description: 'Mining configuration',
+          estimatedSize: '< 10MB',
+          critical: false
         }
       ]
     };

@@ -5,6 +5,17 @@ const axios = require('axios');
 const execAsync = promisify(exec);
 
 class ServiceMonitor {
+    /**
+     * Profile ID migration for backward compatibility
+     */
+    static PROFILE_MIGRATION = {
+        'core': 'kaspa-node',
+        'kaspa-user-applications': ['kasia-app', 'k-social-app', 'kaspa-explorer-bundle'],
+        'indexer-services': ['kasia-indexer', 'k-indexer-bundle'],
+        'archive-node': 'kaspa-archive-node',
+        'mining': 'kaspa-stratum'
+    };
+
     constructor() {
         this.checkInterval = 5000; // 5 seconds
         this.retryAttempts = 3;
@@ -14,144 +25,161 @@ class ServiceMonitor {
         this.dependencyGraph = this.buildDependencyGraph();
     }
 
+    /**
+     * Get services by profile (handles legacy profile IDs)
+     */
+    getServicesByProfile(profileId) {
+        // Handle legacy profile IDs
+        const migration = ServiceMonitor.PROFILE_MIGRATION[profileId];
+        if (migration) {
+            const profileIds = Array.isArray(migration) ? migration : [migration];
+            return this.serviceDefinitions.filter(s => profileIds.includes(s.profile));
+        }
+        
+        return this.serviceDefinitions.filter(s => s.profile === profileId);
+    }
+
     getServiceDefinitions() {
         return [
+            // Kaspa Node
             { 
                 name: 'kaspa-node', 
                 displayName: 'Kaspa Node', 
-                url: 'http://localhost:16111', 
-                type: 'rpc', 
-                profile: 'core',
+                url: 'http://kaspa-node:16110', 
+                type: 'grpc', 
+                profile: 'kaspa-node',  // Changed from 'core'
                 dependencies: [],
                 healthCheckPath: null,
                 critical: true
             },
+            
+            // Kaspa Archive Node
             { 
-                name: 'dashboard', 
-                displayName: 'Dashboard', 
-                url: 'http://localhost:8080', 
-                type: 'http', 
-                profile: 'core',
-                dependencies: ['kaspa-node'],
-                healthCheckPath: '/health',
-                critical: true
-            },
-            { 
-                name: 'nginx', 
-                displayName: 'Nginx', 
-                url: 'http://nginx:80', 
-                type: 'http', 
-                profile: 'core',
-                dependencies: ['dashboard'],
-                healthCheckPath: '/health',
-                critical: true
-            },
-            { 
-                name: 'indexer-db', 
-                displayName: 'Indexer DB', 
-                url: 'postgresql://indexer-db:5432', 
-                type: 'postgres', 
-                profile: 'indexer-services',
+                name: 'kaspa-archive-node', 
+                displayName: 'Kaspa Archive Node', 
+                url: 'http://kaspa-archive-node:16110', 
+                type: 'grpc', 
+                profile: 'kaspa-archive-node',  // Changed from 'archive-node'
                 dependencies: [],
                 healthCheckPath: null,
-                critical: false
+                critical: true
             },
-            { 
-                name: 'k-indexer', 
-                displayName: 'K Indexer', 
-                url: 'http://k-indexer:8080', 
-                type: 'http', 
-                profile: 'indexer-services',
-                dependencies: ['kaspa-node', 'indexer-db'],
-                healthCheckPath: '/health',
-                critical: false
-            },
-            { 
-                name: 'simply-kaspa-indexer', 
-                displayName: 'Simply Kaspa Indexer', 
-                url: 'http://simply-kaspa-indexer:3000', 
-                type: 'http', 
-                profile: 'indexer-services',
-                dependencies: ['kaspa-node', 'indexer-db'],
-                healthCheckPath: '/health',
-                critical: false
-            },
-            { 
-                name: 'kasia-indexer', 
-                displayName: 'Kasia Indexer', 
-                url: 'http://kasia-indexer:8080', 
-                type: 'http', 
-                profile: 'kaspa-user-applications',
-                dependencies: ['kaspa-node'],
-                healthCheckPath: '/health',
-                critical: false
-            },
+            
+            // Kasia App
             { 
                 name: 'kasia-app', 
                 displayName: 'Kasia App', 
                 url: 'http://kasia-app:3000', 
                 type: 'http', 
-                profile: 'kaspa-user-applications',
-                dependencies: ['kasia-indexer'],
+                profile: 'kasia-app',  // Changed from 'kaspa-user-applications'
+                dependencies: [],
                 healthCheckPath: '/health',
                 critical: false
             },
+            
+            // K-Social App (container name is 'k-social')
             { 
                 name: 'k-social', 
-                displayName: 'K Social', 
+                displayName: 'K-Social', 
                 url: 'http://k-social:3000', 
                 type: 'http', 
-                profile: 'kaspa-user-applications',
-                dependencies: ['k-indexer'],
+                profile: 'k-social-app',  // Changed from 'kaspa-user-applications'
+                dependencies: [],
                 healthCheckPath: '/health',
                 critical: false
             },
+            
+            // Kaspa Explorer (part of kaspa-explorer-bundle)
             { 
                 name: 'kaspa-explorer', 
                 displayName: 'Kaspa Explorer', 
-                url: 'http://kaspa-explorer:3000', 
+                url: 'http://kaspa-explorer:80', 
                 type: 'http', 
-                profile: 'kaspa-user-applications',
-                dependencies: ['kaspa-node'],
+                profile: 'kaspa-explorer-bundle',  // Changed from 'kaspa-user-applications'
+                dependencies: ['simply-kaspa-indexer'],
                 healthCheckPath: '/health',
                 critical: false
             },
+            
+            // Simply-Kaspa Indexer (part of kaspa-explorer-bundle)
             { 
-                name: 'kaspa-stratum', 
-                displayName: 'Kaspa Stratum', 
-                url: 'http://kaspa-stratum:5555', 
-                type: 'tcp', 
-                profile: 'mining',
-                dependencies: ['kaspa-node'],
-                healthCheckPath: null,
+                name: 'simply-kaspa-indexer', 
+                displayName: 'Simply Kaspa Indexer', 
+                url: 'http://simply-kaspa-indexer:3000', 
+                type: 'http', 
+                profile: 'kaspa-explorer-bundle',  // Changed from 'indexer-services'
+                dependencies: ['timescaledb-explorer'],
+                healthCheckPath: '/health',
                 critical: false
             },
+            
+            // TimescaleDB for Explorer (part of kaspa-explorer-bundle)
             { 
-                name: 'archive-db', 
-                displayName: 'Archive DB', 
-                url: 'postgresql://archive-db:5432', 
+                name: 'timescaledb-explorer', 
+                displayName: 'TimescaleDB (Explorer)', 
+                url: 'postgresql://timescaledb-explorer:5432', 
                 type: 'postgres', 
-                profile: 'archive-node',
+                profile: 'kaspa-explorer-bundle',
                 dependencies: [],
                 healthCheckPath: null,
                 critical: false
             },
+            
+            // Kasia Indexer
             { 
-                name: 'archive-indexer', 
-                displayName: 'Archive Indexer', 
-                url: 'http://archive-indexer:3000', 
+                name: 'kasia-indexer', 
+                displayName: 'Kasia Indexer', 
+                url: 'http://kasia-indexer:8080', 
                 type: 'http', 
-                profile: 'archive-node',
-                dependencies: ['kaspa-node', 'archive-db'],
+                profile: 'kasia-indexer',  // Changed from 'kaspa-user-applications'
+                dependencies: [],
                 healthCheckPath: '/health',
                 critical: false
             },
+            
+            // K-Indexer (part of k-indexer-bundle)
+            { 
+                name: 'k-indexer', 
+                displayName: 'K-Indexer', 
+                url: 'http://k-indexer:8080', 
+                type: 'http', 
+                profile: 'k-indexer-bundle',  // Changed from 'indexer-services'
+                dependencies: ['timescaledb-kindexer'],
+                healthCheckPath: '/health',
+                critical: false
+            },
+            
+            // TimescaleDB for K-Indexer (part of k-indexer-bundle)
+            { 
+                name: 'timescaledb-kindexer', 
+                displayName: 'TimescaleDB (K-Indexer)', 
+                url: 'postgresql://timescaledb-kindexer:5432', 
+                type: 'postgres', 
+                profile: 'k-indexer-bundle',
+                dependencies: [],
+                healthCheckPath: null,
+                critical: false
+            },
+            
+            // Kaspa Stratum
+            { 
+                name: 'kaspa-stratum', 
+                displayName: 'Kaspa Stratum', 
+                url: 'http://kaspa-stratum:5555', 
+                type: 'stratum', 
+                profile: 'kaspa-stratum',  // Changed from 'mining'
+                dependencies: ['kaspa-node'],
+                healthCheckPath: null,
+                critical: false
+            },
+            
+            // Management Tools
             { 
                 name: 'portainer', 
                 displayName: 'Portainer', 
                 url: 'http://portainer:9000', 
                 type: 'http', 
-                profile: 'developer-mode',
+                profile: 'management',
                 dependencies: [],
                 healthCheckPath: '/api/status',
                 critical: false
@@ -161,8 +189,8 @@ class ServiceMonitor {
                 displayName: 'pgAdmin', 
                 url: 'http://pgadmin:80', 
                 type: 'http', 
-                profile: 'developer-mode',
-                dependencies: ['indexer-db'],
+                profile: 'management',
+                dependencies: [],
                 healthCheckPath: '/misc/ping',
                 critical: false
             }
