@@ -14,10 +14,14 @@
  * 
  * Total: ~1600 lines split into 6 focused files (was 1932 lines in 1 file)
  * Context reduction: ~17% smaller + much more targeted reading
+ * 
+ * IMPORTANT: This now exports EnhancedProfileManager which includes all
+ * functionality including removal methods (getProfileDataTypes, 
+ * getProfileSpecificConfigKeys, getPreservedDataInfo).
  */
 
-// Use the basic ProfileManager directly to avoid circular references
-const ProfileManager = require('./profile/ProfileManager');
+// Export EnhancedProfileManager which combines all profile management functionality
+// This provides backward compatibility with code that expects removal methods
+const EnhancedProfileManager = require('./profile/index');
 
-// Export the basic profile manager for backward compatibility
-module.exports = ProfileManager;
+module.exports = EnhancedProfileManager;

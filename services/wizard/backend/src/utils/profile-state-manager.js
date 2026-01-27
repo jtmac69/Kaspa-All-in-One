@@ -7,6 +7,36 @@ const { promisify } = require('util');
 const execAsync = promisify(exec);
 
 /**
+ * Legacy profile ID migration mapping
+ */
+const LEGACY_PROFILE_MIGRATION = {
+  'core': 'kaspa-node',
+  'kaspa-user-applications': ['kasia-app', 'k-social-app'],
+  'indexer-services': ['kasia-indexer', 'k-indexer-bundle', 'kaspa-explorer-bundle'],
+  'archive-node': 'kaspa-archive-node',
+  'mining': 'kaspa-stratum'
+};
+
+/**
+ * Legacy profile IDs
+ */
+const LEGACY_PROFILE_IDS = ['core', 'kaspa-user-applications', 'indexer-services', 'archive-node', 'mining'];
+
+/**
+ * New profile IDs
+ */
+const NEW_PROFILE_IDS = [
+  'kaspa-node',
+  'kasia-app',
+  'k-social-app',
+  'kaspa-explorer-bundle',
+  'kasia-indexer',
+  'k-indexer-bundle',
+  'kaspa-archive-node',
+  'kaspa-stratum'
+];
+
+/**
  * ProfileStateManager - Detects and manages profile installation state (Singleton)
  * 
  * This class provides comprehensive profile state detection by:
@@ -703,26 +733,80 @@ class ProfileStateManager {
 
   /**
    * Get profile state for a specific profile
+   * @param {string} profileId - Profile ID (supports legacy IDs)
+   * @returns {Promise<Object>} Profile state result
    */
   async getProfileState(profileId) {
-    const states = await this.getProfileStates();
-    if (!states.success) {
-      return states;
-    }
-    
-    const profile = states.profiles.find(p => p.id === profileId);
-    if (!profile) {
+    try {
+      // Migrate legacy profile ID if necessary
+      const migratedId = this.migrateToSingleProfileId(profileId);
+      const isLegacy = this.isLegacyProfileId(profileId);
+      
+      // Try to get from cache first
+      if (this.stateCache.profiles) {
+        const cachedProfile = this.stateCache.profiles.find(p => p.id === migratedId);
+        if (cachedProfile) {
+          return {
+            success: true,
+            profile: cachedProfile,
+            fromCache: true,
+            legacyIdUsed: isLegacy ? profileId : null,
+            migratedTo: isLegacy ? migratedId : null,
+            lastUpdated: this.stateCache.lastUpdated
+          };
+        }
+      }
+      
+      // Check if profile exists in definitions
+      const profileDef = this.profileDefinitions[migratedId];
+      if (!profileDef) {
+        return {
+          success: false,
+          error: `Profile '${profileId}' not found`,
+          suggestion: isLegacy 
+            ? `Legacy profile ID '${profileId}' is no longer valid. Use '${migratedId}' instead.`
+            : `Valid profiles are: ${Object.keys(this.profileDefinitions).join(', ')}`
+        };
+      }
+      
+      // Refresh and try again
+      await this.refreshProfileStates();
+      
+      const profile = this.stateCache.profiles?.find(p => p.id === migratedId);
+      if (profile) {
+        return {
+          success: true,
+          profile,
+          fromCache: false,
+          legacyIdUsed: isLegacy ? profileId : null,
+          migratedTo: isLegacy ? migratedId : null,
+          lastUpdated: this.stateCache.lastUpdated
+        };
+      }
+      
+      // Return default state for profile
+      return {
+        success: true,
+        profile: {
+          id: migratedId,
+          ...profileDef,
+          installationState: 'not-installed',
+          status: 'unknown',
+          services: []
+        },
+        fromCache: false,
+        legacyIdUsed: isLegacy ? profileId : null,
+        migratedTo: isLegacy ? migratedId : null,
+        lastUpdated: this.stateCache.lastUpdated
+      };
+      
+    } catch (error) {
+      console.error(`Error getting profile state for '${profileId}':`, error);
       return {
         success: false,
-        error: `Profile not found: ${profileId}`
+        error: error.message
       };
     }
-    
-    return {
-      success: true,
-      profile,
-      lastUpdated: states.lastUpdated
-    };
   }
 
   /**
@@ -771,6 +855,41 @@ class ProfileStateManager {
       refreshInterval: this.stateCache.refreshInterval,
       isRefreshing: this.stateCache.isRefreshing
     };
+  }
+
+  /**
+   * Check if a profile ID is a legacy (old) profile ID
+   * @param {string} profileId - Profile ID to check
+   * @returns {boolean} True if legacy
+   */
+  isLegacyProfileId(profileId) {
+    return LEGACY_PROFILE_IDS.includes(profileId);
+  }
+
+  /**
+   * Migrate legacy profile ID to new profile ID(s)
+   * @param {string} profileId - Profile ID (may be legacy)
+   * @returns {string|string[]} New profile ID(s)
+   */
+  migrateProfileIdToNew(profileId) {
+    if (NEW_PROFILE_IDS.includes(profileId)) {
+      return profileId;
+    }
+    if (LEGACY_PROFILE_MIGRATION[profileId]) {
+      console.warn(`Legacy profile ID '${profileId}' accessed. Please update to new profile ID(s).`);
+      return LEGACY_PROFILE_MIGRATION[profileId];
+    }
+    return profileId;
+  }
+
+  /**
+   * Get the first migrated profile ID (for single-profile lookups)
+   * @param {string} profileId - Profile ID (may be legacy)
+   * @returns {string} Single new profile ID
+   */
+  migrateToSingleProfileId(profileId) {
+    const migrated = this.migrateProfileIdToNew(profileId);
+    return Array.isArray(migrated) ? migrated[0] : migrated;
   }
 
   /**
