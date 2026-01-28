@@ -576,28 +576,54 @@ export class UIManager {
 
     /**
      * Get service profile for display
+     * Returns NEW profile IDs for proper badge display and grouping
+     * @param {string} serviceName - Docker service/container name
+     * @returns {string} Profile ID (new format)
      */
     getServiceProfile(serviceName) {
         const serviceToProfile = {
-            'kaspa-node': 'core',
-            'dashboard': 'core',
-            'wallet': 'core',
-            'kaspa-archive-node': 'archive-node',
-            'timescaledb': 'indexer-services',
-            'indexer-db': 'indexer-services',
-            'k-indexer': 'indexer-services',
-            'kasia-indexer': 'indexer-services',
-            'simply-kaspa-indexer': 'indexer-services',
-            'archive-indexer': 'indexer-services',
-            'kasia-app': 'kaspa-user-applications',
-            'k-social': 'kaspa-user-applications',
-            'kaspa-explorer': 'kaspa-user-applications',
-            'kaspa-nginx': 'kaspa-user-applications',
-            'kaspa-stratum': 'mining',
+            // Kaspa Node Profile
+            'kaspa-node': 'kaspa-node',
+            
+            // Kaspa Archive Node Profile
+            'kaspa-archive-node': 'kaspa-archive-node',
+            
+            // Kasia App Profile
+            'kasia-app': 'kasia-app',
+            
+            // K-Social App Profile (container name is 'k-social')
+            'k-social': 'k-social-app',
+            
+            // Kaspa Explorer Bundle Profile
+            'kaspa-explorer': 'kaspa-explorer-bundle',
+            'simply-kaspa-indexer': 'kaspa-explorer-bundle',
+            'timescaledb-explorer': 'kaspa-explorer-bundle',
+            
+            // Kasia Indexer Profile
+            'kasia-indexer': 'kasia-indexer',
+            
+            // K-Indexer Bundle Profile
+            'k-indexer': 'k-indexer-bundle',
+            'timescaledb-kindexer': 'k-indexer-bundle',
+            
+            // Kaspa Stratum (Mining) Profile
+            'kaspa-stratum': 'kaspa-stratum',
+            
+            // Management Tools (not a user-selectable profile)
             'portainer': 'management',
-            'pgadmin': 'management'
+            'pgadmin': 'management',
+            
+            // Legacy service names (for backward compatibility with old installations)
+            'dashboard': 'kaspa-node',        // Legacy: was part of 'core'
+            'wallet': 'kaspa-node',           // Legacy: was part of 'core'
+            'kaspa-nginx': 'kaspa-explorer-bundle',  // Legacy: nginx proxy
+            'timescaledb': 'k-indexer-bundle',       // Legacy: generic timescaledb
+            'indexer-db': 'k-indexer-bundle',        // Legacy: indexer database
+            'k-social-db': 'k-indexer-bundle',       // Legacy: k-social database
+            'archive-indexer': 'kaspa-archive-node'  // Legacy: archive indexer
         };
-        return serviceToProfile[serviceName];
+        
+        return serviceToProfile[serviceName] || 'other';
     }
 
     /**
