@@ -3390,6 +3390,106 @@ nhanced header controls */
 }
 
 /* ============================================================================
+   Profile Badge Classes - New Profile IDs (8 profiles)
+   ============================================================================ */
+
+/* New Profile ID Classes */
+.profile-badge.profile-node,
+.profile-node {
+    background: rgba(112, 199, 186, 0.15);
+    color: #49C8B5;
+    border-color: rgba(112, 199, 186, 0.3);
+}
+
+.profile-badge.profile-app,
+.profile-app {
+    background: rgba(112, 199, 186, 0.15);
+    color: #4a9e8f;
+    border-color: rgba(112, 199, 186, 0.3);
+}
+
+.profile-badge.profile-explorer,
+.profile-explorer {
+    background: rgba(123, 97, 255, 0.15);
+    color: #7b61ff;
+    border-color: rgba(123, 97, 255, 0.3);
+}
+
+.profile-badge.profile-indexer,
+.profile-indexer {
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.profile-badge.profile-archive,
+.profile-archive {
+    background: rgba(245, 166, 35, 0.15);
+    color: #dd6b20;
+    border-color: rgba(245, 166, 35, 0.3);
+}
+
+.profile-badge.profile-stratum,
+.profile-stratum {
+    background: rgba(239, 68, 68, 0.15);
+    color: #dc2626;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.profile-badge.profile-management,
+.profile-management {
+    background: rgba(102, 126, 234, 0.15);
+    color: #5a67d8;
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+/* ============================================================================
+   Service Group Header Classes (for grouped view)
+   ============================================================================ */
+
+.group-node {
+    border-left: 4px solid #70c7ba;
+}
+
+.group-app {
+    border-left: 4px solid #70c7ba;
+}
+
+.group-explorer {
+    border-left: 4px solid #7b61ff;
+}
+
+.group-indexer {
+    border-left: 4px solid #8b5cf6;
+}
+
+.group-archive {
+    border-left: 4px solid #f59e0b;
+}
+
+.group-mining,
+.group-stratum {
+    border-left: 4px solid #ef4444;
+}
+
+.group-management {
+    border-left: 4px solid #6b7280;
+}
+
+/* Legacy group classes */
+.group-core {
+    border-left: 4px solid #70c7ba;
+}
+
+.group-applications {
+    border-left: 4px solid #70c7ba;
+}
+
+.group-other {
+    border-left: 4px solid #9ca3af;
+}
+
+/* ============================================================================
    Service Grouping Styles - Task 9.2
    ============================================================================ */
 
@@ -3478,19 +3578,32 @@ nhanced header controls */
     background: linear-gradient(135deg, #70C7BA 0%, #49C8B5 100%);
 }
 
+.group-badge.profile-node {
+    background: linear-gradient(135deg, #70C7BA 0%, #49C8B5 100%);
+}
+
+.group-badge.profile-app {
+    background: linear-gradient(135deg, #70C7BA 0%, #4a9e8f 100%);
+}
+
 .group-badge.profile-archive {
     background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
 }
 
 .group-badge.profile-indexer {
-    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+}
+
+.group-badge.profile-explorer {
+    background: linear-gradient(135deg, #7b61ff 0%, #5a4a9e 100%);
 }
 
 .group-badge.profile-applications {
     background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
 }
 
-.group-badge.profile-mining {
+.group-badge.profile-mining,
+.group-badge.profile-stratum {
     background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
 }
 

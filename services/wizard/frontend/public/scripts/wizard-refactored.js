@@ -635,6 +635,7 @@ function updateInstallationStatus(type, text) {
 
 /**
  * Update profile status overview
+ * @param {Array} profileStates - Array of profile state objects
  */
 function updateProfileStatusOverview(profileStates) {
     const grid = document.getElementById('profile-status-grid');
@@ -648,14 +649,16 @@ function updateProfileStatusOverview(profileStates) {
         
         const statusIcon = getProfileStatusIcon(profile);
         const statusBadge = getProfileStatusBadge(profile);
+        const displayName = getProfileDisplayName(profile.id);
+        const badgeClass = getProfileBadgeClass(profile.id);
         
         card.innerHTML = `
             <div class="profile-status-icon">${statusIcon}</div>
             <div class="profile-status-content">
-                <div class="profile-status-name">${profile.name}</div>
-                <div class="profile-status-description">${profile.description}</div>
+                <div class="profile-status-name">${displayName}</div>
+                <div class="profile-status-description">${profile.description || ''}</div>
             </div>
-            <div class="profile-status-badge ${profile.installationState}">
+            <div class="profile-status-badge ${profile.installationState} ${badgeClass}">
                 ${statusBadge}
             </div>
         `;
@@ -665,33 +668,111 @@ function updateProfileStatusOverview(profileStates) {
 }
 
 /**
+ * Profile display configuration
+ * Supports both new and legacy profile IDs
+ */
+const PROFILE_DISPLAY_CONFIG = {
+    // New profile IDs
+    'kaspa-node': { icon: '🖥️', name: 'Kaspa Node', category: 'node' },
+    'kasia-app': { icon: '💬', name: 'Kasia', category: 'app' },
+    'k-social-app': { icon: '👥', name: 'K-Social', category: 'app' },
+    'kaspa-explorer-bundle': { icon: '🔍', name: 'Explorer', category: 'indexer' },
+    'kasia-indexer': { icon: '📊', name: 'Kasia Indexer', category: 'indexer' },
+    'k-indexer-bundle': { icon: '📈', name: 'K-Indexer', category: 'indexer' },
+    'kaspa-archive-node': { icon: '🗄️', name: 'Archive Node', category: 'node' },
+    'kaspa-stratum': { icon: '⛏️', name: 'Stratum Mining', category: 'mining' },
+    
+    // Legacy profile IDs (for backward compatibility)
+    'core': { icon: '⚡', name: 'Core', category: 'node' },
+    'kaspa-user-applications': { icon: '📱', name: 'Applications', category: 'app' },
+    'indexer-services': { icon: '🔍', name: 'Indexers', category: 'indexer' },
+    'archive-node': { icon: '📚', name: 'Archive', category: 'node' },
+    'mining': { icon: '⛏️', name: 'Mining', category: 'mining' }
+};
+
+/**
+ * Profile status badge text mapping
+ */
+const PROFILE_STATUS_BADGES = {
+    'installed': { running: '✓ Running', stopped: '⏸ Stopped', unhealthy: '⚠ Unhealthy' },
+    'partial': { text: '⚠ Partial' },
+    'not-installed': { text: 'Available' },
+    'error': { text: '✗ Error' }
+};
+
+/**
  * Get profile status icon
+ * Supports both new and legacy profile IDs
+ * @param {Object} profile - Profile object with id property
+ * @returns {string} Emoji icon for the profile
  */
 function getProfileStatusIcon(profile) {
-    const icons = {
-        'core': '⚡',
-        'kaspa-user-applications': '📱',
-        'indexer-services': '🔍',
-        'archive-node': '📚',
-        'mining': '⛏️'
-    };
-    return icons[profile.id] || '⚙️';
+    const profileId = profile.id || profile;
+    const config = PROFILE_DISPLAY_CONFIG[profileId];
+    return config ? config.icon : '⚙️';
 }
 
 /**
  * Get profile status badge text
+ * @param {Object} profile - Profile object with installationState and status
+ * @returns {string} Badge text for display
  */
 function getProfileStatusBadge(profile) {
-    switch (profile.installationState) {
+    const state = profile.installationState || 'not-installed';
+    const status = profile.status || 'unknown';
+    
+    switch (state) {
         case 'installed':
-            return profile.status === 'running' ? '✓ Running' : '✓ Installed';
+            if (status === 'running') return '✓ Running';
+            if (status === 'stopped') return '⏸ Stopped';
+            if (status === 'unhealthy') return '⚠ Unhealthy';
+            return '✓ Installed';
         case 'partial':
             return '⚠ Partial';
         case 'not-installed':
-            return 'Not Installed';
+            return 'Available';
+        case 'error':
+            return '✗ Error';
         default:
-            return 'Unknown';
+            return state;
     }
+}
+
+/**
+ * Get profile display name
+ * Supports both new and legacy profile IDs
+ * @param {string} profileId - Profile ID
+ * @returns {string} Display name
+ */
+function getProfileDisplayName(profileId) {
+    const config = PROFILE_DISPLAY_CONFIG[profileId];
+    return config ? config.name : profileId;
+}
+
+/**
+ * Get profile category for styling
+ * @param {string} profileId - Profile ID
+ * @returns {string} Category name (node, app, indexer, mining)
+ */
+function getProfileCategory(profileId) {
+    const config = PROFILE_DISPLAY_CONFIG[profileId];
+    return config ? config.category : 'other';
+}
+
+/**
+ * Get CSS class for profile badge based on category
+ * @param {string} profileId - Profile ID
+ * @returns {string} CSS class name
+ */
+function getProfileBadgeClass(profileId) {
+    const category = getProfileCategory(profileId);
+    const classMap = {
+        'node': 'profile-badge-node',
+        'app': 'profile-badge-app',
+        'indexer': 'profile-badge-indexer',
+        'mining': 'profile-badge-mining'
+    };
+    return classMap[category] || 'profile-badge-other';
 }
 
 /**

@@ -1250,6 +1250,168 @@ h1, h2, h3, h4, h5, h6 {
   color: white;
 }
 
+/* ============================================================================
+   Profile Badge Classes - New Profile IDs (8 profiles)
+   ============================================================================ */
+
+/* Node Profiles */
+.profile-badge.node,
+.profile-badge-node {
+  background: linear-gradient(135deg, var(--kaspa-blue) 0%, var(--kaspa-dark) 100%);
+  color: white;
+}
+
+/* App Profiles */
+.profile-badge.app,
+.profile-badge-app {
+  background: linear-gradient(135deg, var(--kaspa-blue) 0%, #4a9e8f 100%);
+  color: white;
+}
+
+/* Explorer Profile */
+.profile-badge.explorer,
+.profile-badge-explorer {
+  background: linear-gradient(135deg, var(--kaspa-purple) 0%, #5a4a9e 100%);
+  color: white;
+}
+
+/* Indexer Profiles */
+.profile-badge.indexer,
+.profile-badge-indexer {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  color: white;
+}
+
+/* Archive Profile */
+.profile-badge.archive,
+.profile-badge-archive {
+  background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+  color: white;
+}
+
+/* Mining/Stratum Profile */
+.profile-badge.stratum,
+.profile-badge-stratum {
+  background: linear-gradient(135deg, var(--error) 0%, #dc2626 100%);
+  color: white;
+}
+
+/* ============================================================================
+   Profile Status Badge Classes (for installation state display)
+   ============================================================================ */
+
+.profile-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Status by installation state */
+.profile-status-badge.installed {
+  background: var(--success);
+  color: white;
+}
+
+.profile-status-badge.partial {
+  background: var(--warning);
+  color: white;
+}
+
+.profile-status-badge.not-installed {
+  background: var(--text-tertiary);
+  color: white;
+}
+
+.profile-status-badge.error {
+  background: var(--error);
+  color: white;
+}
+
+/* Combined: status + profile type */
+.profile-status-badge.profile-badge-node {
+  border-left: 3px solid var(--kaspa-blue);
+}
+
+.profile-status-badge.profile-badge-app {
+  border-left: 3px solid var(--kaspa-blue);
+}
+
+.profile-status-badge.profile-badge-indexer {
+  border-left: 3px solid #8b5cf6;
+}
+
+.profile-status-badge.profile-badge-explorer {
+  border-left: 3px solid var(--kaspa-purple);
+}
+
+.profile-status-badge.profile-badge-archive {
+  border-left: 3px solid var(--warning);
+}
+
+.profile-status-badge.profile-badge-mining {
+  border-left: 3px solid var(--error);
+}
+
+/* ============================================================================
+   Template Profile Tags (shown on template cards)
+   ============================================================================ */
+
+.template-profile-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  background: var(--border-light);
+  color: var(--text-secondary);
+  margin-right: var(--space-1);
+  margin-bottom: var(--space-1);
+}
+
+/* Profile-specific tag colors */
+.template-profile-tag.tag-node {
+  background: rgba(112, 199, 186, 0.15);
+  color: var(--kaspa-blue);
+  border: 1px solid rgba(112, 199, 186, 0.3);
+}
+
+.template-profile-tag.tag-app {
+  background: rgba(112, 199, 186, 0.15);
+  color: var(--kaspa-blue);
+  border: 1px solid rgba(112, 199, 186, 0.3);
+}
+
+.template-profile-tag.tag-indexer {
+  background: rgba(139, 92, 246, 0.15);
+  color: #7c3aed;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.template-profile-tag.tag-explorer {
+  background: rgba(123, 97, 255, 0.15);
+  color: var(--kaspa-purple);
+  border: 1px solid rgba(123, 97, 255, 0.3);
+}
+
+.template-profile-tag.tag-archive {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.template-profile-tag.tag-mining {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
 .profile-icon {
   width: 64px;
   height: 64px;

@@ -492,9 +492,23 @@ export class UIManager {
 
     /**
      * Get CSS class for profile badge
+     * Supports both new and legacy profile IDs
+     * @param {string} profile - Profile ID
+     * @returns {string} CSS class name
      */
     getProfileClass(profile) {
         const profileClasses = {
+            // New profile IDs
+            'kaspa-node': 'profile-node',
+            'kasia-app': 'profile-app',
+            'k-social-app': 'profile-app',
+            'kaspa-explorer-bundle': 'profile-indexer',
+            'kasia-indexer': 'profile-indexer',
+            'k-indexer-bundle': 'profile-indexer',
+            'kaspa-archive-node': 'profile-archive',
+            'kaspa-stratum': 'profile-mining',
+            
+            // Legacy profile IDs
             'core': 'profile-core',
             'archive-node': 'profile-archive',
             'indexer-services': 'profile-indexer',
@@ -507,9 +521,23 @@ export class UIManager {
 
     /**
      * Format profile name for display
+     * Supports both new and legacy profile IDs
+     * @param {string} profile - Profile ID
+     * @returns {string} Formatted display name
      */
     formatProfileName(profile) {
         const profileNames = {
+            // New profile IDs
+            'kaspa-node': 'Node',
+            'kasia-app': 'Kasia',
+            'k-social-app': 'K-Social',
+            'kaspa-explorer-bundle': 'Explorer',
+            'kasia-indexer': 'Kasia Idx',
+            'k-indexer-bundle': 'K-Indexer',
+            'kaspa-archive-node': 'Archive',
+            'kaspa-stratum': 'Mining',
+            
+            // Legacy profile IDs
             'core': 'Core',
             'archive-node': 'Archive',
             'indexer-services': 'Indexer',

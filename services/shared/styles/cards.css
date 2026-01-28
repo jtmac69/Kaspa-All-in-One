@@ -631,3 +631,81 @@
     transition: none;
   }
 }
+
+/* ============================================================================
+   Profile Badge Base Styles (Shared)
+   ============================================================================ */
+
+.profile-badge,
+[class*="profile-badge-"] {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Profile badge hover effect */
+.profile-badge:hover,
+[class*="profile-badge-"]:hover {
+  filter: brightness(1.1);
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
+/* Profile Badge Classes - New Profile IDs */
+.profile-badge-node {
+  background: linear-gradient(135deg, #70c7ba 0%, #49a899 100%);
+  color: white;
+}
+
+.profile-badge-app {
+  background: linear-gradient(135deg, #70c7ba 0%, #4a9e8f 100%);
+  color: white;
+}
+
+.profile-badge-explorer {
+  background: linear-gradient(135deg, #7b61ff 0%, #5a4a9e 100%);
+  color: white;
+}
+
+.profile-badge-indexer {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  color: white;
+}
+
+.profile-badge-archive {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+}
+
+.profile-badge-mining,
+.profile-badge-stratum {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.profile-badge-management {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+}
+
+/* Legacy Profile ID Classes (for backward compatibility) */
+.profile-badge-core {
+  background: linear-gradient(135deg, #70c7ba 0%, #49a899 100%);
+  color: white;
+}
+
+.profile-badge-applications {
+  background: linear-gradient(135deg, #70c7ba 0%, #4a9e8f 100%);
+  color: white;
+}
+
+.profile-badge-other {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  color: white;
+}
