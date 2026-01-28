@@ -1,80 +1,131 @@
 # Kaspa All-in-One - Quick Start
 
-## 🚀 Your Setup (Remote Node Mode)
+## Prerequisites
+
+- Linux server (Ubuntu 22.04+ recommended)
+- Docker and Docker Compose v2
+- Minimum 4GB RAM (varies by template)
+- 100GB+ disk space
+
+## Installation
+
+### Option 1: Web Installation Wizard (Recommended)
 
 ```bash
-# Access Dashboard
+# Clone the repository
+git clone https://github.com/jtmac69/Kaspa-All-in-One.git
+cd Kaspa-All-in-One
+
+# Start the installation wizard
+./scripts/wizard.sh
+```
+
+The wizard will:
+- ✅ Check system requirements
+- ✅ Guide you through template selection
+- ✅ Configure services based on your needs
+- ✅ Deploy and start all services
+
+Access the wizard at: **http://your-server:3000**
+
+### Option 2: Quick Deploy (Experienced Users)
+
+```bash
+# Clone and configure
+git clone https://github.com/jtmac69/Kaspa-All-in-One.git
+cd Kaspa-All-in-One
+cp .env.example .env
+
+# Edit .env with your settings
+nano .env
+
+# Start with desired profiles
+docker compose --profile kaspa-node --profile kasia-app up -d
+```
+
+## After Installation
+
+### Access Your Services
+
+- **Dashboard**: http://your-server:8080
+- **Kasia App**: http://your-server:3001 (if enabled)
+- **K-Social**: http://your-server:3003 (if enabled)
+- **Explorer**: http://your-server:3008 (if enabled)
+
+### Common Templates
+
+| I want to... | Use Template | Min RAM |
+|--------------|--------------|---------|
+| Try Kaspa apps | `quick-start` | 2GB |
+| Run my own node | `kaspa-node` | 4GB |
+| Use Kasia messaging | `kasia-suite` | 8GB |
+| Use K-Social platform | `k-social-suite` | 8GB |
+| Run blockchain explorer | `kaspa-explorer` | 12GB |
+| Solo mine | `solo-miner` | 6GB |
+| Run everything | `kaspa-sovereignty` | 32GB+ |
+
+## Quick Commands
+
+### Service Management
+
+```bash
+# Check status
+docker compose ps
+
+# View logs
+docker compose logs -f [service-name]
+
+# Restart services
+docker compose restart
+
+# Stop all services
+docker compose down
+```
+
+### Dashboard Access
+
+```bash
+# Start dashboard
+docker compose up -d dashboard
+
+# View dashboard logs
+docker compose logs -f dashboard
+
+# Access dashboard
 open http://localhost:8080
-
-# Run Tests
-./test-dashboard.sh --skip-sync-tests
-
-# Check Status
-docker compose ps
 ```
 
-## 📝 Key Commands
-
-### Dashboard
-```bash
-docker compose up -d dashboard      # Start
-docker compose stop dashboard       # Stop
-docker compose restart dashboard    # Restart
-docker logs dashboard --follow      # View logs
-```
-
-### Testing
-```bash
-./test-dashboard.sh --skip-sync-tests              # Quick test
-./test-dashboard.sh --use-remote-node              # Force remote
-./test-dashboard.sh --use-local-node               # Force local
-./test-dashboard.sh --help                         # All options
-```
-
-### Switch Modes
-```bash
-# Edit .env file:
-KASPA_NODE_MODE=remote    # Use public node (current)
-KASPA_NODE_MODE=local     # Use local node (needs 8GB+ RAM)
-```
-
-## 🔧 Configuration
-
-**Current Setup** (in `.env`):
-- Mode: `remote`
-- Node: `https://api.kaspa.org`
-- Dashboard: `http://localhost:8080`
-
-## 📊 What's Running
+### Template Deployment
 
 ```bash
-docker compose ps
+# Deploy a template
+./scripts/manage.sh start --template kasia-suite
+
+# Check template status
+./scripts/manage.sh status --template kasia-suite
+
+# View template logs
+./scripts/manage.sh logs --template kasia-suite
 ```
 
-Should show:
-- ✅ kaspa-dashboard (port 8080)
-- ⏹️ kaspa-node (stopped - using remote)
+## Next Steps
 
-## 🎯 Quick Links
+- **Read deployment-profiles.md** for profile details
+- **Check troubleshooting.md** for common issues
+- **See maintenance.md** for ongoing maintenance
+- **Join the community** on Discord or GitHub Discussions
 
-- Dashboard: http://localhost:8080
-- Health Check: http://localhost:8080/health
-- API Status: http://localhost:8080/api/status
+## Need Help?
 
-## 💡 Tips
+- **Built-in Help**: Click "Need Help?" in the wizard
+- **Discord**: [Kaspa Community Discord](https://discord.gg/kaspa)
+- **GitHub Issues**: [Report bugs](https://github.com/jtmac69/Kaspa-All-in-One/issues)
+- **Documentation**: [Full docs](docs/)
 
-- **Low Memory?** Keep using remote node (current setup)
-- **Want Local Node?** Need 8GB+ RAM, edit `.env` to `KASPA_NODE_MODE=local`
-- **Test Changes?** Run `./test-dashboard.sh --skip-sync-tests`
-- **See Logs?** Use `docker logs dashboard --follow`
+---
 
-## 📚 Documentation
+**⚡ Ready to get started? Launch the wizard and choose your template!**
 
-- `docs/implementation-summaries/infrastructure/REMOTE_NODE_SETUP_COMPLETE.md` - Full setup guide
-- `docs/uncategorized/KASPA_NODE_MEMORY_ISSUE.md` - Why we use remote node
-- `docs/dashboard-testing.md` - Testing documentation
-- `.env.example` - All configuration options
-
-## ✅ You're All Set!
-
-Your dashboard is running with a remote Kaspa node. No memory issues, instant access! 🎉
+```bash
+./scripts/wizard.sh
+```

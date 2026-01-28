@@ -108,88 +108,137 @@ A comprehensive Docker-based solution for running a complete Kaspa blockchain ec
 - **🌐 Multi-OS Support** - Ubuntu, Debian, CentOS, macOS, and Windows (WSL2)
 - **📱 Management Dashboard** - Host-based service monitoring and management interface
 
-## 🚀 Components Included
+## 🚀 Architecture Overview
+
+### Two-Tier Configuration System
+
+Kaspa All-in-One uses a flexible two-tier system:
+
+1. **Profiles** (Low-Level) - Docker Compose service groupings that define which services run together
+2. **Templates** (High-Level) - User-facing configurations that bundle profiles with pre-configured values
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ TEMPLATES (User-Facing)                                     │
+│ quick-start │ kaspa-node │ kasia-suite │ solo-miner │ ...  │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ PROFILES (Docker Compose)                                   │
+│ kaspa-node │ kasia-app │ kasia-indexer │ kaspa-stratum │... │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ SERVICES (Containers)                                       │
+│ kaspa-node │ kasia-app │ timescaledb │ nginx │ dashboard   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 8 Deployment Profiles
+
+#### Core Profiles
+| Profile | Description | Services | Min RAM |
+|---------|-------------|----------|---------|
+| `kaspa-node` | Standard pruning Kaspa node | kaspa-node | 4GB |
+| `kaspa-archive-node` | Full history archive node | kaspa-node (archive mode) | 16GB |
+
+#### Application Profiles
+| Profile | Description | Services | Min RAM |
+|---------|-------------|----------|---------|
+| `kasia-app` | Kasia messaging application | kasia-app | 2GB |
+| `k-social-app` | K-Social platform | k-social-app | 2GB |
+
+#### Indexer Profiles
+| Profile | Description | Services | Min RAM |
+|---------|-------------|----------|---------|
+| `kasia-indexer` | Kasia message indexer | kasia-indexer, TimescaleDB | 4GB |
+| `k-indexer-bundle` | K-Social indexer bundle | k-indexer, TimescaleDB | 4GB |
+| `kaspa-explorer-bundle` | Blockchain explorer | simply-kaspa-indexer, kaspa-explorer, TimescaleDB | 8GB |
+
+#### Mining Profile
+| Profile | Description | Services | Min RAM |
+|---------|-------------|----------|---------|
+| `kaspa-stratum` | Solo mining stratum bridge | kaspa-stratum | 2GB |
+
+**Profile Dependencies:**
+- `kasia-indexer` requires `kasia-app`
+- `k-indexer-bundle` requires `k-social-app`
+- `kaspa-stratum` requires `kaspa-node` OR `kaspa-archive-node`
+- `kaspa-node` conflicts with `kaspa-archive-node` (choose one)
+
+### 12 Installation Templates
+
+The wizard offers 12 pre-configured templates for common use cases:
+
+#### Beginner Templates
+| Template | Profiles Included | Use Case | Min RAM |
+|----------|-------------------|----------|---------|
+| `quick-start` | kasia-app, k-social-app | Try Kaspa apps without running a node | 2GB |
+| `kaspa-node` | kaspa-node | Run your own Kaspa node | 4GB |
+
+#### Intermediate Templates
+| Template | Profiles Included | Use Case | Min RAM |
+|----------|-------------------|----------|---------|
+| `kasia-suite` | kaspa-node, kasia-app, kasia-indexer | Full Kasia messaging stack | 8GB |
+| `k-social-suite` | kaspa-node, k-social-app, k-indexer-bundle | Full K-Social platform | 8GB |
+| `kaspa-explorer` | kaspa-node, kaspa-explorer-bundle | Run a blockchain explorer | 12GB |
+
+#### Advanced Templates
+| Template | Profiles Included | Use Case | Min RAM |
+|----------|-------------------|----------|---------|
+| `kaspa-sovereignty` | All profiles | Complete Kaspa infrastructure | 32GB+ |
+| `solo-miner` | kaspa-node, kaspa-stratum | Solo mining setup | 6GB |
+| `archive-historian` | kaspa-archive-node | Full blockchain history | 16GB |
+| `pool-operator` | kaspa-node, kaspa-stratum (pool mode) | Mining pool operation | 8GB |
+| `public-infrastructure` | kaspa-archive-node, kaspa-explorer-bundle | Public service provider | 24GB |
+| `developer` | kaspa-node + dev tools | Development environment | 8GB |
+| `custom-setup` | User-selected | Build your own configuration | Varies |
 
 ### Core Infrastructure (Always Active)
-- **Kaspa Node** - Full Kaspa network node with RPC API and public P2P access
 - **Management Dashboard** - Host-based web interface for service monitoring and management
-- **Nginx Reverse Proxy** - Load balancing, SSL termination, and security headers
-
-### Available Templates
-
-#### Home Node Template
-**Perfect for personal use and learning**
-- Kaspa Node (core blockchain functionality)
-- Management Dashboard (monitoring and control)
-- Kasia Messaging App (decentralized messaging)
-- **Requirements**: 4GB RAM, 100GB storage
-
-#### Public Node Template  
-**For supporting the Kaspa network**
-- Kaspa Node with public P2P access
-- Management Dashboard
-- K Social App (decentralized social platform)
-- **Requirements**: 8GB RAM, 250GB storage
-
-#### Explorer Template
-**For blockchain data analysis**
-- All Home Node components
-- Blockchain indexers (Kasia, K-Social, Simply Kaspa)
-- TimescaleDB for time-series data
-- **Requirements**: 16GB RAM, 500GB storage
-
-#### Mining Template
-**For solo mining operations**
-- Kaspa Node optimized for mining
-- Kaspa Stratum Bridge
-- Management Dashboard
-- **Requirements**: 8GB RAM, 100GB storage
-
-#### Custom Setup
-**For advanced users who want full control**
-- Choose individual services à la carte
-- Mix and match any combination of services
-- Full configuration control
+- **Nginx Reverse Proxy** - Load balancing, SSL termination, and security headers (when containerized apps are enabled)
 
 ## 💻 Hardware Requirements
 
 The installation wizard automatically detects your hardware and recommends the best profile for your system.
 
-### Minimum Requirements (Home Node Template)
+### Minimum Requirements (Beginner Templates)
 - **CPU**: 2+ cores
-- **RAM**: 4GB
+- **RAM**: 2-4GB (depending on template)
 - **Storage**: 100GB available
 - **Network**: Stable internet connection
 - **Disk Type**: HDD acceptable (SSD recommended)
 
-**What you get**: Kaspa node, management dashboard, messaging app
+**Best for**: `quick-start`, `kaspa-node` templates
 
-### Recommended Configuration (Public Node Template)
+### Recommended Configuration (Intermediate Templates)
 - **CPU**: 4+ cores
-- **RAM**: 8GB
+- **RAM**: 8-12GB
 - **Storage**: 250GB available (SSD recommended)
 - **Network**: 100Mbps+ internet
 - **Disk Type**: SSD strongly recommended
 
-**What you get**: Public node, dashboard, messaging and social apps
+**Best for**: `kasia-suite`, `k-social-suite`, `kaspa-explorer` templates
 
-### Optimal Configuration (Explorer Template)
+### Optimal Configuration (Advanced Templates)
 - **CPU**: 8+ cores
-- **RAM**: 16GB+
+- **RAM**: 16-24GB
 - **Storage**: 500GB+ available (NVMe SSD recommended)
 - **Network**: Gigabit ethernet
 - **Disk Type**: NVMe SSD for best performance
 
-**What you get**: Everything including blockchain indexers with TimescaleDB
+**Best for**: `archive-historian`, `public-infrastructure`, `pool-operator` templates
 
-### High-End Configuration (Custom Setup)
+### High-End Configuration (Sovereignty Template)
 - **CPU**: 8+ cores (16+ threads)
 - **RAM**: 32GB+
 - **Storage**: 1TB+ available (NVMe SSD required)
 - **Network**: Gigabit ethernet
 - **Disk Type**: NVMe SSD required
 
-**What you get**: Any combination of services you choose
+**Best for**: `kaspa-sovereignty` template (all services)
 
 ### Example Hardware
 
@@ -198,14 +247,14 @@ The installation wizard automatically detects your hardware and recommends the b
 - CPU: AMD Ryzen 5 5560U (6 cores)
 - RAM: 16GB DDR4
 - Storage: 500GB NVMe SSD
-- **Best for**: Home Node or Public Node templates
+- **Best for**: Intermediate templates (`kasia-suite`, `k-social-suite`, `kaspa-explorer`)
 
 **Recommended Option (~$400-500)**
 - Mini PC: Beelink SER7 7735HS
 - CPU: AMD Ryzen 7 7735HS (8 cores, 16 threads)
 - RAM: 32GB DDR5
 - Storage: 1TB NVMe SSD
-- **Best for**: Explorer template or custom setups
+- **Best for**: Advanced templates (`archive-historian`, `public-infrastructure`, `kaspa-sovereignty`)
 
 **Note**: The installation wizard will analyze your hardware and provide specific template recommendations with compatibility ratings (Optimal, Recommended, Possible, Not Recommended).
 
@@ -303,17 +352,22 @@ The installation wizard will check all of these for you automatically!
 ## 🎛️ Management
 
 ### Template-Based Deployment
-The system now uses templates for easier deployment. Choose from pre-configured templates or create custom setups:
+The system uses templates for easier deployment. Choose from 12 pre-configured templates or create custom setups:
 
 ```bash
 # Deploy using templates (recommended)
-./scripts/manage.sh start --template home-node      # Home Node template
-./scripts/manage.sh start --template public-node   # Public Node template  
-./scripts/manage.sh start --template explorer      # Explorer template
-./scripts/manage.sh start --template mining        # Mining template
+./scripts/manage.sh start --template quick-start        # Beginner: Apps only
+./scripts/manage.sh start --template kaspa-node         # Beginner: Node only
+./scripts/manage.sh start --template kasia-suite        # Intermediate: Full Kasia
+./scripts/manage.sh start --template k-social-suite     # Intermediate: Full K-Social
+./scripts/manage.sh start --template kaspa-explorer     # Intermediate: Explorer
+./scripts/manage.sh start --template solo-miner         # Advanced: Mining
+./scripts/manage.sh start --template archive-historian  # Advanced: Archive node
+./scripts/manage.sh start --template public-infrastructure  # Advanced: Public services
+./scripts/manage.sh start --template kaspa-sovereignty  # Advanced: Everything
 
 # Legacy profile-based deployment (still supported)
-./scripts/manage.sh start -p prod -p explorer      # Multiple profiles
+./scripts/manage.sh start -p kaspa-node -p kasia-app    # Multiple profiles
 ```
 
 ### Management Commands
