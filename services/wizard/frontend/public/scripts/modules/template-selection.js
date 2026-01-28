@@ -6,6 +6,166 @@
 import { stateManager } from './state-manager.js';
 import { goToStep, updateStepNumbering } from './navigation.js';
 
+/**
+ * Profile ID migration mapping (legacy → new)
+ */
+const LEGACY_TO_NEW_PROFILE = {
+    'core': 'kaspa-node',
+    'kaspa-user-applications': ['kasia-app', 'k-social-app'],
+    'indexer-services': ['kasia-indexer', 'k-indexer-bundle', 'kaspa-explorer-bundle'],
+    'archive-node': 'kaspa-archive-node',
+    'mining': 'kaspa-stratum'
+};
+
+/**
+ * New profile IDs (all valid)
+ */
+const NEW_PROFILE_IDS = [
+    'kaspa-node',
+    'kasia-app',
+    'k-social-app',
+    'kaspa-explorer-bundle',
+    'kasia-indexer',
+    'k-indexer-bundle',
+    'kaspa-archive-node',
+    'kaspa-stratum'
+];
+
+/**
+ * Legacy profile IDs (still supported)
+ */
+const LEGACY_PROFILE_IDS = [
+    'core',
+    'kaspa-user-applications',
+    'indexer-services',
+    'archive-node',
+    'mining'
+];
+
+/**
+ * All valid profile IDs (new + legacy)
+ */
+const ALL_VALID_PROFILE_IDS = [...NEW_PROFILE_IDS, ...LEGACY_PROFILE_IDS];
+
+/**
+ * Template ID migration mapping (legacy → new)
+ */
+const LEGACY_TO_NEW_TEMPLATE = {
+    'beginner-setup': 'quick-start',
+    'home-node': 'kaspa-node',
+    'public-node': 'kaspa-node',
+    'full-node': 'kaspa-sovereignty',
+    'full-stack': 'kaspa-sovereignty',
+    'developer-setup': 'custom-setup',
+    'developer': 'custom-setup',
+    'mining-rig': 'solo-miner',
+    'miner-node': 'solo-miner'
+};
+
+/**
+ * Profile display names (both new and legacy)
+ */
+const PROFILE_DISPLAY_NAMES = {
+    // New profile IDs
+    'kaspa-node': 'Kaspa Node',
+    'kasia-app': 'Kasia',
+    'k-social-app': 'K-Social',
+    'kaspa-explorer-bundle': 'Explorer',
+    'kasia-indexer': 'Kasia Indexer',
+    'k-indexer-bundle': 'K-Indexer',
+    'kaspa-archive-node': 'Archive Node',
+    'kaspa-stratum': 'Mining',
+    
+    // Legacy profile IDs
+    'core': 'Core',
+    'kaspa-user-applications': 'Apps',
+    'indexer-services': 'Indexers',
+    'archive-node': 'Archive',
+    'mining': 'Mining'
+};
+
+/**
+ * Check if a profile ID is valid (new or legacy)
+ * @param {string} profileId - Profile ID to check
+ * @returns {boolean} True if valid
+ */
+function isValidProfileId(profileId) {
+    return ALL_VALID_PROFILE_IDS.includes(profileId);
+}
+
+/**
+ * Check if a profile matches (handles both new and legacy IDs)
+ * @param {string[]} profiles - Array of profile IDs from template
+ * @param {string} checkId - Profile ID to check for
+ * @returns {boolean} True if profile is included
+ */
+function hasProfile(profiles, checkId) {
+    // Direct match
+    if (profiles.includes(checkId)) return true;
+    
+    // Check if checkId is legacy and any new equivalent is in profiles
+    if (LEGACY_TO_NEW_PROFILE[checkId]) {
+        const newIds = LEGACY_TO_NEW_PROFILE[checkId];
+        const newIdArray = Array.isArray(newIds) ? newIds : [newIds];
+        return newIdArray.some(id => profiles.includes(id));
+    }
+    
+    // Check if checkId is new and the legacy equivalent is in profiles
+    for (const [legacyId, newIds] of Object.entries(LEGACY_TO_NEW_PROFILE)) {
+        const newIdArray = Array.isArray(newIds) ? newIds : [newIds];
+        if (newIdArray.includes(checkId) && profiles.includes(legacyId)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * Check if template has any node profile
+ * @param {string[]} profiles - Array of profile IDs
+ * @returns {boolean} True if has node profile
+ */
+function hasNodeProfile(profiles) {
+    return hasProfile(profiles, 'kaspa-node') ||
+           hasProfile(profiles, 'kaspa-archive-node') ||
+           hasProfile(profiles, 'core') ||
+           hasProfile(profiles, 'archive-node');
+}
+
+/**
+ * Check if template has any app profile
+ * @param {string[]} profiles - Array of profile IDs
+ * @returns {boolean} True if has app profile
+ */
+function hasAppProfile(profiles) {
+    return hasProfile(profiles, 'kasia-app') ||
+           hasProfile(profiles, 'k-social-app') ||
+           hasProfile(profiles, 'kaspa-user-applications');
+}
+
+/**
+ * Check if template has any indexer profile
+ * @param {string[]} profiles - Array of profile IDs
+ * @returns {boolean} True if has indexer profile
+ */
+function hasIndexerProfile(profiles) {
+    return hasProfile(profiles, 'kasia-indexer') ||
+           hasProfile(profiles, 'k-indexer-bundle') ||
+           hasProfile(profiles, 'kaspa-explorer-bundle') ||
+           hasProfile(profiles, 'indexer-services');
+}
+
+/**
+ * Check if template has mining profile
+ * @param {string[]} profiles - Array of profile IDs
+ * @returns {boolean} True if has mining profile
+ */
+function hasMiningProfile(profiles) {
+    return hasProfile(profiles, 'kaspa-stratum') ||
+           hasProfile(profiles, 'mining');
+}
+
 class TemplateSelection {
     constructor() {
         this.templates = [];
@@ -82,38 +242,154 @@ class TemplateSelection {
 
     /**
      * Fallback templates when API is not available
+     * Uses NEW template IDs and profile IDs
      */
     getFallbackTemplates() {
         return [
             {
-                id: 'beginner-setup',
-                name: 'Beginner Setup',
+                id: 'quick-start',
+                name: 'Quick Start',
                 category: 'beginner',
-                description: 'Simple setup for new users',
+                description: 'Get started with Kaspa apps using public infrastructure',
                 icon: '🚀',
-                profiles: ['kaspa-user-applications'],
-                resources: { minMemory: 4, minCpu: 2, minDisk: 50 },
+                profiles: ['kasia-app', 'k-social-app'],
+                resources: { minMemory: 2, minCpu: 2, minDisk: 20 },
                 estimatedSetupTime: '5 minutes',
                 syncTime: 'Not required',
-                features: ['Easy setup', 'User applications', 'Public indexers'],
-                benefits: ['Quick start', 'No complex configuration'],
-                longDescription: 'Perfect for users who want to get started quickly with Kaspa applications.',
-                useCase: 'personal'
+                features: ['Kasia messaging app', 'K-Social app', 'Uses public indexers'],
+                benefits: ['Instant setup', 'No blockchain sync', 'Minimal resources'],
+                longDescription: 'Perfect for users who want to start using Kaspa applications immediately without running their own node.',
+                useCase: 'personal',
+                displayOrder: 1
             },
             {
-                id: 'full-node',
-                name: 'Full Node',
-                category: 'advanced',
-                description: 'Complete Kaspa node with all services',
-                icon: '⚡',
-                profiles: ['core', 'kaspa-user-applications', 'indexer-services'],
-                resources: { minMemory: 16, minCpu: 4, minDisk: 500 },
+                id: 'kaspa-node',
+                name: 'Kaspa Node',
+                category: 'beginner',
+                description: 'Run your own Kaspa node',
+                icon: '🖥️',
+                profiles: ['kaspa-node'],
+                resources: { minMemory: 4, minCpu: 2, minDisk: 100 },
+                estimatedSetupTime: '10 minutes',
+                syncTime: '2-6 hours',
+                features: ['Full Kaspa node', 'Network participation', 'Optional wallet'],
+                benefits: ['Decentralization', 'Privacy', 'Network support'],
+                longDescription: 'Run a standard Kaspa node to participate in the network and have full sovereignty over your transactions.',
+                useCase: 'personal',
+                displayOrder: 2
+            },
+            {
+                id: 'kasia-suite',
+                name: 'Kasia Suite',
+                category: 'intermediate',
+                description: 'Kasia app with local indexer',
+                icon: '💬',
+                profiles: ['kasia-app', 'kasia-indexer'],
+                resources: { minMemory: 8, minCpu: 4, minDisk: 200 },
                 estimatedSetupTime: '15 minutes',
-                syncTime: '2-4 hours',
-                features: ['Full node', 'Local indexers', 'All applications'],
-                benefits: ['Complete control', 'Best performance', 'Full privacy'],
-                longDescription: 'Complete Kaspa setup with local node and indexers for maximum performance.',
-                useCase: 'advanced'
+                syncTime: '4-12 hours',
+                features: ['Kasia app', 'Local Kasia indexer', 'Full privacy'],
+                benefits: ['No external dependencies', 'Better performance', 'Complete privacy'],
+                longDescription: 'Complete Kasia setup with local indexer for maximum privacy and performance.',
+                useCase: 'personal',
+                displayOrder: 3
+            },
+            {
+                id: 'k-social-suite',
+                name: 'K-Social Suite',
+                category: 'intermediate',
+                description: 'K-Social app with local indexer',
+                icon: '👥',
+                profiles: ['k-social-app', 'k-indexer-bundle'],
+                resources: { minMemory: 8, minCpu: 4, minDisk: 250 },
+                estimatedSetupTime: '15 minutes',
+                syncTime: '4-12 hours',
+                features: ['K-Social app', 'K-Indexer with database', 'Full privacy'],
+                benefits: ['Decentralized social', 'Local data', 'No tracking'],
+                longDescription: 'Complete K-Social setup with local indexer and database for decentralized social networking.',
+                useCase: 'personal',
+                displayOrder: 4
+            },
+            {
+                id: 'kaspa-explorer',
+                name: 'Kaspa Explorer',
+                category: 'intermediate',
+                description: 'Run your own block explorer',
+                icon: '🔍',
+                profiles: ['kaspa-explorer-bundle'],
+                resources: { minMemory: 8, minCpu: 4, minDisk: 300 },
+                estimatedSetupTime: '15 minutes',
+                syncTime: '6-24 hours',
+                features: ['Block explorer UI', 'Simply-Kaspa indexer', 'TimescaleDB'],
+                benefits: ['Explore blockchain locally', 'API access', 'Historical data'],
+                longDescription: 'Run your own Kaspa block explorer with full indexing capabilities.',
+                useCase: 'production',
+                displayOrder: 5
+            },
+            {
+                id: 'kaspa-sovereignty',
+                name: 'Kaspa Sovereignty',
+                category: 'advanced',
+                description: 'Complete self-hosted Kaspa ecosystem',
+                icon: '👑',
+                profiles: ['kaspa-node', 'kasia-app', 'k-social-app', 'kasia-indexer', 'k-indexer-bundle', 'kaspa-explorer-bundle'],
+                resources: { minMemory: 32, minCpu: 8, minDisk: 1000 },
+                estimatedSetupTime: '30 minutes',
+                syncTime: '12-48 hours',
+                features: ['All apps', 'All indexers', 'Block explorer', 'Full node'],
+                benefits: ['Complete independence', 'Maximum privacy', 'Full control'],
+                longDescription: 'The ultimate Kaspa setup with every service running locally. Complete digital sovereignty.',
+                useCase: 'production',
+                displayOrder: 6
+            },
+            {
+                id: 'solo-miner',
+                name: 'Solo Miner',
+                category: 'advanced',
+                description: 'Mine Kaspa with your own node',
+                icon: '⛏️',
+                profiles: ['kaspa-node', 'kaspa-stratum'],
+                resources: { minMemory: 6, minCpu: 4, minDisk: 110 },
+                estimatedSetupTime: '15 minutes',
+                syncTime: '2-6 hours',
+                features: ['Kaspa node', 'Stratum bridge', 'Solo mining'],
+                benefits: ['Direct block rewards', 'No pool fees', 'Full control'],
+                longDescription: 'Solo mining setup with local node and stratum bridge for direct mining.',
+                useCase: 'mining',
+                displayOrder: 7
+            },
+            {
+                id: 'archive-historian',
+                name: 'Archive Historian',
+                category: 'advanced',
+                description: 'Complete blockchain history',
+                icon: '📚',
+                profiles: ['kaspa-archive-node'],
+                resources: { minMemory: 16, minCpu: 8, minDisk: 2000 },
+                estimatedSetupTime: '20 minutes',
+                syncTime: '1-4 weeks',
+                features: ['Non-pruning node', 'Complete history', 'Research ready'],
+                benefits: ['Historical analysis', 'Full blockchain', 'Research capabilities'],
+                longDescription: 'Archive node storing complete blockchain history. Ideal for researchers and data analysts.',
+                useCase: 'production',
+                displayOrder: 8
+            },
+            {
+                id: 'custom-setup',
+                name: 'Custom Setup',
+                category: 'advanced',
+                description: 'Build your own configuration',
+                icon: '🛠️',
+                profiles: [],
+                resources: { minMemory: 0, minCpu: 0, minDisk: 0 },
+                estimatedSetupTime: 'Variable',
+                syncTime: 'Variable',
+                features: ['Select any profiles', 'Full flexibility', 'Expert control'],
+                benefits: ['Exactly what you need', 'Modify existing installs', 'Maximum control'],
+                longDescription: 'Create a custom configuration by selecting exactly which profiles you want.',
+                useCase: 'development',
+                isDynamic: true,
+                displayOrder: 12
             }
         ];
     }
@@ -228,7 +504,10 @@ class TemplateSelection {
     }
 
     /**
-     * Get recommendation reasons
+     * Get recommendation reasons based on template profiles
+     * Supports both new and legacy profile IDs
+     * @param {Object} template - Template object
+     * @returns {string[]} Array of recommendation reasons
      */
     getRecommendationReasons(template) {
         const reasons = [];
@@ -237,12 +516,30 @@ class TemplateSelection {
             reasons.push('Easy to set up and configure');
         }
         
-        if (template.profiles.includes('kaspa-user-applications')) {
+        // Check for app profiles (new or legacy)
+        if (hasAppProfile(template.profiles)) {
             reasons.push('Includes user-friendly applications');
         }
         
-        if (template.profiles.includes('core')) {
+        // Check for node profiles (new or legacy)
+        if (hasNodeProfile(template.profiles)) {
             reasons.push('Provides full node capabilities');
+        }
+        
+        // Check for indexer profiles
+        if (hasIndexerProfile(template.profiles)) {
+            reasons.push('Includes local indexing for privacy');
+        }
+        
+        // Check for mining profiles
+        if (hasMiningProfile(template.profiles)) {
+            reasons.push('Enables solo mining capabilities');
+        }
+        
+        // Check for archive node
+        if (hasProfile(template.profiles, 'kaspa-archive-node') ||
+            hasProfile(template.profiles, 'archive-node')) {
+            reasons.push('Stores complete blockchain history');
         }
         
         return reasons;
@@ -439,16 +736,39 @@ class TemplateSelection {
 
     /**
      * Get display name for profile
+     * Supports both new and legacy profile IDs
+     * @param {string} profileId - Profile ID
+     * @returns {string} Display name
      */
     getProfileDisplayName(profileId) {
-        const profileNames = {
-            'core': 'Core',
-            'kaspa-user-applications': 'Apps',
-            'indexer-services': 'Indexers',
-            'archive-node': 'Archive',
-            'mining': 'Mining'
+        return PROFILE_DISPLAY_NAMES[profileId] || profileId;
+    }
+
+    /**
+     * Get CSS class for profile tag
+     * @param {string} profileId - Profile ID
+     * @returns {string} CSS class name
+     */
+    getProfileTagClass(profileId) {
+        const classMap = {
+            // New profile IDs
+            'kaspa-node': 'profile-tag-node',
+            'kasia-app': 'profile-tag-app',
+            'k-social-app': 'profile-tag-app',
+            'kaspa-explorer-bundle': 'profile-tag-explorer',
+            'kasia-indexer': 'profile-tag-indexer',
+            'k-indexer-bundle': 'profile-tag-indexer',
+            'kaspa-archive-node': 'profile-tag-archive',
+            'kaspa-stratum': 'profile-tag-mining',
+            
+            // Legacy profile IDs
+            'core': 'profile-tag-node',
+            'kaspa-user-applications': 'profile-tag-app',
+            'indexer-services': 'profile-tag-indexer',
+            'archive-node': 'profile-tag-archive',
+            'mining': 'profile-tag-mining'
         };
-        return profileNames[profileId] || profileId;
+        return classMap[profileId] || 'profile-tag-default';
     }
 
     /**
@@ -601,8 +921,7 @@ class TemplateSelection {
 
             // Step 3: Validate that template profiles map to existing profile system
             console.log(`[TEMPLATE] Validating profile mapping for profiles:`, template.profiles);
-            const validProfiles = ['core', 'kaspa-user-applications', 'indexer-services', 'archive-node', 'mining'];
-            const invalidProfiles = template.profiles.filter(p => !validProfiles.includes(p));
+            const invalidProfiles = template.profiles.filter(p => !isValidProfileId(p));
             
             if (invalidProfiles.length > 0) {
                 console.warn('[TEMPLATE] Invalid profiles detected:', invalidProfiles);

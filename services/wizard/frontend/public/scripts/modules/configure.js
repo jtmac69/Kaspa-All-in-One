@@ -22,6 +22,88 @@ let selectedProfiles = [];
 let profileData = null;
 
 /**
+ * Profile ID migration constants and helpers for backward compatibility
+ */
+const PROFILE_GROUPS = {
+    // Node profiles (show node configuration sections)
+    node: ['kaspa-node', 'kaspa-archive-node', 'core', 'archive-node'],
+    
+    // Archive node profiles (show archive-specific options)
+    archive: ['kaspa-archive-node', 'archive-node'],
+    
+    // Standard node profiles (show standard node options)
+    standardNode: ['kaspa-node', 'core'],
+    
+    // App profiles (show indexer endpoint configuration)
+    apps: ['kasia-app', 'k-social-app', 'kaspa-user-applications'],
+    
+    // Indexer profiles (show database configuration)
+    indexers: ['kasia-indexer', 'k-indexer-bundle', 'kaspa-explorer-bundle', 'indexer-services'],
+    
+    // Mining profiles (show mining/stratum configuration)
+    mining: ['kaspa-stratum', 'mining'],
+    
+    // Profiles needing network configuration (external IP, public node toggle)
+    network: ['kaspa-node', 'kaspa-archive-node', 'kaspa-stratum', 'core', 'archive-node', 'mining']
+};
+
+/**
+ * Check if any profile from a group is selected
+ * @param {string[]} selectedProfiles - Array of selected profile IDs
+ * @param {string} groupName - Name of the profile group to check
+ * @returns {boolean} True if any profile in the group is selected
+ */
+function hasProfileGroup(selectedProfiles, groupName) {
+    const group = PROFILE_GROUPS[groupName];
+    if (!group) return false;
+    return selectedProfiles.some(p => group.includes(p));
+}
+
+/**
+ * Check if a specific profile (new or legacy ID) is selected
+ * @param {string[]} selectedProfiles - Array of selected profile IDs
+ * @param {string} profileId - Profile ID to check (can be new or legacy)
+ * @returns {boolean} True if profile is selected
+ */
+function hasProfile(selectedProfiles, profileId) {
+    // Direct match
+    if (selectedProfiles.includes(profileId)) return true;
+    
+    // Check legacy → new mappings
+    const legacyMapping = {
+        'core': ['kaspa-node'],
+        'archive-node': ['kaspa-archive-node'],
+        'kaspa-user-applications': ['kasia-app', 'k-social-app'],
+        'indexer-services': ['kasia-indexer', 'k-indexer-bundle', 'kaspa-explorer-bundle'],
+        'mining': ['kaspa-stratum']
+    };
+    
+    // Check new → legacy mappings (reverse)
+    const newMapping = {
+        'kaspa-node': ['core'],
+        'kaspa-archive-node': ['archive-node'],
+        'kasia-app': ['kaspa-user-applications'],
+        'k-social-app': ['kaspa-user-applications'],
+        'kasia-indexer': ['indexer-services'],
+        'k-indexer-bundle': ['indexer-services'],
+        'kaspa-explorer-bundle': ['indexer-services'],
+        'kaspa-stratum': ['mining']
+    };
+    
+    // Check if legacy ID, look for new IDs
+    if (legacyMapping[profileId]) {
+        return selectedProfiles.some(p => legacyMapping[profileId].includes(p));
+    }
+    
+    // Check if new ID, look for legacy ID
+    if (newMapping[profileId]) {
+        return selectedProfiles.some(p => newMapping[profileId].includes(p));
+    }
+    
+    return false;
+}
+
+/**
  * Load configuration form from API
  * Generates default configuration based on selected profiles
  */
@@ -176,8 +258,8 @@ function populateConfigurationForm(config) {
     }
     
     const kaspaNodeWsUrlInput = document.getElementById('kaspa-node-ws-url');
-    if (kaspaNodeWsUrlInput && config.REMOTE_KASPA_NODE_WBORSH_URL) {
-        kaspaNodeWsUrlInput.value = config.REMOTE_KASPA_NODE_WBORSH_URL;
+    if (kaspaNodeWsUrlInput && (config.REMOTE_KASPA_NODE_WRPC_URL || config.REMOTE_KASPA_NODE_WBORSH_URL)) {
+        kaspaNodeWsUrlInput.value = config.REMOTE_KASPA_NODE_WRPC_URL || config.REMOTE_KASPA_NODE_WBORSH_URL;
     }
     
     // Data directories
@@ -203,52 +285,65 @@ function populateConfigurationForm(config) {
 
 /**
  * Update form visibility based on selected profiles
+ * Supports both new (8-profile) and legacy (5-profile) profile IDs
+ * @param {string[]} profiles - Array of selected profile IDs
  */
 function updateFormVisibility(profiles) {
     console.log('[CONFIGURE] Updating form visibility for profiles:', profiles);
     
-    // Network Configuration section - show for core, archive-node, mining
-    // Hide for kaspa-user-applications and indexer-services (they don't need external IP or public node toggle)
-    // indexer-services connect TO nodes, they don't serve as public nodes
+    // Network Configuration section - show for node profiles and mining
+    // Includes: external IP, public node toggle
+    // Hide for apps and indexers (they don't need external IP or public node toggle)
     const networkSection = document.querySelector('.config-section:has(#external-ip)');
     if (networkSection) {
-        const needsNetwork = profiles.includes('core') || profiles.includes('archive-node') || 
-                            profiles.includes('mining');
+        const needsNetwork = hasProfileGroup(profiles, 'network');
         networkSection.style.display = needsNetwork ? 'block' : 'none';
         console.log('[CONFIGURE] Network section display:', needsNetwork ? 'block' : 'none', 'for profiles:', profiles);
     } else {
         console.warn('[CONFIGURE] Network section not found in DOM');
     }
     
-    // Indexer Endpoints section - show ONLY if kaspa-user-applications profile is selected
+    // Indexer Endpoints section - show if ANY app profile is selected
+    // Apps need to configure where to connect to indexers (local vs public)
     const indexerSection = document.getElementById('indexer-endpoints-section');
     if (indexerSection) {
-        const needsIndexerEndpoints = profiles.includes('kaspa-user-applications');
+        const needsIndexerEndpoints = hasProfileGroup(profiles, 'apps');
         indexerSection.style.display = needsIndexerEndpoints ? 'block' : 'none';
         console.log('[CONFIGURE] Indexer endpoints section display:', needsIndexerEndpoints ? 'block' : 'none');
     } else {
         console.warn('[CONFIGURE] Indexer endpoints section not found in DOM');
     }
     
-    // Database section - show ONLY if indexer-services profile is selected
-    // Kaspa User Applications use public indexers by default and don't need database config
+    // Database section - show if ANY indexer profile is selected
+    // Indexers need database configuration (passwords, ports)
     const dbSection = document.querySelector('.config-section:has(#k-social-db-password)');
     if (dbSection) {
-        const needsDatabase = profiles.includes('indexer-services');
+        const needsDatabase = hasProfileGroup(profiles, 'indexers');
         dbSection.style.display = needsDatabase ? 'block' : 'none';
         console.log('[CONFIGURE] Database section display:', needsDatabase ? 'block' : 'none');
     } else {
         console.warn('[CONFIGURE] Database section not found in DOM');
     }
     
-    // Kaspa Node Configuration section - show if core or archive-node profiles are selected
+    // Kaspa Node Configuration section - show if any node profile is selected
     const kaspaNodeSection = document.getElementById('kaspa-node-config-section');
     if (kaspaNodeSection) {
-        const needsKaspaNode = profiles.includes('core') || profiles.includes('archive-node');
+        const needsKaspaNode = hasProfileGroup(profiles, 'node');
         kaspaNodeSection.style.display = needsKaspaNode ? 'block' : 'none';
         console.log('[CONFIGURE] Kaspa node section display:', needsKaspaNode ? 'block' : 'none');
     } else {
         console.warn('[CONFIGURE] Kaspa node section not found in DOM');
+    }
+    
+    // Mining Configuration section - show if mining profile is selected
+    const miningSection = document.getElementById('mining-config-section');
+    if (miningSection) {
+        const needsMining = hasProfileGroup(profiles, 'mining');
+        miningSection.style.display = needsMining ? 'block' : 'none';
+        console.log('[CONFIGURE] Mining section display:', needsMining ? 'block' : 'none');
+    } else {
+        // Mining section may not exist in all layouts
+        console.log('[CONFIGURE] Mining section not found in DOM (may not be implemented yet)');
     }
     
     // Advanced options data directory fields
@@ -257,24 +352,67 @@ function updateFormVisibility(profiles) {
 
 /**
  * Update advanced options visibility based on selected profiles
+ * Supports both new (8-profile) and legacy (5-profile) profile IDs
+ * @param {string[]} profiles - Array of selected profile IDs
  */
 function updateAdvancedOptionsVisibility(profiles) {
-    // Kaspa node data directory - show for core profile
+    // Kaspa node data directory - show for standard node profile (not archive)
     const kaspaDataDirGroup = document.getElementById('kaspa-data-dir-group');
     if (kaspaDataDirGroup) {
-        kaspaDataDirGroup.style.display = profiles.includes('core') ? 'block' : 'none';
+        const showKaspaDir = hasProfileGroup(profiles, 'standardNode');
+        kaspaDataDirGroup.style.display = showKaspaDir ? 'block' : 'none';
+        console.log('[CONFIGURE] Kaspa data dir display:', showKaspaDir ? 'block' : 'none');
     }
     
     // Archive node data directory - show for archive-node profile
     const archiveDataDirGroup = document.getElementById('kaspa-archive-data-dir-group');
     if (archiveDataDirGroup) {
-        archiveDataDirGroup.style.display = profiles.includes('archive-node') ? 'block' : 'none';
+        const showArchiveDir = hasProfileGroup(profiles, 'archive');
+        archiveDataDirGroup.style.display = showArchiveDir ? 'block' : 'none';
+        console.log('[CONFIGURE] Archive data dir display:', showArchiveDir ? 'block' : 'none');
     }
     
-    // TimescaleDB data directory - show for indexer-services profile
+    // TimescaleDB data directory - show for any indexer profile
     const timescaledbDataDirGroup = document.getElementById('timescaledb-data-dir-group');
     if (timescaledbDataDirGroup) {
-        timescaledbDataDirGroup.style.display = profiles.includes('indexer-services') ? 'block' : 'none';
+        const showTimescaleDir = hasProfileGroup(profiles, 'indexers');
+        timescaledbDataDirGroup.style.display = showTimescaleDir ? 'block' : 'none';
+        console.log('[CONFIGURE] TimescaleDB data dir display:', showTimescaleDir ? 'block' : 'none');
+    }
+    
+    // Kasia app specific options (if section exists)
+    const kasiaAppGroup = document.getElementById('kasia-app-config-group');
+    if (kasiaAppGroup) {
+        const showKasiaApp = hasProfile(profiles, 'kasia-app') || hasProfile(profiles, 'kaspa-user-applications');
+        kasiaAppGroup.style.display = showKasiaApp ? 'block' : 'none';
+    }
+    
+    // K-Social app specific options (if section exists)
+    const ksocialAppGroup = document.getElementById('ksocial-app-config-group');
+    if (ksocialAppGroup) {
+        const showKsocialApp = hasProfile(profiles, 'k-social-app') || hasProfile(profiles, 'kaspa-user-applications');
+        ksocialAppGroup.style.display = showKsocialApp ? 'block' : 'none';
+    }
+    
+    // Explorer bundle specific options (if section exists)
+    const explorerGroup = document.getElementById('explorer-config-group');
+    if (explorerGroup) {
+        const showExplorer = hasProfile(profiles, 'kaspa-explorer-bundle') || hasProfile(profiles, 'indexer-services');
+        explorerGroup.style.display = showExplorer ? 'block' : 'none';
+    }
+    
+    // K-Indexer bundle specific options (if section exists)
+    const kindexerGroup = document.getElementById('kindexer-config-group');
+    if (kindexerGroup) {
+        const showKindexer = hasProfile(profiles, 'k-indexer-bundle') || hasProfile(profiles, 'indexer-services');
+        kindexerGroup.style.display = showKindexer ? 'block' : 'none';
+    }
+    
+    // Stratum/Mining specific options (if section exists)
+    const stratumGroup = document.getElementById('stratum-config-group');
+    if (stratumGroup) {
+        const showStratum = hasProfileGroup(profiles, 'mining');
+        stratumGroup.style.display = showStratum ? 'block' : 'none';
     }
 }
 
