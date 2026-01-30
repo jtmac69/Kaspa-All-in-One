@@ -1,13 +1,36 @@
 FROM node:20-alpine AS builder
 
 # Build arguments for version control
-ARG K_SOCIAL_VERSION=master
+# Set to "latest" to automatically fetch the most recent release tag
+# Set to a specific tag (e.g., "v1.0.0") to pin to that version
+# Set to "master" to use the development branch
+ARG K_SOCIAL_VERSION=latest
 
-# Install build dependencies
-RUN apk add --no-cache python3 make g++ git
+# Install build dependencies (including curl and jq for GitHub API)
+RUN apk add --no-cache python3 make g++ git curl jq
 
-# Clone K Social App repository at build time
-RUN git clone --depth 1 --branch ${K_SOCIAL_VERSION} https://github.com/thesheepcat/K.git /app
+# Fetch the latest release tag if K_SOCIAL_VERSION is "latest"
+# Otherwise use the specified version
+RUN if [ "$K_SOCIAL_VERSION" = "latest" ]; then \
+      echo "Fetching latest release from GitHub..." && \
+      LATEST_TAG=$(curl -s https://api.github.com/repos/thesheepcat/K/releases/latest | jq -r '.tag_name // empty') && \
+      if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then \
+        echo "No releases found, checking for tags..." && \
+        LATEST_TAG=$(curl -s https://api.github.com/repos/thesheepcat/K/tags | jq -r '.[0].name // empty') && \
+        if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then \
+          echo "No tags found, falling back to master branch" && \
+          LATEST_TAG="master"; \
+        fi; \
+      fi && \
+      echo "Using version: $LATEST_TAG" && \
+      git clone --depth 1 --branch "$LATEST_TAG" https://github.com/thesheepcat/K.git /app; \
+    else \
+      echo "Using specified version: $K_SOCIAL_VERSION" && \
+      git clone --depth 1 --branch "$K_SOCIAL_VERSION" https://github.com/thesheepcat/K.git /app; \
+    fi
+
+# Save the version used for reference
+RUN cd /app && echo "K_SOCIAL_VERSION=$(git describe --tags --always 2>/dev/null || echo 'unknown')" > /app/.version
 
 WORKDIR /app
 
@@ -25,6 +48,9 @@ RUN apk add --no-cache curl gettext
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy version info for debugging
+COPY --from=builder /app/.version /usr/share/nginx/html/.version
 
 # Copy custom nginx configuration template
 COPY nginx.conf /etc/nginx/templates/default.conf.template

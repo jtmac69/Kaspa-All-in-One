@@ -7,6 +7,11 @@ const ServiceValidator = require('./service-validator');
 class ConfigGenerator {
   constructor() {
     this.serviceValidator = new ServiceValidator();
+    
+    // Release cache for GitHub API responses
+    this.releaseCache = new Map();
+    this.cacheTTL = 3600000; // 1 hour in milliseconds
+    
     this.configSchema = Joi.object({
       // Core settings
       PUBLIC_NODE: Joi.boolean().default(false),
@@ -59,6 +64,164 @@ class ConfigGenerator {
       MINING_ADDRESS: Joi.string().allow('').optional(),
       STRATUM_PORT: Joi.number().integer().min(1024).max(65535).default(5555)
     });
+
+    // Profile-to-Service Mappings (NEW 8-PROFILE ARCHITECTURE)
+    this.PROFILE_SERVICE_MAP = {
+      // New Profile IDs → Docker Services
+      'kaspa-node': ['kaspa-node'],
+      'kasia-app': ['kasia-app'],
+      'k-social-app': ['k-social'],  // Note: container name is 'k-social' not 'k-social-app'
+      'kaspa-explorer-bundle': ['kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer'],
+      'kasia-indexer': ['kasia-indexer'],
+      'k-indexer-bundle': ['k-indexer', 'timescaledb-kindexer'],
+      'kaspa-archive-node': ['kaspa-archive-node'],
+      'kaspa-stratum': ['kaspa-stratum'],
+      
+      // Legacy Profile IDs → Services (BACKWARD COMPATIBILITY)
+      'core': ['kaspa-node'],  // Dashboard is now local, not containerized
+      'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],
+      'indexer-services': ['kasia-indexer', 'k-indexer', 'simply-kaspa-indexer', 'timescaledb-kindexer', 'timescaledb-explorer'],
+      'archive-node': ['kaspa-archive-node'],
+      'mining': ['kaspa-stratum']
+    };
+    
+    // Service-to-Profile Reverse Mapping (for lookups)
+    this.SERVICE_PROFILE_MAP = this._buildServiceProfileMap();
+  }
+
+  /**
+   * Build reverse mapping: service → profile ID
+   * @private
+   */
+  _buildServiceProfileMap() {
+    const map = {};
+    for (const [profileId, services] of Object.entries(this.PROFILE_SERVICE_MAP)) {
+      services.forEach(service => {
+        if (!map[service]) {
+          map[service] = [];
+        }
+        map[service].push(profileId);
+      });
+    }
+    return map;
+  }
+
+  /**
+   * Fetch latest GitHub release tag
+   * @private
+   * @param {string} repo - GitHub repository in format 'owner/repo'
+   * @param {string} fallbackTag - Fallback tag to use if fetch fails
+   * @param {number} timeout - Request timeout in milliseconds
+   * @returns {Promise<string>} Release tag
+   */
+  async _fetchLatestGitHubRelease(repo, fallbackTag = 'latest', timeout = 5000) {
+    try {
+      // Check cache
+      const cacheKey = `release:${repo}`;
+      const cached = this.releaseCache.get(cacheKey);
+      
+      if (cached && Date.now() - cached.timestamp < this.cacheTTL) {
+        console.log(`Using cached release for ${repo}: ${cached.tag}`);
+        return cached.tag;
+      }
+      
+      console.log(`Fetching latest release for ${repo}...`);
+      
+      // Fetch with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      const response = await fetch(
+        `https://api.github.com/repos/${repo}/releases/latest`,
+        {
+          headers: {
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'Kaspa-AIO-Wizard'
+          },
+          signal: controller.signal
+        }
+      );
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`GitHub API: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const tag = data.tag_name;
+      
+      if (!tag) {
+        throw new Error('No tag_name in response');
+      }
+      
+      // Cache result
+      this.releaseCache.set(cacheKey, { tag, timestamp: Date.now() });
+      
+      console.log(`Fetched latest release for ${repo}: ${tag}`);
+      return tag;
+      
+    } catch (error) {
+      console.warn(`Failed to fetch ${repo}: ${error.message}`);
+      console.warn(`Using fallback: ${fallbackTag}`);
+      
+      // Cache fallback
+      this.releaseCache.set(`release:${repo}`, {
+        tag: fallbackTag,
+        timestamp: Date.now()
+      });
+      
+      return fallbackTag;
+    }
+  }
+
+  /**
+   * Construct Docker image with tag
+   * @private
+   * @param {string} imageName - Docker image name
+   * @param {string} tag - Image tag
+   * @returns {string} Full image reference
+   */
+  _constructImageTag(imageName, tag) {
+    return `${imageName}:${tag}`;
+  }
+
+  /**
+   * Resolve profile IDs (handles both new and legacy)
+   * @param {string[]} profiles - Array of profile IDs (new or legacy)
+   * @returns {string[]} Array of resolved new profile IDs
+   */
+  resolveProfiles(profiles) {
+    const resolved = new Set();
+    
+    profiles.forEach(profileId => {
+      // Check if it's a valid profile ID (new or legacy)
+      if (this.PROFILE_SERVICE_MAP[profileId]) {
+        resolved.add(profileId);
+      } else {
+        // Unknown profile - log warning but don't fail
+        console.warn(`Unknown profile ID: ${profileId}`);
+      }
+    });
+    
+    return Array.from(resolved);
+  }
+
+  /**
+   * Get all services for given profiles
+   * @param {string[]} profiles - Array of profile IDs
+   * @returns {string[]} Array of unique service names
+   */
+  getServicesForProfiles(profiles) {
+    const resolvedProfiles = this.resolveProfiles(profiles);
+    const services = new Set();
+    
+    resolvedProfiles.forEach(profileId => {
+      const profileServices = this.PROFILE_SERVICE_MAP[profileId] || [];
+      profileServices.forEach(service => services.add(service));
+    });
+    
+    return Array.from(services);
   }
 
   generateSecurePassword(length = 32) {
@@ -984,6 +1147,556 @@ class ConfigGenerator {
   }
 
   /**
+   * Generate kaspa-node service definition
+   * Uses latest GitHub release automatically
+   * @private
+   * @param {Object} config - Configuration object
+   * @returns {Promise<string>} Docker compose service definition
+   */
+  async _generateKaspaNodeService(config) {
+    const rpcPort = config.KASPA_NODE_RPC_PORT || 16110;
+    const p2pPort = config.KASPA_NODE_P2P_PORT || 16111;
+    const wrpcPort = config.KASPA_NODE_WRPC_PORT || 17110;
+    const network = config.KASPA_NETWORK || 'mainnet';
+    const publicNode = config.PUBLIC_NODE === 'true' || config.PUBLIC_NODE === true;
+    const walletEnabled = config.WALLET_ENABLED === 'true' || config.WALLET_ENABLED === true;
+    const utxoIndex = config.UTXO_INDEX === 'true' || config.UTXO_INDEX === true || true;
+    const dataPath = config.DATA_VOLUME_PATH || '/var/lib/kaspa-docker';
+    
+    // Fetch latest release from GitHub
+    const kaspaVersion = await this._fetchLatestGitHubRelease(
+      'kaspanet/rusty-kaspa',
+      'v1.0.1'  // Fallback to known stable version
+    );
+    
+    // Use versioned Docker image
+    const kaspaImage = `kaspanet/rusty-kaspad:${kaspaVersion}`;
+    
+    console.log(`Generating kaspa-node service with image: ${kaspaImage}`);
+    
+    return `  kaspa-node:
+    image: ${kaspaImage}
+    container_name: kaspa-node
+    restart: unless-stopped
+    ports:
+      - "${rpcPort}:16110"
+      - "${p2pPort}:16111"
+      - "${wrpcPort}:17110"
+    volumes:
+      - ${dataPath}/kaspa-node:/app/data
+    environment:
+      - KASPA_NETWORK=${network}
+      - PUBLIC_NODE=${publicNode}
+      - WALLET_ENABLED=${walletEnabled}
+      - UTXO_INDEX=${utxoIndex}
+    command: >
+      kaspad
+      --appdir=/app/data
+      --${network}
+      ${publicNode ? '--public-node' : ''}
+      ${walletEnabled ? '--wallet-enabled' : ''}
+      ${utxoIndex ? '--utxoindex' : ''}
+      --rpclisten=0.0.0.0:16110
+      --listen=0.0.0.0:16111
+      --wrpc-listen=0.0.0.0:17110
+    networks:
+      - kaspa-network
+`;
+  }
+
+  /**
+   * Generate kaspa-archive-node service definition
+   * Uses same kaspanet/rusty-kaspad image as regular node but with --nopruning
+   * Fetches latest GitHub release to match kaspa-node version
+   * @param {Object} config - Configuration object
+   * @returns {Promise<string>} Docker Compose service definition
+   * @private
+   */
+  async _generateKaspaArchiveNodeService(config) {
+    const network = config.KASPA_NETWORK || 'mainnet';
+    const rpcPort = config.KASPA_NODE_RPC_PORT || 16110;
+    const p2pPort = config.KASPA_NODE_P2P_PORT || 16111;
+    const wrpcPort = config.KASPA_NODE_WRPC_PORT || 17110;
+    const publicNode = config.PUBLIC_NODE || false;
+    const dataPath = config.DATA_VOLUME_PATH || '/var/lib/kaspa-aio';
+    
+    // Fetch latest release from GitHub (same as kaspa-node)
+    const kaspaRelease = await this._fetchLatestGitHubRelease(
+      'kaspanet/rusty-kaspa',
+      'v1.0.1'  // Fallback version if fetch fails
+    );
+    
+    console.log(`[ConfigGenerator] Using kaspanet/rusty-kaspad:${kaspaRelease} for kaspa-archive-node`);
+    
+    // Build command arguments - includes --nopruning for full history
+    const args = [
+      `--${network}`,
+      '--rpclisten=0.0.0.0',
+      `--rpclisten-borsh=0.0.0.0:${wrpcPort}`,
+      '--loglevel=info',
+      '--nopruning',  // CRITICAL: Keeps full blockchain history
+      '--utxoindex'   // Archive nodes typically need UTXO index
+    ];
+    
+    if (publicNode) {
+      args.push('--externalip=0.0.0.0');
+    }
+    
+    return `  kaspa-archive-node:
+    image: kaspanet/rusty-kaspad:${kaspaRelease}
+    container_name: kaspa-archive-node
+    restart: unless-stopped
+    ports:
+      - "${rpcPort}:16110"
+      - "${p2pPort}:16111"
+      - "${wrpcPort}:17110"
+    command: ${JSON.stringify(args)}
+    volumes:
+      - ${dataPath}/kaspa-archive:/app/data
+    networks:
+      - kaspa-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16110"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+`;
+  }
+
+  /**
+   * Generate kasia-app service definition
+   * @private
+   * @param {Object} config - Configuration object
+   * @returns {string} Docker compose service definition
+   */
+  _generateKasiaAppService(config) {
+    const appPort = config.KASIA_APP_PORT || 3001;
+    const indexerMode = config.KASIA_INDEXER_MODE || 'auto';
+    const localIndexerUrl = config.KASIA_INDEXER_URL || 'http://kasia-indexer:8080';
+    const publicIndexerUrl = config.REMOTE_KASIA_INDEXER_URL || 'https://api.kasia.io';
+    const publicNodeUrl = config.REMOTE_KASPA_NODE_WRPC_URL || 'wss://wrpc.kasia.fyi';
+    
+    // Use configurable image or placeholder
+    // Note: Official Docker image does not exist for Kasia
+    //       Project must provide custom image or Dockerfile
+    const kasiaImage = config.KASIA_APP_IMAGE || 'kasia-app:latest';
+    
+    console.log(`Using kasia-app image: ${kasiaImage}`);
+    console.log('NOTE: If image not found, provide KASIA_APP_IMAGE config or add Dockerfile');
+    
+    return `  kasia-app:
+    image: ${kasiaImage}
+    container_name: kasia-app
+    restart: unless-stopped
+    ports:
+      - "${appPort}:3000"
+    environment:
+      - KASIA_INDEXER_MODE=${indexerMode}
+      - KASIA_INDEXER_URL=${localIndexerUrl}
+      - REMOTE_KASIA_INDEXER_URL=${publicIndexerUrl}
+      - REMOTE_KASPA_NODE_WRPC_URL=${publicNodeUrl}
+    networks:
+      - kaspa-network
+`;
+  }
+
+  /**
+   * Generate k-social service definition
+   * Note: Service name is 'k-social' not 'k-social-app' for backward compatibility
+   * @private
+   * @param {Object} config - Configuration object
+   * @returns {string} Docker compose service definition
+   */
+  _generateKSocialAppService(config) {
+    const appPort = config.KSOCIAL_APP_PORT || 3003;
+    const indexerMode = config.KSOCIAL_INDEXER_MODE || 'auto';
+    const localIndexerUrl = config.KSOCIAL_INDEXER_URL || 'http://k-indexer:8080';
+    const publicIndexerUrl = config.REMOTE_KSOCIAL_INDEXER_URL || 'https://indexer0.kaspatalk.net/';
+    const nodeMode = config.KSOCIAL_NODE_MODE || 'auto';
+    const localNodeUrl = config.KSOCIAL_NODE_WRPC_URL || 'ws://kaspa-node:17110';
+    const publicNodeUrl = config.REMOTE_KASPA_NODE_WRPC_URL || 'wss://wrpc.kasia.fyi';
+    
+    // Use configurable image or placeholder
+    // Note: Official Docker image does not exist for K frontend
+    //       Project must provide custom image or Dockerfile
+    const kSocialImage = config.KSOCIAL_APP_IMAGE || 'k-social:latest';
+    
+    console.log(`Using k-social image: ${kSocialImage}`);
+    console.log('NOTE: If image not found, provide KSOCIAL_APP_IMAGE config or add Dockerfile');
+    
+    return `  k-social:
+    image: ${kSocialImage}
+    container_name: k-social
+    restart: unless-stopped
+    ports:
+      - "${appPort}:3000"
+    environment:
+      - KSOCIAL_INDEXER_MODE=${indexerMode}
+      - KSOCIAL_INDEXER_URL=${localIndexerUrl}
+      - REMOTE_KSOCIAL_INDEXER_URL=${publicIndexerUrl}
+      - KSOCIAL_NODE_MODE=${nodeMode}
+      - KSOCIAL_NODE_WRPC_URL=${localNodeUrl}
+      - REMOTE_KASPA_NODE_WRPC_URL=${publicNodeUrl}
+    networks:
+      - kaspa-network
+`;
+  }
+
+  /**
+   * Generate simply-kaspa-indexer service definition
+   * Uses latest GitHub release tag for supertypo/simply-kaspa-indexer
+   * @param {Object} config - Configuration object
+   * @returns {Promise<string>} Docker Compose service definition
+   * @private
+   */
+  async _generateSimplyKaspaIndexerService(config) {
+    const indexerPort = config.SIMPLY_KASPA_INDEXER_PORT || 3005;
+    const nodeMode = config.SIMPLY_KASPA_NODE_MODE || 'local';
+    const nodeUrl = config.SIMPLY_KASPA_NODE_WRPC_URL || 'ws://kaspa-node:17110';
+    const remoteNodeUrl = config.REMOTE_KASPA_NODE_WRPC_URL || '';
+    const dbHost = 'timescaledb-explorer';
+    const dbPort = '5432';
+    const dbUser = config.POSTGRES_USER_EXPLORER || 'kaspa_explorer';
+    const dbPassword = config.POSTGRES_PASSWORD_EXPLORER || '';
+    const dbName = config.POSTGRES_DB_EXPLORER || 'simply_kaspa';
+    
+    // Fetch latest release from GitHub
+    const indexerRelease = await this._fetchLatestGitHubRelease(
+      'supertypo/simply-kaspa-indexer',
+      'v1.6.1'  // Fallback version if fetch fails
+    );
+    
+    console.log(`[ConfigGenerator] Using supertypo/simply-kaspa-indexer:${indexerRelease} for simply-kaspa-indexer`);
+    
+    return `  simply-kaspa-indexer:
+    image: supertypo/simply-kaspa-indexer:${indexerRelease}
+    container_name: simply-kaspa-indexer
+    restart: unless-stopped
+    ports:
+      - "${indexerPort}:8080"
+    environment:
+      - NODE_MODE=${nodeMode}
+      - KASPA_NODE_WRPC_URL=${nodeMode === 'local' ? nodeUrl : remoteNodeUrl}
+      - DB_HOST=${dbHost}
+      - DB_PORT=${dbPort}
+      - DB_USER=${dbUser}
+      - DB_PASSWORD=${dbPassword}
+      - DB_NAME=${dbName}
+    depends_on:
+      - timescaledb-explorer
+    networks:
+      - kaspa-network
+`;
+  }
+
+  /**
+   * Generate kaspa-explorer service definition
+   * Note: No official Docker image exists. Users must provide custom image
+   * via KASPA_EXPLORER_IMAGE config or build locally.
+   * @param {Object} config - Configuration object
+   * @returns {string} Docker Compose service definition
+   * @private
+   */
+  _generateKaspaExplorerService(config) {
+    const explorerPort = config.KASPA_EXPLORER_PORT || 3004;
+    const indexerUrl = config.SIMPLY_KASPA_INDEXER_URL || 'http://simply-kaspa-indexer:8080';
+    
+    // Configurable image source - no official Docker image exists
+    const explorerImage = config.KASPA_EXPLORER_IMAGE || 'kaspa-explorer:latest';
+    
+    return `  kaspa-explorer:
+    image: ${explorerImage}
+    container_name: kaspa-explorer
+    restart: unless-stopped
+    ports:
+      - "${explorerPort}:80"
+    environment:
+      - INDEXER_URL=${indexerUrl}
+    depends_on:
+      - simply-kaspa-indexer
+    networks:
+      - kaspa-network
+`;
+  }
+
+  /**
+   * Generate timescaledb-explorer service definition
+   * Uses verified stable TimescaleDB image
+   * @param {Object} config - Configuration object
+   * @returns {string} Docker Compose service definition
+   * @private
+   */
+  _generateTimescaleDBExplorerService(config) {
+    const dbPort = config.TIMESCALEDB_EXPLORER_PORT || 5434;
+    const dbUser = config.POSTGRES_USER_EXPLORER || 'kaspa_explorer';
+    const dbPassword = config.POSTGRES_PASSWORD_EXPLORER || '';
+    const dbName = config.POSTGRES_DB_EXPLORER || 'simply_kaspa';
+    const dataPath = config.DATA_VOLUME_PATH || '/var/lib/kaspa-aio';
+    
+    return `  timescaledb-explorer:
+    image: timescale/timescaledb:latest-pg16
+    container_name: timescaledb-explorer
+    restart: unless-stopped
+    ports:
+      - "${dbPort}:5432"
+    environment:
+      - POSTGRES_USER=${dbUser}
+      - POSTGRES_PASSWORD=${dbPassword}
+      - POSTGRES_DB=${dbName}
+    volumes:
+      - ${dataPath}/timescaledb-explorer:/var/lib/postgresql/data
+    networks:
+      - kaspa-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${dbUser} -d ${dbName}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+`;
+  }
+
+  /**
+   * Generate kasia-indexer service definition
+   * 
+   * Note: Kasia-indexer has NO official Docker image.
+   * K-Kluster operates public infrastructure (https://api.kasia.info).
+   * For local deployment, users must:
+   *   1. Provide custom image via KASIA_INDEXER_IMAGE config
+   *   2. Build from Dockerfile at services/kasia-indexer/Dockerfile
+   *   3. Use K-Kluster's public indexer (set KASIA_INDEXER_MODE=remote)
+   * 
+   * @param {Object} config - Configuration object
+   * @returns {string} Docker Compose service definition
+   * @private
+   */
+  _generateKasiaIndexerService(config) {
+    const indexerPort = config.KASIA_INDEXER_PORT || 3002;
+    const nodeMode = config.KASIA_NODE_MODE || 'local';
+    const nodeUrl = config.KASIA_NODE_WRPC_URL || 'ws://kaspa-node:17110';
+    const remoteNodeUrl = config.REMOTE_KASPA_NODE_WRPC_URL || '';
+    const dataPath = config.DATA_VOLUME_PATH || '/var/lib/kaspa-aio';
+    
+    // Configurable image source - NO official Docker image exists
+    // Users must provide KASIA_INDEXER_IMAGE or build from local Dockerfile
+    const indexerImage = config.KASIA_INDEXER_IMAGE || 'kasia-indexer:latest';
+    
+    return `  kasia-indexer:
+    image: ${indexerImage}
+    container_name: kasia-indexer
+    restart: unless-stopped
+    ports:
+      - "${indexerPort}:8080"
+    environment:
+      - NODE_MODE=${nodeMode}
+      - KASPA_NODE_WRPC_URL=${nodeMode === 'local' ? nodeUrl : remoteNodeUrl}
+    volumes:
+      - ${dataPath}/kasia-indexer:/app/data
+    networks:
+      - kaspa-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+`;
+  }
+
+  /**
+   * Generate k-indexer service definition
+   * 
+   * Note: K-indexer has NO official Docker image.
+   * Project: github.com/thesheepcat/K-indexer (v0.1.14, early stage)
+   * For local deployment, users must:
+   *   1. Provide custom image via K_INDEXER_IMAGE config
+   *   2. Build from Dockerfile at services/k-indexer/Dockerfile
+   *   3. Create Docker Compose setup based on project repo
+   * 
+   * @param {Object} config - Configuration object
+   * @returns {string} Docker Compose service definition
+   * @private
+   */
+  _generateKIndexerService(config) {
+    const indexerPort = config.K_INDEXER_PORT || 3006;
+    const nodeMode = config.K_INDEXER_NODE_MODE || 'local';
+    const nodeUrl = config.K_INDEXER_NODE_WRPC_URL || 'ws://kaspa-node:17110';
+    const remoteNodeUrl = config.REMOTE_KASPA_NODE_WRPC_URL || '';
+    const dbHost = 'timescaledb-kindexer';
+    const dbPort = '5432';
+    const dbUser = config.POSTGRES_USER_KINDEXER || 'k_indexer';
+    const dbPassword = config.POSTGRES_PASSWORD_KINDEXER || '';
+    const dbName = config.POSTGRES_DB_KINDEXER || 'k_indexer';
+    
+    // Configurable image source - NO official Docker image exists
+    const indexerImage = config.K_INDEXER_IMAGE || 'k-indexer:latest';
+    
+    return `  k-indexer:
+    image: ${indexerImage}
+    container_name: k-indexer
+    restart: unless-stopped
+    ports:
+      - "${indexerPort}:8080"
+    environment:
+      - NODE_MODE=${nodeMode}
+      - KASPA_NODE_WRPC_URL=${nodeMode === 'local' ? nodeUrl : remoteNodeUrl}
+      - DB_HOST=${dbHost}
+      - DB_PORT=${dbPort}
+      - DB_USER=${dbUser}
+      - DB_PASSWORD=${dbPassword}
+      - DB_NAME=${dbName}
+    depends_on:
+      - timescaledb-kindexer
+    networks:
+      - kaspa-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+`;
+  }
+
+  /**
+   * KASPA STRATUM BUILD NOTES
+   * 
+   * Kaspa-stratum requires building from a specific GitHub fork/branch:
+   * - Repo: https://github.com/LiveLaughLove13/rusty-kaspa
+   * - Branch: externalipDNSresolver
+   * - Reason: External IP/DNS resolution features
+   * 
+   * Build Methods:
+   * 1. Docker Compose build (automatic):
+   *    - Uses `build.context` with GitHub URL
+   *    - Requires Docker Compose v2.0+
+   *    - May fail with older Docker versions
+   * 
+   * 2. Local clone and build (fallback):
+   *    ```bash
+   *    git clone -b externalipDNSresolver https://github.com/LiveLaughLove13/rusty-kaspa
+   *    cd rusty-kaspa/mining/kaspa-miner
+   *    docker build -t kaspa-stratum:latest .
+   *    ```
+   *    Then set: KASPA_STRATUM_IMAGE=kaspa-stratum:latest
+   * 
+   * 3. Pre-built image (user-provided):
+   *    Set: KASPA_STRATUM_IMAGE=myregistry/kaspa-stratum:latest
+   */
+
+  /**
+   * Generate kaspa-stratum service definition
+   * 
+   * Note: Uses custom build from specific GitHub repository/branch
+   * Repository: https://github.com/LiveLaughLove13/rusty-kaspa
+   * Branch: externalipDNSresolver
+   * 
+   * Build approaches:
+   *   1. Docker Compose build context (preferred if supported)
+   *   2. Local clone and build (documented fallback)
+   *   3. Pre-built custom image via KASPA_STRATUM_IMAGE
+   * 
+   * @param {Object} config - Configuration object
+   * @returns {string} Docker Compose service definition
+   * @private
+   */
+  _generateKaspaStratumService(config) {
+    const stratumPort = config.KASPA_STRATUM_PORT || 5555;
+    const nodeRpcUrl = config.KASPA_NODE_RPC_URL || 'kaspa-node:16110';
+    const miningAddress = config.MINING_ADDRESS || '';
+    const externalIp = config.STRATUM_EXTERNAL_IP || '';
+    const dataPath = config.DATA_VOLUME_PATH || '/var/lib/kaspa-aio';
+    
+    // Check if user provided pre-built image
+    const customImage = config.KASPA_STRATUM_IMAGE;
+    
+    // Approach 1: User-provided pre-built image
+    if (customImage) {
+      return `  kaspa-stratum:
+    image: ${customImage}
+    container_name: kaspa-stratum
+    restart: unless-stopped
+    ports:
+      - "${stratumPort}:5555"
+    environment:
+      - KASPA_RPC_URL=${nodeRpcUrl}
+      - MINING_ADDRESS=${miningAddress}
+      - EXTERNAL_IP=${externalIp}
+    volumes:
+      - ${dataPath}/kaspa-stratum:/app/data
+    networks:
+      - kaspa-network
+`;
+    }
+    
+    // Approach 2: Build from GitHub repository/branch
+    // Note: This uses Docker Compose build context URL
+    // If this doesn't work in user's environment, they'll need to clone+build locally
+    return `  kaspa-stratum:
+    build:
+      context: https://github.com/LiveLaughLove13/rusty-kaspa.git#externalipDNSresolver
+      dockerfile: mining/kaspa-miner/Dockerfile
+    image: kaspa-stratum:latest
+    container_name: kaspa-stratum
+    restart: unless-stopped
+    ports:
+      - "${stratumPort}:5555"
+    environment:
+      - KASPA_RPC_URL=${nodeRpcUrl}
+      - MINING_ADDRESS=${miningAddress}
+      - EXTERNAL_IP=${externalIp}
+    volumes:
+      - ${dataPath}/kaspa-stratum:/app/data
+    networks:
+      - kaspa-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "5555"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+`;
+  }
+
+  /**
+   * Generate timescaledb-kindexer service definition
+   * Uses verified stable TimescaleDB image for K-Indexer backend
+   * @param {Object} config - Configuration object
+   * @returns {string} Docker Compose service definition
+   * @private
+   */
+  _generateTimescaleDBKIndexerService(config) {
+    const dbPort = config.TIMESCALEDB_KINDEXER_PORT || 5433;
+    const dbUser = config.POSTGRES_USER_KINDEXER || 'k_indexer';
+    const dbPassword = config.POSTGRES_PASSWORD_KINDEXER || '';
+    const dbName = config.POSTGRES_DB_KINDEXER || 'k_indexer';
+    const dataPath = config.DATA_VOLUME_PATH || '/var/lib/kaspa-aio';
+    
+    return `  timescaledb-kindexer:
+    image: timescale/timescaledb:latest-pg16
+    container_name: timescaledb-kindexer
+    restart: unless-stopped
+    ports:
+      - "${dbPort}:5432"
+    environment:
+      - POSTGRES_USER=${dbUser}
+      - POSTGRES_PASSWORD=${dbPassword}
+      - POSTGRES_DB=${dbName}
+    volumes:
+      - ${dataPath}/timescaledb-kindexer:/var/lib/postgresql/data
+    networks:
+      - kaspa-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${dbUser} -d ${dbName}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+`;
+  }
+
+  /**
    * Generate docker-compose.yml with dynamic port configuration (task 5.1)
    * This generates a complete docker-compose.yml file with configured ports
    * @param {Object} config - Configuration object with port settings
@@ -991,6 +1704,86 @@ class ConfigGenerator {
    * @returns {Promise<string>} docker-compose.yml content
    */
   async generateDockerCompose(config, profiles) {
+    // Get services for the selected profiles
+    const services = this.getServicesForProfiles(profiles);
+    
+    let compose = `version: '3.8'\n\nservices:\n`;
+    
+    // kaspa-node service (from Step 3) - NOW FETCHES LATEST RELEASE
+    if (services.includes('kaspa-node')) {
+      compose += await this._generateKaspaNodeService(config);
+    }
+    
+    // kasia-app service (Step 4)
+    if (services.includes('kasia-app')) {
+      compose += this._generateKasiaAppService(config);
+    }
+    
+    // k-social service (Step 5) - note: service name is 'k-social' not 'k-social-app'
+    if (services.includes('k-social')) {
+      compose += this._generateKSocialAppService(config);
+    }
+    
+    // kaspa-explorer service (Step 6)
+    if (services.includes('kaspa-explorer')) {
+      compose += this._generateKaspaExplorerService(config);
+    }
+    
+    // simply-kaspa-indexer service (Step 6)
+    if (services.includes('simply-kaspa-indexer')) {
+      compose += await this._generateSimplyKaspaIndexerService(config);
+    }
+    
+    // timescaledb-explorer service (Step 6)
+    if (services.includes('timescaledb-explorer')) {
+      compose += this._generateTimescaleDBExplorerService(config);
+    }
+    
+    // kasia-indexer service (Step 7)
+    if (services.includes('kasia-indexer')) {
+      compose += this._generateKasiaIndexerService(config);
+    }
+    
+    // k-indexer service (Step 8)
+    if (services.includes('k-indexer')) {
+      compose += this._generateKIndexerService(config);
+    }
+    
+    // timescaledb-kindexer service (Step 8)
+    if (services.includes('timescaledb-kindexer')) {
+      compose += this._generateTimescaleDBKIndexerService(config);
+    }
+    
+    // kaspa-archive-node service (Step 9)
+    if (services.includes('kaspa-archive-node')) {
+      compose += await this._generateKaspaArchiveNodeService(config);
+    }
+    
+    // kaspa-stratum service (Step 10)
+    if (services.includes('kaspa-stratum')) {
+      compose += this._generateKaspaStratumService(config);
+    }
+    
+    // Add networks section
+    compose += `
+networks:
+  kaspa-network:
+    driver: bridge
+    name: kaspa-network
+`;
+    
+    return compose;
+  }
+
+  /**
+   * Generate docker-compose.yml with dynamic port configuration (LEGACY - TO BE REMOVED)
+   * This is the old implementation that will be replaced by the new profile-based generation
+   * @param {Object} config - Configuration object with port settings
+   * @param {string[]} profiles - Selected profiles
+   * @returns {Promise<string>} docker-compose.yml content
+   * @deprecated Use generateDockerCompose() instead
+   */
+  async generateDockerComposeLegacy(config, profiles) {
     const rpcPort = config.KASPA_NODE_RPC_PORT || 16110;
     const p2pPort = config.KASPA_NODE_P2P_PORT || 16111;
     const network = config.KASPA_NETWORK || 'mainnet';

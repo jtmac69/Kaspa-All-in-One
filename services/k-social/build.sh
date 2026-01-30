@@ -5,7 +5,7 @@
 set -e
 
 # Default values
-VERSION=${K_SOCIAL_VERSION:-master}
+VERSION=${K_SOCIAL_VERSION:-latest}
 MODE=${1:-docker}
 TAG=${2:-k-social-app}
 
@@ -34,20 +34,25 @@ usage() {
 Usage: $0 [MODE] [TAG]
 
 Build modes:
-  docker          Build with current K_SOCIAL_VERSION (default: master)
-  latest          Build with latest master branch
-  version <ver>   Build with specific version/branch
+  docker          Build with current K_SOCIAL_VERSION (default: latest release)
+  latest          Build with latest release from GitHub (auto-detected)
+  master          Build with master branch (development)
+  version <ver>   Build with specific version/branch/tag
   dev             Build with development optimizations
   prod            Build with production optimizations
 
 Examples:
-  $0                          # Build with default settings
-  $0 latest                   # Build with latest master
+  $0                          # Build with latest release (auto-detected)
+  $0 latest                   # Build with latest release
+  $0 master                   # Build with master branch
   $0 version v1.2.3          # Build specific version
   $0 prod k-social-prod      # Production build with custom tag
 
 Environment Variables:
-  K_SOCIAL_VERSION           Version/branch to build (default: master)
+  K_SOCIAL_VERSION           Version/branch to build (default: latest)
+                             - "latest": Auto-detect latest release from GitHub
+                             - "master": Use development branch
+                             - "v1.0.0": Use specific tag/version
   DOCKER_BUILDKIT           Enable BuildKit (recommended: 1)
 EOF
 }
@@ -148,6 +153,9 @@ main() {
             build_image "$VERSION" "$TAG"
             ;;
         "latest")
+            build_image "latest" "$TAG"
+            ;;
+        "master")
             build_image "master" "$TAG"
             ;;
         "version")

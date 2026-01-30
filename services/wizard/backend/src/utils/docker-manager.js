@@ -14,15 +14,44 @@ class DockerManager {
     const resolver = createResolver(__dirname);
     this.projectRoot = resolver.getProjectRoot();
     
-    // Map wizard profile names to docker-compose profile names
-    // Now docker-compose uses the same profile names as the wizard
+    // Profile-to-Container-Names Mapping (NEW 8-PROFILE ARCHITECTURE)
+    // This maps profile IDs to actual Docker container names
+    this.PROFILE_CONTAINER_MAP = {
+      // New Profile IDs
+      'kaspa-node': ['kaspa-node'],
+      'kasia-app': ['kasia-app'],
+      'k-social-app': ['k-social'],  // Note: container name is 'k-social'
+      'kaspa-explorer-bundle': ['kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer'],
+      'kasia-indexer': ['kasia-indexer'],
+      'k-indexer-bundle': ['k-indexer', 'timescaledb-kindexer'],
+      'kaspa-archive-node': ['kaspa-archive-node'],
+      'kaspa-stratum': ['kaspa-stratum'],
+      
+      // Legacy Profile IDs (BACKWARD COMPATIBILITY)
+      'core': ['kaspa-node'],
+      'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],
+      'indexer-services': ['kasia-indexer', 'k-indexer', 'simply-kaspa-indexer', 'timescaledb-kindexer', 'timescaledb-explorer'],
+      'archive-node': ['kaspa-archive-node'],
+      'mining': ['kaspa-stratum']
+    };
+    
+    // Keep legacy profileMapping for docker-compose profile compatibility if needed
     this.profileMapping = {
-      'core': [],  // Core services have no profile (always run)
-      'kaspa-user-applications': ['kaspa-user-applications'],  // kasia-app, k-social, kaspa-explorer
-      'indexer-services': ['indexer-services'],  // k-social-db, simply-kaspa-db, kasia-indexer, k-indexer, simply-kaspa-indexer
-      'archive-node': ['archive-node'],  // archive-db, archive-indexer
-      'mining': ['mining'],  // kaspa-stratum
-      'development': ['development']  // portainer, pgadmin
+      'kaspa-node': [],  // No docker-compose profile needed
+      'kasia-app': [],
+      'k-social-app': [],
+      'kaspa-explorer-bundle': [],
+      'kasia-indexer': [],
+      'k-indexer-bundle': [],
+      'kaspa-archive-node': [],
+      'kaspa-stratum': [],
+      
+      // Legacy
+      'core': [],
+      'kaspa-user-applications': [],
+      'indexer-services': [],
+      'archive-node': [],
+      'mining': []
     };
   }
 
@@ -58,28 +87,22 @@ class DockerManager {
   }
 
   /**
-   * Get container names that will be created for the given profiles
-   * Used to remove conflicting containers from other projects before starting
-   * @param {string[]} profiles - Array of wizard profile names
-   * @returns {string[]} Array of container names
+   * Get container names for given profiles
+   * @param {string[]} profiles - Array of profile IDs (new or legacy)
+   * @returns {string[]} Array of unique container names
    */
   getContainerNamesForProfiles(profiles) {
-    // Map profiles to container names (must match container_name in docker-compose.yml)
-    const containerMap = {
-      'core': ['kaspa-node'],
-      'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],
-      'indexer-services': ['k-social-db', 'simply-kaspa-db', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
-      'archive-node': ['archive-db', 'archive-indexer'],
-      'mining': ['kaspa-stratum'],
-      'development': ['portainer', 'pgadmin']
-    };
-
     const containerNames = new Set();
-    profiles.forEach(profile => {
-      if (containerMap[profile]) {
-        containerMap[profile].forEach(name => containerNames.add(name));
+    
+    profiles.forEach(profileId => {
+      const containers = this.PROFILE_CONTAINER_MAP[profileId];
+      if (containers) {
+        containers.forEach(name => containerNames.add(name));
+      } else {
+        console.warn(`Unknown profile ID in DockerManager: ${profileId}`);
       }
     });
+    
     return Array.from(containerNames);
   }
 
@@ -361,21 +384,12 @@ class DockerManager {
   }
 
   async validateServices(profiles) {
-    // Map wizard profiles to container names for validation
-    // These names must match the container_name in docker-compose.yml
-    // Note: dashboard is now host-based, not containerized
-    const serviceMap = {
-      core: ['kaspa-node'],
-      'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],  // nginx removed - not needed
-      'indexer-services': ['k-social-db', 'simply-kaspa-db', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
-      'archive-node': ['archive-db', 'archive-indexer'],
-      mining: ['kaspa-stratum']
-    };
-
+    // Use the new PROFILE_CONTAINER_MAP for validation
     const servicesToCheck = new Set();
     profiles.forEach(profile => {
-      if (serviceMap[profile]) {
-        serviceMap[profile].forEach(svc => servicesToCheck.add(svc));
+      const containers = this.PROFILE_CONTAINER_MAP[profile];
+      if (containers) {
+        containers.forEach(svc => servicesToCheck.add(svc));
       }
     });
 

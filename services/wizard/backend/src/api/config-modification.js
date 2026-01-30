@@ -555,12 +555,22 @@ function getProfileConfigurationFields(profileId) {
     'kasia-app': [
       { key: 'KASIA_APP_PORT', label: 'Kasia App Port', type: 'number', min: 1024, max: 65535 },
       { key: 'KASIA_INDEXER_MODE', label: 'Indexer Mode', type: 'select', options: ['auto', 'local', 'public'] },
-      { key: 'REMOTE_KASIA_INDEXER_URL', label: 'Remote Indexer URL', type: 'text' }
+      { key: 'REMOTE_KASIA_INDEXER_URL', label: 'Remote Indexer URL', type: 'text' },
+      { key: 'KASIA_APP_IMAGE', label: 'Kasia App Docker Image', type: 'text', defaultValue: 'kasia-app:latest', description: 'Docker image for Kasia app (provide custom if available)', tooltip: 'Default expects local Dockerfile. Provide full image path if using hosted image.', advanced: true }
     ],
     'k-social-app': [
       { key: 'KSOCIAL_APP_PORT', label: 'K-Social App Port', type: 'number', min: 1024, max: 65535 },
       { key: 'KSOCIAL_INDEXER_MODE', label: 'Indexer Mode', type: 'select', options: ['auto', 'local', 'public'] },
-      { key: 'REMOTE_KSOCIAL_INDEXER_URL', label: 'Remote Indexer URL', type: 'text' }
+      { key: 'REMOTE_KSOCIAL_INDEXER_URL', label: 'Remote Indexer URL', type: 'text' },
+      { 
+        key: 'KSOCIAL_APP_IMAGE', 
+        label: 'K-Social App Docker Image', 
+        type: 'text', 
+        defaultValue: 'k-social:latest',
+        description: 'Docker image for K-Social app (provide custom if available)',
+        tooltip: 'Default expects local Dockerfile. Provide full image path if using hosted image.',
+        advanced: true 
+      }
     ],
     'kaspa-explorer-bundle': [
       { key: 'KASPA_EXPLORER_PORT', label: 'Explorer Port', type: 'number', min: 1024, max: 65535 },
