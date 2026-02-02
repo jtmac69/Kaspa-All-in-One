@@ -17,22 +17,28 @@ const { SharedStateManager } = require('./state-manager');
 const TEST_STATE_DIR = path.join(__dirname, '..', '..', '..', '.kaspa-aio-test');
 const TEST_STATE_PATH = path.join(TEST_STATE_DIR, 'installation-state.json');
 
-// Available profiles that could be installed
+// Available profiles that could be installed (NEW 8-profile system)
 const AVAILABLE_PROFILES = [
-  'core',
-  'kaspa-user-applications', 
-  'indexer-services',
-  'archive-node',
-  'mining'
+  'kaspa-node',
+  'kasia-app',
+  'k-social-app',
+  'kaspa-explorer-bundle',
+  'kasia-indexer',
+  'k-indexer-bundle',
+  'kaspa-archive-node',
+  'kaspa-stratum'
 ];
 
-// Services that belong to each profile
+// Services that belong to each profile (Docker container names)
 const PROFILE_SERVICES = {
-  'core': ['kaspa-node'],
-  'kaspa-user-applications': ['kaspa-explorer', 'k-social'],
-  'indexer-services': ['k-indexer', 'simply-kaspa-indexer', 'timescaledb'],
-  'archive-node': ['kaspa-node'], // Same as core but with archive config
-  'mining': ['kaspa-stratum']
+  'kaspa-node': ['kaspa-node'],
+  'kasia-app': ['kasia-app'],
+  'k-social-app': ['k-social'],  // Note: container name is 'k-social', not 'k-social-app'
+  'kaspa-explorer-bundle': ['kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer'],
+  'kasia-indexer': ['kasia-indexer'],
+  'k-indexer-bundle': ['k-indexer', 'timescaledb-kindexer'],
+  'kaspa-archive-node': ['kaspa-archive-node'],
+  'kaspa-stratum': ['kaspa-stratum']
 };
 
 /**
@@ -51,7 +57,7 @@ const installationStateArbitrary = fc.record({
     count: profiles.selected.length // Ensure count matches selected length
   })),
   configuration: fc.record({
-    network: fc.constantFrom('mainnet', 'testnet'),
+    network: fc.constantFrom('mainnet', 'testnet-10', 'testnet-11'),
     publicNode: fc.boolean(),
     hasIndexers: fc.boolean(),
     hasArchive: fc.boolean(),
@@ -59,19 +65,23 @@ const installationStateArbitrary = fc.record({
     kaspaNodePort: fc.option(fc.integer({ min: 16110, max: 16120 }))
   }),
   services: fc.array(fc.record({
-    name: fc.constantFrom('kaspa-node', 'kaspa-explorer', 'k-social', 'k-indexer', 'simply-kaspa-indexer', 'timescaledb', 'kaspa-stratum'),
+    name: fc.constantFrom(
+      'kaspa-node', 'kaspa-archive-node', 'kasia-app', 'k-social',
+      'kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer',
+      'kasia-indexer', 'k-indexer', 'timescaledb-kindexer', 'kaspa-stratum'
+    ),
     displayName: fc.string({ minLength: 5, maxLength: 30 }),
     profile: fc.constantFrom(...AVAILABLE_PROFILES),
     running: fc.boolean(),
     exists: fc.boolean(),
     containerName: fc.option(fc.string({ minLength: 5, maxLength: 50 })),
     ports: fc.option(fc.array(fc.integer({ min: 3000, max: 9000 }), { maxLength: 3 }))
-  }), { minLength: 1, maxLength: 10 }),
+  }), { minLength: 1, maxLength: 15 }),
   summary: fc.record({
-    total: fc.integer({ min: 1, max: 10 }),
-    running: fc.integer({ min: 0, max: 10 }),
-    stopped: fc.integer({ min: 0, max: 10 }),
-    missing: fc.integer({ min: 0, max: 10 })
+    total: fc.integer({ min: 1, max: 15 }),
+    running: fc.integer({ min: 0, max: 15 }),
+    stopped: fc.integer({ min: 0, max: 15 }),
+    missing: fc.integer({ min: 0, max: 15 })
   }),
   wizardRunning: fc.option(fc.boolean())
 });
@@ -309,7 +319,7 @@ describe('Property 10: Reconfiguration Mode Detection', () => {
         expect(['complete', 'installing', 'pending', 'error']).toContain(readState.phase);
         
         // Verify network is valid
-        expect(['mainnet', 'testnet']).toContain(readState.configuration.network);
+        expect(['mainnet', 'testnet-10', 'testnet-11']).toContain(readState.configuration.network);
       }),
       { numRuns: 100 }
     );

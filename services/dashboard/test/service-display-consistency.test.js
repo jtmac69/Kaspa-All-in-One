@@ -84,12 +84,21 @@ describe('Property Test: Dashboard Service Display Consistency', () => {
     });
 
     /**
-     * Generator for valid service entries
+     * Generator for valid service entries with known service names
      */
     const serviceEntryArbitrary = fc.record({
-        name: fc.string({ minLength: 3, maxLength: 20 }).filter(s => /^[a-z0-9-]+$/.test(s)),
+        name: fc.constantFrom(
+            'kaspa-node', 'kaspa-archive-node', 'kasia-app', 'k-social',
+            'kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer',
+            'kasia-indexer', 'k-indexer', 'timescaledb-kindexer',
+            'kaspa-stratum', 'portainer', 'pgadmin'
+        ),
         displayName: fc.option(fc.string({ minLength: 3, maxLength: 30 })),
-        profile: fc.constantFrom('core', 'kaspa-user-applications', 'indexer-services', 'mining', 'archive'),
+        profile: fc.constantFrom(
+            'kaspa-node', 'kasia-app', 'k-social-app', 'kaspa-explorer-bundle',
+            'kasia-indexer', 'k-indexer-bundle', 'kaspa-archive-node', 'kaspa-stratum',
+            'management'
+        ),
         running: fc.boolean(),
         exists: fc.boolean(),
         containerName: fc.option(fc.string({ minLength: 5, maxLength: 25 })),
@@ -97,7 +106,7 @@ describe('Property Test: Dashboard Service Display Consistency', () => {
     });
 
     /**
-     * Generator for valid installation states
+     * Generator for valid installation states with new profile IDs
      */
     const installationStateArbitrary = fc.record({
         version: fc.constant('1.0.0'),
@@ -105,23 +114,29 @@ describe('Property Test: Dashboard Service Display Consistency', () => {
         lastModified: fc.integer({ min: Date.now() - 30 * 24 * 60 * 60 * 1000, max: Date.now() }).map(timestamp => new Date(timestamp).toISOString()),
         phase: fc.constantFrom('pending', 'installing', 'complete', 'error'),
         profiles: fc.record({
-            selected: fc.array(fc.constantFrom('core', 'kaspa-user-applications', 'indexer-services', 'mining', 'archive'), { minLength: 1, maxLength: 5 }),
-            count: fc.integer({ min: 1, max: 5 })
+            selected: fc.array(
+                fc.constantFrom(
+                    'kaspa-node', 'kasia-app', 'k-social-app', 'kaspa-explorer-bundle',
+                    'kasia-indexer', 'k-indexer-bundle', 'kaspa-archive-node', 'kaspa-stratum'
+                ), 
+                { minLength: 1, maxLength: 8 }
+            ),
+            count: fc.integer({ min: 1, max: 8 })
         }),
         configuration: fc.record({
-            network: fc.constantFrom('mainnet', 'testnet'),
+            network: fc.constantFrom('mainnet', 'testnet-10', 'testnet-11'),
             publicNode: fc.boolean(),
             hasIndexers: fc.boolean(),
             hasArchive: fc.boolean(),
             hasMining: fc.boolean(),
-            kaspaNodePort: fc.option(fc.integer({ min: 16110, max: 16115 }))
+            kaspaNodePort: fc.option(fc.integer({ min: 16110, max: 16120 }))
         }),
-        services: fc.array(serviceEntryArbitrary, { minLength: 1, maxLength: 10 }),
+        services: fc.array(serviceEntryArbitrary, { minLength: 1, maxLength: 15 }),
         summary: fc.record({
-            total: fc.integer({ min: 1, max: 10 }),
-            running: fc.integer({ min: 0, max: 10 }),
-            stopped: fc.integer({ min: 0, max: 10 }),
-            missing: fc.integer({ min: 0, max: 10 })
+            total: fc.integer({ min: 1, max: 15 }),
+            running: fc.integer({ min: 0, max: 15 }),
+            stopped: fc.integer({ min: 0, max: 15 }),
+            missing: fc.integer({ min: 0, max: 15 })
         }),
         wizardRunning: fc.option(fc.boolean())
     });

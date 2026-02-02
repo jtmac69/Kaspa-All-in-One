@@ -221,9 +221,7 @@ describe('Property Test: Service Filtering Consistency', () => {
         displayName: fc.option(fc.string({ minLength: 3, maxLength: 30 })),
         profile: fc.option(fc.constantFrom(
             'kaspa-node', 'kasia-app', 'k-social-app', 'kaspa-explorer-bundle',
-            'kasia-indexer', 'k-indexer-bundle', 'kaspa-archive-node', 'kaspa-stratum', 'management',
-            // Legacy profiles for backward compatibility testing
-            'core', 'kaspa-user-applications', 'indexer-services', 'mining', 'archive-node'
+            'kasia-indexer', 'k-indexer-bundle', 'kaspa-archive-node', 'kaspa-stratum', 'management'
         )),
         type: fc.option(fc.constantFrom('Node', 'Management', 'Wallet', 'Database', 'Indexer', 'Application', 'Proxy', 'Mining')),
         running: fc.boolean(),
@@ -248,12 +246,12 @@ describe('Property Test: Service Filtering Consistency', () => {
             count: fc.integer({ min: 1, max: 9 })
         }),
         configuration: fc.record({
-            network: fc.constantFrom('mainnet', 'testnet'),
+            network: fc.constantFrom('mainnet', 'testnet-10', 'testnet-11'),
             publicNode: fc.boolean(),
             hasIndexers: fc.boolean(),
             hasArchive: fc.boolean(),
             hasMining: fc.boolean(),
-            kaspaNodePort: fc.option(fc.integer({ min: 16110, max: 16115 }))
+            kaspaNodePort: fc.option(fc.integer({ min: 16110, max: 16120 }))
         }),
         services: fc.array(serviceEntryArbitrary, { minLength: 1, maxLength: 15 }),
         summary: fc.record({
