@@ -1552,6 +1552,12 @@ if (typeof window !== 'undefined') {
     window.goToStep = goToStep;
     window.startInstallation = startInstallation;
     
+    // Expose profile helper functions globally for use in other modules
+    window.getProfileDisplayName = getProfileDisplayName;
+    window.getProfileStatusIcon = getProfileStatusIcon;
+    window.getProfileCategory = getProfileCategory;
+    window.getProfileBadgeClass = getProfileBadgeClass;
+    
     // Checklist functions
     window.toggleChecklistItem = (item) => {
         const element = document.querySelector(`.checklist-item[data-item="${item}"]`);

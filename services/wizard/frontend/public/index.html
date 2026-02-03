@@ -807,80 +807,64 @@
 
                     <!-- Default Profile Grid (Initial Installation Mode) -->
                     <div class="profile-grid" id="default-profile-grid">
-                        <!-- Core Profile -->
-                        <div class="profile-card" data-profile="core">
-                            <div class="profile-installation-status" style="display: none;">
-                                <div class="installation-badge installed">
-                                    <span class="badge-icon">✓</span>
-                                    <span class="badge-text">Installed</span>
-                                </div>
-                                <div class="installation-info">
-                                    <div class="installation-detail">
-                                        <span class="detail-label">Status:</span>
-                                        <span class="detail-value status-running">Running</span>
-                                    </div>
-                                    <div class="installation-detail">
-                                        <span class="detail-label">Services:</span>
-                                        <span class="detail-value">3/3</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="profile-badge essential">Essential</div>
-                            <div class="profile-icon">
-                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                                    <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="3"/>
-                                    <circle cx="24" cy="24" r="8" fill="currentColor"/>
-                                </svg>
-                            </div>
-                            <h3 class="profile-title">Core Profile</h3>
-                            <p class="profile-description">
-                                Kaspa node (public/private) with optional wallet
-                            </p>
-                            <div class="profile-startup-order">
-                                <span class="startup-badge">Startup Order: 1</span>
-                            </div>
-                            <div class="profile-services">
-                                <span class="service-tag">kaspa-node</span>
-                                <span class="service-tag">wallet</span>
-                                <span class="service-tag">dashboard</span>
-                                <span class="service-tag">nginx</span>
-                            </div>
+                        <!-- Profile 1: Kaspa Node -->
+                        <div class="profile-card" data-profile="kaspa-node" data-category="beginner">
+                            <div class="profile-icon">🖥️</div>
+                            <div class="profile-name">Kaspa Node</div>
+                            <div class="profile-description">Standard pruning Kaspa node with optional wallet</div>
                             <div class="profile-resources">
                                 <div class="resource-item">
-                                    <span class="resource-label">CPU:</span>
-                                    <span class="resource-value">2 cores</span>
+                                    <span class="resource-icon">💾</span>
+                                    <span class="resource-value">4GB RAM</span>
                                 </div>
                                 <div class="resource-item">
-                                    <span class="resource-label">RAM:</span>
-                                    <span class="resource-value">4 GB</span>
-                                </div>
-                                <div class="resource-item">
-                                    <span class="resource-label">Disk:</span>
-                                    <span class="resource-value">100 GB</span>
+                                    <span class="resource-icon">💿</span>
+                                    <span class="resource-value">100GB Disk</span>
                                 </div>
                             </div>
-                            
-                            <!-- Profile Actions (Reconfiguration Mode) -->
-                            <div class="profile-actions" style="display: none;">
-                                <div class="action-buttons">
-                                    <button class="btn-action btn-modify" onclick="modifyProfile('core')">
-                                        <span class="btn-icon">⚙️</span>
-                                        <span class="btn-text">Modify</span>
-                                    </button>
-                                    <button class="btn-action btn-remove" onclick="removeProfile('core')">
-                                        <span class="btn-icon">🗑️</span>
-                                        <span class="btn-text">Remove</span>
-                                    </button>
-                                </div>
-                                <div class="action-warnings" id="core-warnings" style="display: none;">
-                                    <!-- Dependency warnings will be shown here -->
-                                </div>
-                            </div>
+                            <div class="profile-badge category-beginner">Beginner</div>
                         </div>
                         
-                        <!-- Kaspa User Applications Profile -->
-                        <div class="profile-card" data-profile="kaspa-user-applications">
+                        <!-- Profile 2: Kasia App -->
+                        <div class="profile-card" data-profile="kasia-app" data-category="beginner">
+                            <div class="profile-icon">💬</div>
+                            <div class="profile-name">Kasia</div>
+                            <div class="profile-description">Kasia messaging and wallet application</div>
+                            <div class="profile-resources">
+                                <div class="resource-item">
+                                    <span class="resource-icon">💾</span>
+                                    <span class="resource-value">1GB RAM</span>
+                                </div>
+                                <div class="resource-item">
+                                    <span class="resource-icon">💿</span>
+                                    <span class="resource-value">10GB Disk</span>
+                                </div>
+                            </div>
+                            <div class="profile-badge category-beginner">Beginner</div>
+                            <div class="profile-feature-badge public-indexer">✓ Public Indexer</div>
+                        </div>
+                        
+                        <!-- Profile 3: K-Social App -->
+                        <div class="profile-card" data-profile="k-social-app" data-category="beginner">
+                            <div class="profile-icon">👥</div>
+                            <div class="profile-name">K-Social</div>
+                            <div class="profile-description">Decentralized social application</div>
+                            <div class="profile-resources">
+                                <div class="resource-item">
+                                    <span class="resource-icon">💾</span>
+                                    <span class="resource-value">1GB RAM</span>
+                                </div>
+                                <div class="resource-item">
+                                    <span class="resource-icon">💿</span>
+                                    <span class="resource-value">10GB Disk</span>
+                                </div>
+                            </div>
+                            <div class="profile-badge category-beginner">Beginner</div>
+                            <div class="profile-feature-badge public-indexer">✓ Public Indexer</div>
+                        </div>
+                        
+                        <!-- Profile 4: Kaspa Explorer Bundle -->
+                        <div class="profile-card" data-profile="kaspa-explorer-bundle" data-category="intermediate">
                             <div class="profile-installation-status" style="display: none;">
                                 <div class="installation-badge installed">
                                     <span class="badge-icon">✓</span>

@@ -7,65 +7,66 @@ import { stateManager } from './state-manager.js';
 import { showNotification } from './utils.js';
 
 /**
- * Profile definitions with resource requirements
- * These match the profile IDs in the HTML (data-profile attributes)
+ * Profile resource requirements
+ * Maps profile IDs to their resource needs
+ * Supports both new and legacy profile IDs
  */
-const PROFILE_DEFINITIONS = {
-    'core': {
-        name: 'Core Profile',
-        description: 'Kaspa node (public/private) with optional wallet',
-        services: ['kaspa-node', 'wallet'],
-        resources: {
-            cpu: '2 cores',
-            ram: '4 GB',
-            disk: '100 GB'
-        }
-    },
-    'kaspa-user-applications': {
-        name: 'Kaspa User Applications',
-        description: 'User-facing apps (Kasia, K-Social, Kaspa Explorer)',
-        services: [
-            { name: 'Kasia app', port: 3001 },
-            { name: 'K-Social app', port: 3003 },
-            { name: 'Kaspa Explorer', port: 3004 }
-        ],
-        resources: {
-            cpu: '2 cores',
-            ram: '4 GB',
-            disk: '50 GB'
-        }
-    },
-    'indexer-services': {
-        name: 'Indexer Services',
-        description: 'Local indexers (Kasia, K-Indexer, Simply-Kaspa) with dedicated databases',
-        services: ['k-social-db', 'simply-kaspa-db', 'kasia-indexer', 'k-indexer', 'simply-kaspa-indexer'],
-        resources: {
-            cpu: '4 cores',
-            ram: '8 GB',
-            disk: '500 GB'
-        }
-    },
-    'archive-node': {
-        name: 'Archive Node Profile',
-        description: 'Non-pruning Kaspa node for complete blockchain history',
-        services: ['kaspa-archive-node'],
-        resources: {
-            cpu: '8 cores',
-            ram: '16 GB',
-            disk: '1000 GB'
-        }
-    },
-    'mining': {
-        name: 'Mining Profile',
-        description: 'Local mining stratum pointed to local Kaspa node',
-        services: ['kaspa-stratum'],
-        resources: {
-            cpu: '2 cores',
-            ram: '2 GB',
-            disk: '10 GB'
-        }
-    }
+const PROFILE_RESOURCES = {
+    // New profile IDs
+    'kaspa-node': { cpu: 2, ram: 4, disk: 100 },
+    'kasia-app': { cpu: 1, ram: 1, disk: 10 },
+    'k-social-app': { cpu: 1, ram: 1, disk: 10 },
+    'kaspa-explorer-bundle': { cpu: 4, ram: 8, disk: 500 },
+    'kasia-indexer': { cpu: 2, ram: 4, disk: 200 },
+    'k-indexer-bundle': { cpu: 4, ram: 6, disk: 300 },
+    'kaspa-archive-node': { cpu: 8, ram: 12, disk: 1000 },
+    'kaspa-stratum': { cpu: 2, ram: 2, disk: 50 },
+    
+    // Legacy profile IDs (for backward compatibility)
+    'core': { cpu: 2, ram: 4, disk: 100 },
+    'kaspa-user-applications': { cpu: 2, ram: 4, disk: 50 },
+    'indexer-services': { cpu: 4, ram: 8, disk: 500 },
+    'archive-node': { cpu: 8, ram: 16, disk: 1000 },
+    'mining': { cpu: 2, ram: 2, disk: 10 }
 };
+
+/**
+ * Get profile display name using helper from wizard-refactored.js
+ * Falls back to profile ID if helper not available
+ */
+function getProfileName(profileId) {
+    if (typeof window.getProfileDisplayName === 'function') {
+        return window.getProfileDisplayName(profileId);
+    }
+    // Fallback if helper not loaded
+    return profileId.split('-').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+}
+
+/**
+ * Get profile icon using helper from wizard-refactored.js
+ * Falls back to generic icon if helper not available
+ */
+function getProfileIcon(profileId) {
+    if (typeof window.getProfileStatusIcon === 'function') {
+        return window.getProfileStatusIcon({ id: profileId });
+    }
+    // Fallback if helper not loaded
+    return '⚙️';
+}
+
+/**
+ * Get profile category using helper from wizard-refactored.js
+ * Falls back to 'other' if helper not available
+ */
+function getProfileCategoryName(profileId) {
+    if (typeof window.getProfileCategory === 'function') {
+        return window.getProfileCategory(profileId);
+    }
+    // Fallback if helper not loaded
+    return 'other';
+}
 
 /**
  * Display configuration summary
@@ -132,59 +133,45 @@ function displaySelectedProfiles(selectedProfiles) {
     
     // Display each profile with details
     selectedProfiles.forEach((profileId, index) => {
-        const profile = PROFILE_DEFINITIONS[profileId];
-        if (!profile) {
-            console.warn(`Profile not found: ${profileId}`);
+        // Use helper functions to get profile information
+        const profileName = getProfileName(profileId);
+        const profileIcon = getProfileIcon(profileId);
+        const profileCategory = getProfileCategoryName(profileId);
+        const resources = PROFILE_RESOURCES[profileId];
+        
+        if (!resources) {
+            console.warn(`Resources not found for profile: ${profileId}`);
             return;
         }
         
         // Create profile card
         const profileCard = document.createElement('div');
         profileCard.className = 'review-profile-card';
+        profileCard.setAttribute('data-profile-id', profileId);
+        profileCard.setAttribute('data-category', profileCategory);
         
-        // Profile header
+        // Profile header with icon and name
         const profileHeader = document.createElement('div');
         profileHeader.className = 'review-profile-header';
         
-        const profileName = document.createElement('strong');
-        profileName.textContent = profile.name;
-        profileHeader.appendChild(profileName);
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'profile-icon';
+        iconSpan.textContent = profileIcon;
+        profileHeader.appendChild(iconSpan);
+        
+        const profileNameElement = document.createElement('strong');
+        profileNameElement.textContent = profileName;
+        profileHeader.appendChild(profileNameElement);
         
         profileCard.appendChild(profileHeader);
-        
-        // Profile description
-        const profileDesc = document.createElement('div');
-        profileDesc.className = 'review-profile-description';
-        profileDesc.textContent = profile.description;
-        profileCard.appendChild(profileDesc);
-        
-        // Profile services
-        const profileServices = document.createElement('div');
-        profileServices.className = 'review-profile-services';
-        
-        // Handle both old format (string array) and new format (object array with ports)
-        let servicesText = 'Services: ';
-        if (profile.services && profile.services.length > 0) {
-            if (typeof profile.services[0] === 'string') {
-                // Old format: array of strings
-                servicesText += profile.services.join(', ');
-            } else {
-                // New format: array of objects with name and port
-                servicesText += profile.services
-                    .map(service => `${service.name} (port ${service.port})`)
-                    .join(', ');
-            }
-        }
-        profileServices.textContent = servicesText;
-        profileCard.appendChild(profileServices);
         
         // Profile resources
         const profileResources = document.createElement('div');
         profileResources.className = 'review-profile-resources';
         profileResources.innerHTML = `
-            <span class="resource-item">CPU: ${profile.resources.cpu}</span>
-            <span class="resource-item">RAM: ${profile.resources.ram}</span>
-            <span class="resource-item">Disk: ${profile.resources.disk}</span>
+            <span class="resource-item">💾 ${resources.ram} GB RAM</span>
+            <span class="resource-item">💿 ${resources.disk} GB Disk</span>
+            <span class="resource-item">⚙️ ${resources.cpu} CPU cores</span>
         `;
         profileCard.appendChild(profileResources);
         
@@ -198,21 +185,9 @@ function displaySelectedProfiles(selectedProfiles) {
         }
     });
     
-    // Calculate total unique services
-    const allServices = new Set();
-    selectedProfiles.forEach(profileId => {
-        const profile = PROFILE_DEFINITIONS[profileId];
-        if (profile && profile.services) {
-            profile.services.forEach(service => {
-                // Handle both string and object formats
-                const serviceName = typeof service === 'string' ? service : service.name;
-                allServices.add(serviceName);
-            });
-        }
-    });
-    
-    const serviceCount = allServices.size;
-    serviceCountElement.textContent = `${serviceCount} service${serviceCount !== 1 ? 's' : ''}`;
+    // Calculate service count (simplified - just use profile count as proxy)
+    const serviceCount = selectedProfiles.length;
+    serviceCountElement.textContent = `${serviceCount} profile${serviceCount !== 1 ? 's' : ''}`;
 }
 
 /**
@@ -234,25 +209,13 @@ function displayResourceRequirements(selectedProfiles) {
     let totalDisk = 0;
     
     selectedProfiles.forEach(profileId => {
-        const profile = PROFILE_DEFINITIONS[profileId];
-        if (profile && profile.resources) {
-            // Parse CPU (e.g., "4 cores" -> 4)
-            const cpuMatch = profile.resources.cpu.match(/(\d+)/);
-            if (cpuMatch) {
-                totalCPU = Math.max(totalCPU, parseInt(cpuMatch[1]));
-            }
-            
-            // Parse RAM (e.g., "16 GB" -> 16)
-            const ramMatch = profile.resources.ram.match(/(\d+)/);
-            if (ramMatch) {
-                totalRAM = Math.max(totalRAM, parseInt(ramMatch[1]));
-            }
-            
-            // Parse Disk (e.g., "150 GB" -> 150)
-            const diskMatch = profile.resources.disk.match(/(\d+)/);
-            if (diskMatch) {
-                totalDisk = Math.max(totalDisk, parseInt(diskMatch[1]));
-            }
+        const resources = PROFILE_RESOURCES[profileId];
+        if (resources) {
+            // Use max for CPU and RAM (concurrent usage)
+            totalCPU = Math.max(totalCPU, resources.cpu);
+            totalRAM = Math.max(totalRAM, resources.ram);
+            // Use max for disk (largest single profile requirement)
+            totalDisk = Math.max(totalDisk, resources.disk);
         }
     });
     
@@ -268,13 +231,16 @@ function displayResourceRequirements(selectedProfiles) {
 function displayConfiguration(selectedProfiles, configuration) {
     console.log('Displaying configuration for profiles:', selectedProfiles, configuration);
     
-    // Determine which configuration fields to show based on selected profiles
-    // indexer-services don't need network config - they connect TO nodes, not serve as public nodes
-    const hasNetworkConfig = selectedProfiles.some(profileId => 
-        ['core', 'archive-node', 'mining'].includes(profileId)
+    // Determine which configuration fields to show based on profile categories
+    const profileCategories = selectedProfiles.map(id => getProfileCategoryName(id));
+    
+    // Network config needed for node and mining profiles
+    const hasNetworkConfig = profileCategories.some(cat => 
+        ['node', 'mining'].includes(cat)
     );
     
-    const hasIndexerEndpoints = selectedProfiles.includes('kaspa-user-applications');
+    // Indexer endpoints needed for app profiles
+    const hasIndexerEndpoints = profileCategories.includes('app');
     
     // Get the network configuration section
     const networkSection = document.querySelector('.review-section:has(#review-external-ip)');
@@ -286,7 +252,7 @@ function displayConfiguration(selectedProfiles, configuration) {
         }
         displayNetworkConfiguration(configuration);
     } else if (hasIndexerEndpoints) {
-        // Show indexer endpoints for kaspa-user-applications profile
+        // Show indexer endpoints for app profiles
         if (networkSection) {
             // Replace network configuration with indexer endpoints
             const titleElement = networkSection.querySelector('.review-section-title');

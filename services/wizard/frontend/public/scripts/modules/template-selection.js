@@ -241,155 +241,195 @@ class TemplateSelection {
     }
 
     /**
-     * Fallback templates when API is not available
-     * Uses NEW template IDs and profile IDs
+     * Fallback templates for when API is unavailable
+     * UPDATED: Now uses new 8-profile architecture with 12 templates
+     * @returns {Array} Array of template objects with new profile IDs
      */
     getFallbackTemplates() {
+        console.warn('[TEMPLATE] Using fallback templates (API unavailable)');
+        
         return [
             {
                 id: 'quick-start',
                 name: 'Quick Start',
+                description: 'Get started instantly with Kaspa applications using public infrastructure',
                 category: 'beginner',
-                description: 'Get started with Kaspa apps using public infrastructure',
+                useCase: 'personal',
+                profiles: ['kasia-app', 'k-social-app'],  // UPDATED
                 icon: '🚀',
-                profiles: ['kasia-app', 'k-social-app'],
-                resources: { minMemory: 2, minCpu: 2, minDisk: 20 },
+                recommended: true,
+                resources: { minMemory: 2, minCpu: 1, minDisk: 10 },
                 estimatedSetupTime: '5 minutes',
                 syncTime: 'Not required',
                 features: ['Kasia messaging app', 'K-Social app', 'Uses public indexers'],
                 benefits: ['Instant setup', 'No blockchain sync', 'Minimal resources'],
-                longDescription: 'Perfect for users who want to start using Kaspa applications immediately without running their own node.',
-                useCase: 'personal',
-                displayOrder: 1
+                longDescription: 'Perfect for users who want to start using Kaspa applications immediately without running their own node.'
             },
             {
                 id: 'kaspa-node',
                 name: 'Kaspa Node',
-                category: 'beginner',
                 description: 'Run your own Kaspa node',
+                category: 'beginner',
+                useCase: 'personal',
+                profiles: ['kaspa-node'],  // UPDATED
                 icon: '🖥️',
-                profiles: ['kaspa-node'],
                 resources: { minMemory: 4, minCpu: 2, minDisk: 100 },
                 estimatedSetupTime: '10 minutes',
                 syncTime: '2-6 hours',
                 features: ['Full Kaspa node', 'Network participation', 'Optional wallet'],
                 benefits: ['Decentralization', 'Privacy', 'Network support'],
-                longDescription: 'Run a standard Kaspa node to participate in the network and have full sovereignty over your transactions.',
-                useCase: 'personal',
-                displayOrder: 2
+                longDescription: 'Run a standard Kaspa node to participate in the network and have full sovereignty over your transactions.'
             },
             {
-                id: 'kasia-suite',
-                name: 'Kasia Suite',
-                category: 'intermediate',
-                description: 'Kasia app with local indexer',
+                id: 'kasia-lite',
+                name: 'Kasia Lite',
+                description: 'Run Kasia app using public infrastructure',
+                category: 'beginner',
+                useCase: 'personal',
+                profiles: ['kasia-app'],  // UPDATED
                 icon: '💬',
-                profiles: ['kasia-app', 'kasia-indexer'],
-                resources: { minMemory: 8, minCpu: 4, minDisk: 200 },
-                estimatedSetupTime: '15 minutes',
-                syncTime: '4-12 hours',
-                features: ['Kasia app', 'Local Kasia indexer', 'Full privacy'],
-                benefits: ['No external dependencies', 'Better performance', 'Complete privacy'],
-                longDescription: 'Complete Kasia setup with local indexer for maximum privacy and performance.',
-                useCase: 'personal',
-                displayOrder: 3
+                resources: { minMemory: 1, minCpu: 1, minDisk: 10 },
+                estimatedSetupTime: '5 minutes',
+                syncTime: 'Not required',
+                features: ['Kasia messaging app', 'Uses public indexers', 'Minimal setup'],
+                benefits: ['Instant setup', 'No blockchain sync', 'Very low resources'],
+                longDescription: 'Run Kasia app using public infrastructure for minimal resource usage.'
             },
             {
-                id: 'k-social-suite',
-                name: 'K-Social Suite',
-                category: 'intermediate',
-                description: 'K-Social app with local indexer',
+                id: 'k-social-lite',
+                name: 'K-Social Lite',
+                description: 'Run K-Social app using public infrastructure',
+                category: 'beginner',
+                useCase: 'personal',
+                profiles: ['k-social-app'],  // UPDATED
                 icon: '👥',
-                profiles: ['k-social-app', 'k-indexer-bundle'],
-                resources: { minMemory: 8, minCpu: 4, minDisk: 250 },
-                estimatedSetupTime: '15 minutes',
-                syncTime: '4-12 hours',
-                features: ['K-Social app', 'K-Indexer with database', 'Full privacy'],
-                benefits: ['Decentralized social', 'Local data', 'No tracking'],
-                longDescription: 'Complete K-Social setup with local indexer and database for decentralized social networking.',
-                useCase: 'personal',
-                displayOrder: 4
-            },
-            {
-                id: 'kaspa-explorer',
-                name: 'Kaspa Explorer',
-                category: 'intermediate',
-                description: 'Run your own block explorer',
-                icon: '🔍',
-                profiles: ['kaspa-explorer-bundle'],
-                resources: { minMemory: 8, minCpu: 4, minDisk: 300 },
-                estimatedSetupTime: '15 minutes',
-                syncTime: '6-24 hours',
-                features: ['Block explorer UI', 'Simply-Kaspa indexer', 'TimescaleDB'],
-                benefits: ['Explore blockchain locally', 'API access', 'Historical data'],
-                longDescription: 'Run your own Kaspa block explorer with full indexing capabilities.',
-                useCase: 'production',
-                displayOrder: 5
+                resources: { minMemory: 1, minCpu: 1, minDisk: 10 },
+                estimatedSetupTime: '5 minutes',
+                syncTime: 'Not required',
+                features: ['K-Social app', 'Uses public indexers', 'Minimal setup'],
+                benefits: ['Instant setup', 'No blockchain sync', 'Very low resources'],
+                longDescription: 'Run K-Social app using public infrastructure for minimal resource usage.'
             },
             {
                 id: 'kaspa-sovereignty',
                 name: 'Kaspa Sovereignty',
-                category: 'advanced',
-                description: 'Complete self-hosted Kaspa ecosystem',
-                icon: '👑',
-                profiles: ['kaspa-node', 'kasia-app', 'k-social-app', 'kasia-indexer', 'k-indexer-bundle', 'kaspa-explorer-bundle'],
-                resources: { minMemory: 32, minCpu: 8, minDisk: 1000 },
-                estimatedSetupTime: '30 minutes',
-                syncTime: '12-48 hours',
-                features: ['All apps', 'All indexers', 'Block explorer', 'Full node'],
+                description: 'Full self-hosted Kaspa experience with node, apps, and indexer',
+                category: 'intermediate',
+                useCase: 'personal',
+                profiles: ['kaspa-node', 'kasia-app', 'k-social-app', 'kasia-indexer'],  // UPDATED
+                icon: '🏛️',
+                resources: { minMemory: 12, minCpu: 4, minDisk: 400 },
+                estimatedSetupTime: '20 minutes',
+                syncTime: '4-12 hours',
+                features: ['Full Kaspa node', 'Kasia app', 'K-Social app', 'Kasia indexer'],
                 benefits: ['Complete independence', 'Maximum privacy', 'Full control'],
-                longDescription: 'The ultimate Kaspa setup with every service running locally. Complete digital sovereignty.',
-                useCase: 'production',
-                displayOrder: 6
+                longDescription: 'Complete self-hosted Kaspa experience with node, applications, and indexer for maximum privacy and control.'
+            },
+            {
+                id: 'kaspa-explorer-setup',
+                name: 'Kaspa Explorer Setup',
+                description: 'Run Kaspa Explorer with local node',
+                category: 'intermediate',
+                useCase: 'community',
+                profiles: ['kaspa-node', 'kaspa-explorer-bundle'],  // UPDATED
+                icon: '🔍',
+                resources: { minMemory: 12, minCpu: 4, minDisk: 600 },
+                estimatedSetupTime: '20 minutes',
+                syncTime: '6-24 hours',
+                features: ['Block explorer UI', 'Simply-Kaspa indexer', 'TimescaleDB', 'Full node'],
+                benefits: ['Explore blockchain locally', 'API access', 'Historical data'],
+                longDescription: 'Run your own Kaspa block explorer with full indexing capabilities and local node.'
             },
             {
                 id: 'solo-miner',
                 name: 'Solo Miner',
+                description: 'Mining setup with local node and stratum',
                 category: 'advanced',
-                description: 'Mine Kaspa with your own node',
+                useCase: 'mining',
+                profiles: ['kaspa-node', 'kaspa-stratum'],  // UPDATED
                 icon: '⛏️',
-                profiles: ['kaspa-node', 'kaspa-stratum'],
-                resources: { minMemory: 6, minCpu: 4, minDisk: 110 },
+                resources: { minMemory: 6, minCpu: 4, minDisk: 150 },
                 estimatedSetupTime: '15 minutes',
                 syncTime: '2-6 hours',
                 features: ['Kaspa node', 'Stratum bridge', 'Solo mining'],
                 benefits: ['Direct block rewards', 'No pool fees', 'Full control'],
-                longDescription: 'Solo mining setup with local node and stratum bridge for direct mining.',
-                useCase: 'mining',
-                displayOrder: 7
+                longDescription: 'Solo mining setup with local node and stratum bridge for direct mining.'
             },
             {
-                id: 'archive-historian',
-                name: 'Archive Historian',
+                id: 'kaspa-archive-setup',
+                name: 'Archive Node Setup',
+                description: 'Run full history archive node',
                 category: 'advanced',
-                description: 'Complete blockchain history',
-                icon: '📚',
-                profiles: ['kaspa-archive-node'],
-                resources: { minMemory: 16, minCpu: 8, minDisk: 2000 },
+                useCase: 'developer',
+                profiles: ['kaspa-archive-node'],  // UPDATED
+                icon: '🗄️',
+                resources: { minMemory: 12, minCpu: 4, minDisk: 1000 },
                 estimatedSetupTime: '20 minutes',
                 syncTime: '1-4 weeks',
                 features: ['Non-pruning node', 'Complete history', 'Research ready'],
                 benefits: ['Historical analysis', 'Full blockchain', 'Research capabilities'],
-                longDescription: 'Archive node storing complete blockchain history. Ideal for researchers and data analysts.',
-                useCase: 'production',
-                displayOrder: 8
+                longDescription: 'Archive node storing complete blockchain history. Ideal for researchers and data analysts.'
+            },
+            {
+                id: 'full-infrastructure',
+                name: 'Full Infrastructure',
+                description: 'Complete Kaspa ecosystem with all services',
+                category: 'advanced',
+                useCase: 'community',
+                profiles: ['kaspa-node', 'kasia-app', 'k-social-app', 'kaspa-explorer-bundle', 'kasia-indexer', 'k-indexer-bundle'],  // UPDATED
+                icon: '🏗️',
+                resources: { minMemory: 32, minCpu: 8, minDisk: 1500 },
+                estimatedSetupTime: '30 minutes',
+                syncTime: '12-48 hours',
+                features: ['All apps', 'All indexers', 'Block explorer', 'Full node'],
+                benefits: ['Complete independence', 'Maximum privacy', 'Full control'],
+                longDescription: 'The ultimate Kaspa setup with every service running locally. Complete digital sovereignty.'
+            },
+            {
+                id: 'pool-operator',
+                name: 'Pool Operator',
+                description: 'Mining pool with archive node and stratum',
+                category: 'advanced',
+                useCase: 'mining',
+                profiles: ['kaspa-archive-node', 'kaspa-stratum'],  // UPDATED
+                icon: '🏊',
+                resources: { minMemory: 14, minCpu: 6, minDisk: 1050 },
+                estimatedSetupTime: '25 minutes',
+                syncTime: '1-4 weeks',
+                features: ['Archive node', 'Stratum bridge', 'Pool mining'],
+                benefits: ['Complete history', 'Pool operations', 'Full control'],
+                longDescription: 'Mining pool setup with archive node and stratum bridge for pool operations.'
+            },
+            {
+                id: 'indexer-operator',
+                name: 'Indexer Operator',
+                description: 'Run multiple indexers with local node',
+                category: 'advanced',
+                useCase: 'developer',
+                profiles: ['kaspa-node', 'kasia-indexer', 'k-indexer-bundle'],  // UPDATED
+                icon: '📊',
+                resources: { minMemory: 14, minCpu: 6, minDisk: 600 },
+                estimatedSetupTime: '25 minutes',
+                syncTime: '6-24 hours',
+                features: ['Full node', 'Kasia indexer', 'K-Indexer bundle', 'Multiple databases'],
+                benefits: ['Complete indexing', 'API access', 'Data analysis'],
+                longDescription: 'Run multiple indexers with local node for complete data indexing and analysis capabilities.'
             },
             {
                 id: 'custom-setup',
                 name: 'Custom Setup',
+                description: 'Build your own custom configuration',
                 category: 'advanced',
-                description: 'Build your own configuration',
-                icon: '🛠️',
-                profiles: [],
+                useCase: 'developer',
+                profiles: [],  // Empty - user selects profiles
+                icon: '🔧',
                 resources: { minMemory: 0, minCpu: 0, minDisk: 0 },
                 estimatedSetupTime: 'Variable',
                 syncTime: 'Variable',
                 features: ['Select any profiles', 'Full flexibility', 'Expert control'],
                 benefits: ['Exactly what you need', 'Modify existing installs', 'Maximum control'],
                 longDescription: 'Create a custom configuration by selecting exactly which profiles you want.',
-                useCase: 'development',
-                isDynamic: true,
-                displayOrder: 12
+                isDynamic: true
             }
         ];
     }

@@ -6,20 +6,48 @@ const router = express.Router();
  * Provides pre-configured templates and presets for common use cases
  */
 
-// Configuration templates for different use cases
+/**
+ * Configuration Templates
+ * Pre-configured setups with profile selections and configurations
+ * UPDATED: Now uses new 8-profile architecture
+ */
 const CONFIGURATION_TEMPLATES = {
+  'beginner-setup': {
+    id: 'beginner-setup',
+    name: 'Beginner Setup',
+    description: 'Quick start with Kaspa apps using public infrastructure',
+    profiles: ['kasia-app', 'k-social-app'],  // UPDATED: Split from kaspa-user-applications
+    configuration: {
+      KASPA_NETWORK: 'mainnet',
+      KASIA_APP_PORT: 3001,
+      KASIA_INDEXER_MODE: 'public',
+      REMOTE_KASIA_INDEXER_URL: 'https://api.kasia.io',
+      KSOCIAL_APP_PORT: 3003,
+      KSOCIAL_INDEXER_MODE: 'public',
+      REMOTE_KSOCIAL_INDEXER_URL: 'https://indexer0.kaspatalk.net/',
+      INDEXER_CONNECTION_MODE: 'public'
+    },
+    resources: {
+      minCpu: 1,
+      minMemory: 2,
+      minDisk: 10
+    }
+  },
+  
   'home-node': {
     id: 'home-node',
     name: 'Home Node',
-    description: 'Personal Kaspa node for home use with wallet functionality',
-    profiles: ['core'],
+    description: 'Personal Kaspa node for home use',
+    profiles: ['kaspa-node'],  // UPDATED: Renamed from 'core'
     configuration: {
       KASPA_NETWORK: 'mainnet',
       KASPA_NODE_RPC_PORT: 16110,
       KASPA_NODE_P2P_PORT: 16111,
+      KASPA_NODE_WRPC_PORT: 17110,
       PUBLIC_NODE: false,
       WALLET_ENABLED: true,
       WALLET_MODE: 'create',
+      UTXO_INDEX: true,
       INDEXER_CONNECTION_MODE: 'public'
     },
     resources: {
@@ -29,47 +57,24 @@ const CONFIGURATION_TEMPLATES = {
     }
   },
   
-  'public-node': {
-    id: 'public-node',
-    name: 'Public Node',
-    description: 'Public Kaspa node accessible to other users',
-    profiles: ['core'],
+  'archive-node': {
+    id: 'archive-node',
+    name: 'Archive Node',
+    description: 'Full history archive node for data analysis',
+    profiles: ['kaspa-archive-node'],  // UPDATED: Renamed from 'archive-node'
     configuration: {
       KASPA_NETWORK: 'mainnet',
       KASPA_NODE_RPC_PORT: 16110,
       KASPA_NODE_P2P_PORT: 16111,
+      KASPA_NODE_WRPC_PORT: 17110,
       PUBLIC_NODE: true,
-      WALLET_ENABLED: false,
-      EXTERNAL_IP: '', // Will be auto-detected
-      INDEXER_CONNECTION_MODE: 'public'
+      EXTERNAL_IP: '',
+      INDEXER_CONNECTION_MODE: 'local'
     },
     resources: {
       minCpu: 4,
-      minMemory: 8,
-      minDisk: 200
-    }
-  },
-  
-  'developer': {
-    id: 'developer',
-    name: 'Developer Setup',
-    description: 'Full development environment with all services and debugging',
-    profiles: ['core', 'kaspa-user-applications', 'indexer-services'],
-    configuration: {
-      KASPA_NETWORK: 'testnet',
-      KASPA_NODE_RPC_PORT: 16210,
-      KASPA_NODE_P2P_PORT: 16211,
-      PUBLIC_NODE: false,
-      WALLET_ENABLED: true,
-      WALLET_MODE: 'create',
-      INDEXER_CONNECTION_MODE: 'local',
-      DEVELOPER_MODE: true,
-      CUSTOM_ENV_VARS: 'LOG_LEVEL=debug\nDEBUG_MODE=true'
-    },
-    resources: {
-      minCpu: 4,
-      minMemory: 16,
-      minDisk: 500
+      minMemory: 12,
+      minDisk: 1000
     }
   },
   
@@ -77,15 +82,17 @@ const CONFIGURATION_TEMPLATES = {
     id: 'mining-rig',
     name: 'Mining Rig',
     description: 'Optimized setup for mining with local node and wallet',
-    profiles: ['core', 'mining'],
+    profiles: ['kaspa-node', 'kaspa-stratum'],  // UPDATED: Renamed from 'core', 'mining'
     configuration: {
       KASPA_NETWORK: 'mainnet',
       KASPA_NODE_RPC_PORT: 16110,
       KASPA_NODE_P2P_PORT: 16111,
+      KASPA_NODE_WRPC_PORT: 17110,
       PUBLIC_NODE: false,
       WALLET_ENABLED: true,
       WALLET_MODE: 'create',
       MINING_ADDRESS: '', // User must provide
+      STRATUM_PORT: 5555,
       INDEXER_CONNECTION_MODE: 'public'
     },
     resources: {
@@ -99,14 +106,23 @@ const CONFIGURATION_TEMPLATES = {
     id: 'full-stack',
     name: 'Full Stack',
     description: 'Complete Kaspa ecosystem with all services',
-    profiles: ['core', 'kaspa-user-applications', 'indexer-services'],
+    profiles: ['kaspa-node', 'kasia-app', 'k-social-app', 'kasia-indexer'],  // UPDATED: New profile IDs
     configuration: {
       KASPA_NETWORK: 'mainnet',
       KASPA_NODE_RPC_PORT: 16110,
       KASPA_NODE_P2P_PORT: 16111,
+      KASPA_NODE_WRPC_PORT: 17110,
       PUBLIC_NODE: true,
       WALLET_ENABLED: true,
       WALLET_MODE: 'create',
+      KASIA_APP_PORT: 3001,
+      KASIA_INDEXER_MODE: 'local',
+      KSOCIAL_APP_PORT: 3003,
+      KSOCIAL_INDEXER_MODE: 'public',  // K-Social uses public indexer
+      REMOTE_KSOCIAL_INDEXER_URL: 'https://indexer0.kaspatalk.net/',
+      KASIA_INDEXER_PORT: 3002,
+      POSTGRES_PASSWORD_KINDEXER: '',  // User must provide
+      TIMESCALEDB_KINDEXER_PORT: 5433,
       INDEXER_CONNECTION_MODE: 'local',
       EXTERNAL_IP: '' // Will be auto-detected
     },
