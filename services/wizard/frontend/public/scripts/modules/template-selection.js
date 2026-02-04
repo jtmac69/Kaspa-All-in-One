@@ -5,6 +5,7 @@
 
 import { stateManager } from './state-manager.js';
 import { goToStep, updateStepNumbering } from './navigation.js';
+import { customSetup } from './custom-setup.js';
 
 /**
  * Profile ID migration mapping (legacy → new)
@@ -1018,50 +1019,40 @@ class TemplateSelection {
     }
 
     /**
-     * Build custom template (navigate to profile selection with proper state management)
+     * Build custom template (show custom profile picker)
      */
-    buildCustomTemplate() {
+    async buildCustomTemplate() {
         try {
             console.log('[TEMPLATE] Starting Build Custom workflow');
             
-            // Step 1: Clear any existing template state to ensure clean custom path
+            // Step 1: Clear any existing template state
             console.log('[TEMPLATE] Clearing template selection state');
             stateManager.set('selectedTemplate', null);
             stateManager.set('templateApplied', false);
             
-            // Step 2: Clear any existing profile selections to start fresh
+            // Step 2: Clear existing profile selections (will be managed by custom setup)
             console.log('[TEMPLATE] Clearing existing profile selections');
             stateManager.set('selectedProfiles', []);
             
-            // Step 3: Clear template-specific configuration but preserve user settings
-            console.log('[TEMPLATE] Clearing template-specific configuration');
-            const existingConfig = stateManager.get('configuration') || {};
-            const cleanConfig = { ...existingConfig };
-            
-            // Remove template-specific keys
-            delete cleanConfig.templateId;
-            delete cleanConfig.templateName;
-            delete cleanConfig.templateProfiles;
-            
-            stateManager.set('configuration', cleanConfig);
-            
-            // Step 4: Set navigation path to 'custom' for manual selection
+            // Step 3: Set navigation path to 'custom'
             console.log('[TEMPLATE] Setting navigation path to custom');
             stateManager.setNavigationPath('custom');
             
-            // Update step visibility for custom path
+            // Update step visibility
             updateStepNumbering();
             
-            // Step 5: Ensure proper state management for custom path
-            stateManager.set('developerMode', false); // Reset developer mode unless explicitly set
+            // Step 4: Initialize custom setup module
+            console.log('[TEMPLATE] Initializing custom setup module');
+            await customSetup.initialize();
             
-            // Step 6: Show success message about starting custom setup
-            this.showSuccess('Starting custom setup - you can select individual services next.');
+            // Step 5: Show success message
+            this.showSuccess('Custom setup mode activated. Select profiles individually.');
             
-            // Step 7: Navigate to Profiles step for manual profile selection
-            console.log('[TEMPLATE] Navigating to Profiles step (step 5) for manual selection');
+            // Step 6: Navigate to step 5 and show custom picker
+            console.log('[TEMPLATE] Navigating to Profiles step (step 5) with custom picker');
             setTimeout(() => {
-                goToStep(5); // Profiles is step 5
+                goToStep(5); // Profiles step
+                customSetup.show(); // Show custom picker instead of profile cards
             }, 1000);
             
         } catch (error) {
@@ -1075,6 +1066,11 @@ class TemplateSelection {
      */
     selectTemplateMethod() {
         console.log('[TEMPLATE] Template method selected');
+        
+        // Hide custom setup picker if it was shown
+        if (window.customSetup || typeof customSetup !== 'undefined') {
+            customSetup.hide();
+        }
         
         // Show template-related sections
         const templateCategories = document.getElementById('template-categories');

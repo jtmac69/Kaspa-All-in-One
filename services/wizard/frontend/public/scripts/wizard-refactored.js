@@ -35,6 +35,7 @@ import {
     updateOperationProgress,
     completeOperation
 } from './modules/reconfiguration-navigation.js';
+import { customSetup } from './modules/custom-setup.js';
 
 // Initialize WebSocket
 const wsManager = new WebSocketManager();
@@ -1557,6 +1558,9 @@ if (typeof window !== 'undefined') {
     window.getProfileStatusIcon = getProfileStatusIcon;
     window.getProfileCategory = getProfileCategory;
     window.getProfileBadgeClass = getProfileBadgeClass;
+    
+    // Expose custom setup module for debugging and manual testing
+    window.customSetup = customSetup;
     
     // Checklist functions
     window.toggleChecklistItem = (item) => {
