@@ -175,6 +175,11 @@ class TemplateSelection {
         this.systemResources = null;
         this.useCase = 'personal';
         
+        // Profile installation state tracking
+        this.profileStates = null;
+        this.installedProfiles = [];
+        this.wizardMode = 'initial'; // 'initial' or 'reconfigure'
+        
         this.initializeEventListeners();
     }
 
@@ -188,6 +193,12 @@ class TemplateSelection {
             // Load templates from API
             await this.loadTemplates();
             
+            // Load profile installation state
+            await this.loadProfileStates();
+            
+            // Apply installation state to templates
+            this.applyInstallationStateToTemplates();
+            
             // Get system resources for recommendations
             await this.loadSystemResources();
             
@@ -199,6 +210,9 @@ class TemplateSelection {
             
             // Set default method selection to template (recommended)
             this.selectTemplateMethod();
+            
+            // Render reconfiguration banner if in reconfiguration mode
+            this.renderReconfigurationBanner();
             
             console.log('[TEMPLATE] Template selection initialized successfully');
             
@@ -239,6 +253,303 @@ class TemplateSelection {
             this.handleTemplateLoadingFailure(error.message, true);
             this.templates = this.getFallbackTemplates();
         }
+    }
+
+    /**
+     * Load profile installation state from backend
+     * @returns {Promise<void>}
+     */
+    async loadProfileStates() {
+        console.log('[TEMPLATE] Loading profile installation state...');
+        
+        try {
+            const response = await fetch('/api/wizard/profiles/state');
+            
+            if (!response.ok) {
+                console.warn('[TEMPLATE] Failed to load profile states, assuming initial installation');
+                this.profileStates = null;
+                this.installedProfiles = [];
+                this.wizardMode = 'initial';
+                return;
+            }
+            
+            const data = await response.json();
+            
+            if (!data.success) {
+                console.warn('[TEMPLATE] Profile state API returned error:', data.error);
+                this.profileStates = null;
+                this.installedProfiles = [];
+                this.wizardMode = 'initial';
+                return;
+            }
+            
+            // Store profile states
+            this.profileStates = data.profiles || [];
+            
+            // Extract installed profile IDs
+            this.installedProfiles = this.profileStates
+                .filter(p => p.installationState === 'installed')
+                .map(p => p.id);
+            
+            // Determine wizard mode
+            this.wizardMode = this.installedProfiles.length > 0 ? 'reconfigure' : 'initial';
+            
+            console.log('[TEMPLATE] Profile states loaded:', {
+                totalProfiles: this.profileStates.length,
+                installedProfiles: this.installedProfiles,
+                wizardMode: this.wizardMode
+            });
+            
+        } catch (error) {
+            console.error('[TEMPLATE] Error loading profile states:', error);
+            // Default to initial mode on error
+            this.profileStates = null;
+            this.installedProfiles = [];
+            this.wizardMode = 'initial';
+        }
+    }
+
+    /**
+     * Check if a template's profiles are already installed
+     * @param {Object} template - Template object to check
+     * @returns {Object} Installation status with details
+     */
+    checkTemplateInstallationStatus(template) {
+        // If no profile states loaded, assume nothing is installed
+        if (!this.profileStates || this.installedProfiles.length === 0) {
+            return {
+                isInstalled: false,
+                isPartial: false,
+                installedProfileCount: 0,
+                totalProfileCount: template.profiles.length,
+                installedProfileNames: [],
+                availableProfileNames: template.profiles
+            };
+        }
+        
+        const templateProfiles = template.profiles || [];
+        const installedCount = templateProfiles.filter(p => 
+            this.installedProfiles.includes(p)
+        ).length;
+        
+        const installedNames = templateProfiles.filter(p => 
+            this.installedProfiles.includes(p)
+        );
+        
+        const availableNames = templateProfiles.filter(p => 
+            !this.installedProfiles.includes(p)
+        );
+        
+        return {
+            isInstalled: installedCount === templateProfiles.length && templateProfiles.length > 0,
+            isPartial: installedCount > 0 && installedCount < templateProfiles.length,
+            installedProfileCount: installedCount,
+            totalProfileCount: templateProfiles.length,
+            installedProfileNames: installedNames,
+            availableProfileNames: availableNames
+        };
+    }
+
+    /**
+     * Apply installation state to all loaded templates
+     * Annotates each template with installation status
+     */
+    applyInstallationStateToTemplates() {
+        if (!this.templates || this.templates.length === 0) {
+            console.warn('[TEMPLATE] No templates to apply installation state to');
+            return;
+        }
+        
+        console.log('[TEMPLATE] Applying installation state to templates...');
+        
+        this.templates.forEach(template => {
+            const status = this.checkTemplateInstallationStatus(template);
+            
+            // Add installation status to template object
+            template._installationStatus = status;
+            
+            // Log templates that are already installed
+            if (status.isInstalled) {
+                console.log(`[TEMPLATE] Template "${template.name}" is already installed`);
+            } else if (status.isPartial) {
+                console.log(`[TEMPLATE] Template "${template.name}" is partially installed (${status.installedProfileCount}/${status.totalProfileCount} profiles)`);
+            }
+        });
+        
+        console.log('[TEMPLATE] Installation state applied to all templates');
+    }
+
+    /**
+     * Render installation status badge for template card
+     * @param {Object} status - Installation status object
+     * @returns {string} HTML for badge
+     */
+    renderInstallationBadge(status) {
+        if (!status || (!status.isInstalled && !status.isPartial)) {
+            return '';
+        }
+        
+        if (status.isInstalled) {
+            return `
+                <div class="template-installation-badge installed">
+                    <span class="badge-icon">✓</span>
+                    <span class="badge-text">Already Installed</span>
+                </div>
+            `;
+        }
+        
+        if (status.isPartial) {
+            return `
+                <div class="template-installation-badge partial">
+                    <span class="badge-icon">⚠</span>
+                    <span class="badge-text">Partially Installed (${status.installedProfileCount}/${status.totalProfileCount})</span>
+                </div>
+            `;
+        }
+        
+        return '';
+    }
+
+    /**
+     * Show warning when user tries to select an installed template
+     * @param {Object} template - Template that's already installed
+     */
+    showInstalledTemplateWarning(template) {
+        const status = template._installationStatus;
+        
+        // Create or get warning banner element
+        let warningBanner = document.querySelector('.template-installed-warning');
+        
+        if (!warningBanner) {
+            warningBanner = document.createElement('div');
+            warningBanner.className = 'template-installed-warning info-banner warning';
+            warningBanner.innerHTML = `
+                <div class="banner-icon">⚠️</div>
+                <div class="banner-content">
+                    <div class="banner-message"></div>
+                    <div class="banner-actions">
+                        <button class="btn-secondary btn-small" onclick="window.templateSelection.buildCustomTemplate()">
+                            Modify via Custom Setup
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            const templateGrid = document.getElementById('template-grid');
+            if (templateGrid) {
+                templateGrid.parentElement.insertBefore(warningBanner, templateGrid);
+            }
+        }
+        
+        // Update message
+        const messageEl = warningBanner.querySelector('.banner-message');
+        messageEl.innerHTML = `
+            <strong>${template.name}</strong> is already installed with all its profiles:
+            <em>${status.installedProfileNames.join(', ')}</em>.
+            Use Custom Setup to modify your existing configuration.
+        `;
+        
+        warningBanner.style.display = 'flex';
+        
+        // Auto-hide after 8 seconds
+        setTimeout(() => {
+            warningBanner.style.display = 'none';
+        }, 8000);
+    }
+
+    /**
+     * Render reconfiguration mode banner
+     * Shows installation summary and mode indicator
+     */
+    renderReconfigurationBanner() {
+        // Only show in reconfiguration mode
+        if (this.wizardMode !== 'reconfigure' || this.installedProfiles.length === 0) {
+            return;
+        }
+        
+        console.log('[TEMPLATE] Rendering reconfiguration mode banner');
+        
+        // Create banner element
+        const banner = document.createElement('div');
+        banner.className = 'reconfiguration-mode-banner';
+        banner.id = 'reconfiguration-mode-banner';
+        
+        const installedCount = this.installedProfiles.length;
+        const totalProfiles = 8; // Total available profiles in system
+        const availableCount = totalProfiles - installedCount;
+        
+        banner.innerHTML = `
+            <div class="banner-header">
+                <div class="banner-icon">🔄</div>
+                <div class="banner-title-section">
+                    <h3 class="banner-title">Reconfiguration Mode</h3>
+                    <p class="banner-subtitle">Modifying existing Kaspa installation</p>
+                </div>
+            </div>
+            
+            <div class="banner-stats">
+                <div class="stat-item stat-installed">
+                    <span class="stat-value">${installedCount}</span>
+                    <span class="stat-label">Installed</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item stat-available">
+                    <span class="stat-value">${availableCount}</span>
+                    <span class="stat-label">Available</span>
+                </div>
+            </div>
+            
+            <div class="banner-info">
+                <p>
+                    <strong>Installed profiles:</strong> 
+                    <span class="profile-list">${this.formatProfileList(this.installedProfiles)}</span>
+                </p>
+                <p class="banner-hint">
+                    Templates with already-installed profiles are disabled. 
+                    Use <strong>Build Custom Setup</strong> to modify existing profiles or add new ones.
+                </p>
+            </div>
+            
+            <div class="banner-actions">
+                <button class="btn-secondary btn-small" onclick="window.location.href='/dashboard'">
+                    <span class="btn-icon">📊</span>
+                    <span class="btn-text">View Dashboard</span>
+                </button>
+            </div>
+        `;
+        
+        // Insert banner at the top of templates step
+        const templateStep = document.getElementById('step-templates');
+        if (templateStep) {
+            // Insert after the step title/description
+            const stepContent = templateStep.querySelector('.step-content') || templateStep;
+            stepContent.insertBefore(banner, stepContent.firstChild);
+        }
+    }
+
+    /**
+     * Format profile list for display
+     * @param {Array<string>} profiles - Profile IDs
+     * @returns {string} Formatted profile names
+     */
+    formatProfileList(profiles) {
+        if (!profiles || profiles.length === 0) return 'None';
+        
+        // Map profile IDs to human-readable names
+        const profileNames = {
+            'kaspa-node': 'Kaspa Node',
+            'kaspa-archive-node': 'Archive Node',
+            'kasia-app': 'Kasia App',
+            'k-social-app': 'K-Social',
+            'kaspa-explorer-bundle': 'Kaspa Explorer',
+            'kasia-indexer': 'Kasia Indexer',
+            'k-indexer-bundle': 'K-Indexer Bundle',
+            'kaspa-stratum': 'Mining Pool'
+        };
+        
+        return profiles
+            .map(id => profileNames[id] || id)
+            .join(', ');
     }
 
     /**
@@ -679,6 +990,28 @@ class TemplateSelection {
      * Handle template selection
      */
     handleTemplateSelect(templateId) {
+        // Check if template is already installed
+        const template = this.templates.find(t => t.id === templateId);
+        if (!template) return;
+        
+        const installationStatus = template._installationStatus || { isInstalled: false };
+        
+        // Prevent selection of fully installed templates
+        if (installationStatus.isInstalled) {
+            console.warn('[TEMPLATE] Cannot select already-installed template:', templateId);
+            this.showInstalledTemplateWarning(template);
+            return;
+        }
+        
+        // Warn about partial installation
+        if (installationStatus.isPartial) {
+            console.warn('[TEMPLATE] Template is partially installed:', {
+                templateId,
+                installedProfiles: installationStatus.installedProfileNames,
+                availableProfiles: installationStatus.availableProfileNames
+            });
+        }
+        
         this.selectedTemplate = templateId;
         
         // Update visual selection
@@ -723,14 +1056,24 @@ class TemplateSelection {
         const recommendedClass = template.recommended ? 'recommended' : '';
         const selectedClass = this.selectedTemplate === template.id ? 'selected' : '';
         
+        // Add installation state classes
+        const installationStatus = template._installationStatus || { isInstalled: false, isPartial: false };
+        const installedClass = installationStatus.isInstalled ? 'template-installed' : '';
+        const partialClass = installationStatus.isPartial ? 'template-partial' : '';
+        const disabledClass = installationStatus.isInstalled ? 'template-disabled' : '';
+        
         return `
-            <div class="template-card ${recommendedClass} ${selectedClass}" data-template-id="${template.id}">
+            <div class="template-card ${recommendedClass} ${selectedClass} ${installedClass} ${partialClass} ${disabledClass}"
+                 data-template-id="${template.id}"
+                 data-is-installed="${installationStatus.isInstalled}"
+                 data-is-partial="${installationStatus.isPartial}">
                 <div class="template-header">
                     <div class="template-icon">${template.icon}</div>
                     <div>
                         <h3 class="template-title">${template.name}</h3>
                         <div class="template-category">${template.category}</div>
                     </div>
+                    ${this.renderInstallationBadge(installationStatus)}
                 </div>
                 
                 <p class="template-description">${template.description}</p>

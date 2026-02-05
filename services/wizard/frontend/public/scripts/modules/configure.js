@@ -148,24 +148,113 @@ export async function loadConfigurationForm() {
 }
 
 /**
+ * Load existing configuration from backend
+ * Used in reconfiguration mode to pre-populate form with current values
+ * @returns {Promise<Object|null>} Existing configuration or null
+ */
+async function loadExistingConfiguration() {
+    console.log('[CONFIGURE] Loading existing configuration from backend...');
+    
+    try {
+        const response = await fetch('/api/wizard/config/current');
+        
+        if (!response.ok) {
+            console.warn('[CONFIGURE] Failed to load existing configuration, status:', response.status);
+            return null;
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            console.warn('[CONFIGURE] Existing configuration API returned error:', data.error);
+            return null;
+        }
+        
+        console.log('[CONFIGURE] Existing configuration loaded:', data.config);
+        return data.config;
+        
+    } catch (error) {
+        console.error('[CONFIGURE] Error loading existing configuration:', error);
+        return null;
+    }
+}
+
+/**
+ * Merge existing configuration with template configuration
+ * Existing values take precedence over template defaults
+ * @param {Object} existingConfig - Current .env configuration
+ * @param {Object} templateConfig - Template default configuration
+ * @returns {Object} Merged configuration
+ */
+function mergeExistingWithTemplate(existingConfig, templateConfig) {
+    console.log('[CONFIGURE] Merging existing configuration with template');
+    
+    // Start with template config as base
+    const merged = { ...templateConfig };
+    
+    // Override with existing values where they exist
+    if (existingConfig) {
+        Object.keys(existingConfig).forEach(key => {
+            // Only override if the value exists and is not empty
+            if (existingConfig[key] !== null && existingConfig[key] !== undefined && existingConfig[key] !== '') {
+                merged[key] = existingConfig[key];
+            }
+        });
+    }
+    
+    console.log('[CONFIGURE] Merged configuration:', merged);
+    return merged;
+}
+
+/**
  * Load configuration form with specific profiles
  */
 async function loadConfigurationFormWithProfiles(selectedProfiles) {
     try {
-        // Check if we already have configuration (from template)
-        let config = stateManager.get('configuration');
+        // Get configuration from state manager (template defaults)
+        const templateConfig = stateManager.get('configuration');
         
-        if (config && Object.keys(config).length > 0) {
-            console.log('[CONFIGURE] Using existing configuration from template:', config);
-            // Use existing configuration (from template) with a small delay to ensure DOM is ready
-            setTimeout(() => {
-                populateConfigurationForm(config);
-                showNotification('Configuration loaded from template', 'success');
-            }, 100);
-            return config;
+        // Check wizard mode and load existing config if in reconfiguration mode
+        const wizardMode = stateManager.get('wizardMode');
+        const isReconfiguration = wizardMode === 'reconfigure';
+        
+        let finalConfig = templateConfig;
+        
+        if (isReconfiguration) {
+            console.log('[CONFIGURE] Reconfiguration mode detected, loading existing configuration...');
+            
+            // Load existing configuration from backend
+            const existingConfig = await loadExistingConfiguration();
+            
+            if (existingConfig) {
+                // Merge existing config with template config (existing takes precedence)
+                finalConfig = mergeExistingWithTemplate(existingConfig, templateConfig);
+                console.log('[CONFIGURE] Using merged configuration:', finalConfig);
+            } else {
+                console.warn('[CONFIGURE] Failed to load existing configuration, using template defaults');
+                finalConfig = templateConfig;
+            }
+        } else {
+            console.log('[CONFIGURE] Initial installation mode, using template configuration');
+            finalConfig = templateConfig;
         }
         
-        console.log('[CONFIGURE] No existing configuration, requesting default from API');
+        if (finalConfig && Object.keys(finalConfig).length > 0) {
+            // Store the final configuration
+            stateManager.set('configuration', finalConfig);
+            
+            // Use a small delay to ensure DOM is ready
+            setTimeout(() => {
+                populateConfigurationForm(finalConfig, isReconfiguration);
+                const message = isReconfiguration ? 
+                    'Configuration loaded from existing installation' : 
+                    'Configuration loaded from template';
+                showNotification(message, 'success');
+            }, 100);
+            return finalConfig;
+        }
+        
+        console.log('[CONFIGURE] No configuration available, requesting default from API');
         // Request default configuration from API (for custom profile selection)
         const response = await api.post('/config/default', {
             profiles: selectedProfiles
@@ -177,13 +266,13 @@ async function loadConfigurationFormWithProfiles(selectedProfiles) {
         
         // Store configuration in state
         stateManager.set('configuration', response.config);
-        config = response.config;
+        finalConfig = response.config;
         
         // Populate form fields
-        populateConfigurationForm(config);
+        populateConfigurationForm(finalConfig, false);
         
         showNotification('Configuration loaded successfully', 'success');
-        return config;
+        return finalConfig;
         
     } catch (error) {
         console.error('Failed to load configuration:', error);
@@ -193,13 +282,55 @@ async function loadConfigurationFormWithProfiles(selectedProfiles) {
 }
 
 /**
- * Populate configuration form with values
+ * Add visual indicator to show a field has an existing value
+ * @param {HTMLElement} field - Form field element
+ * @param {boolean} isExisting - Whether value is from existing config
  */
-function populateConfigurationForm(config) {
+function markFieldAsExisting(field, isExisting) {
+    if (!field || !isExisting) return;
+    
+    // Store original value for comparison
+    if (field.type === 'checkbox') {
+        field.dataset.originalValue = field.checked.toString();
+    } else {
+        field.dataset.originalValue = field.value;
+    }
+    
+    // Add a visual indicator class
+    field.classList.add('has-existing-value');
+    
+    // Check if indicator already exists
+    const parentContainer = field.parentElement;
+    if (parentContainer && parentContainer.querySelector('.existing-value-indicator')) {
+        return; // Already has indicator
+    }
+    
+    // Add tooltip or hint
+    const existingIndicator = document.createElement('span');
+    existingIndicator.className = 'existing-value-indicator';
+    existingIndicator.title = 'Current value from your existing configuration';
+    existingIndicator.innerHTML = '✓ Current';
+    
+    // Insert indicator after the field
+    if (parentContainer) {
+        parentContainer.appendChild(existingIndicator);
+    }
+}
+
+/**
+ * Populate configuration form with values
+ * @param {Object} config - Configuration object
+ * @param {boolean} isReconfiguration - Whether in reconfiguration mode
+ */
+function populateConfigurationForm(config, isReconfiguration = false) {
+    console.log('[CONFIGURE] Populating form with configuration:', config);
+    console.log('[CONFIGURE] Reconfiguration mode:', isReconfiguration);
+    
     // External IP
     const externalIpInput = document.getElementById('external-ip');
     if (externalIpInput && config.EXTERNAL_IP) {
         externalIpInput.value = config.EXTERNAL_IP;
+        if (isReconfiguration) markFieldAsExisting(externalIpInput, true);
     }
     
     // Public node toggle
@@ -209,6 +340,9 @@ function populateConfigurationForm(config) {
         const isPublic = config.PUBLIC_NODE === 'true' || config.PUBLIC_NODE === true;
         publicNodeToggle.checked = isPublic;
         console.log('[CONFIGURE] Setting PUBLIC_NODE toggle:', config.PUBLIC_NODE, '→', isPublic);
+        if (isReconfiguration && config.PUBLIC_NODE !== undefined) {
+            markFieldAsExisting(publicNodeToggle, true);
+        }
     }
     
     // K-Social Database password
@@ -216,6 +350,7 @@ function populateConfigurationForm(config) {
     if (kSocialDbPasswordInput && config.K_SOCIAL_DB_PASSWORD) {
         kSocialDbPasswordInput.value = config.K_SOCIAL_DB_PASSWORD;
         kSocialDbPasswordInput.placeholder = 'Auto-generated password';
+        if (isReconfiguration) markFieldAsExisting(kSocialDbPasswordInput, true);
     }
     
     // Simply Kaspa Database password
@@ -223,6 +358,7 @@ function populateConfigurationForm(config) {
     if (simplyKaspaDbPasswordInput && config.SIMPLY_KASPA_DB_PASSWORD) {
         simplyKaspaDbPasswordInput.value = config.SIMPLY_KASPA_DB_PASSWORD;
         simplyKaspaDbPasswordInput.placeholder = 'Auto-generated password';
+        if (isReconfiguration) markFieldAsExisting(simplyKaspaDbPasswordInput, true);
     }
     
     // Kaspa Network
@@ -233,6 +369,7 @@ function populateConfigurationForm(config) {
         if (currentNetworkDisplay) {
             currentNetworkDisplay.textContent = config.KASPA_NETWORK;
         }
+        if (isReconfiguration) markFieldAsExisting(kaspaNetworkSelect, true);
     }
     
     // Kaspa Node Ports
@@ -250,32 +387,38 @@ function populateConfigurationForm(config) {
     const kasiaIndexerUrlInput = document.getElementById('kasia-indexer-url');
     if (kasiaIndexerUrlInput && config.REMOTE_KASIA_INDEXER_URL) {
         kasiaIndexerUrlInput.value = config.REMOTE_KASIA_INDEXER_URL;
+        if (isReconfiguration) markFieldAsExisting(kasiaIndexerUrlInput, true);
     }
     
     const ksocialIndexerUrlInput = document.getElementById('ksocial-indexer-url');
     if (ksocialIndexerUrlInput && config.REMOTE_KSOCIAL_INDEXER_URL) {
         ksocialIndexerUrlInput.value = config.REMOTE_KSOCIAL_INDEXER_URL;
+        if (isReconfiguration) markFieldAsExisting(ksocialIndexerUrlInput, true);
     }
     
     const kaspaNodeWsUrlInput = document.getElementById('kaspa-node-ws-url');
     if (kaspaNodeWsUrlInput && (config.REMOTE_KASPA_NODE_WRPC_URL || config.REMOTE_KASPA_NODE_WBORSH_URL)) {
         kaspaNodeWsUrlInput.value = config.REMOTE_KASPA_NODE_WRPC_URL || config.REMOTE_KASPA_NODE_WBORSH_URL;
+        if (isReconfiguration) markFieldAsExisting(kaspaNodeWsUrlInput, true);
     }
     
     // Data directories
     const kaspaDataDirInput = document.getElementById('kaspa-data-dir');
     if (kaspaDataDirInput && config.KASPA_DATA_DIR) {
         kaspaDataDirInput.value = config.KASPA_DATA_DIR;
+        if (isReconfiguration) markFieldAsExisting(kaspaDataDirInput, true);
     }
     
     const archiveDataDirInput = document.getElementById('kaspa-archive-data-dir');
     if (archiveDataDirInput && config.KASPA_ARCHIVE_DATA_DIR) {
         archiveDataDirInput.value = config.KASPA_ARCHIVE_DATA_DIR;
+        if (isReconfiguration) markFieldAsExisting(archiveDataDirInput, true);
     }
     
     const timescaledbDataDirInput = document.getElementById('timescaledb-data-dir');
     if (timescaledbDataDirInput && config.TIMESCALEDB_DATA_DIR) {
         timescaledbDataDirInput.value = config.TIMESCALEDB_DATA_DIR;
+        if (isReconfiguration) markFieldAsExisting(timescaledbDataDirInput, true);
     }
     
     // Show/hide sections based on profiles
@@ -567,6 +710,64 @@ export function setupFormValidation() {
         field.addEventListener('input', () => {
             clearFieldError(fieldId);
         });
+    });
+    
+    // Listen for form field changes to remove "existing value" indicator
+    document.addEventListener('input', (event) => {
+        const field = event.target;
+        
+        // If field had existing value indicator, remove it when user changes the value
+        if (field.classList && field.classList.contains('has-existing-value')) {
+            // Get the original value to compare
+            const originalValue = field.dataset.originalValue;
+            
+            // If value changed from original, remove indicator
+            if (originalValue && field.value !== originalValue) {
+                field.classList.remove('has-existing-value');
+                
+                // Remove the indicator badge
+                const indicator = field.parentElement?.querySelector('.existing-value-indicator');
+                if (indicator) {
+                    indicator.remove();
+                }
+            }
+        }
+    });
+    
+    // Also listen for change events on checkboxes and selects
+    document.addEventListener('change', (event) => {
+        const field = event.target;
+        
+        // If field had existing value indicator, remove it when user changes the value
+        if (field.classList && field.classList.contains('has-existing-value')) {
+            // Get the original value to compare
+            const originalValue = field.dataset.originalValue;
+            
+            // For checkboxes, compare checked state
+            if (field.type === 'checkbox') {
+                const originalChecked = originalValue === 'true';
+                if (field.checked !== originalChecked) {
+                    field.classList.remove('has-existing-value');
+                    
+                    // Remove the indicator badge
+                    const indicator = field.parentElement?.querySelector('.existing-value-indicator');
+                    if (indicator) {
+                        indicator.remove();
+                    }
+                }
+            } else {
+                // For other inputs, compare value
+                if (originalValue && field.value !== originalValue) {
+                    field.classList.remove('has-existing-value');
+                    
+                    // Remove the indicator badge
+                    const indicator = field.parentElement?.querySelector('.existing-value-indicator');
+                    if (indicator) {
+                        indicator.remove();
+                    }
+                }
+            }
+        }
     });
 }
 

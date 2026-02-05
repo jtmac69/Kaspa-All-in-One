@@ -526,29 +526,34 @@ class ProfileStateManager {
 
   /**
    * Determine overall installation state
+   * Priority: docker-compose > installation state > running services > configuration (fallback only)
+   * 
+   * CRITICAL: Docker compose presence is the most reliable indicator.
+   * Configuration keys alone (especially REMOTE_* URLs) should NOT indicate installation.
    */
   determineInstallationState(isInInstallationState, isConfigured, isInDockerCompose, runningStatus) {
-    // Priority order: installation state > docker compose > configuration > running services
-    
-    if (isInInstallationState) {
-      return 'installed';
-    }
-    
+    // Priority 1: Docker compose presence (most reliable)
     if (isInDockerCompose) {
       return 'installed';
     }
     
-    if (isConfigured) {
+    // Priority 2: Installation state file
+    if (isInInstallationState) {
       return 'installed';
     }
     
+    // Priority 3: All services running (indicates actual installation)
     if (runningStatus.runningCount === runningStatus.totalCount && runningStatus.runningCount > 0) {
       return 'installed';
     }
     
+    // Priority 4: Some services running (partial installation)
     if (runningStatus.runningCount > 0) {
       return 'partial';
     }
+    
+    // Configuration alone is NOT sufficient to indicate installation
+    // (REMOTE_* URLs are fallback settings, not installation indicators)
     
     return 'not-installed';
   }

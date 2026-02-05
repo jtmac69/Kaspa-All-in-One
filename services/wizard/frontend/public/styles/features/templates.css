@@ -14,3 +14,325 @@
   padding-top: var(--space-6);
   border-top: 1px solid var(--border);
 }
+
+/* ============================================================================
+   Template Installation State Indicators
+   ============================================================================ */
+
+/* Installed template cards */
+.template-card.template-installed {
+    border: 2px solid var(--success);
+    background: linear-gradient(135deg, rgba(126, 211, 33, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
+    position: relative;
+    opacity: 0.7;
+}
+
+.template-card.template-installed::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--success);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+/* Disabled state for installed templates */
+.template-card.template-disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.template-card.template-disabled:hover {
+    transform: none;
+    box-shadow: var(--shadow-md);
+}
+
+/* Partial installation state */
+.template-card.template-partial {
+    border: 2px solid var(--warning);
+    background: linear-gradient(135deg, rgba(245, 166, 35, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
+    position: relative;
+}
+
+.template-card.template-partial::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--warning);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+/* Installation badges */
+.template-installation-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+
+.template-installation-badge.installed {
+    background: var(--success);
+    color: white;
+    box-shadow: 0 2px 4px rgba(126, 211, 33, 0.3);
+}
+
+.template-installation-badge.partial {
+    background: var(--warning);
+    color: white;
+    box-shadow: 0 2px 4px rgba(245, 166, 35, 0.3);
+}
+
+.template-installation-badge .badge-icon {
+    font-size: 12px;
+}
+
+.template-installation-badge .badge-text {
+    font-size: 10px;
+}
+
+/* Installed template warning banner */
+.template-installed-warning {
+    display: none;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(245, 166, 35, 0.1);
+    border: 2px solid var(--warning);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.template-installed-warning .banner-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.template-installed-warning .banner-content {
+    flex: 1;
+}
+
+.template-installed-warning .banner-message {
+    margin-bottom: 12px;
+    color: var(--warning-dark);
+    line-height: 1.5;
+}
+
+.template-installed-warning .banner-message strong {
+    color: var(--text-primary);
+}
+
+.template-installed-warning .banner-message em {
+    color: var(--kaspa-blue);
+    font-style: normal;
+    font-weight: 500;
+}
+
+.template-installed-warning .banner-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .template-card.template-installed {
+        background: linear-gradient(135deg, rgba(126, 211, 33, 0.1) 0%, var(--surface-dark) 100%);
+    }
+    
+    .template-card.template-partial {
+        background: linear-gradient(135deg, rgba(245, 166, 35, 0.1) 0%, var(--surface-dark) 100%);
+    }
+    
+    .template-installed-warning {
+        background: rgba(245, 166, 35, 0.15);
+        border-color: var(--warning-light);
+    }
+}
+
+
+/* ============================================================================
+   Reconfiguration Mode Banner
+   ============================================================================ */
+
+.reconfiguration-mode-banner {
+    background: linear-gradient(135deg, rgba(112, 199, 186, 0.1) 0%, rgba(70, 185, 234, 0.05) 100%);
+    border: 2px solid var(--kaspa-light);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(70, 185, 234, 0.1);
+}
+
+.reconfiguration-mode-banner .banner-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.reconfiguration-mode-banner .banner-icon {
+    font-size: 36px;
+    flex-shrink: 0;
+}
+
+.reconfiguration-mode-banner .banner-title-section {
+    flex: 1;
+}
+
+.reconfiguration-mode-banner .banner-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+}
+
+.reconfiguration-mode-banner .banner-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.reconfiguration-mode-banner .banner-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin: 16px 0;
+    padding: 16px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.reconfiguration-mode-banner .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.reconfiguration-mode-banner .stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.reconfiguration-mode-banner .stat-item.stat-installed .stat-value {
+    color: var(--success);
+}
+
+.reconfiguration-mode-banner .stat-item.stat-available .stat-value {
+    color: var(--kaspa-blue);
+}
+
+.reconfiguration-mode-banner .stat-label {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+}
+
+.reconfiguration-mode-banner .stat-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--border);
+}
+
+.reconfiguration-mode-banner .banner-info {
+    margin: 16px 0;
+    padding: 16px;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid var(--kaspa-blue);
+}
+
+.reconfiguration-mode-banner .banner-info p {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.reconfiguration-mode-banner .banner-info p:last-child {
+    margin-bottom: 0;
+}
+
+.reconfiguration-mode-banner .banner-info strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.reconfiguration-mode-banner .banner-info .profile-list {
+    color: var(--kaspa-blue);
+    font-weight: 500;
+}
+
+.reconfiguration-mode-banner .banner-hint {
+    font-size: 13px;
+    font-style: italic;
+}
+
+.reconfiguration-mode-banner .banner-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .reconfiguration-mode-banner {
+        padding: 16px;
+    }
+    
+    .reconfiguration-mode-banner .banner-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .reconfiguration-mode-banner .banner-stats {
+        flex-direction: row;
+        gap: 16px;
+    }
+    
+    .reconfiguration-mode-banner .stat-divider {
+        height: 30px;
+    }
+    
+    .reconfiguration-mode-banner .banner-actions {
+        flex-direction: column;
+    }
+    
+    .reconfiguration-mode-banner .banner-actions button {
+        width: 100%;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .reconfiguration-mode-banner {
+        background: linear-gradient(135deg, rgba(112, 199, 186, 0.15) 0%, rgba(70, 185, 234, 0.1) 100%);
+        border-color: rgba(112, 199, 186, 0.3);
+    }
+    
+    .reconfiguration-mode-banner .banner-stats,
+    .reconfiguration-mode-banner .banner-info {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .reconfiguration-mode-banner .banner-info {
+        border-left-color: var(--kaspa-light);
+    }
+}
