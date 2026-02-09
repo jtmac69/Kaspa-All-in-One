@@ -494,14 +494,16 @@ async function showReconfigurationLanding(launchContext = null) {
     // Show the reconfiguration landing step
     const landingStep = document.getElementById('step-reconfigure-landing');
     if (landingStep) {
-        landingStep.style.display = 'block';
-        
-        // Hide other steps
+        // IMPORTANT: Remove 'active' class from ALL steps first
+        // CSS has .wizard-step.active { display: flex !important } which overrides inline styles
         document.querySelectorAll('.wizard-step').forEach(step => {
-            if (step.id !== 'step-reconfigure-landing') {
-                step.style.display = 'none';
-            }
+            step.classList.remove('active');
+            step.style.display = 'none';
         });
+        
+        // Now show and activate the reconfiguration landing step
+        landingStep.classList.add('active');
+        landingStep.style.display = 'block';
         
         // Update progress indicator (hide it for reconfiguration mode)
         const progressIndicator = document.querySelector('.wizard-progress');
@@ -526,6 +528,22 @@ async function loadReconfigurationData() {
     try {
         // Show loading state
         updateInstallationStatus('checking', 'Loading installation details...');
+        
+        // First, migrate installation state from legacy to new profile IDs if needed
+        // This ensures the installation state uses the new 8-profile architecture
+        try {
+            console.log('[WIZARD] Checking for legacy profile ID migration...');
+            const migrationResult = await api.post('/wizard/config/migrate-installation-state', {});
+            if (migrationResult.migrated) {
+                console.log('[WIZARD] Installation state migrated:', migrationResult);
+                showNotification('Installation state updated to new profile format', 'info');
+            } else {
+                console.log('[WIZARD] No migration needed:', migrationResult.message);
+            }
+        } catch (migrationError) {
+            // Migration is optional - don't fail if it doesn't work
+            console.warn('[WIZARD] Migration check failed (non-critical):', migrationError);
+        }
         
         // Load profile states
         const response = await api.get('/wizard/profiles/status');

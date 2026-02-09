@@ -341,13 +341,30 @@ class ProfileStateManager {
       return false;
     }
     
-    // Check both old and new format
+    // Get the profiles array (handle both old and new format)
+    let profilesArray = [];
     if (Array.isArray(installationState.profiles)) {
-      return installationState.profiles.includes(profileId);
+      profilesArray = installationState.profiles;
+    } else if (installationState.profiles.selected) {
+      profilesArray = installationState.profiles.selected;
     }
     
-    if (installationState.profiles.selected) {
-      return installationState.profiles.selected.includes(profileId);
+    if (profilesArray.length === 0) {
+      return false;
+    }
+    
+    // Check if the profile ID is directly in the array
+    if (profilesArray.includes(profileId)) {
+      return true;
+    }
+    
+    // Check if any legacy ID that maps to this profile ID is in the array
+    // This handles the case where installation state has 'core' but we're looking for 'kaspa-node'
+    for (const [legacyId, newIds] of Object.entries(LEGACY_PROFILE_MIGRATION)) {
+      const mappedIds = Array.isArray(newIds) ? newIds : [newIds];
+      if (mappedIds.includes(profileId) && profilesArray.includes(legacyId)) {
+        return true;
+      }
     }
     
     return false;

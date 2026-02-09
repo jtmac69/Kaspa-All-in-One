@@ -52,19 +52,26 @@ class SettingsModificationModule {
   
   /**
    * Load installed profiles from state
+   * Uses reconfigurationData as single source of truth (loaded by landing page)
    */
   async loadInstalledProfiles() {
-    console.log('[SETTINGS-MOD] Loading installed profiles');
+    console.log('[SETTINGS-MOD] Loading installed profiles from state');
     
-    const profileStates = stateManager.get('profileStates');
+    const reconfigData = stateManager.get('reconfigurationData');
     
-    if (!profileStates || profileStates.length === 0) {
-      console.warn('[SETTINGS-MOD] No profile states found');
+    if (!reconfigData) {
+      console.error('[SETTINGS-MOD] reconfigurationData not found in state - landing page may not have loaded');
       this.installedProfiles = [];
       return;
     }
     
-    this.installedProfiles = profileStates
+    if (!reconfigData.profileStates || reconfigData.profileStates.length === 0) {
+      console.warn('[SETTINGS-MOD] No profileStates in reconfigurationData');
+      this.installedProfiles = [];
+      return;
+    }
+    
+    this.installedProfiles = reconfigData.profileStates
       .filter(p => p.installationState === 'installed')
       .map(p => ({
         id: p.id,
@@ -74,11 +81,7 @@ class SettingsModificationModule {
         serviceCount: p.services?.length || 0
       }));
     
-    console.log('[SETTINGS-MOD] Loaded installed profiles:', 
-      this.installedProfiles.length, 
-      'profiles');
-    console.log('[SETTINGS-MOD] Profile IDs:', 
-      this.installedProfiles.map(p => p.id).join(', '));
+    console.log('[SETTINGS-MOD] Loaded', this.installedProfiles.length, 'installed profiles');
   }
   
   /**
@@ -100,7 +103,7 @@ class SettingsModificationModule {
           <button class="btn-primary" onclick="startAddRemoveServices()">
             Install Services
           </button>
-          <button class="btn-tertiary" onclick="history.back()">
+          <button class="btn-secondary" onclick="settingsModification.goBack()">
             Go Back
           </button>
         </div>
@@ -108,7 +111,38 @@ class SettingsModificationModule {
     `;
     
     container.innerHTML = html;
-    container.style.display = 'block';
+  }
+  
+  /**
+   * Go back to reconfiguration landing page
+   */
+  goBack() {
+    console.log('[SETTINGS-MOD] Going back to reconfiguration landing');
+    
+    // Hide settings modification step
+    const settingsStep = document.getElementById('step-settings-modification');
+    if (settingsStep) {
+      settingsStep.classList.remove('active');
+      settingsStep.style.display = 'none';
+    }
+    
+    // Show reconfiguration landing step
+    const landingStep = document.getElementById('step-reconfigure-landing');
+    if (landingStep) {
+      landingStep.classList.add('active');
+      landingStep.style.display = 'flex';
+    }
+    
+    // Clear container
+    const container = document.getElementById('settings-mod-container');
+    if (container) {
+      container.innerHTML = '';
+    }
+    
+    // Reset state
+    this.currentProfile = null;
+    this.currentConfig = {};
+    this.modifiedFields.clear();
   }
   
   /**
@@ -116,6 +150,20 @@ class SettingsModificationModule {
    */
   showProfileSelection() {
     console.log('[SETTINGS-MOD] Showing profile selection');
+    
+    // Hide the reconfiguration landing step
+    const landingStep = document.getElementById('step-reconfigure-landing');
+    if (landingStep) {
+      landingStep.classList.remove('active');
+      landingStep.style.display = 'none';
+    }
+    
+    // Show the settings modification step
+    const settingsStep = document.getElementById('step-settings-modification');
+    if (settingsStep) {
+      settingsStep.classList.add('active');
+      settingsStep.style.display = 'flex';
+    }
     
     const container = document.getElementById('settings-mod-container');
     if (!container) {
@@ -151,13 +199,12 @@ class SettingsModificationModule {
         </div>
         
         <div class="settings-mod-actions">
-          <button class="btn-tertiary" onclick="history.back()">Cancel</button>
+          <button class="btn-secondary" onclick="settingsModification.goBack()">Cancel</button>
         </div>
       </div>
     `;
     
     container.innerHTML = html;
-    container.style.display = 'block';
     
     console.log('[SETTINGS-MOD] Profile selection displayed');
   }
@@ -185,15 +232,17 @@ class SettingsModificationModule {
     try {
       // Load current configuration from API
       console.log('[SETTINGS-MOD] Fetching configuration for:', profileId);
-      const response = await api.get(`/config/${profileId}`);
+      const response = await api.get(`/wizard/config/current/${profileId}`);
       
       if (response && response.success) {
-        this.currentConfig = response.config || {};
+        this.currentConfig = response.currentConfig || {};
+        this.availableFields = response.availableFields || [];
         console.log('[SETTINGS-MOD] Configuration loaded:', 
-          Object.keys(this.currentConfig).length, 'fields');
+          Object.keys(this.currentConfig).length, 'config values,',
+          this.availableFields.length, 'available fields');
         this.showConfigurationForm();
       } else {
-        throw new Error(response?.message || 'Failed to load configuration');
+        throw new Error(response?.message || response?.error || 'Failed to load configuration');
       }
       
     } catch (error) {
@@ -223,7 +272,7 @@ class SettingsModificationModule {
           <button class="btn-secondary" onclick="settingsModification.selectProfile('${this.currentProfile}')">
             Retry
           </button>
-          <button class="btn-tertiary" onclick="settingsModification.showProfileSelection()">
+          <button class="btn-secondary" onclick="settingsModification.showProfileSelection()">
             Back to Selection
           </button>
         </div>
@@ -279,7 +328,7 @@ class SettingsModificationModule {
             </span>
           </div>
           <div class="footer-actions">
-            <button class="btn-tertiary" 
+            <button class="btn-secondary" 
                     onclick="settingsModification.showProfileSelection()">
               Cancel
             </button>
@@ -303,9 +352,13 @@ class SettingsModificationModule {
   
   /**
    * Render configuration fields based on profile type
+   * Uses fields from API response (availableFields) as primary source
    */
   renderConfigurationFields() {
-    const fields = this.getFieldsForProfile(this.currentProfile);
+    // Use API-provided fields first, fall back to local definitions
+    const fields = this.availableFields && this.availableFields.length > 0 
+      ? this.availableFields 
+      : this.getFieldsForProfile(this.currentProfile);
     
     if (fields.length === 0) {
       return `
@@ -317,7 +370,12 @@ class SettingsModificationModule {
     }
     
     return fields.map(field => {
-      const value = this.currentConfig[field.key] || field.default || '';
+      const value = this.currentConfig[field.key] !== undefined 
+        ? this.currentConfig[field.key] 
+        : (field.default !== undefined ? field.default : '');
+      
+      // Generate description from label if not provided
+      const description = field.description || `Configure ${field.label}`;
       
       return `
         <div class="config-field" data-field-key="${field.key}">
@@ -325,7 +383,7 @@ class SettingsModificationModule {
             ${field.label}
             ${field.required ? '<span class="required">*</span>' : ''}
           </label>
-          <p class="config-field-description">${field.description}</p>
+          <p class="config-field-description">${description}</p>
           ${this.renderFieldInput(field, value)}
           ${field.helpText ? `<p class="config-field-help">${field.helpText}</p>` : ''}
         </div>
@@ -335,16 +393,22 @@ class SettingsModificationModule {
   
   /**
    * Render input based on field type
+   * Handles both backend format (type: 'boolean', options: ['a', 'b']) 
+   * and frontend format (type: 'checkbox', options: [{value, label}])
    */
   renderFieldInput(field, value) {
-    switch (field.type) {
+    // Normalize field type - backend uses 'boolean', frontend uses 'checkbox'
+    const fieldType = field.type === 'boolean' ? 'checkbox' : field.type;
+    
+    switch (fieldType) {
       case 'text':
+      case 'password':
         return `
           <input 
-            type="text" 
+            type="${field.type === 'password' ? 'password' : 'text'}" 
             id="field-${field.key}"
             class="config-field-input"
-            value="${this.escapeHtml(value)}"
+            value="${this.escapeHtml(String(value || ''))}"
             placeholder="${field.placeholder || ''}"
             data-field="${field.key}"
             ${field.required ? 'required' : ''}
@@ -358,7 +422,7 @@ class SettingsModificationModule {
             type="number" 
             id="field-${field.key}"
             class="config-field-input"
-            value="${value}"
+            value="${value !== undefined && value !== '' ? value : (field.default || '')}"
             placeholder="${field.placeholder || ''}"
             data-field="${field.key}"
             ${field.required ? 'required' : ''}
@@ -368,20 +432,32 @@ class SettingsModificationModule {
         `;
         
       case 'checkbox':
+        // Handle boolean values from backend (true/false, 'true'/'false')
+        const isChecked = value === true || value === 'true' || value === 1;
         return `
           <label class="checkbox-label">
             <input 
               type="checkbox" 
               id="field-${field.key}"
               class="config-field-checkbox"
-              ${value ? 'checked' : ''}
+              ${isChecked ? 'checked' : ''}
               data-field="${field.key}"
             />
-            <span>${field.checkboxLabel || 'Enable'}</span>
+            <span>${field.checkboxLabel || field.label || 'Enable'}</span>
           </label>
         `;
         
       case 'select':
+        // Handle both array of strings (backend) and array of objects (frontend)
+        const options = field.options || [];
+        const optionsHtml = options.map(opt => {
+          // Backend sends array of strings, frontend sends array of {value, label}
+          const optValue = typeof opt === 'string' ? opt : opt.value;
+          const optLabel = typeof opt === 'string' ? opt : opt.label;
+          const isSelected = String(value) === String(optValue);
+          return `<option value="${optValue}" ${isSelected ? 'selected' : ''}>${optLabel}</option>`;
+        }).join('');
+        
         return `
           <select 
             id="field-${field.key}"
@@ -389,11 +465,7 @@ class SettingsModificationModule {
             data-field="${field.key}"
             ${field.required ? 'required' : ''}
           >
-            ${field.options.map(opt => `
-              <option value="${opt.value}" ${value === opt.value ? 'selected' : ''}>
-                ${opt.label}
-              </option>
-            `).join('')}
+            ${optionsHtml}
           </select>
         `;
         
@@ -406,12 +478,21 @@ class SettingsModificationModule {
             placeholder="${field.placeholder || ''}"
             rows="${field.rows || 3}"
             ${field.required ? 'required' : ''}
-          >${this.escapeHtml(value)}</textarea>
+          >${this.escapeHtml(String(value || ''))}</textarea>
         `;
         
       default:
-        console.error('[SETTINGS-MOD] Unknown field type:', field.type);
-        return `<p class="error">Unknown field type: ${field.type}</p>`;
+        console.warn('[SETTINGS-MOD] Unknown field type:', field.type, '- rendering as text input');
+        return `
+          <input 
+            type="text" 
+            id="field-${field.key}"
+            class="config-field-input"
+            value="${this.escapeHtml(String(value || ''))}"
+            placeholder="${field.placeholder || ''}"
+            data-field="${field.key}"
+          />
+        `;
     }
   }
   
@@ -551,9 +632,22 @@ class SettingsModificationModule {
       ]
     };
     
-    const fields = fieldDefinitions[profileId] || [];
+    // Legacy profile ID mapping to new profile IDs
+    const legacyProfileMapping = {
+      'core': 'kaspa-node',
+      'archive-node': 'kaspa-archive-node',
+      'mining': 'kaspa-stratum',
+      'kaspa-user-applications': 'k-social-app',  // Map to first app
+      'indexer-services': 'kasia-indexer'  // Map to first indexer
+    };
     
-    console.log('[SETTINGS-MOD] Loaded', fields.length, 'fields for profile:', profileId);
+    // Resolve legacy profile ID to new profile ID
+    const resolvedProfileId = legacyProfileMapping[profileId] || profileId;
+    
+    const fields = fieldDefinitions[resolvedProfileId] || [];
+    
+    console.log('[SETTINGS-MOD] Loaded', fields.length, 'fields for profile:', profileId, 
+      profileId !== resolvedProfileId ? `(resolved to ${resolvedProfileId})` : '');
     
     return fields;
   }

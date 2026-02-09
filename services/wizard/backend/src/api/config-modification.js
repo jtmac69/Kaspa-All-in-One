@@ -7,6 +7,10 @@ const ProfileStateManager = require('../utils/profile-state-manager');
 const BackupManager = require('../utils/backup-manager');
 const DockerManager = require('../utils/docker-manager');
 
+// Import centralized path resolver
+const { createResolver } = require('../../../../shared/lib/path-resolver');
+const pathResolver = createResolver(__dirname);
+
 const configGenerator = new ConfigGenerator();
 const profileStateManager = ProfileStateManager.getInstance();
 const backupManager = new BackupManager();
@@ -21,10 +25,10 @@ router.get('/current/:profileId', async (req, res) => {
   try {
     const { profileId } = req.params;
     
-    // Load current configuration
-    const projectRoot = process.env.PROJECT_ROOT || '/workspace';
-    const envPath = path.join(projectRoot, '.env');
-    const configPath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+    // Load current configuration using path resolver
+    const paths = pathResolver.getPaths();
+    const envPath = paths.env;
+    const configPath = paths.installationState;
     
     // Get profile state to ensure it's installed
     const profileState = await profileStateManager.getProfileState(profileId);
@@ -46,8 +50,8 @@ router.get('/current/:profileId', async (req, res) => {
       });
     }
     
-    // Extract profile-specific configuration
-    const profileConfig = extractProfileConfiguration(profileId, configResult.config);
+    // Extract profile-specific configuration (use 'configuration' not 'config')
+    const profileConfig = extractProfileConfiguration(profileId, configResult.configuration);
     
     // Get profile-specific fields
     const profileFields = getProfileConfigurationFields(profileId);
@@ -157,9 +161,9 @@ router.post('/apply-changes', async (req, res) => {
       });
     }
     
-    const projectRoot = process.env.PROJECT_ROOT || '/workspace';
-    const envPath = path.join(projectRoot, '.env');
-    const configPath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+    const paths = pathResolver.getPaths();
+    const envPath = paths.env;
+    const configPath = paths.installationState;
     
     // Create backup if requested
     let backupInfo = null;
@@ -191,12 +195,12 @@ router.post('/apply-changes', async (req, res) => {
     // Merge new configuration with existing
     const mergedConfig = mergeProfileConfiguration(
       profileId, 
-      currentConfigResult.config, 
+      currentConfigResult.configuration, 
       newConfig
     );
     
     // Get current profiles
-    const currentProfiles = currentConfigResult.installationState?.profiles?.selected || [];
+    const currentProfiles = currentConfigResult.profiles || [];
     
     // Validate merged configuration
     const validation = await configGenerator.validateConfig(mergedConfig);
@@ -286,17 +290,17 @@ router.get('/indexer-endpoints', async (req, res) => {
     };
     
     // Get current configuration to show what's currently selected
-    const projectRoot = process.env.PROJECT_ROOT || '/workspace';
-    const envPath = path.join(projectRoot, '.env');
+    const paths = pathResolver.getPaths();
+    const envPath = paths.env;
     const configResult = await configGenerator.loadCompleteConfiguration(envPath);
     
     let currentEndpoints = {};
-    if (configResult.success) {
+    if (configResult.success && configResult.configuration) {
       currentEndpoints = {
-        kasia: configResult.config.REMOTE_KASIA_INDEXER_URL || configResult.config.KASIA_INDEXER_URL,
-        kSocial: configResult.config.REMOTE_KSOCIAL_INDEXER_URL || configResult.config.KSOCIAL_INDEXER_URL,
-        simplyKaspa: configResult.config.REMOTE_SIMPLY_KASPA_INDEXER_URL,
-        kaspaNode: configResult.config.REMOTE_KASPA_NODE_WBORSH_URL
+        kasia: configResult.configuration.REMOTE_KASIA_INDEXER_URL || configResult.configuration.KASIA_INDEXER_URL,
+        kSocial: configResult.configuration.REMOTE_KSOCIAL_INDEXER_URL || configResult.configuration.KSOCIAL_INDEXER_URL,
+        simplyKaspa: configResult.configuration.REMOTE_SIMPLY_KASPA_INDEXER_URL,
+        kaspaNode: configResult.configuration.REMOTE_KASPA_NODE_WBORSH_URL
       };
     }
     
@@ -389,18 +393,18 @@ router.get('/wallet-options', async (req, res) => {
     }
     
     // Get current wallet configuration
-    const projectRoot = process.env.PROJECT_ROOT || '/workspace';
-    const envPath = path.join(projectRoot, '.env');
+    const paths = pathResolver.getPaths();
+    const envPath = paths.env;
     const configResult = await configGenerator.loadCompleteConfiguration(envPath);
     
     let currentWalletConfig = {};
-    if (configResult.success) {
+    if (configResult.success && configResult.configuration) {
       currentWalletConfig = {
-        enabled: configResult.config.KASPA_WALLET_ENABLED === 'true',
-        miningAddress: configResult.config.KASPA_MINING_ADDRESS,
-        rpcUser: configResult.config.KASPA_WALLET_RPC_USER,
-        rpcPassword: configResult.config.KASPA_WALLET_RPC_PASSWORD,
-        walletFile: configResult.config.KASPA_WALLET_FILE
+        enabled: configResult.configuration.KASPA_WALLET_ENABLED === 'true',
+        miningAddress: configResult.configuration.KASPA_MINING_ADDRESS,
+        rpcUser: configResult.configuration.KASPA_WALLET_RPC_USER,
+        rpcPassword: configResult.configuration.KASPA_WALLET_RPC_PASSWORD,
+        walletFile: configResult.configuration.KASPA_WALLET_FILE
       };
     }
     
@@ -799,17 +803,17 @@ async function checkConfigurationConflicts(profileId, newConfig) {
   // Check network changes
   if (newConfig.KASPA_NETWORK) {
     // Load current network
-    const projectRoot = process.env.PROJECT_ROOT || '/workspace';
-    const envPath = path.join(projectRoot, '.env');
+    const paths = pathResolver.getPaths();
+    const envPath = paths.env;
     const currentConfigResult = await configGenerator.loadCompleteConfiguration(envPath);
     
     if (currentConfigResult.success && 
-        currentConfigResult.config.KASPA_NETWORK && 
-        currentConfigResult.config.KASPA_NETWORK !== newConfig.KASPA_NETWORK) {
+        currentConfigResult.configuration?.KASPA_NETWORK && 
+        currentConfigResult.configuration.KASPA_NETWORK !== newConfig.KASPA_NETWORK) {
       warnings.push({
         type: 'network_change',
         field: 'KASPA_NETWORK',
-        currentValue: currentConfigResult.config.KASPA_NETWORK,
+        currentValue: currentConfigResult.configuration.KASPA_NETWORK,
         newValue: newConfig.KASPA_NETWORK,
         message: 'Changing networks requires fresh installation and will invalidate existing data'
       });
@@ -1032,9 +1036,9 @@ async function restartProfileServices(profileId, services) {
  * Apply configuration changes (helper function)
  */
 async function applyConfigurationChanges(profileId, newConfig, createBackup) {
-  const projectRoot = process.env.PROJECT_ROOT || '/workspace';
-  const envPath = path.join(projectRoot, '.env');
-  const configPath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+  const paths = pathResolver.getPaths();
+  const envPath = paths.env;
+  const configPath = paths.installationState;
   
   // Create backup if requested
   let backupInfo = null;
@@ -1062,12 +1066,12 @@ async function applyConfigurationChanges(profileId, newConfig, createBackup) {
   // Merge configurations
   const mergedConfig = mergeProfileConfiguration(
     profileId, 
-    currentConfigResult.config, 
+    currentConfigResult.configuration, 
     newConfig
   );
   
   // Get current profiles
-  const currentProfiles = currentConfigResult.installationState?.profiles?.selected || [];
+  const currentProfiles = currentConfigResult.profiles || [];
   
   // Validate merged configuration
   const validation = await configGenerator.validateConfig(mergedConfig);
@@ -1286,5 +1290,140 @@ function getWalletNextSteps(action) {
       return [];
   }
 }
+
+/**
+ * POST /api/wizard/config/migrate-installation-state
+ * Migrate installation state from legacy profile IDs to new profile IDs
+ * This should be called when reconfiguration mode starts to ensure
+ * the installation state uses the new 8-profile architecture.
+ */
+router.post('/migrate-installation-state', async (req, res) => {
+  try {
+    const paths = pathResolver.getPaths();
+    const statePath = paths.installationState;
+    
+    // Load current installation state
+    let installationState;
+    try {
+      const stateContent = await fs.readFile(statePath, 'utf8');
+      installationState = JSON.parse(stateContent);
+    } catch (error) {
+      return res.json({
+        success: true,
+        migrated: false,
+        message: 'No installation state found to migrate'
+      });
+    }
+    
+    // Check if migration is needed
+    const legacyProfileIds = ['core', 'kaspa-user-applications', 'indexer-services', 'archive-node', 'mining'];
+    const legacyToNewMapping = {
+      'core': 'kaspa-node',
+      'kaspa-user-applications': ['kasia-app', 'k-social-app'],
+      'indexer-services': ['kasia-indexer', 'k-indexer-bundle', 'kaspa-explorer-bundle'],
+      'archive-node': 'kaspa-archive-node',
+      'mining': 'kaspa-stratum'
+    };
+    
+    // Get current profiles array
+    let profilesArray = [];
+    if (Array.isArray(installationState.profiles)) {
+      profilesArray = installationState.profiles;
+    } else if (installationState.profiles?.selected) {
+      profilesArray = installationState.profiles.selected;
+    }
+    
+    // Check if any legacy IDs exist
+    const hasLegacyIds = profilesArray.some(id => legacyProfileIds.includes(id));
+    
+    if (!hasLegacyIds) {
+      return res.json({
+        success: true,
+        migrated: false,
+        message: 'Installation state already uses new profile IDs',
+        profiles: profilesArray
+      });
+    }
+    
+    // Migrate legacy IDs to new IDs
+    const migratedProfiles = [];
+    const migrationLog = [];
+    
+    for (const profileId of profilesArray) {
+      if (legacyToNewMapping[profileId]) {
+        const newIds = legacyToNewMapping[profileId];
+        const newIdArray = Array.isArray(newIds) ? newIds : [newIds];
+        
+        // For legacy IDs that map to multiple new IDs, we need to determine
+        // which ones were actually installed based on running services
+        if (Array.isArray(newIds)) {
+          // For now, add the first one (primary mapping)
+          // In a more sophisticated implementation, we'd check which services are running
+          migratedProfiles.push(newIdArray[0]);
+          migrationLog.push({
+            from: profileId,
+            to: newIdArray[0],
+            note: `Migrated to primary profile. Other options: ${newIdArray.slice(1).join(', ')}`
+          });
+        } else {
+          migratedProfiles.push(newIds);
+          migrationLog.push({
+            from: profileId,
+            to: newIds
+          });
+        }
+      } else {
+        // Already a new profile ID, keep it
+        migratedProfiles.push(profileId);
+      }
+    }
+    
+    // Update installation state with migrated profiles
+    const originalProfiles = [...profilesArray];
+    
+    if (Array.isArray(installationState.profiles)) {
+      installationState.profiles = migratedProfiles;
+    } else if (installationState.profiles?.selected) {
+      installationState.profiles.selected = migratedProfiles;
+      installationState.profiles.count = migratedProfiles.length;
+    }
+    
+    // Add migration metadata
+    installationState.lastModified = new Date().toISOString();
+    installationState.migrationHistory = installationState.migrationHistory || [];
+    installationState.migrationHistory.push({
+      timestamp: new Date().toISOString(),
+      type: 'legacy-to-new-profile-ids',
+      from: originalProfiles,
+      to: migratedProfiles,
+      log: migrationLog
+    });
+    
+    // Save updated installation state
+    await fs.writeFile(statePath, JSON.stringify(installationState, null, 2));
+    
+    console.log('[CONFIG-MOD] Migrated installation state from legacy to new profile IDs:', {
+      from: originalProfiles,
+      to: migratedProfiles
+    });
+    
+    res.json({
+      success: true,
+      migrated: true,
+      message: 'Installation state migrated to new profile IDs',
+      originalProfiles,
+      migratedProfiles,
+      migrationLog
+    });
+    
+  } catch (error) {
+    console.error('Error migrating installation state:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to migrate installation state',
+      message: error.message
+    });
+  }
+});
 
 module.exports = router;

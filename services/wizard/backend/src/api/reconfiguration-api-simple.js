@@ -59,45 +59,69 @@ router.get('/profiles/status', async (req, res) => {
     // Get installed profiles from state
     const installedProfiles = installationState.profiles?.selected || [];
     
-    // Define all available profiles/templates
+    // Define all available profiles using the NEW 8-profile architecture
     const allProfiles = [
       {
-        id: 'core',
-        name: 'Core',
-        displayName: 'Core Profile',
-        description: 'Essential Kaspa node and basic services',
-        icon: '⚡',
+        id: 'kaspa-node',
+        name: 'Kaspa Node',
+        displayName: 'Kaspa Node',
+        description: 'Standard pruning Kaspa node with optional wallet',
+        icon: '🖥️',
         services: ['kaspa-node']
       },
       {
-        id: 'kaspa-user-applications',
-        name: 'Kaspa User Applications',
-        displayName: 'Kaspa User Applications',
-        description: 'Explorer and user-facing applications',
-        icon: '📱',
-        services: ['kaspa-explorer', 'kasia']
+        id: 'kasia-app',
+        name: 'Kasia Application',
+        displayName: 'Kasia Application',
+        description: 'Kasia messaging and wallet application',
+        icon: '💬',
+        services: ['kasia-app']
       },
       {
-        id: 'indexer-services',
-        name: 'Indexer Services',
-        displayName: 'Indexer Services',
-        description: 'K-Indexer and Simply Kaspa indexer services',
+        id: 'k-social-app',
+        name: 'K-Social Application',
+        displayName: 'K-Social Application',
+        description: 'K-Social decentralized social application',
+        icon: '👥',
+        services: ['k-social']
+      },
+      {
+        id: 'kaspa-explorer-bundle',
+        name: 'Kaspa Explorer',
+        displayName: 'Kaspa Explorer',
+        description: 'Block explorer with Simply-Kaspa indexer and database',
         icon: '🔍',
-        services: ['k-indexer', 'simply-kaspa-indexer', 'timescaledb']
+        services: ['kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer']
       },
       {
-        id: 'archive-node',
-        name: 'Archive Node',
-        displayName: 'Archive Node',
-        description: 'Full historical data archive',
-        icon: '📚',
-        services: ['kaspa-node-archive']
+        id: 'kasia-indexer',
+        name: 'Kasia Indexer',
+        displayName: 'Kasia Indexer',
+        description: 'Kasia indexer with embedded database',
+        icon: '📊',
+        services: ['kasia-indexer']
       },
       {
-        id: 'mining',
-        name: 'Mining',
-        displayName: 'Mining Profile',
-        description: 'Mining pool and stratum server',
+        id: 'k-indexer-bundle',
+        name: 'K-Indexer',
+        displayName: 'K-Indexer',
+        description: 'K-Indexer with TimescaleDB database',
+        icon: '📈',
+        services: ['k-indexer', 'timescaledb-kindexer']
+      },
+      {
+        id: 'kaspa-archive-node',
+        name: 'Kaspa Archive Node',
+        displayName: 'Kaspa Archive Node',
+        description: 'Non-pruning archive node for complete blockchain history',
+        icon: '🗄️',
+        services: ['kaspa-archive-node']
+      },
+      {
+        id: 'kaspa-stratum',
+        name: 'Kaspa Stratum',
+        displayName: 'Kaspa Stratum',
+        description: 'Stratum bridge for mining hardware',
         icon: '⛏️',
         services: ['kaspa-stratum']
       }
@@ -108,7 +132,7 @@ router.get('/profiles/status', async (req, res) => {
       const isInstalled = installedProfiles.includes(profile.id);
       const services = installationState.services || [];
       const profileServices = services.filter(s => 
-        profile.services.some(ps => s.name.includes(ps))
+        profile.services.some(ps => s.name.includes(ps) || s.name === ps)
       );
       
       const runningServices = profileServices.filter(s => s.running).length;
@@ -154,8 +178,15 @@ router.get('/profiles/status', async (req, res) => {
     // Generate suggestions
     const suggestions = [];
     
-    // Suggest adding local node if indexers are installed but core is not
-    if (installedProfiles.includes('indexer-services') && !installedProfiles.includes('core')) {
+    // Suggest adding local node if indexers are installed but node is not
+    const hasIndexer = installedProfiles.some(p => 
+      ['kasia-indexer', 'k-indexer-bundle', 'kaspa-explorer-bundle'].includes(p)
+    );
+    const hasNode = installedProfiles.some(p => 
+      ['kaspa-node', 'kaspa-archive-node'].includes(p)
+    );
+    
+    if (hasIndexer && !hasNode) {
       suggestions.push({
         id: 'add-local-node',
         title: 'Add Local Kaspa Node',
@@ -163,7 +194,7 @@ router.get('/profiles/status', async (req, res) => {
         action: 'add-profiles',
         priority: 'medium',
         context: {
-          profiles: ['core'],
+          profiles: ['kaspa-node'],
           reason: 'indexer-optimization'
         }
       });
