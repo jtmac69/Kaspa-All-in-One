@@ -12997,6 +12997,23 @@ input:checked + .toggle-slider:before {
   font-size: var(--text-xl);
   width: 40px;
   height: 40px;
+  /* Enhanced visibility for back button */
+  background: var(--surface-elevated, #2a2a2a);
+  border: 2px solid var(--kaspa-blue);
+  color: var(--kaspa-blue);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.settings-mod-form-header .btn-icon-only:hover {
+  background: var(--kaspa-blue);
+  color: white;
+  transform: scale(1.05);
+  box-shadow: var(--shadow-kaspa);
 }
 
 .settings-mod-title {
@@ -13317,4 +13334,853 @@ input:checked + .toggle-slider:before {
   .config-field-textarea {
     font-size: 16px; /* Prevent iOS zoom on focus */
   }
+}
+
+/* ============================================================================
+   Desktop Landscape Optimizations
+   Since this wizard is desktop-only, optimize for landscape displays
+   ============================================================================ */
+
+/* Increase max-width for larger screens */
+@media (min-width: 1400px) {
+  .wizard-container {
+    max-width: 1400px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .wizard-container {
+    max-width: 1600px;
+  }
+}
+
+/* Reduce vertical spacing globally for better screen utilization */
+.wizard-container {
+  padding: var(--space-2);
+}
+
+.wizard-progress {
+  padding: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+.wizard-content {
+  padding: var(--space-3);
+}
+
+/* Compact step headers */
+.step-header {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+}
+
+.step-title {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-1);
+}
+
+.step-description {
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-2);
+}
+
+/* Reconfiguration Landing - Compact Layout */
+.current-installation-summary {
+  margin-bottom: var(--space-3);
+}
+
+.summary-header {
+  padding: var(--space-3) var(--space-4);
+}
+
+.summary-icon {
+  font-size: 24px;
+}
+
+.summary-details {
+  padding: var(--space-2) var(--space-4);
+}
+
+.detail-grid {
+  gap: var(--space-3);
+}
+
+/* Reconfiguration Options - More Compact Cards */
+.reconfiguration-options {
+  margin-bottom: var(--space-3);
+}
+
+.options-title {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-1);
+}
+
+.options-description {
+  margin-bottom: var(--space-3);
+}
+
+.reconfiguration-options-grid {
+  gap: var(--space-3);
+}
+
+.reconfig-option-card {
+  padding: var(--space-4);
+}
+
+.reconfig-option-icon {
+  font-size: 36px;
+  margin-bottom: var(--space-1);
+}
+
+.reconfig-option-card h3 {
+  font-size: var(--text-base);
+  margin-bottom: var(--space-1);
+}
+
+.reconfig-option-card p {
+  font-size: var(--text-xs);
+  margin-bottom: var(--space-2);
+  min-height: auto;
+}
+
+/* Reconfiguration Navigation Header - Compact */
+.reconfiguration-navigation {
+  padding: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+.reconfig-nav-header {
+  padding: var(--space-2) 0;
+}
+
+.reconfig-nav-title h3 {
+  font-size: var(--text-base);
+  margin: 0;
+}
+
+.reconfig-nav-subtitle {
+  font-size: var(--text-xs);
+}
+
+/* Breadcrumb Navigation - Compact */
+.breadcrumb-navigation {
+  padding: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+/* Hero Section - Compact for Reconfiguration */
+.hero {
+  padding: var(--space-4) var(--space-6);
+}
+
+.hero-logo {
+  max-height: 48px;
+  margin-bottom: var(--space-2);
+}
+
+.hero-title {
+  font-size: var(--text-2xl);
+  margin-bottom: var(--space-2);
+}
+
+.hero-subtitle {
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-3);
+}
+
+.hero-features {
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.feature-item {
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Checklist Items - Compact */
+.checklist-item {
+  margin-bottom: var(--space-2);
+}
+
+.checklist-header {
+  padding: var(--space-2) var(--space-3);
+}
+
+.checklist-content {
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Template Selection - Compact */
+.template-grid {
+  gap: var(--space-3);
+}
+
+.template-card {
+  padding: var(--space-3);
+}
+
+.template-icon {
+  font-size: 32px;
+  margin-bottom: var(--space-2);
+}
+
+.template-title {
+  font-size: var(--text-base);
+  margin-bottom: var(--space-1);
+}
+
+.template-description {
+  font-size: var(--text-xs);
+  margin-bottom: var(--space-2);
+}
+
+/* Profile Cards - Compact */
+.profile-card {
+  padding: var(--space-3);
+}
+
+.profile-card-header {
+  margin-bottom: var(--space-2);
+}
+
+.profile-icon {
+  font-size: 28px;
+}
+
+.profile-title {
+  font-size: var(--text-base);
+}
+
+.profile-description {
+  font-size: var(--text-xs);
+  margin-bottom: var(--space-2);
+}
+
+/* Configuration Form - Compact */
+.config-section {
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+}
+
+.config-section-title {
+  font-size: var(--text-base);
+  margin-bottom: var(--space-2);
+}
+
+.config-field {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+}
+
+.config-field-label {
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-1);
+}
+
+.config-field-description {
+  font-size: var(--text-xs);
+  margin-bottom: var(--space-2);
+}
+
+.config-field-input,
+.config-field-select,
+.config-field-textarea {
+  padding: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+/* Settings Modification - Compact */
+.settings-modification-container {
+  padding: var(--space-3) var(--space-4);
+}
+
+.settings-mod-header-text {
+  margin-bottom: var(--space-3);
+}
+
+.settings-mod-header-text h3 {
+  font-size: var(--text-xl);
+}
+
+.settings-mod-profile-grid {
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.settings-mod-profile-card {
+  padding: var(--space-3);
+}
+
+.settings-mod-profile-card .profile-icon {
+  font-size: 28px;
+}
+
+.settings-mod-profile-card h4 {
+  font-size: var(--text-base);
+  margin-bottom: var(--space-1);
+}
+
+.settings-mod-profile-card .profile-description {
+  font-size: var(--text-xs);
+  min-height: 32px;
+  margin-bottom: var(--space-2);
+}
+
+.settings-mod-form {
+  padding: var(--space-4);
+}
+
+.settings-mod-form-header {
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+}
+
+.settings-mod-fields {
+  margin-bottom: var(--space-4);
+}
+
+/* Navigation Footer - Compact */
+.navigation-footer,
+.wizard-footer {
+  padding: var(--space-2) var(--space-4);
+}
+
+/* Step Actions - Compact */
+.step-actions {
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+  gap: var(--space-2);
+}
+
+/* Buttons - Slightly Smaller */
+.btn-primary,
+.btn-secondary {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.btn-large {
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-base);
+}
+
+/* Review Step - Compact */
+.review-section {
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+}
+
+.review-section-title {
+  font-size: var(--text-base);
+  margin-bottom: var(--space-2);
+}
+
+.review-item {
+  padding: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+/* Installation Progress - Compact */
+.install-progress {
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.progress-title {
+  font-size: var(--text-base);
+  margin-bottom: var(--space-2);
+}
+
+/* Complete Step - Compact */
+.completion-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-2);
+}
+
+.completion-title {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-2);
+}
+
+.completion-message {
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-3);
+}
+
+/* Developer Mode Toggle - Compact */
+.developer-mode-toggle {
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+/* Reduce margins on wizard steps */
+.wizard-step {
+  padding: var(--space-2);
+}
+
+/* Optimize scrollable content areas */
+.wizard-step .step-content {
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+}
+
+/* Fix double scrollbar in settings modification step */
+#step-settings-modification .step-content {
+  overflow-y: visible;
+  max-height: none;
+}
+
+#step-settings-modification.active {
+  overflow-y: auto;
+}
+
+/* Ensure footer stays at bottom without excessive space */
+.wizard-footer,
+.navigation-footer {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+
+/* ============================================================================
+   Ultra-Compact Desktop Layout - Minimize Scrolling
+   ============================================================================ */
+
+/* Reconfiguration Navigation - Ultra Compact */
+.reconfiguration-navigation {
+  padding: 4px 12px !important;
+  margin-bottom: 4px !important;
+}
+
+.reconfig-nav-header {
+  padding: 4px 0 !important;
+}
+
+.reconfig-nav-title h3 {
+  font-size: 14px !important;
+  margin: 0 !important;
+}
+
+.reconfig-nav-subtitle {
+  font-size: 11px !important;
+  margin: 0 !important;
+}
+
+.reconfig-nav-icon {
+  font-size: 20px !important;
+}
+
+.reconfig-nav-actions .btn-secondary {
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+}
+
+.reconfig-nav-actions .btn-icon-only {
+  width: 28px !important;
+  height: 28px !important;
+  font-size: 14px !important;
+}
+
+/* Breadcrumb - Ultra Compact */
+.breadcrumb-navigation {
+  padding: 2px 8px !important;
+  margin-bottom: 4px !important;
+}
+
+.breadcrumb-item {
+  font-size: 11px !important;
+  padding: 2px 6px !important;
+}
+
+/* Reconfiguration Content Area - Ultra Compact */
+.reconfig-nav-content {
+  padding: 4px 0 !important;
+}
+
+/* Step Header - Ultra Compact */
+#step-reconfigure-landing .step-header,
+.wizard-step .step-header {
+  margin-bottom: 8px !important;
+  padding-bottom: 4px !important;
+}
+
+#step-reconfigure-landing .step-title,
+.wizard-step .step-title {
+  font-size: 16px !important;
+  margin-bottom: 2px !important;
+}
+
+#step-reconfigure-landing .step-description,
+.wizard-step .step-description {
+  font-size: 12px !important;
+  margin-bottom: 4px !important;
+}
+
+/* Current Installation Summary - Ultra Compact */
+.current-installation-summary {
+  margin-bottom: 8px !important;
+}
+
+.summary-header {
+  padding: 8px 12px !important;
+}
+
+.summary-icon {
+  font-size: 20px !important;
+}
+
+.summary-title {
+  font-size: 13px !important;
+  margin-bottom: 0 !important;
+}
+
+.summary-subtitle {
+  font-size: 11px !important;
+}
+
+.summary-details {
+  padding: 6px 12px !important;
+}
+
+.detail-grid {
+  gap: 8px !important;
+}
+
+.detail-item {
+  font-size: 11px !important;
+}
+
+.detail-label {
+  font-size: 10px !important;
+}
+
+.detail-value {
+  font-size: 12px !important;
+}
+
+/* Reconfiguration Options - Ultra Compact */
+.reconfiguration-options {
+  margin-bottom: 8px !important;
+}
+
+.options-title {
+  font-size: 14px !important;
+  margin-bottom: 2px !important;
+}
+
+.options-description {
+  font-size: 11px !important;
+  margin-bottom: 8px !important;
+}
+
+.reconfiguration-options-grid {
+  gap: 8px !important;
+}
+
+.reconfig-option-card {
+  padding: 12px !important;
+}
+
+.reconfig-option-icon {
+  font-size: 28px !important;
+  margin-bottom: 4px !important;
+}
+
+.reconfig-option-card h3 {
+  font-size: 13px !important;
+  margin-bottom: 2px !important;
+}
+
+.reconfig-option-card p {
+  font-size: 11px !important;
+  margin-bottom: 8px !important;
+  min-height: auto !important;
+  line-height: 1.3 !important;
+}
+
+.reconfig-option-card button {
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+}
+
+/* Developer Mode Section - Ultra Compact */
+.developer-mode-section {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+}
+
+.developer-mode-card {
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+}
+
+.developer-mode-header {
+  gap: 8px !important;
+}
+
+.developer-mode-icon {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 18px !important;
+}
+
+.developer-mode-title {
+  font-size: 13px !important;
+  margin-bottom: 0 !important;
+}
+
+.developer-mode-subtitle {
+  font-size: 11px !important;
+}
+
+/* Navigation Footer - Ultra Compact */
+.wizard-navigation-footer,
+.navigation-footer {
+  padding: 6px 12px !important;
+}
+
+.wizard-navigation-footer .developer-mode-section {
+  margin-bottom: 4px !important;
+}
+
+/* Footer Links - Ultra Compact */
+.wizard-footer,
+.footer-links {
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+}
+
+.footer-links a {
+  font-size: 11px !important;
+  padding: 2px 6px !important;
+}
+
+/* Buttons in Footer - Ultra Compact */
+.step-actions {
+  padding-top: 6px !important;
+  margin-top: 6px !important;
+  gap: 8px !important;
+}
+
+.step-actions .btn-primary,
+.step-actions .btn-secondary {
+  padding: 6px 16px !important;
+  font-size: 12px !important;
+}
+
+/* Wizard Content Area - Maximize Space */
+.wizard-content {
+  padding: 8px !important;
+}
+
+.wizard-step {
+  padding: 4px !important;
+}
+
+/* Profile/Template Cards - Ultra Compact */
+.template-card,
+.profile-card {
+  padding: 10px !important;
+}
+
+.template-icon,
+.profile-icon {
+  font-size: 24px !important;
+  margin-bottom: 4px !important;
+}
+
+.template-title,
+.profile-title {
+  font-size: 13px !important;
+  margin-bottom: 2px !important;
+}
+
+.template-description,
+.profile-description {
+  font-size: 11px !important;
+  margin-bottom: 6px !important;
+  line-height: 1.3 !important;
+}
+
+/* Checklist Items - Ultra Compact */
+.checklist-item {
+  margin-bottom: 4px !important;
+}
+
+.checklist-header {
+  padding: 6px 10px !important;
+}
+
+.checklist-title h3 {
+  font-size: 13px !important;
+}
+
+.checklist-title p {
+  font-size: 11px !important;
+}
+
+.checklist-content {
+  padding: 6px 10px !important;
+}
+
+/* Configuration Fields - Ultra Compact */
+.config-section {
+  margin-bottom: 8px !important;
+  padding: 10px !important;
+}
+
+.config-section-title {
+  font-size: 13px !important;
+  margin-bottom: 6px !important;
+}
+
+.config-field {
+  margin-bottom: 8px !important;
+  padding-bottom: 6px !important;
+}
+
+.config-field-label {
+  font-size: 12px !important;
+  margin-bottom: 2px !important;
+}
+
+.config-field-description {
+  font-size: 10px !important;
+  margin-bottom: 4px !important;
+}
+
+.config-field-input,
+.config-field-select,
+.config-field-textarea {
+  padding: 6px 8px !important;
+  font-size: 12px !important;
+}
+
+/* Settings Modification - Ultra Compact */
+.settings-modification-container {
+  padding: 8px 12px !important;
+}
+
+.settings-mod-profile-grid {
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+.settings-mod-profile-card {
+  padding: 10px !important;
+}
+
+.settings-mod-profile-card .profile-icon {
+  font-size: 24px !important;
+}
+
+.settings-mod-profile-card h4 {
+  font-size: 13px !important;
+}
+
+.settings-mod-profile-card .profile-description {
+  font-size: 10px !important;
+  min-height: 24px !important;
+}
+
+.settings-mod-form {
+  padding: 12px !important;
+}
+
+.settings-mod-form-header {
+  margin-bottom: 10px !important;
+  padding-bottom: 8px !important;
+}
+
+/* Review Section - Ultra Compact */
+.review-section {
+  margin-bottom: 8px !important;
+  padding: 10px !important;
+}
+
+.review-section-title {
+  font-size: 13px !important;
+  margin-bottom: 6px !important;
+}
+
+.review-item {
+  padding: 4px 8px !important;
+  margin-bottom: 2px !important;
+  font-size: 12px !important;
+}
+
+/* Installation Progress - Ultra Compact */
+.install-progress {
+  padding: 10px !important;
+  margin-bottom: 8px !important;
+}
+
+.progress-title {
+  font-size: 13px !important;
+  margin-bottom: 6px !important;
+}
+
+/* Complete Step - Ultra Compact */
+.completion-icon {
+  font-size: 40px !important;
+  margin-bottom: 6px !important;
+}
+
+.completion-title {
+  font-size: 18px !important;
+  margin-bottom: 4px !important;
+}
+
+.completion-message {
+  font-size: 12px !important;
+  margin-bottom: 8px !important;
+}
+
+/* Hero Section - Ultra Compact (for initial mode) */
+.hero {
+  padding: 16px 24px !important;
+}
+
+.hero-logo {
+  max-height: 40px !important;
+  margin-bottom: 8px !important;
+}
+
+.hero-title {
+  font-size: 20px !important;
+  margin-bottom: 4px !important;
+}
+
+.hero-subtitle {
+  font-size: 12px !important;
+  margin-bottom: 8px !important;
+}
+
+.hero-features {
+  gap: 8px !important;
+  margin-bottom: 12px !important;
+}
+
+.feature-item {
+  padding: 6px 10px !important;
+}
+
+.feature-icon {
+  font-size: 20px !important;
+}
+
+.feature-text {
+  font-size: 11px !important;
+}
+
+/* Scrollable Content - Maximize Height */
+.wizard-step .step-content,
+.wizard-content {
+  max-height: calc(100vh - 180px) !important;
+}
+
+/* Fix double scrollbar in settings modification step - ensure only parent scrolls */
+#step-settings-modification .step-content {
+  overflow-y: visible !important;
+  max-height: none !important;
 }
