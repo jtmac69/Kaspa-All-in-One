@@ -492,6 +492,10 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: var(--space-4);
 }
 
+/* ============================================================================
+   Custom Setup Info Cards (Horizontal Blurbs)
+   ============================================================================ */
+
 .custom-template-features {
   display: flex;
   gap: var(--space-4);
@@ -505,17 +509,30 @@ h1, h2, h3, h4, h5, h6 {
   gap: var(--space-2);
   flex: 1;
   min-width: 150px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  transition: border-color 0.2s ease;
+  cursor: default;
+}
+
+.custom-template-features .feature-item:hover {
+  border-color: var(--kaspa-blue);
+  /* Removed: transform, scale, translateY - these suggest clickability */
 }
 
 .custom-template-features .feature-icon {
-  font-size: var(--text-lg);
-  color: var(--kaspa-blue);
+  font-size: 24px;
+  opacity: 0.9;
+  flex-shrink: 0;
 }
 
 .custom-template-features .feature-text {
   font-size: var(--text-sm);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-weight: var(--font-medium);
+  line-height: 1.5;
 }
 
 .custom-template-actions {
@@ -1876,6 +1893,67 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: var(--space-5);
 }
 
+/* Grid-based option cards (simpler, more prominent) */
+.reconfiguration-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-6);
+  padding: var(--space-6) 0;
+  margin-bottom: var(--space-6);
+}
+
+.reconfig-option-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.reconfig-option-card:hover {
+  border-color: var(--kaspa-blue);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
+.reconfig-option-card:focus {
+  outline: 2px solid var(--kaspa-blue);
+  outline-offset: 2px;
+}
+
+.reconfig-option-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-2);
+  line-height: 1;
+}
+
+.reconfig-option-card h3 {
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+}
+
+.reconfig-option-card p {
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-4) 0;
+  line-height: 1.6;
+  font-size: var(--text-sm);
+  flex: 1;
+}
+
+.reconfig-option-card button {
+  margin-top: auto;
+  width: 100%;
+}
+
+/* Detailed action cards (alternative view) */
 .reconfiguration-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -2123,6 +2201,19 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Responsive Design for Reconfiguration */
 @media (max-width: 768px) {
+  .reconfiguration-options-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  
+  .reconfig-option-card {
+    padding: var(--space-5);
+  }
+  
+  .reconfig-option-icon {
+    font-size: 40px;
+  }
+  
   .reconfiguration-actions {
     grid-template-columns: 1fr;
   }
@@ -12681,5 +12772,549 @@ input:checked + .toggle-slider:before {
   
   .profile-category-section {
     background: var(--bg-secondary-dark, #2a2a2a);
+  }
+}
+
+/* ============================================================================
+   Custom Setup Error Display
+   ============================================================================ */
+
+.custom-setup-error {
+  max-width: 600px;
+  margin: var(--space-8) auto;
+  padding: var(--space-6);
+  background: var(--surface);
+  border: 2px solid var(--error);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.custom-setup-error .error-icon {
+  font-size: 64px;
+  margin-bottom: var(--space-4);
+  opacity: 0.8;
+}
+
+.custom-setup-error h3 {
+  color: var(--text-primary);
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-2);
+}
+
+.custom-setup-error p {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+  line-height: 1.6;
+}
+
+.custom-setup-error .error-detail {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono, monospace);
+  background: var(--surface-elevated);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  margin: var(--space-4) 0;
+  border-left: 3px solid var(--error);
+}
+
+.custom-setup-error .error-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.custom-setup-error button {
+  min-width: 140px;
+}
+
+/* ============================================================================
+   Settings Modification Styles
+   ============================================================================ */
+
+/* Main Container */
+.settings-modification-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+}
+
+.settings-modification-container h3 {
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.settings-modification-container p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Empty State */
+.settings-mod-empty-state {
+  text-align: center;
+  padding: var(--space-8) var(--space-6);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--border);
+}
+
+.settings-mod-empty-state .empty-state-icon {
+  font-size: 64px;
+  margin-bottom: var(--space-4);
+  opacity: 0.7;
+}
+
+.settings-mod-empty-state h3 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+}
+
+.settings-mod-empty-state p {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.settings-mod-empty-state .empty-state-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+/* Profile Selection */
+.settings-mod-selection {
+  padding: var(--space-4) 0;
+}
+
+.settings-mod-header-text {
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.settings-mod-header-text h3 {
+  font-size: var(--text-2xl);
+  margin-bottom: var(--space-2);
+}
+
+.settings-mod-description {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.settings-mod-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.settings-mod-profile-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.settings-mod-profile-card:hover {
+  border-color: var(--kaspa-blue);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.settings-mod-profile-card .profile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-3);
+}
+
+.settings-mod-profile-card .profile-icon {
+  font-size: 36px;
+}
+
+.settings-mod-profile-card .installed-badge {
+  background: var(--success);
+  color: white;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.settings-mod-profile-card h4 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+}
+
+.settings-mod-profile-card .profile-description {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+  min-height: 40px;
+}
+
+.settings-mod-profile-card .profile-service-count {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-3);
+}
+
+.settings-mod-profile-card button {
+  width: 100%;
+}
+
+/* Configuration Form */
+.settings-mod-form {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-md);
+}
+
+.settings-mod-form-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
+  border-bottom: 2px solid var(--border);
+}
+
+.settings-mod-form-header .btn-icon-only {
+  flex-shrink: 0;
+  font-size: var(--text-xl);
+  width: 40px;
+  height: 40px;
+}
+
+.settings-mod-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+}
+
+.settings-mod-title .profile-icon {
+  font-size: 32px;
+}
+
+.settings-mod-title .title-text h3 {
+  margin: 0;
+  font-size: var(--text-xl);
+  color: var(--text-primary);
+}
+
+.settings-mod-title .title-text .subtitle {
+  margin: var(--space-1) 0 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* Form Fields */
+.settings-mod-fields {
+  margin-bottom: var(--space-6);
+}
+
+.config-field {
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.config-field:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.config-field-label {
+  display: block;
+  font-weight: var(--font-semibold);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.config-field-label .required {
+  color: var(--error);
+  margin-left: 4px;
+  font-weight: var(--font-bold);
+}
+
+.config-field-description {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+  line-height: 1.5;
+}
+
+.config-field-help {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-style: italic;
+  margin-top: var(--space-2);
+  padding-left: var(--space-2);
+  border-left: 2px solid var(--border);
+}
+
+/* Input Fields */
+.config-field-input,
+.config-field-select,
+.config-field-textarea {
+  width: 100%;
+  padding: var(--space-3);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.config-field-input:focus,
+.config-field-select:focus,
+.config-field-textarea:focus {
+  outline: none;
+  border-color: var(--kaspa-blue);
+  box-shadow: 0 0 0 3px rgba(112, 199, 186, 0.1);
+}
+
+.config-field-input:invalid,
+.config-field-select:invalid,
+.config-field-textarea:invalid {
+  border-color: var(--error);
+}
+
+.config-field-input::placeholder,
+.config-field-textarea::placeholder {
+  color: var(--text-tertiary);
+  opacity: 0.7;
+}
+
+.config-field-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+/* Checkbox Fields */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  padding: var(--space-3);
+  background: var(--surface-elevated);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  transition: border-color 0.2s ease;
+}
+
+.checkbox-label:hover {
+  border-color: var(--kaspa-blue-light);
+}
+
+.config-field-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checkbox-label span {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+/* Form Footer */
+.settings-mod-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.settings-mod-form-footer .footer-info {
+  flex: 1;
+}
+
+.settings-mod-form-footer .modified-indicator {
+  font-size: var(--text-sm);
+  color: var(--warning);
+  font-weight: var(--font-semibold);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.settings-mod-form-footer .modified-indicator.visible {
+  opacity: 1;
+}
+
+.settings-mod-form-footer .footer-actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.settings-mod-form-footer button {
+  min-width: 120px;
+}
+
+/* Loading State */
+.settings-mod-loading {
+  text-align: center;
+  padding: var(--space-8);
+}
+
+.settings-mod-loading .loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border);
+  border-top-color: var(--kaspa-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto var(--space-4);
+}
+
+.settings-mod-loading p {
+  color: var(--text-secondary);
+  font-size: var(--text-base);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error State */
+.settings-mod-error {
+  text-align: center;
+  padding: var(--space-8);
+  background: var(--surface);
+  border: 2px solid var(--error);
+  border-radius: var(--radius-lg);
+}
+
+.settings-mod-error .error-icon {
+  font-size: 64px;
+  margin-bottom: var(--space-4);
+  opacity: 0.8;
+}
+
+.settings-mod-error h3 {
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  font-size: var(--text-xl);
+}
+
+.settings-mod-error p {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.settings-mod-error .error-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+/* Action Sections */
+.settings-mod-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  padding-top: var(--space-6);
+  margin-top: var(--space-6);
+  border-top: 1px solid var(--border-light);
+}
+
+/* No Fields Message */
+.no-fields-message {
+  text-align: center;
+  padding: var(--space-8);
+  background: var(--surface-elevated);
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--border);
+}
+
+.no-fields-message .message-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-3);
+  opacity: 0.6;
+}
+
+.no-fields-message p {
+  color: var(--text-secondary);
+  font-size: var(--text-base);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .settings-modification-container {
+    padding: var(--space-4) var(--space-2);
+  }
+  
+  .settings-mod-profile-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .settings-mod-form {
+    padding: var(--space-4);
+  }
+  
+  .settings-mod-form-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .settings-mod-form-footer {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  
+  .settings-mod-form-footer .footer-actions {
+    width: 100%;
+  }
+  
+  .settings-mod-form-footer button {
+    flex: 1;
+  }
+  
+  .settings-mod-actions {
+    flex-direction: column;
+  }
+  
+  .settings-mod-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-mod-profile-card {
+    padding: var(--space-4);
+  }
+  
+  .settings-mod-form {
+    padding: var(--space-3);
+  }
+  
+  .config-field-input,
+  .config-field-select,
+  .config-field-textarea {
+    font-size: 16px; /* Prevent iOS zoom on focus */
   }
 }

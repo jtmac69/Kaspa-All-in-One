@@ -101,6 +101,9 @@ export class CustomSetupModule {
       // Load profile data
       await this.loadProfileData();
       
+      // Validate loaded data
+      this.validateProfileData();
+      
       // If reconfiguration mode, load installed profiles
       if (this.isReconfigurationMode) {
         await this.loadInstalledProfiles();
@@ -133,14 +136,19 @@ export class CustomSetupModule {
       
       if (response && response.success && response.profiles) {
         this.profileData = response.profiles;
-        console.log('[CUSTOM-SETUP] Loaded profile data:', this.profileData.length, 'profiles');
+        console.log('[CUSTOM-SETUP] Loaded profile data from API:', 
+          this.profileData.length, 'profiles');
+        return;
       } else {
         throw new Error('Invalid profile data response');
       }
       
     } catch (error) {
-      console.warn('[CUSTOM-SETUP] Failed to load profile data from API, using fallback');
+      console.warn('[CUSTOM-SETUP] Failed to load profile data from API:', error.message);
+      console.log('[CUSTOM-SETUP] Using fallback profile data');
       this.profileData = this.getFallbackProfileData();
+      console.log('[CUSTOM-SETUP] Fallback data loaded:', 
+        this.profileData.length, 'profiles');
     }
   }
 
@@ -166,33 +174,108 @@ export class CustomSetupModule {
   }
 
   /**
-   * Render the profile picker UI
+   * Validate profile data completeness
+   */
+  validateProfileData() {
+    const requiredFields = ['id', 'name', 'description', 'icon', 'category', 'resources'];
+    const issues = [];
+    
+    this.profileData.forEach((profile, index) => {
+      requiredFields.forEach(field => {
+        if (!profile[field]) {
+          issues.push(`Profile ${index} (${profile.id || 'unknown'}) missing field: ${field}`);
+        }
+      });
+      
+      // Validate resources object
+      if (profile.resources) {
+        const resourceFields = ['memory', 'disk', 'cpu'];
+        resourceFields.forEach(resField => {
+          if (typeof profile.resources[resField] !== 'number') {
+            issues.push(`Profile ${profile.id} missing resource: ${resField}`);
+          }
+        });
+      }
+    });
+    
+    if (issues.length > 0) {
+      console.warn('[CUSTOM-SETUP] Profile data validation issues:', issues);
+      return false;
+    }
+    
+    console.log('[CUSTOM-SETUP] Profile data validation passed');
+    return true;
+  }
+
+  /**
+   * Render the profile picker UI with robust element selection
    */
   renderProfilePicker() {
     console.log('[CUSTOM-SETUP] Rendering profile picker');
     
-    // Find or create container
+    // Try to find existing container
     let container = document.getElementById('custom-setup-container');
     
     if (!container) {
-      // Create container if it doesn't exist
-      const step5 = document.getElementById('step-5');
-      if (!step5) {
-        console.error('[CUSTOM-SETUP] Cannot find step-5 element');
+      // STRATEGY 1: Try to find step element with multiple approaches
+      let stepElement = null;
+      
+      // Approach A: Direct ID lookup
+      stepElement = document.getElementById('step-5');
+      if (stepElement) {
+        console.log('[CUSTOM-SETUP] Found step using ID: #step-5');
+      }
+      
+      // Approach B: Data attribute
+      if (!stepElement) {
+        stepElement = document.querySelector('.wizard-step[data-step="5"]');
+        if (stepElement) {
+          console.log('[CUSTOM-SETUP] Found step using data attribute: [data-step="5"]');
+        }
+      }
+      
+      // Approach C: Class-based selection
+      if (!stepElement) {
+        stepElement = document.querySelector('.wizard-step.profiles-step');
+        if (stepElement) {
+          console.log('[CUSTOM-SETUP] Found step using class: .profiles-step');
+        }
+      }
+      
+      // ALL APPROACHES FAILED
+      if (!stepElement) {
+        console.error('[CUSTOM-SETUP] Cannot find profiles step element');
+        console.error('[CUSTOM-SETUP] Tried: #step-5, [data-step="5"], .profiles-step');
+        console.error('[CUSTOM-SETUP] Available wizard steps:', 
+          document.querySelectorAll('.wizard-step').length);
+        
+        // Show user-friendly error
+        this.showInitializationError();
         return;
       }
       
+      console.log('[CUSTOM-SETUP] Found step element:', 
+        stepElement.id || stepElement.className);
+      
+      // STRATEGY 2: Create and inject container
       container = document.createElement('div');
       container.id = 'custom-setup-container';
       container.className = 'custom-setup-container';
-      container.style.display = 'none';  // Hidden by default
+      container.style.display = 'none'; // Hidden by default
       
-      const stepContent = step5.querySelector('.step-content');
-      if (stepContent) {
-        stepContent.appendChild(container);
-      } else {
-        step5.appendChild(container);
+      // Find insertion point
+      const stepContent = stepElement.querySelector('.step-content');
+      const insertionPoint = stepContent || stepElement;
+      
+      if (!insertionPoint) {
+        console.error('[CUSTOM-SETUP] Cannot find insertion point in step element');
+        this.showInitializationError();
+        return;
       }
+      
+      insertionPoint.appendChild(container);
+      console.log('[CUSTOM-SETUP] Created and appended container to:', 
+        insertionPoint.className);
     }
     
     // Build HTML for profile picker
@@ -204,6 +287,55 @@ export class CustomSetupModule {
     
     // Update conflict/dependency warnings
     this.updateValidationDisplay();
+    
+    console.log('[CUSTOM-SETUP] Profile picker rendered successfully');
+    console.log('[CUSTOM-SETUP] Profile count:', this.profileData.length);
+  }
+
+  /**
+   * Show user-friendly initialization error
+   */
+  showInitializationError() {
+    console.error('[CUSTOM-SETUP] Showing initialization error to user');
+    
+    const errorHTML = `
+      <div class="custom-setup-error">
+        <div class="error-icon">⚠️</div>
+        <h3>Custom Setup Unavailable</h3>
+        <p>Unable to initialize custom profile selection.</p>
+        <p class="error-detail">The profiles step element could not be found in the DOM. This may be a configuration issue.</p>
+        <div class="error-actions">
+          <button class="btn-secondary" onclick="window.location.reload()">
+            Reload Page
+          </button>
+          <button class="btn-tertiary" onclick="goToStep(4)">
+            Back to Templates
+          </button>
+        </div>
+      </div>
+    `;
+    
+    // Try to display error somewhere visible
+    const wizardContent = document.querySelector('.wizard-content') ||
+                          document.querySelector('.wizard-container') ||
+                          document.body;
+    
+    if (wizardContent) {
+      const errorContainer = document.createElement('div');
+      errorContainer.id = 'custom-setup-error-container';
+      errorContainer.innerHTML = errorHTML;
+      
+      // Remove any existing error
+      const existingError = document.getElementById('custom-setup-error-container');
+      if (existingError) {
+        existingError.remove();
+      }
+      
+      wizardContent.prepend(errorContainer);
+      console.log('[CUSTOM-SETUP] Error displayed to user');
+    } else {
+      console.error('[CUSTOM-SETUP] Cannot find element to display error');
+    }
   }
 
   /**
@@ -636,18 +768,133 @@ export class CustomSetupModule {
   }
 
   /**
-   * Fallback profile data if API unavailable
+   * Get fallback profile data when API fails
+   * This should match the backend ProfileManager definitions
    */
   getFallbackProfileData() {
+    console.log('[CUSTOM-SETUP] Using fallback profile data');
+    
     return [
-      { id: 'kaspa-node', name: 'Kaspa Node', description: 'Standard pruning Kaspa node' },
-      { id: 'kasia-app', name: 'Kasia', description: 'Kasia messaging application' },
-      { id: 'k-social-app', name: 'K-Social', description: 'K-Social application' },
-      { id: 'kaspa-explorer-bundle', name: 'Kaspa Explorer', description: 'Block explorer bundle' },
-      { id: 'kasia-indexer', name: 'Kasia Indexer', description: 'Kasia indexer service' },
-      { id: 'k-indexer-bundle', name: 'K-Indexer', description: 'K-Indexer bundle' },
-      { id: 'kaspa-archive-node', name: 'Archive Node', description: 'Full history archive node' },
-      { id: 'kaspa-stratum', name: 'Kaspa Stratum', description: 'Mining stratum server' }
+      {
+        id: 'kaspa-node',
+        name: 'Kaspa Node',
+        description: 'Core Kaspa blockchain node for network participation',
+        icon: '🔷',
+        category: 'Node',
+        resources: {
+          memory: 2,
+          disk: 30,
+          cpu: 2
+        },
+        dependencies: [],
+        conflicts: ['kaspa-archive-node'],
+        services: ['kaspad']
+      },
+      {
+        id: 'kasia-app',
+        name: 'Kasia App',
+        description: 'User-friendly Kaspa wallet interface (desktop application)',
+        icon: '💼',
+        category: 'Applications',
+        resources: {
+          memory: 1,
+          disk: 2,
+          cpu: 1
+        },
+        dependencies: ['kaspa-node'],
+        conflicts: [],
+        services: ['kasia']
+      },
+      {
+        id: 'k-social-app',
+        name: 'K-Social App',
+        description: 'Social features for Kaspa community engagement',
+        icon: '👥',
+        category: 'Applications',
+        resources: {
+          memory: 1,
+          disk: 5,
+          cpu: 1
+        },
+        dependencies: ['kaspa-node', 'k-indexer-bundle'],
+        conflicts: [],
+        services: ['k-social']
+      },
+      {
+        id: 'kaspa-explorer-bundle',
+        name: 'Kaspa Explorer',
+        description: 'Blockchain explorer web interface with timescaledb backend',
+        icon: '🔍',
+        category: 'Infrastructure',
+        resources: {
+          memory: 2,
+          disk: 20,
+          cpu: 1
+        },
+        dependencies: ['kaspa-node'],
+        conflicts: [],
+        services: ['kaspa-explorer', 'timescaledb']
+      },
+      {
+        id: 'kasia-indexer',
+        name: 'Kasia Indexer',
+        description: 'Transaction indexing service for Kasia wallet',
+        icon: '📊',
+        category: 'Infrastructure',
+        resources: {
+          memory: 2,
+          disk: 50,
+          cpu: 2
+        },
+        dependencies: ['kaspa-node'],
+        conflicts: ['k-indexer-bundle'],
+        services: ['kasia-indexer']
+      },
+      {
+        id: 'k-indexer-bundle',
+        name: 'K-Indexer Bundle',
+        description: 'Advanced indexer with timescaledb for complex queries',
+        icon: '📈',
+        category: 'Infrastructure',
+        resources: {
+          memory: 4,
+          disk: 100,
+          cpu: 2
+        },
+        dependencies: ['kaspa-node'],
+        conflicts: ['kasia-indexer'],
+        services: ['k-indexer', 'timescaledb']
+      },
+      {
+        id: 'kaspa-archive-node',
+        name: 'Kaspa Archive Node',
+        description: 'Full history archive node with complete blockchain data',
+        icon: '📚',
+        category: 'Node',
+        resources: {
+          memory: 8,
+          disk: 500,
+          cpu: 4
+        },
+        dependencies: [],
+        conflicts: ['kaspa-node'],
+        services: ['kaspad']
+      },
+      {
+        id: 'kaspa-stratum',
+        name: 'Kaspa Stratum',
+        description: 'Mining pool stratum server for solo/pool mining',
+        icon: '⛏️',
+        category: 'Mining',
+        resources: {
+          memory: 1,
+          disk: 5,
+          cpu: 1
+        },
+        dependencies: ['kaspa-node'],
+        conflicts: [],
+        services: ['kaspa-stratum']
+      }
     ];
   }
 

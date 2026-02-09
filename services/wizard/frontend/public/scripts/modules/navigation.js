@@ -252,21 +252,54 @@ export async function nextStep() {
 }
 
 /**
- * Navigate to previous step
+ * Navigate to previous step with intelligent cleanup
  */
 export function previousStep() {
     const currentStep = stateManager.get('currentStep');
     const currentStepId = getStepId(currentStep);
+    const wizardMode = stateManager.get('wizardMode');
+    
+    console.log(`[NAVIGATION] Going back from step ${currentStep} (${currentStepId})`);
+    console.log(`[NAVIGATION] Wizard mode: ${wizardMode}`);
+    
+    // CLEANUP: Handle reconfiguration mode navigation
+    if (wizardMode === 'reconfiguration' && currentStepId === 'profiles') {
+        console.log('[NAVIGATION] Cleaning up reconfiguration UI elements before going back');
+        
+        // Hide custom setup if it's visible
+        if (window.customSetup && typeof window.customSetup.hide === 'function') {
+            window.customSetup.hide();
+            console.log('[NAVIGATION] Custom setup hidden');
+        }
+        
+        // Hide reconfiguration navigation (but don't destroy it)
+        const reconfigNav = document.getElementById('reconfiguration-nav');
+        if (reconfigNav) {
+            reconfigNav.style.display = 'none';
+            console.log('[NAVIGATION] Reconfiguration nav hidden');
+        }
+        
+        // Show default profile grid again
+        const defaultGrid = document.getElementById('default-profile-grid');
+        if (defaultGrid) {
+            defaultGrid.style.display = 'grid';
+            console.log('[NAVIGATION] Default profile grid shown');
+        }
+    }
     
     // Smart back navigation from configuration
     if (currentStepId === 'configure') {
         const navigationPath = stateManager.get('navigationPath');
+        
+        console.log(`[NAVIGATION] Going back from configure, path: ${navigationPath}`);
+        
         if (navigationPath === 'template') {
             goToStep(4); // Back to templates
         } else if (navigationPath === 'custom') {
             goToStep(5); // Back to profiles
         } else {
             // Fallback to templates if path is unclear
+            console.warn('[NAVIGATION] Navigation path unclear, defaulting to templates');
             goToStep(4);
         }
         return;
@@ -274,6 +307,7 @@ export function previousStep() {
     
     // Back from profiles to templates
     if (currentStepId === 'profiles') {
+        console.log('[NAVIGATION] Going back to templates from profiles');
         goToStep(4); // Back to templates
         return;
     }
@@ -283,9 +317,13 @@ export function previousStep() {
     if (history.length > 0) {
         const lastStep = history.pop();
         stateManager.set('navigationHistory', history);
+        console.log(`[NAVIGATION] Using history, going to step ${lastStep}`);
         goToStep(lastStep);
     } else if (currentStep > 1) {
+        console.log(`[NAVIGATION] No history, going to previous step`);
         goToStep(currentStep - 1);
+    } else {
+        console.log('[NAVIGATION] Already at first step, cannot go back');
     }
 }
 
@@ -299,8 +337,19 @@ export function goToStep(stepNumber) {
     }
     
     const currentStep = stateManager.get('currentStep');
+    const currentStepId = getStepId(currentStep);
+    const targetStepId = getStepId(stepNumber);
     
-    console.log(`=== NAVIGATION: Going from step ${currentStep} (${getStepId(currentStep)}) to step ${stepNumber} (${getStepId(stepNumber)}) ===`);
+    console.log(`=== NAVIGATION: Going from step ${currentStep} (${currentStepId}) to step ${stepNumber} (${targetStepId}) ===`);
+    
+    // CLEANUP: Leaving profiles step - hide custom setup
+    if (currentStepId === 'profiles' && targetStepId !== 'profiles') {
+        console.log('[NAVIGATION] Leaving profiles step, hiding custom setup');
+        
+        if (window.customSetup && typeof window.customSetup.hide === 'function') {
+            window.customSetup.hide();
+        }
+    }
     
     // Hide ALL steps first
     const allSteps = document.querySelectorAll('.wizard-step');
@@ -555,3 +604,53 @@ export function initNavigation() {
         }
     });
 }
+
+/**
+ * Exit reconfiguration mode with full cleanup
+ */
+export function exitReconfigurationMode() {
+    console.log('[NAVIGATION] Exiting reconfiguration mode');
+    
+    // Hide custom setup
+    if (window.customSetup && typeof window.customSetup.hide === 'function') {
+        window.customSetup.hide();
+    }
+    
+    // Hide reconfiguration navigation
+    const reconfigNav = document.getElementById('reconfiguration-nav');
+    if (reconfigNav) {
+        reconfigNav.style.display = 'none';
+    }
+    
+    // RESET INITIALIZATION FLAG
+    if (window.reconfigurationNavigation && 
+        typeof window.reconfigurationNavigation.reset === 'function') {
+        window.reconfigurationNavigation.reset();
+        console.log('[NAVIGATION] Reconfiguration navigation reset');
+    }
+    
+    // Reset wizard mode
+    stateManager.set('wizardMode', 'normal');
+    stateManager.set('reconfigurationFlow', null);
+    
+    // Show regular wizard progress
+    const wizardProgress = document.querySelector('.wizard-progress');
+    if (wizardProgress) {
+        wizardProgress.style.display = 'block';
+    }
+    
+    // Navigate to appropriate step
+    const currentInstallState = stateManager.get('installationComplete');
+    if (currentInstallState) {
+        // Go to complete step
+        goToStep(9); // Complete is step 9
+    } else {
+        // Go to beginning
+        goToStep(1);
+    }
+    
+    console.log('[NAVIGATION] Reconfiguration mode exited');
+}
+
+// Make exitReconfigurationMode globally available for HTML onclick handlers
+window.exitReconfigurationMode = exitReconfigurationMode;

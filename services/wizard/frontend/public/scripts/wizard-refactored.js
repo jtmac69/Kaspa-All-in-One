@@ -1702,6 +1702,47 @@ if (typeof window !== 'undefined') {
         stateManager.set('reconfigurationAction', null);
         window.location.href = '/?mode=initial';
     };
+    
+    /**
+     * Start modify settings flow
+     * This is called from the reconfiguration landing page
+     */
+    window.startModifySettings = async function() {
+        console.log('[WIZARD] Starting modify settings flow');
+        
+        try {
+            // Set reconfiguration flow type
+            stateManager.set('reconfigurationFlow', 'modify-settings');
+            console.log('[WIZARD] Reconfiguration flow set to: modify-settings');
+            
+            // Dynamically import settings modification module if not already loaded
+            if (!window.settingsModification) {
+                console.log('[WIZARD] Loading settings modification module...');
+                const module = await import('./modules/settings-modification.js');
+                window.settingsModification = module.settingsModification;
+                console.log('[WIZARD] Settings modification module loaded');
+            }
+            
+            // Verify module loaded correctly
+            if (!window.settingsModification || typeof window.settingsModification.initialize !== 'function') {
+                throw new Error('Settings modification module failed to load properly');
+            }
+            
+            // Initialize settings modification module
+            console.log('[WIZARD] Initializing settings modification...');
+            await window.settingsModification.initialize();
+            
+            console.log('[WIZARD] Modify settings flow started successfully');
+            
+        } catch (error) {
+            console.error('[WIZARD] Failed to start modify settings flow:', error);
+            showNotification('Failed to start settings modification: ' + error.message, 'error');
+            
+            // Fall back to reconfiguration landing
+            // Note: The settings modification module handles its own UI display
+            // so we don't need to navigate to a specific step here
+        }
+    };
     window.applySuggestion = (suggestionId) => {
         const reconfigData = stateManager.get('reconfigurationData');
         if (!reconfigData || !reconfigData.suggestions) return;

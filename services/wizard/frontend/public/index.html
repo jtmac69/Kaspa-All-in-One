@@ -194,7 +194,38 @@
                     <h3 class="options-title">What would you like to do?</h3>
                     <p class="options-description">Choose from the options below to modify your installation:</p>
                     
-                    <div class="reconfiguration-actions">
+                    <!-- Quick Action Cards Grid -->
+                    <div class="reconfiguration-options-grid">
+                        <!-- Add or Remove Services -->
+                        <div class="reconfig-option-card" onclick="selectReconfigurationAction('add-profiles')"
+                             role="button" tabindex="0" aria-label="Add or remove services option">
+                            <div class="reconfig-option-icon">📦</div>
+                            <h3>Add or Remove Services</h3>
+                            <p>Install new profiles or uninstall existing services from your system</p>
+                            <button class="btn-primary">Manage Services</button>
+                        </div>
+                        
+                        <!-- Modify Service Settings -->
+                        <div class="reconfig-option-card" onclick="startModifySettings()"
+                             role="button" tabindex="0" aria-label="Modify service settings option">
+                            <div class="reconfig-option-icon">⚙️</div>
+                            <h3>Modify Service Settings</h3>
+                            <p>Change configuration parameters for your installed services</p>
+                            <button class="btn-primary">Edit Settings</button>
+                        </div>
+                        
+                        <!-- View Dashboard -->
+                        <div class="reconfig-option-card" onclick="window.location.href='/dashboard'"
+                             role="button" tabindex="0" aria-label="View dashboard option">
+                            <div class="reconfig-option-icon">📊</div>
+                            <h3>View Dashboard</h3>
+                            <p>Monitor performance and status of your running services</p>
+                            <button class="btn-secondary">Open Dashboard</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Detailed Action Cards (Alternative View) -->
+                    <div class="reconfiguration-actions" style="display: none;">
                         <div class="action-card" id="add-profiles-action" onclick="selectReconfigurationAction('add-profiles')" 
                              data-tooltip="Add new services to your existing installation. This will expand your Kaspa ecosystem with additional functionality like indexers, mining, or archive nodes.">
                             <div class="action-icon">➕</div>
@@ -274,6 +305,25 @@
                         Continue
                         <span class="btn-icon">→</span>
                     </button>
+                </div>
+            </div>
+
+            <!-- Settings Modification Step -->
+            <div id="step-settings-modification" class="wizard-step" data-step="settings-mod" style="display: none;">
+                <div class="step-header">
+                    <h2 class="step-title">Modify Service Settings</h2>
+                    <p class="step-description">Update configuration parameters for your installed services</p>
+                </div>
+                
+                <div class="step-content">
+                    <!-- Settings modification UI will be injected here by settings-modification.js -->
+                    <div id="settings-mod-container" class="settings-modification-container">
+                        <!-- Content dynamically rendered -->
+                    </div>
+                </div>
+                
+                <div class="step-footer" style="display: none;">
+                    <!-- Footer is managed by the settings-modification module -->
                 </div>
             </div>
 
@@ -663,7 +713,7 @@
             </div>
 
             <!-- Step 4: Profile Selection -->
-            <div class="wizard-step" id="step-profiles">
+            <div class="wizard-step" id="step-5" data-step="5">
                 <div class="step-header">
                     <h2 class="step-title" id="profile-selection-title">Select Your Deployment Profile</h2>
                     <p class="step-description" id="profile-selection-description">

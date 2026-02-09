@@ -8,6 +8,11 @@ import { showNotification } from './utils.js';
 import { api } from './api-client.js';
 
 /**
+ * Module-level initialization flag
+ */
+let isInitialized = false;
+
+/**
  * Reconfiguration navigation state
  */
 let reconfigurationState = {
@@ -22,9 +27,18 @@ let reconfigurationState = {
  * Initialize reconfiguration navigation
  */
 export function initReconfigurationNavigation() {
-    console.log('Initializing reconfiguration navigation');
+    console.log('[RECONFIG-NAV] Initializing reconfiguration navigation');
     
-    // Create navigation elements
+    // GUARD: Prevent multiple initializations
+    if (isInitialized) {
+        console.log('[RECONFIG-NAV] Already initialized, skipping');
+        console.log('[RECONFIG-NAV] To force re-initialization, call resetReconfigurationNavigation() first');
+        return;
+    }
+    
+    console.log('[RECONFIG-NAV] First initialization, proceeding...');
+    
+    // Create navigation elements (these now have their own cleanup)
     createReconfigurationNavigation();
     createBreadcrumbNavigation();
     createProgressIndicator();
@@ -35,15 +49,24 @@ export function initReconfigurationNavigation() {
     
     // Initialize tooltips
     initializeTooltips();
+    
+    // Mark as initialized
+    isInitialized = true;
+    console.log('[RECONFIG-NAV] Initialization complete, flag set to true');
 }
 
 /**
  * Create main reconfiguration navigation
  */
 function createReconfigurationNavigation() {
+    // CLEANUP: Remove existing navigation to prevent duplicates
     const existingNav = document.getElementById('reconfiguration-nav');
-    if (existingNav) return;
+    if (existingNav) {
+        console.log('[RECONFIG-NAV] Removing existing navigation element');
+        existingNav.remove();
+    }
     
+    // Now create fresh navigation
     const navContainer = document.createElement('div');
     navContainer.id = 'reconfiguration-nav';
     navContainer.className = 'reconfiguration-navigation';
@@ -79,6 +102,9 @@ function createReconfigurationNavigation() {
     const wizardContent = document.querySelector('.wizard-content');
     if (wizardContent) {
         wizardContent.insertBefore(navContainer, wizardContent.firstChild);
+        console.log('[RECONFIG-NAV] Navigation created and inserted');
+    } else {
+        console.error('[RECONFIG-NAV] Cannot find .wizard-content element');
     }
 }
 
@@ -86,9 +112,14 @@ function createReconfigurationNavigation() {
  * Create breadcrumb navigation
  */
 function createBreadcrumbNavigation() {
+    // CLEANUP: Remove existing breadcrumbs
     const existingBreadcrumbs = document.getElementById('reconfiguration-breadcrumbs');
-    if (existingBreadcrumbs) return;
+    if (existingBreadcrumbs) {
+        console.log('[RECONFIG-NAV] Removing existing breadcrumb navigation');
+        existingBreadcrumbs.remove();
+    }
     
+    // Create fresh breadcrumb container
     const breadcrumbContainer = document.createElement('div');
     breadcrumbContainer.id = 'reconfiguration-breadcrumbs';
     breadcrumbContainer.className = 'reconfiguration-breadcrumbs';
@@ -104,6 +135,9 @@ function createBreadcrumbNavigation() {
     const reconfigNav = document.getElementById('reconfiguration-nav');
     if (reconfigNav) {
         reconfigNav.appendChild(breadcrumbContainer);
+        console.log('[RECONFIG-NAV] Breadcrumb navigation created');
+    } else {
+        console.warn('[RECONFIG-NAV] Cannot find reconfiguration-nav for breadcrumbs');
     }
 }
 
@@ -111,9 +145,14 @@ function createBreadcrumbNavigation() {
  * Create progress indicator for multi-step operations
  */
 function createProgressIndicator() {
+    // CLEANUP: Remove existing progress indicator
     const existingProgress = document.getElementById('reconfiguration-progress');
-    if (existingProgress) return;
+    if (existingProgress) {
+        console.log('[RECONFIG-NAV] Removing existing progress indicator');
+        existingProgress.remove();
+    }
     
+    // Create fresh progress indicator
     const progressContainer = document.createElement('div');
     progressContainer.id = 'reconfiguration-progress';
     progressContainer.className = 'reconfiguration-progress';
@@ -154,6 +193,9 @@ function createProgressIndicator() {
     const breadcrumbs = document.getElementById('reconfiguration-breadcrumbs');
     if (breadcrumbs) {
         breadcrumbs.appendChild(progressContainer);
+        console.log('[RECONFIG-NAV] Progress indicator created');
+    } else {
+        console.warn('[RECONFIG-NAV] Cannot find reconfiguration-breadcrumbs for progress');
     }
 }
 
@@ -161,9 +203,14 @@ function createProgressIndicator() {
  * Create operation history panel
  */
 function createOperationHistory() {
+    // CLEANUP: Remove existing history panel
     const existingHistory = document.getElementById('operation-history-panel');
-    if (existingHistory) return;
+    if (existingHistory) {
+        console.log('[RECONFIG-NAV] Removing existing operation history panel');
+        existingHistory.remove();
+    }
     
+    // Create fresh history panel
     const historyPanel = document.createElement('div');
     historyPanel.id = 'operation-history-panel';
     historyPanel.className = 'operation-history-panel';
@@ -199,6 +246,7 @@ function createOperationHistory() {
     
     // Append to body for overlay
     document.body.appendChild(historyPanel);
+    console.log('[RECONFIG-NAV] Operation history panel created');
 }
 
 /**
@@ -640,6 +688,54 @@ function setupNavigationEventListeners() {
 }
 
 /**
+ * Reset initialization flag
+ * Call this when exiting reconfiguration mode or when you need to force re-initialization
+ */
+export function resetReconfigurationNavigation() {
+    console.log('[RECONFIG-NAV] Resetting initialization flag');
+    
+    // Reset flag
+    isInitialized = false;
+    
+    // Optionally reset state
+    reconfigurationState = {
+        currentFlow: null,
+        breadcrumbs: [],
+        operationHistory: [],
+        progressSteps: [],
+        currentStep: 0
+    };
+    
+    console.log('[RECONFIG-NAV] Initialization flag reset to false');
+}
+
+/**
+ * Force re-initialization of reconfiguration navigation
+ * Use this when you need to completely rebuild the navigation UI
+ */
+export function reinitializeReconfigurationNavigation() {
+    console.log('[RECONFIG-NAV] Force re-initialization requested');
+    
+    // Reset first
+    resetReconfigurationNavigation();
+    
+    // Then initialize
+    initReconfigurationNavigation();
+    
+    console.log('[RECONFIG-NAV] Re-initialization complete');
+}
+
+/**
+ * Get initialization status (useful for debugging)
+ */
+export function getInitializationStatus() {
+    return {
+        isInitialized,
+        state: reconfigurationState
+    };
+}
+
+/**
  * Show/hide reconfiguration navigation
  */
 export function showReconfigurationNavigation() {
@@ -758,4 +854,11 @@ window.cancelOperation = function() {
         // TODO: Implement operation cancellation
         completeOperation(false, 'Operation cancelled by user');
     }
+};
+
+// Expose module functions globally for debugging and external access
+window.reconfigurationNavigation = {
+    reset: resetReconfigurationNavigation,
+    reinitialize: reinitializeReconfigurationNavigation,
+    getStatus: getInitializationStatus
 };

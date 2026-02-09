@@ -11,9 +11,32 @@ function createBasicRoutes(profileManager, dependencyValidator) {
   router.get('/', (req, res) => {
     try {
       const profiles = profileManager.getAllProfiles();
-      res.json({ profiles });
+      
+      // Transform to frontend-friendly format with metadata
+      const profileData = profiles.map(profile => ({
+        id: profile.id,
+        name: profile.name,
+        description: profile.description,
+        icon: profile.icon || '📦',
+        category: profile.category || 'Other',
+        resources: {
+          memory: profile.minMemoryGB || 2,
+          disk: profile.minDiskGB || 10,
+          cpu: profile.minCPUCores || 1
+        },
+        dependencies: profile.dependencies || [],
+        conflicts: profile.conflicts || [],
+        services: profile.services?.map(s => s.name || s) || []
+      }));
+      
+      res.json({ 
+        success: true,
+        profiles: profileData,
+        count: profileData.length
+      });
     } catch (error) {
       res.status(500).json({
+        success: false,
         error: 'Failed to get profiles',
         message: error.message
       });
