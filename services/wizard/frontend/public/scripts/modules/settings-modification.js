@@ -514,36 +514,115 @@ class SettingsModificationModule {
     const fieldDefinitions = {
       'kaspa-node': [
         {
-          key: 'KASPA_RPC_SERVER',
-          label: 'RPC Server Address',
-          description: 'IP address and port for RPC connections (WebSocket)',
-          type: 'text',
-          placeholder: '0.0.0.0:17110',
-          default: '0.0.0.0:17110',
+          key: 'KASPA_NODE_RPC_PORT',
+          label: 'RPC Port',
+          description: 'Port for RPC connections',
+          type: 'number',
+          placeholder: '16110',
+          default: 16110,
           required: true,
-          pattern: '^[0-9.:]+$',
-          helpText: 'Default: 0.0.0.0:17110 (allows all connections)'
+          min: 1024,
+          max: 65535,
+          helpText: 'Default: 16110'
+        },
+        {
+          key: 'KASPA_NODE_P2P_PORT',
+          label: 'P2P Port',
+          description: 'Port for peer-to-peer connections',
+          type: 'number',
+          placeholder: '16111',
+          default: 16111,
+          required: true,
+          min: 1024,
+          max: 65535,
+          helpText: 'Default: 16111'
+        },
+        {
+          key: 'KASPA_NODE_WRPC_PORT',
+          label: 'wRPC Port',
+          description: 'Port for WebSocket RPC connections',
+          type: 'number',
+          placeholder: '17110',
+          default: 17110,
+          required: true,
+          min: 1024,
+          max: 65535,
+          helpText: 'Default: 17110'
         },
         {
           key: 'PUBLIC_NODE',
           label: 'Public Node',
           description: 'Allow external connections to your node',
           type: 'checkbox',
-          checkboxLabel: 'Make this node publicly accessible',
+          checkboxLabel: 'Public Node',
           default: false,
           helpText: 'Enable this if you want to share your node with the network'
+        },
+        {
+          key: 'WALLET_ENABLED',
+          label: 'Enable Wallet',
+          description: 'Enable wallet functionality',
+          type: 'checkbox',
+          checkboxLabel: 'Enable Wallet',
+          default: false,
+          helpText: 'Enable wallet support on this node'
+        },
+        {
+          key: 'UTXO_INDEX',
+          label: 'UTXO Index',
+          description: 'Enable UTXO indexing',
+          type: 'checkbox',
+          checkboxLabel: 'UTXO Index',
+          default: true,
+          helpText: 'Required for wallet and indexer functionality'
         }
       ],
       
       'kaspa-archive-node': [
         {
-          key: 'KASPA_RPC_SERVER',
-          label: 'RPC Server Address',
-          description: 'IP address and port for RPC connections',
-          type: 'text',
-          placeholder: '0.0.0.0:17110',
-          default: '0.0.0.0:17110',
-          required: true
+          key: 'KASPA_NODE_RPC_PORT',
+          label: 'RPC Port',
+          description: 'Port for RPC connections',
+          type: 'number',
+          placeholder: '16110',
+          default: 16110,
+          required: true,
+          min: 1024,
+          max: 65535,
+          helpText: 'Default: 16110'
+        },
+        {
+          key: 'KASPA_NODE_P2P_PORT',
+          label: 'P2P Port',
+          description: 'Port for peer-to-peer connections',
+          type: 'number',
+          placeholder: '16111',
+          default: 16111,
+          required: true,
+          min: 1024,
+          max: 65535,
+          helpText: 'Default: 16111'
+        },
+        {
+          key: 'KASPA_NODE_WRPC_PORT',
+          label: 'wRPC Port',
+          description: 'Port for WebSocket RPC connections',
+          type: 'number',
+          placeholder: '17110',
+          default: 17110,
+          required: true,
+          min: 1024,
+          max: 65535,
+          helpText: 'Default: 17110'
+        },
+        {
+          key: 'PUBLIC_NODE',
+          label: 'Public Node',
+          description: 'Allow external connections to your archive node',
+          type: 'checkbox',
+          checkboxLabel: 'Public Node',
+          default: false,
+          helpText: 'Enable this if you want to share your archive node with the network'
         }
       ],
       
