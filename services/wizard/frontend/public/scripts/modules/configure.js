@@ -516,6 +516,31 @@ function populateConfigurationForm(config, isReconfiguration = false) {
         if (isReconfiguration) markFieldAsExisting(kaspaNodeWsUrlInput, true);
     }
     
+    // Mining configuration
+    const miningAddressInput = document.getElementById('mining-address');
+    if (miningAddressInput && config.MINING_ADDRESS) {
+        miningAddressInput.value = config.MINING_ADDRESS;
+        if (isReconfiguration) markFieldAsExisting(miningAddressInput, true);
+    }
+
+    const stratumPortInput = document.getElementById('stratum-port');
+    if (stratumPortInput && config.STRATUM_PORT) {
+        stratumPortInput.value = config.STRATUM_PORT;
+        if (isReconfiguration) markFieldAsExisting(stratumPortInput, true);
+    }
+
+    const minShareDiffInput = document.getElementById('min-share-diff');
+    if (minShareDiffInput && config.MIN_SHARE_DIFF) {
+        minShareDiffInput.value = config.MIN_SHARE_DIFF;
+        if (isReconfiguration) markFieldAsExisting(minShareDiffInput, true);
+    }
+
+    const varDiffToggle = document.getElementById('var-diff');
+    if (varDiffToggle && config.VAR_DIFF !== undefined) {
+        varDiffToggle.checked = config.VAR_DIFF === true || config.VAR_DIFF === 'true';
+        if (isReconfiguration) markFieldAsExisting(varDiffToggle, true);
+    }
+
     // Data directories
     const kaspaDataDirInput = document.getElementById('kaspa-data-dir');
     if (kaspaDataDirInput && config.KASPA_DATA_DIR) {
@@ -1219,7 +1244,22 @@ function gatherConfigurationFromForm() {
     if (miningAddressInput && miningAddressInput.value) {
         config.MINING_ADDRESS = miningAddressInput.value;
     }
-    
+
+    const stratumPortInput = document.getElementById('stratum-port');
+    if (stratumPortInput && stratumPortInput.value) {
+        config.STRATUM_PORT = parseInt(stratumPortInput.value, 10);
+    }
+
+    const minShareDiffInput = document.getElementById('min-share-diff');
+    if (minShareDiffInput && minShareDiffInput.value) {
+        config.MIN_SHARE_DIFF = parseInt(minShareDiffInput.value, 10);
+    }
+
+    const varDiffToggle = document.getElementById('var-diff');
+    if (varDiffToggle) {
+        config.VAR_DIFF = varDiffToggle.checked;
+    }
+
     // Configuration Template
     const configTemplateSelect = document.getElementById('configuration-template');
     if (configTemplateSelect && configTemplateSelect.value && configTemplateSelect.value !== 'custom') {
@@ -2250,8 +2290,8 @@ window.applyConfigurationChanges = async function() {
         closeConfigurationModificationModal();
         
         // Refresh profile states if we're in reconfiguration mode
-        const mode = stateManager.get('mode');
-        if (mode === 'reconfiguration') {
+        const mode = stateManager.get('wizardMode');
+        if (mode === 'reconfigure') {
             // Refresh the profile display
             if (window.initializeReconfigurationMode) {
                 await window.initializeReconfigurationMode(stateManager.get('profileSelectionContext'));
@@ -2506,10 +2546,10 @@ export function getSelectedProfiles() {
 export async function initializeProfileSelectionWithReconfiguration() {
     try {
         // Check if we're in reconfiguration mode
-        const mode = stateManager.get('mode') || 'initial';
+        const mode = stateManager.get('wizardMode') || 'initial';
         const reconfigurationContext = stateManager.get('profileSelectionContext');
-        
-        if (mode === 'reconfiguration') {
+
+        if (mode === 'reconfigure') {
             await initializeReconfigurationMode(reconfigurationContext);
         } else {
             await initializeProfileSelection();

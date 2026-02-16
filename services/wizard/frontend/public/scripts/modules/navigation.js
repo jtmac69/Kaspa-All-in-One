@@ -263,7 +263,7 @@ export function previousStep() {
     console.log(`[NAVIGATION] Wizard mode: ${wizardMode}`);
     
     // CLEANUP: Handle reconfiguration mode navigation
-    if (wizardMode === 'reconfiguration' && currentStepId === 'profiles') {
+    if (wizardMode === 'reconfigure' && currentStepId === 'profiles') {
         console.log('[NAVIGATION] Cleaning up reconfiguration UI elements before going back');
         
         // Hide custom setup if it's visible
