@@ -1147,60 +1147,183 @@ class ConfigGenerator {
   }
 
   /**
-   * Generate kaspa-node service definition
-   * Uses latest GitHub release automatically
+   * Generate kaspad command line arguments
+   * Constructs the proper flags based on configuration, including wallet connectivity
    * @private
    * @param {Object} config - Configuration object
+   * @returns {string[]} Array of command line arguments
+   */
+  _buildKaspadCommandArgs(config) {
+    const network = config.KASPA_NETWORK || 'mainnet';
+    const rpcPort = config.KASPA_NODE_RPC_PORT || 16110;
+    const p2pPort = config.KASPA_NODE_P2P_PORT || 16111;
+    const publicNode = config.PUBLIC_NODE === 'true' || config.PUBLIC_NODE === true;
+    const walletConnectivityEnabled = config.WALLET_CONNECTIVITY_ENABLED === 'true' || config.WALLET_CONNECTIVITY_ENABLED === true;
+
+    const args = [
+      // Core configuration
+      '--appdir=/app/data',
+      `--rpclisten=0.0.0.0:${rpcPort}`,
+      `--listen=0.0.0.0:${p2pPort}`,
+      '--loglevel=info'
+    ];
+
+    // Network selection (mainnet is default, only add flag for other networks)
+    if (network && network !== 'mainnet') {
+      args.push(`--${network}`);  // e.g., --testnet-10, --testnet-11
+    }
+
+    // Wallet connectivity configuration
+    // When enabled, kaspad needs UTXO indexing and wRPC endpoints for wallet connections
+    if (walletConnectivityEnabled) {
+      const wrpcBorshPort = config.KASPA_NODE_WRPC_BORSH_PORT || 17110;
+      const wrpcJsonPort = config.KASPA_NODE_WRPC_JSON_PORT || 18110;
+
+      args.push('--utxoindex');  // Required for wallet balance queries
+      args.push(`--rpclisten-borsh=0.0.0.0:${wrpcBorshPort}`);  // Rust SDK connections
+      args.push(`--rpclisten-json=0.0.0.0:${wrpcJsonPort}`);    // Web wallet connections
+    }
+
+    // Legacy support: honor explicit UTXO_INDEX even without wallet connectivity
+    if (!walletConnectivityEnabled && config._FORCE_UTXO_INDEX) {
+      args.push('--utxoindex');
+    }
+
+    // Public node settings
+    if (publicNode) {
+      if (config.EXTERNAL_IP) {
+        args.push(`--externalip=${config.EXTERNAL_IP}`);
+      }
+    } else {
+      args.push('--disable-upnp');
+    }
+
+    return args;
+  }
+  /**
+   * Normalize configuration for backward compatibility
+   * Converts legacy configuration keys to new format while preserving values
+   * @private
+   * @param {Object} config - Raw configuration object
+   * @returns {Object} Normalized configuration object
+   */
+  _normalizeWalletConfig(config) {
+    const normalized = { ...config };
+
+    // WALLET_ENABLED → WALLET_CONNECTIVITY_ENABLED
+    if (normalized.WALLET_ENABLED !== undefined && normalized.WALLET_CONNECTIVITY_ENABLED === undefined) {
+      normalized.WALLET_CONNECTIVITY_ENABLED = normalized.WALLET_ENABLED;
+      console.log('[ConfigGenerator] Migrated WALLET_ENABLED → WALLET_CONNECTIVITY_ENABLED');
+    }
+
+    // KASPA_NODE_WRPC_PORT → KASPA_NODE_WRPC_BORSH_PORT (legacy used single port)
+    if (normalized.KASPA_NODE_WRPC_PORT !== undefined && normalized.KASPA_NODE_WRPC_BORSH_PORT === undefined) {
+      normalized.KASPA_NODE_WRPC_BORSH_PORT = normalized.KASPA_NODE_WRPC_PORT;
+      console.log('[ConfigGenerator] Migrated KASPA_NODE_WRPC_PORT → KASPA_NODE_WRPC_BORSH_PORT');
+    }
+
+    // WALLET_MODE → WALLET_SETUP_MODE
+    if (normalized.WALLET_MODE !== undefined && normalized.WALLET_SETUP_MODE === undefined) {
+      normalized.WALLET_SETUP_MODE = normalized.WALLET_MODE;
+      console.log('[ConfigGenerator] Migrated WALLET_MODE → WALLET_SETUP_MODE');
+    }
+
+    // UTXO_INDEX → automatically handled by WALLET_CONNECTIVITY_ENABLED
+    // If legacy UTXO_INDEX was true but wallet not enabled, we still honor it
+    const walletEnabled = normalized.WALLET_CONNECTIVITY_ENABLED === 'true' || normalized.WALLET_CONNECTIVITY_ENABLED === true;
+    if ((normalized.UTXO_INDEX === 'true' || normalized.UTXO_INDEX === true) && !walletEnabled) {
+      normalized._FORCE_UTXO_INDEX = true;
+      console.log('[ConfigGenerator] Legacy UTXO_INDEX=true detected, will add --utxoindex');
+    }
+
+    return normalized;
+  }
+
+
+
+  /**
+   * Generate port mappings for kaspad service
+   * Includes wRPC ports only when wallet connectivity is enabled
+   * @private
+   * @param {Object} config - Configuration object
+   * @returns {string[]} Array of port mapping strings
+   */
+  _buildKaspadPorts(config) {
+    const rpcPort = config.KASPA_NODE_RPC_PORT || 16110;
+    const p2pPort = config.KASPA_NODE_P2P_PORT || 16111;
+    const walletConnectivityEnabled = config.WALLET_CONNECTIVITY_ENABLED === 'true' || config.WALLET_CONNECTIVITY_ENABLED === true;
+
+    const ports = [
+      `${rpcPort}:16110`,   // gRPC for node communication
+      `${p2pPort}:16111`    // P2P for network participation
+    ];
+
+    // Add wRPC ports only when wallet connectivity is enabled
+    // This keeps ports closed when not needed (security best practice)
+    if (walletConnectivityEnabled) {
+      const wrpcBorshPort = config.KASPA_NODE_WRPC_BORSH_PORT || 17110;
+      const wrpcJsonPort = config.KASPA_NODE_WRPC_JSON_PORT || 18110;
+
+      ports.push(`${wrpcBorshPort}:17110`);  // wRPC Borsh (Rust SDK)
+      ports.push(`${wrpcJsonPort}:18110`);   // wRPC JSON (Web wallets)
+    }
+
+    return ports;
+  }
+
+  /**
+   * Generate kaspa-node service definition
+   * Fetches latest GitHub release and builds proper command with wallet connectivity support
+   * @private
+   * @param {Object} config - Configuration object with port and feature settings
    * @returns {Promise<string>} Docker compose service definition
    */
   async _generateKaspaNodeService(config) {
-    const rpcPort = config.KASPA_NODE_RPC_PORT || 16110;
-    const p2pPort = config.KASPA_NODE_P2P_PORT || 16111;
-    const wrpcPort = config.KASPA_NODE_WRPC_PORT || 17110;
-    const network = config.KASPA_NETWORK || 'mainnet';
-    const publicNode = config.PUBLIC_NODE === 'true' || config.PUBLIC_NODE === true;
-    const walletEnabled = config.WALLET_ENABLED === 'true' || config.WALLET_ENABLED === true;
-    const utxoIndex = config.UTXO_INDEX === 'true' || config.UTXO_INDEX === true || true;
-    const dataPath = config.DATA_VOLUME_PATH || '/var/lib/kaspa-docker';
+    // Normalize config for backward compatibility
+    const normalizedConfig = this._normalizeWalletConfig(config);
     
+    const network = normalizedConfig.KASPA_NETWORK || 'mainnet';
+    const dataPath = normalizedConfig.DATA_VOLUME_PATH || '/var/lib/kaspa-aio';
+    const walletConnectivityEnabled = normalizedConfig.WALLET_CONNECTIVITY_ENABLED === 'true' || normalizedConfig.WALLET_CONNECTIVITY_ENABLED === true;
+
     // Fetch latest release from GitHub
     const kaspaVersion = await this._fetchLatestGitHubRelease(
       'kaspanet/rusty-kaspa',
       'v1.0.1'  // Fallback to known stable version
     );
-    
+
     // Use versioned Docker image
     const kaspaImage = `kaspanet/rusty-kaspad:${kaspaVersion}`;
-    
-    console.log(`Generating kaspa-node service with image: ${kaspaImage}`);
-    
+
+    console.log(`[ConfigGenerator] Generating kaspa-node service:`);
+    console.log(`  - Image: ${kaspaImage}`);
+    console.log(`  - Network: ${network}`);
+    console.log(`  - Wallet Connectivity: ${walletConnectivityEnabled}`);
+
+    // Build command args and ports using helper functions
+    const commandArgs = this._buildKaspadCommandArgs(normalizedConfig);
+    const ports = this._buildKaspadPorts(normalizedConfig);
+
+    // Format ports for YAML
+    const portsYaml = ports.map(p => `      - "${p}"`).join('\n');
+
     return `  kaspa-node:
     image: ${kaspaImage}
     container_name: kaspa-node
     restart: unless-stopped
     ports:
-      - "${rpcPort}:16110"
-      - "${p2pPort}:16111"
-      - "${wrpcPort}:17110"
+${portsYaml}
+    command: ${JSON.stringify(commandArgs)}
     volumes:
       - ${dataPath}/kaspa-node:/app/data
-    environment:
-      - KASPA_NETWORK=${network}
-      - PUBLIC_NODE=${publicNode}
-      - WALLET_ENABLED=${walletEnabled}
-      - UTXO_INDEX=${utxoIndex}
-    command: >
-      kaspad
-      --appdir=/app/data
-      --${network}
-      ${publicNode ? '--public-node' : ''}
-      ${walletEnabled ? '--wallet-enabled' : ''}
-      ${utxoIndex ? '--utxoindex' : ''}
-      --rpclisten=0.0.0.0:16110
-      --listen=0.0.0.0:16111
-      --wrpc-listen=0.0.0.0:17110
     networks:
       - kaspa-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16110"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
 `;
   }
 
@@ -1213,56 +1336,57 @@ class ConfigGenerator {
    * @private
    */
   async _generateKaspaArchiveNodeService(config) {
-    const network = config.KASPA_NETWORK || 'mainnet';
-    const rpcPort = config.KASPA_NODE_RPC_PORT || 16110;
-    const p2pPort = config.KASPA_NODE_P2P_PORT || 16111;
-    const wrpcPort = config.KASPA_NODE_WRPC_PORT || 17110;
-    const publicNode = config.PUBLIC_NODE || false;
-    const dataPath = config.DATA_VOLUME_PATH || '/var/lib/kaspa-aio';
-    
-    // Fetch latest release from GitHub (same as kaspa-node)
-    const kaspaRelease = await this._fetchLatestGitHubRelease(
-      'kaspanet/rusty-kaspa',
-      'v1.0.1'  // Fallback version if fetch fails
-    );
-    
-    console.log(`[ConfigGenerator] Using kaspanet/rusty-kaspad:${kaspaRelease} for kaspa-archive-node`);
-    
-    // Build command arguments - includes --nopruning for full history
-    const args = [
-      `--${network}`,
-      '--rpclisten=0.0.0.0',
-      `--rpclisten-borsh=0.0.0.0:${wrpcPort}`,
-      '--loglevel=info',
-      '--nopruning',  // CRITICAL: Keeps full blockchain history
-      '--utxoindex'   // Archive nodes typically need UTXO index
-    ];
-    
-    if (publicNode) {
-      args.push('--externalip=0.0.0.0');
+      // Normalize config for backward compatibility
+      const normalizedConfig = this._normalizeWalletConfig(config);
+      
+      const network = normalizedConfig.KASPA_NETWORK || 'mainnet';
+      const dataPath = normalizedConfig.DATA_VOLUME_PATH || '/var/lib/kaspa-aio';
+      const walletConnectivityEnabled = normalizedConfig.WALLET_CONNECTIVITY_ENABLED === 'true' || normalizedConfig.WALLET_CONNECTIVITY_ENABLED === true;
+
+      // Fetch latest release from GitHub (same as kaspa-node)
+      const kaspaRelease = await this._fetchLatestGitHubRelease(
+        'kaspanet/rusty-kaspa',
+        'v1.0.1'  // Fallback version if fetch fails
+      );
+
+      console.log(`[ConfigGenerator] Generating kaspa-archive-node service:`);
+      console.log(`  - Image: kaspanet/rusty-kaspad:${kaspaRelease}`);
+      console.log(`  - Network: ${network}`);
+      console.log(`  - Wallet Connectivity: ${walletConnectivityEnabled}`);
+
+      // Build command args using helper, then add archive-specific flag
+      const commandArgs = this._buildKaspadCommandArgs(normalizedConfig);
+      commandArgs.push('--nopruning');  // CRITICAL: Keeps full blockchain history
+
+      // If wallet connectivity is enabled, utxoindex is already added by helper
+      // Archive nodes often need utxoindex even without wallet connectivity
+      if (!walletConnectivityEnabled && !commandArgs.includes('--utxoindex')) {
+        commandArgs.push('--utxoindex');  // Archive nodes typically need UTXO index
+      }
+
+      // Build ports using helper
+      const ports = this._buildKaspadPorts(normalizedConfig);
+      const portsYaml = ports.map(p => `      - "${p}"`).join('\n');
+
+      return `  kaspa-archive-node:
+      image: kaspanet/rusty-kaspad:${kaspaRelease}
+      container_name: kaspa-archive-node
+      restart: unless-stopped
+      ports:
+  ${portsYaml}
+      command: ${JSON.stringify(commandArgs)}
+      volumes:
+        - ${dataPath}/kaspa-archive:/app/data
+      networks:
+        - kaspa-network
+      healthcheck:
+        test: ["CMD", "wget", "--spider", "-q", "http://localhost:16110"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        start_period: 120s
+  `;
     }
-    
-    return `  kaspa-archive-node:
-    image: kaspanet/rusty-kaspad:${kaspaRelease}
-    container_name: kaspa-archive-node
-    restart: unless-stopped
-    ports:
-      - "${rpcPort}:16110"
-      - "${p2pPort}:16111"
-      - "${wrpcPort}:17110"
-    command: ${JSON.stringify(args)}
-    volumes:
-      - ${dataPath}/kaspa-archive:/app/data
-    networks:
-      - kaspa-network
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16110"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
-`;
-  }
 
   /**
    * Generate kasia-app service definition
@@ -1602,62 +1726,91 @@ class ConfigGenerator {
    * @private
    */
   _generateKaspaStratumService(config) {
-    const stratumPort = config.KASPA_STRATUM_PORT || 5555;
-    const nodeRpcUrl = config.KASPA_NODE_RPC_URL || 'kaspa-node:16110';
-    const miningAddress = config.MINING_ADDRESS || '';
-    const externalIp = config.STRATUM_EXTERNAL_IP || '';
-    const dataPath = config.DATA_VOLUME_PATH || '/var/lib/kaspa-aio';
-    
-    // Check if user provided pre-built image
-    const customImage = config.KASPA_STRATUM_IMAGE;
-    
-    // Approach 1: User-provided pre-built image
-    if (customImage) {
+      const stratumPort = config.KASPA_STRATUM_PORT || config.STRATUM_PORT || 5555;
+      const nodeRpcUrl = config.KASPA_NODE_RPC_URL || 'kaspa-node:16110';
+      const miningAddress = config.MINING_ADDRESS || '';
+      const externalIp = config.STRATUM_EXTERNAL_IP || '';
+      const dataPath = config.DATA_VOLUME_PATH || '/var/lib/kaspa-aio';
+
+      // Validation warning for missing mining address
+      if (!miningAddress) {
+        console.warn('[ConfigGenerator] WARNING: MINING_ADDRESS not set for kaspa-stratum service');
+        console.warn('  Mining rewards will not be received without a valid Kaspa address');
+      } else {
+        console.log(`[ConfigGenerator] Generating kaspa-stratum service:`);
+        console.log(`  - Mining Address: ${miningAddress.substring(0, 20)}...`);
+        console.log(`  - Stratum Port: ${stratumPort}`);
+      }
+
+      // Check if user provided pre-built image
+      const customImage = config.KASPA_STRATUM_IMAGE;
+
+      // Build environment section with mining address
+      const envSection = [
+        `      - KASPA_RPC_URL=${nodeRpcUrl}`,
+        `      - STRATUM_PORT=${stratumPort}`
+      ];
+
+      // Only add mining address to environment if provided
+      if (miningAddress) {
+        envSection.push(`      - MINING_ADDRESS=${miningAddress}`);
+      }
+
+      if (externalIp) {
+        envSection.push(`      - EXTERNAL_IP=${externalIp}`);
+      }
+
+      // Approach 1: User-provided pre-built image
+      if (customImage) {
+        return `  kaspa-stratum:
+      image: ${customImage}
+      container_name: kaspa-stratum
+      restart: unless-stopped
+      ports:
+        - "${stratumPort}:5555"
+      environment:
+  ${envSection.join('\n')}
+      volumes:
+        - ${dataPath}/kaspa-stratum:/app/data
+      networks:
+        - kaspa-network
+      depends_on:
+        - kaspa-node
+      healthcheck:
+        test: ["CMD", "nc", "-z", "localhost", "5555"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        start_period: 60s
+  `;
+      }
+
+      // Approach 2: Build from GitHub repository/branch
       return `  kaspa-stratum:
-    image: ${customImage}
-    container_name: kaspa-stratum
-    restart: unless-stopped
-    ports:
-      - "${stratumPort}:5555"
-    environment:
-      - KASPA_RPC_URL=${nodeRpcUrl}
-      - MINING_ADDRESS=${miningAddress}
-      - EXTERNAL_IP=${externalIp}
-    volumes:
-      - ${dataPath}/kaspa-stratum:/app/data
-    networks:
-      - kaspa-network
-`;
+      build:
+        context: https://github.com/LiveLaughLove13/rusty-kaspa.git#externalipDNSresolver
+        dockerfile: mining/kaspa-miner/Dockerfile
+      image: kaspa-stratum:latest
+      container_name: kaspa-stratum
+      restart: unless-stopped
+      ports:
+        - "${stratumPort}:5555"
+      environment:
+  ${envSection.join('\n')}
+      volumes:
+        - ${dataPath}/kaspa-stratum:/app/data
+      networks:
+        - kaspa-network
+      depends_on:
+        - kaspa-node
+      healthcheck:
+        test: ["CMD", "nc", "-z", "localhost", "5555"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        start_period: 60s
+  `;
     }
-    
-    // Approach 2: Build from GitHub repository/branch
-    // Note: This uses Docker Compose build context URL
-    // If this doesn't work in user's environment, they'll need to clone+build locally
-    return `  kaspa-stratum:
-    build:
-      context: https://github.com/LiveLaughLove13/rusty-kaspa.git#externalipDNSresolver
-      dockerfile: mining/kaspa-miner/Dockerfile
-    image: kaspa-stratum:latest
-    container_name: kaspa-stratum
-    restart: unless-stopped
-    ports:
-      - "${stratumPort}:5555"
-    environment:
-      - KASPA_RPC_URL=${nodeRpcUrl}
-      - MINING_ADDRESS=${miningAddress}
-      - EXTERNAL_IP=${externalIp}
-    volumes:
-      - ${dataPath}/kaspa-stratum:/app/data
-    networks:
-      - kaspa-network
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "5555"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-`;
-  }
 
   /**
    * Generate timescaledb-kindexer service definition

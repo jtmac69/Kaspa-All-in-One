@@ -103,6 +103,9 @@ export function displayConfigurationSummary() {
     // Display configuration (profile-specific)
     displayConfiguration(selectedProfiles, configuration);
     
+    // Display wallet configuration
+    displayWalletConfiguration(configuration);
+    
     // Add edit buttons
     addEditButtons();
     
@@ -317,6 +320,90 @@ function displayNetworkConfiguration(configuration) {
         publicNodeElement.textContent = 'Enabled';
     } else {
         publicNodeElement.textContent = 'Disabled';
+    }
+}
+
+/**
+ * Display wallet configuration in review
+ * @param {Object} configuration - Configuration object
+ */
+function displayWalletConfiguration(configuration) {
+    const walletEnabled = configuration.WALLET_CONNECTIVITY_ENABLED === true || configuration.WALLET_CONNECTIVITY_ENABLED === 'true';
+    const miningAddress = configuration.MINING_ADDRESS;
+    
+    // Find or create wallet review section
+    let walletSection = document.getElementById('review-wallet-section');
+    if (!walletSection) {
+        // Create wallet section
+        walletSection = document.createElement('div');
+        walletSection.id = 'review-wallet-section';
+        walletSection.className = 'review-section';
+        
+        // Insert after network configuration section
+        const networkSection = document.querySelector('.review-section:has(#review-network)') ||
+                              document.querySelector('.review-section');
+        if (networkSection && networkSection.parentNode) {
+            networkSection.parentNode.insertBefore(walletSection, networkSection.nextSibling);
+        } else {
+            const reviewContent = document.querySelector('.review-content') ||
+                                document.getElementById('review-step');
+            if (reviewContent) {
+                reviewContent.appendChild(walletSection);
+            }
+        }
+    }
+    
+    // Build wallet section content
+    if (walletEnabled) {
+        const maskedAddress = miningAddress 
+            ? `${miningAddress.substring(0, 15)}...${miningAddress.substring(miningAddress.length - 8)}` 
+            : 'Not set';
+        
+        walletSection.innerHTML = `
+            <h4 class="review-section-title">
+                <span class="section-icon">🔐</span>
+                Wallet Configuration
+            </h4>
+            <div class="review-section-content">
+                <div class="review-item">
+                    <span class="review-label">Wallet Connectivity</span>
+                    <span class="review-value status-enabled">
+                        <span class="status-indicator">✓</span> Enabled
+                    </span>
+                </div>
+                <div class="review-item">
+                    <span class="review-label">Mining Address</span>
+                    <span class="review-value" style="font-family: var(--font-code); font-size: 0.875rem;">
+                        ${maskedAddress}
+                    </span>
+                </div>
+                <div class="review-item">
+                    <span class="review-label">wRPC Ports</span>
+                    <span class="review-value">
+                        Borsh: ${configuration.KASPA_NODE_WRPC_BORSH_PORT || 17110}, 
+                        JSON: ${configuration.KASPA_NODE_WRPC_JSON_PORT || 18110}
+                    </span>
+                </div>
+            </div>
+            <div class="review-note" style="margin-top: 0.75rem; padding: 0.75rem; background: rgba(112, 199, 186, 0.1); border-radius: 6px; font-size: 0.875rem;">
+                <strong>Security Note:</strong> Your seed phrase was generated locally and was never transmitted. Make sure you have saved your backup securely.
+            </div>
+        `;
+    } else {
+        walletSection.innerHTML = `
+            <h4 class="review-section-title">
+                <span class="section-icon">🔐</span>
+                Wallet Configuration
+            </h4>
+            <div class="review-section-content">
+                <div class="review-item">
+                    <span class="review-label">Wallet Connectivity</span>
+                    <span class="review-value status-disabled">
+                        <span class="status-indicator">○</span> Disabled
+                    </span>
+                </div>
+            </div>
+        `;
     }
 }
 

@@ -7,6 +7,125 @@ const { getProjectRoot } = require('../../../../shared/lib/path-resolver');
  */
 
 /**
+ * Patterns that indicate sensitive wallet data
+ * SECURITY: These should NEVER appear in API requests
+ */
+const SENSITIVE_DATA_PATTERNS = [
+  // Mnemonic phrase (12 or 24 words)
+  /\b[a-z]{3,8}(\s+[a-z]{3,8}){11,23}\b/i,
+  
+  // Private key (64 hex chars)
+  /\b[a-fA-F0-9]{64}\b/,
+  
+  // Extended private key (128 hex chars)
+  /\b[a-fA-F0-9]{128}\b/,
+  
+  // Seed phrase keywords
+  /\b(seed|mnemonic|phrase|secret|private.?key)\s*[:=]/i,
+  
+  // BIP39 word list markers (common start/end words)
+  /\b(abandon|ability|able|about|above)\b.*\b(zoo|zone|zero)\b/i,
+];
+
+/**
+ * Field names that should never contain sensitive data
+ */
+const SENSITIVE_FIELD_NAMES = [
+  'mnemonic',
+  'seed',
+  'seedPhrase',
+  'seed_phrase',
+  'privateKey',
+  'private_key',
+  'secretKey',
+  'secret_key',
+  'walletPassword',
+  'wallet_password',
+  'WALLET_SEED_PHRASE',
+  'WALLET_PRIVATE_KEY',
+  'WALLET_PASSWORD',
+];
+
+/**
+ * Middleware to detect and reject requests containing sensitive wallet data
+ * SECURITY CRITICAL: Defense-in-depth against accidental data leaks
+ */
+function rejectSensitiveData(req, res, next) {
+  const checkForSensitiveData = (obj, path = '') => {
+    if (!obj || typeof obj !== 'object') return null;
+    
+    for (const [key, value] of Object.entries(obj)) {
+      const currentPath = path ? `${path}.${key}` : key;
+      
+      // Check field name
+      if (SENSITIVE_FIELD_NAMES.some(name => key.toLowerCase().includes(name.toLowerCase()))) {
+        return {
+          type: 'field_name',
+          path: currentPath,
+          message: `Sensitive field name detected: ${key}`
+        };
+      }
+      
+      // Check string values for patterns
+      if (typeof value === 'string') {
+        for (const pattern of SENSITIVE_DATA_PATTERNS) {
+          if (pattern.test(value)) {
+            return {
+              type: 'pattern_match',
+              path: currentPath,
+              message: `Sensitive data pattern detected in: ${key}`
+            };
+          }
+        }
+      }
+      
+      // Recurse into nested objects
+      if (typeof value === 'object' && value !== null) {
+        const nestedResult = checkForSensitiveData(value, currentPath);
+        if (nestedResult) return nestedResult;
+      }
+    }
+    
+    return null;
+  };
+  
+  // Check request body
+  if (req.body) {
+    const bodyCheck = checkForSensitiveData(req.body);
+    if (bodyCheck) {
+      console.error(`[SECURITY] Sensitive data in request body: ${bodyCheck.message}`);
+      return res.status(400).json({
+        error: 'SENSITIVE_DATA_REJECTED',
+        message: 'Request contains sensitive wallet data that should not be sent to the server. ' +
+                 'Wallet operations should be performed client-side only.',
+        details: {
+          type: bodyCheck.type,
+          path: bodyCheck.path
+        }
+      });
+    }
+  }
+  
+  // Check query parameters
+  if (req.query) {
+    const queryCheck = checkForSensitiveData(req.query);
+    if (queryCheck) {
+      console.error(`[SECURITY] Sensitive data in query params: ${queryCheck.message}`);
+      return res.status(400).json({
+        error: 'SENSITIVE_DATA_REJECTED',
+        message: 'Request contains sensitive wallet data in URL parameters.',
+        details: {
+          type: queryCheck.type,
+          path: queryCheck.path
+        }
+      });
+    }
+  }
+  
+  next();
+}
+
+/**
  * Token-based authentication middleware
  * Validates security token from environment or request header
  */
@@ -239,5 +358,6 @@ module.exports = {
   secureErrorHandler,
   requestTimeout,
   validateDockerAccess,
-  preventPathTraversal
+  preventPathTraversal,
+  rejectSensitiveData
 };

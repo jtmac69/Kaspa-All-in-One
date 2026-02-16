@@ -19,6 +19,7 @@
     <!-- Styles -->
     <link rel="stylesheet" href="/styles/wizard.css">
     <link rel="stylesheet" href="/styles/error-display.css">
+    <link rel="stylesheet" href="/styles/wallet.css">
 </head>
 <body>
     <!-- Wizard Container -->
@@ -1452,6 +1453,35 @@
                                 <button class="btn-secondary btn-small" onclick="openPortConfigModal()">
                                     Configure Ports
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Wallet Configuration Section -->
+                    <div id="wallet-configuration-section" class="config-section hidden">
+                        <h3 class="config-section-title">
+                            <span class="section-icon">🔐</span>
+                            Wallet & Mining Configuration
+                        </h3>
+                        <div class="config-form">
+                            <!-- Wallet Connectivity Toggle -->
+                            <div class="form-group">
+                                <div class="form-toggle">
+                                    <input type="checkbox" id="wallet-connectivity-toggle" class="toggle-input"
+                                           data-field-key="WALLET_CONNECTIVITY_ENABLED" />
+                                    <label for="wallet-connectivity-toggle" class="toggle-label">
+                                        <span class="toggle-switch"></span>
+                                        <span class="toggle-text">Enable Wallet Connectivity</span>
+                                    </label>
+                                </div>
+                                <div class="form-help">
+                                    Enables UTXO indexing and WebSocket RPC endpoints for wallet connections. Required for receiving mining rewards or connecting external wallets.
+                                </div>
+                            </div>
+                            
+                            <!-- Wallet Setup Panel Container (rendered by wallet-setup.js) -->
+                            <div id="wallet-setup-container" class="hidden">
+                                <!-- WalletSetupPanel will be rendered here -->
                             </div>
                         </div>
                     </div>

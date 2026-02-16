@@ -436,147 +436,251 @@ const PROFILE_CONFIG_FIELDS = {
       // Only relevant for node profiles
       visibleForProfiles: ['core', 'archive-node']
     },
+    // =========================================================================
+    // WALLET CONNECTIVITY CONFIGURATION
+    // These fields configure kaspad to accept external wallet connections
+    // They do NOT manage wallet keys - that happens client-side via WASM
+    // =========================================================================
     {
-      key: 'WALLET_ENABLED',
-      label: 'Enable Wallet',
+      key: 'WALLET_CONNECTIVITY_ENABLED',
+      label: 'Enable Wallet Connectivity',
       type: 'boolean',
       defaultValue: false,
       required: false,
       validation: [],
-      tooltip: 'Enable wallet functionality for this installation',
+      tooltip: 'Enable UTXO indexing and WebSocket RPC endpoints for wallet connections. Required for using external wallets (Kaspa NG, etc.) with this node.',
       category: 'basic',
       group: 'wallet',
-      visibleForProfiles: ['core', 'archive-node', 'mining']
+      visibleForProfiles: ['kaspa-node', 'kaspa-archive-node', 'kaspa-stratum'],
+      // Legacy profile support
+      legacyProfiles: ['core', 'archive-node', 'mining'],
+      affectsDockerCompose: true,
+      dockerComposeEffect: 'Adds --utxoindex, --rpclisten-borsh, --rpclisten-json flags to kaspad',
+      triggerFields: ['KASPA_NODE_WRPC_BORSH_PORT', 'KASPA_NODE_WRPC_JSON_PORT', 'WALLET_SETUP_MODE']
     },
     {
-      key: 'WALLET_MODE',
-      label: 'Wallet Mode',
-      type: 'select',
-      defaultValue: 'create',
+      key: 'KASPA_NODE_WRPC_BORSH_PORT',
+      label: 'wRPC Borsh Port',
+      type: 'number',
+      defaultValue: 17110,
       required: false,
-      options: ['create', 'import', 'existing'],
+      validation: [
+        {
+          type: 'range',
+          min: 1024,
+          max: 65535,
+          message: 'Port must be between 1024 and 65535'
+        }
+      ],
+      tooltip: 'WebSocket RPC port using Borsh binary encoding. Used by Rust SDK wallets and kaspa-cli.',
+      category: 'advanced',
+      group: 'wallet',
+      visibleForProfiles: ['kaspa-node', 'kaspa-archive-node'],
+      legacyProfiles: ['core', 'archive-node'],
+      dependsOn: { field: 'WALLET_CONNECTIVITY_ENABLED', value: true },
+      affectsDockerCompose: true,
+      dockerComposeEffect: 'Sets --rpclisten-borsh=0.0.0.0:{port}'
+    },
+    {
+      key: 'KASPA_NODE_WRPC_JSON_PORT',
+      label: 'wRPC JSON Port',
+      type: 'number',
+      defaultValue: 18110,
+      required: false,
+      validation: [
+        {
+          type: 'range',
+          min: 1024,
+          max: 65535,
+          message: 'Port must be between 1024 and 65535'
+        }
+      ],
+      tooltip: 'WebSocket RPC port using JSON encoding. Used by web wallets and browser applications.',
+      category: 'advanced',
+      group: 'wallet',
+      visibleForProfiles: ['kaspa-node', 'kaspa-archive-node'],
+      legacyProfiles: ['core', 'archive-node'],
+      dependsOn: { field: 'WALLET_CONNECTIVITY_ENABLED', value: true },
+      affectsDockerCompose: true,
+      dockerComposeEffect: 'Sets --rpclisten-json=0.0.0.0:{port}'
+    },
+    {
+      key: 'WALLET_SETUP_MODE',
+      label: 'Address Setup Method',
+      type: 'radio',
+      defaultValue: 'generate',
+      required: false,
+      options: [
+        { 
+          value: 'generate', 
+          label: 'Generate a new wallet', 
+          description: 'Create a new 24-word seed phrase and derive a fresh address' 
+        },
+        { 
+          value: 'import', 
+          label: 'Import existing seed phrase', 
+          description: 'Use your existing 12 or 24 word mnemonic' 
+        },
+        { 
+          value: 'manual', 
+          label: "I'll provide my own address", 
+          description: 'Enter an address from an external wallet (Kaspa NG, KDX, etc.)' 
+        }
+      ],
       validation: [
         {
           type: 'enum',
-          values: ['create', 'import', 'existing'],
-          message: 'Must be one of: create, import, existing'
+          values: ['generate', 'import', 'manual'],
+          message: 'Must be one of: generate, import, manual'
         }
       ],
-      tooltip: 'How to set up the wallet: create new, import from seed, or use existing',
+      tooltip: 'How to obtain the mining/receive address. Generate creates a new wallet, Import uses your existing seed, Manual lets you enter any valid Kaspa address.',
       category: 'basic',
       group: 'wallet',
-      visibleForProfiles: ['core', 'archive-node', 'mining'],
-      dependsOn: { field: 'WALLET_ENABLED', value: true }
+      visibleForProfiles: ['kaspa-node', 'kaspa-archive-node', 'kaspa-stratum'],
+      legacyProfiles: ['core', 'archive-node', 'mining'],
+      dependsOn: { field: 'WALLET_CONNECTIVITY_ENABLED', value: true },
+      // CRITICAL: This field is frontend-only
+      // It drives the UI state machine but is NEVER:
+      // - Sent to the backend API
+      // - Included in generated configuration
+      // - Written to Docker Compose or .env files
+      frontendOnly: true,
+      // UI behavior hints
+      uiHints: {
+        displayAs: 'radio-cards',  // Show as large clickable cards
+        showDescriptions: true,    // Show description under each option
+        expandsSubflow: true       // Selecting triggers sub-flow UI
+      }
     },
+    // REMOVED - Security: Seed phrases should NEVER be sent to backend
     {
       key: 'WALLET_SEED_PHRASE',
-      label: 'Wallet Seed Phrase',
+      label: 'Wallet Seed Phrase (Removed)',
       type: 'textarea',
       defaultValue: '',
       required: false,
-      validation: [
-        {
-          type: 'pattern',
-          pattern: /^(\w+\s+){11}\w+$|^(\w+\s+){23}\w+$/,
-          message: 'Must be a valid 12 or 24 word seed phrase'
-        }
-      ],
-      tooltip: 'Enter your 12 or 24 word seed phrase (only for import mode)',
-      category: 'basic',
+      validation: [],
+      tooltip: 'REMOVED: Seed phrases are now handled client-side only for security',
+      category: 'deprecated',
       group: 'wallet',
-      visibleForProfiles: ['core', 'archive-node', 'mining'],
-      dependsOn: { field: 'WALLET_MODE', value: 'import' }
+      visibleForProfiles: [], // Hide from all profiles
+      deprecated: true,
+      removed: true,
+      securityRemoval: true,
+      deprecatedMessage: 'Seed phrases are now handled entirely in the browser via WASM. They are never sent to the server.',
+      migrationHandler: () => {
+        // Do not migrate - this data should not exist in new configs
+        console.warn('[ConfigMigration] WALLET_SEED_PHRASE found in config - this field is no longer used');
+        return {};
+      }
     },
+    // REMOVED - Security: Passwords should be handled client-side only
     {
       key: 'WALLET_PASSWORD',
-      label: 'Wallet Password',
+      label: 'Wallet Password (Removed)',
       type: 'password',
       defaultValue: '',
       required: false,
-      validation: [
-        {
-          type: 'walletPassword',
-          message: 'Wallet password must meet security requirements'
-        }
-      ],
-      tooltip: 'Password to encrypt the wallet (leave empty for no password)',
-      category: 'basic',
+      validation: [],
+      tooltip: 'REMOVED: Wallet encryption is now handled client-side only',
+      category: 'deprecated',
       group: 'wallet',
-      visibleForProfiles: ['core', 'archive-node', 'mining'],
-      dependsOn: { field: 'WALLET_ENABLED', value: true }
+      visibleForProfiles: [],
+      deprecated: true,
+      removed: true,
+      securityRemoval: true,
+      deprecatedMessage: 'Wallet passwords are now used only for client-side backup encryption. They are never sent to the server.',
+      migrationHandler: () => ({})
     },
+    // REMOVED - Security: File uploads for wallets are a security risk
     {
       key: 'WALLET_FILE',
-      label: 'Wallet File',
+      label: 'Wallet File (Removed)',
       type: 'file',
       defaultValue: '',
       required: false,
-      validation: [
-        {
-          type: 'pattern',
-          pattern: /\.(json|dat|wallet)$/i,
-          message: 'Must be a valid wallet file (.json, .dat, or .wallet)'
-        }
-      ],
-      tooltip: 'Upload wallet file for import (only for import mode)',
-      category: 'basic',
+      validation: [],
+      tooltip: 'REMOVED: Wallet files should be imported client-side only',
+      category: 'deprecated',
       group: 'wallet',
-      visibleForProfiles: ['core', 'archive-node', 'mining'],
-      dependsOn: { field: 'WALLET_MODE', value: 'import' }
+      visibleForProfiles: [],
+      deprecated: true,
+      removed: true,
+      securityRemoval: true,
+      deprecatedMessage: 'Wallet file uploads have been removed for security. Import wallets using the client-side WASM interface.',
+      migrationHandler: () => ({})
     },
+    // REMOVED - Security: Private keys should NEVER be sent to backend
     {
       key: 'WALLET_PRIVATE_KEY',
-      label: 'Private Key',
+      label: 'Private Key (Removed)',
       type: 'password',
       defaultValue: '',
       required: false,
-      validation: [
-        {
-          type: 'pattern',
-          pattern: /^[0-9a-fA-F]{64}$/,
-          message: 'Must be a 64-character hexadecimal private key'
-        }
-      ],
-      tooltip: 'Private key for wallet import (alternative to seed phrase)',
-      category: 'advanced',
+      validation: [],
+      tooltip: 'REMOVED: Private keys should never be transmitted to any server',
+      category: 'deprecated',
       group: 'wallet',
-      visibleForProfiles: ['core', 'archive-node', 'mining'],
-      dependsOn: { field: 'WALLET_MODE', value: 'import' }
+      visibleForProfiles: [],
+      deprecated: true,
+      removed: true,
+      securityRemoval: true,
+      deprecatedMessage: 'Private keys are now handled entirely in the browser via WASM. They are never sent to the server.',
+      migrationHandler: () => ({})
     },
+    // REMOVED - Not applicable with new architecture
     {
       key: 'WALLET_PATH',
-      label: 'Wallet Path',
+      label: 'Wallet Path (Removed)',
       type: 'text',
-      defaultValue: '/data/wallet',
+      defaultValue: '',
       required: false,
-      validation: [
-        {
-          type: 'path',
-          message: 'Must be a valid path'
-        }
-      ],
-      tooltip: 'Container path for wallet data storage',
-      category: 'advanced',
+      validation: [],
+      tooltip: 'REMOVED: No longer applicable - wallets are not stored server-side',
+      category: 'deprecated',
       group: 'wallet',
-      visibleForProfiles: ['core', 'archive-node', 'mining'],
-      dependsOn: { field: 'WALLET_ENABLED', value: true }
+      visibleForProfiles: [],
+      deprecated: true,
+      removed: true,
+      deprecatedMessage: 'Wallet data is no longer stored on the server. Users download encrypted backups to their local machine.',
+      migrationHandler: () => ({})
     },
     {
       key: 'MINING_ADDRESS',
-      label: 'Mining Address',
+      label: 'Mining/Receive Address',
       type: 'text',
       defaultValue: '',
-      required: true,
+      required: false, // Required only when wallet connectivity is enabled
+      conditionalRequired: {
+        field: 'WALLET_CONNECTIVITY_ENABLED',
+        value: true,
+        message: 'Mining address is required when wallet connectivity is enabled'
+      },
       validation: [
         {
           type: 'kaspaAddress',
-          message: 'Must be a valid Kaspa address'
+          networkAware: true,
+          message: 'Must be a valid Kaspa address for the selected network'
         }
       ],
-      tooltip: 'Kaspa address to receive mining rewards',
+      tooltip: 'Kaspa address to receive mining rewards. This is the only wallet data stored in configuration - it\'s a public address, not a private key.',
+      placeholder: 'kaspa:qr...',
       category: 'basic',
       group: 'wallet',
-      visibleForProfiles: ['mining']
+      visibleForProfiles: ['kaspa-node', 'kaspa-archive-node', 'kaspa-stratum'],
+      legacyProfiles: ['core', 'archive-node', 'mining'],
+      dependsOn: { field: 'WALLET_CONNECTIVITY_ENABLED', value: true },
+      affectsDockerCompose: true,
+      dockerComposeEffect: 'Sets --mining-address for kaspa-miner/stratum',
+      // Data flow documentation
+      populatedBy: [
+        'WASM address generation (when WALLET_SETUP_MODE = generate)',
+        'WASM address derivation (when WALLET_SETUP_MODE = import)',
+        'Manual user input (when WALLET_SETUP_MODE = manual)'
+      ],
+      // Security note
+      securityNote: 'This is a PUBLIC address, safe to store. Private keys and mnemonics are handled client-side only.'
     },
     {
       key: 'KASIA_INDEXER_URL',
@@ -766,8 +870,54 @@ const FIELD_GROUPS = {
   }
 };
 
+/**
+ * Migrate deprecated wallet configuration fields
+ * @param {Object} config - Configuration object
+ * @returns {Object} Migrated configuration with warnings
+ */
+function migrateWalletConfiguration(config) {
+  const migrated = { ...config };
+  const warnings = [];
+
+  // Get all deprecated fields
+  const allFields = [
+    ...PROFILE_CONFIG_FIELDS.common,
+    ...Object.values(PROFILE_CONFIG_FIELDS).flat()
+  ];
+  const deprecatedFields = allFields.filter(f => f.deprecated);
+
+  for (const field of deprecatedFields) {
+    if (config.hasOwnProperty(field.key) && config[field.key] !== '' && config[field.key] !== null) {
+      // Log warning
+      warnings.push({
+        field: field.key,
+        message: field.deprecatedMessage,
+        action: field.removed ? 'removed' : 'migrated'
+      });
+
+      // Apply migration handler if exists
+      if (field.migrationHandler) {
+        const result = field.migrationHandler(config[field.key]);
+        Object.assign(migrated, result);
+      }
+
+      // Remove deprecated field from config
+      if (field.removed) {
+        delete migrated[field.key];
+      }
+    }
+  }
+
+  if (warnings.length > 0) {
+    console.log('[ConfigMigration] Migrated deprecated wallet fields:', warnings);
+  }
+
+  return { config: migrated, warnings };
+}
+
 module.exports = {
   PROFILE_CONFIG_FIELDS,
   FIELD_CATEGORIES,
-  FIELD_GROUPS
+  FIELD_GROUPS,
+  migrateWalletConfiguration
 };

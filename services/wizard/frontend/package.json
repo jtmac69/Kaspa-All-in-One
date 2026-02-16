@@ -1,0 +1,12 @@
+{
+  "name": "kaspa-wizard-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for Kaspa All-in-One Installation Wizard",
+  "private": true,
+  "scripts": {
+    "install": "npm install"
+  },
+  "dependencies": {
+    "kaspa": "^0.13.0"
+  }
+}

@@ -47,7 +47,7 @@ const reconfigurationApiRouter = require('./api/reconfiguration-api-simple');
 const DockerManager = require('./utils/docker-manager');
 const ConfigGenerator = require('./utils/config-generator');
 const BackgroundTaskManager = require('./utils/background-task-manager');
-const { secureErrorHandler, requestTimeout, validateInput } = require('./middleware/security');
+const { secureErrorHandler, requestTimeout, validateInput, rejectSensitiveData } = require('./middleware/security');
 const { logError } = require('./utils/error-handler');
 
 const app = express();
@@ -64,11 +64,107 @@ const dockerManager = new DockerManager();
 const configGenerator = new ConfigGenerator();
 const backgroundTaskManager = new BackgroundTaskManager(io);
 
-// Security middleware
-// NOTE: CSP temporarily disabled for testing - inline onclick handlers need to be converted to event listeners
+// Security middleware with WASM-compatible CSP
 app.use(helmet({
-  contentSecurityPolicy: false // Disabled for testing
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      
+      // Scripts: Allow self and WASM
+      scriptSrc: [
+        "'self'",
+        "'wasm-unsafe-eval'",  // Required for WASM execution
+        // Note: Avoid 'unsafe-inline' if possible - use nonces instead
+      ],
+      
+      // Styles: Allow self and inline styles (for dynamic UI)
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'"  // Required for some UI components
+      ],
+      
+      // Images: Allow self, data URIs, and HTTPS
+      imgSrc: [
+        "'self'",
+        "data:",
+        "https:"
+      ],
+      
+      // Connections: Allow self and WebSocket
+      connectSrc: [
+        "'self'",
+        "ws:",
+        "wss:",
+        "https://api.kaspa.org",  // For network info if needed
+      ],
+      
+      // Fonts
+      fontSrc: ["'self'"],
+      
+      // Objects: Block all plugins
+      objectSrc: ["'none'"],
+      
+      // Media
+      mediaSrc: ["'self'"],
+      
+      // Frames: Block all framing
+      frameSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      
+      // Workers: Allow self for WASM workers
+      workerSrc: ["'self'", "blob:"],
+      
+      // Child sources for WASM
+      childSrc: ["'self'", "blob:"],
+      
+      // Base URI restriction
+      baseUri: ["'self'"],
+      
+      // Form actions
+      formAction: ["'self'"],
+      
+      // Upgrade insecure requests in production
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+    },
+    reportOnly: false
+  },
+  
+  // Other helmet options
+  crossOriginEmbedderPolicy: false,  // Required for WASM in some browsers
+  crossOriginOpenerPolicy: { policy: "same-origin" },
+  crossOriginResourcePolicy: { policy: "same-origin" },
+  
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  
+  noSniff: true,
+  xssFilter: true,
+  
+  referrerPolicy: {
+    policy: "strict-origin-when-cross-origin"
+  }
 }));
+
+/**
+ * WASM support headers middleware
+ * Ensures WASM modules can be loaded and executed
+ */
+app.use((req, res, next) => {
+  // Allow WASM MIME type
+  if (req.path.endsWith('.wasm')) {
+    res.setHeader('Content-Type', 'application/wasm');
+  }
+  
+  // Cross-Origin headers for WASM (required for SharedArrayBuffer)
+  // Only enable if needed for multi-threaded WASM
+  // res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+  // res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  
+  next();
+});
 
 // Rate limiting
 const apiLimiter = rateLimit({
@@ -97,6 +193,10 @@ app.use(express.json({ limit: '1mb' })); // Limit request body size
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(validateInput); // Validate input
 app.use(requestTimeout(60000)); // 60 second timeout for requests
+
+// Security: Reject requests containing sensitive wallet data
+// This is a defense-in-depth measure - wallet operations should be client-side only
+app.use('/api/', rejectSensitiveData);
 
 // Serve static files from frontend
 // In Docker, frontend is at /app/public, in development it's at ../../frontend/public

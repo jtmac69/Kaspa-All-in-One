@@ -1,107 +1,3 @@
-/**
- * Configure Module
- * Handles configuration form loading and management
- * Updated for new profile architecture with dependency validation
- */
-
-import { api } from './api-client.js';
-import { stateManager } from './state-manager.js';
-import { showNotification } from './utils.js';
-import { 
-    openProfileAdditionDialog, 
-    closeProfileAdditionDialog, 
-    confirmProfileAddition 
-} from './profile-addition.js';
-import { 
-    openProfileRemovalDialog, 
-    closeProfileRemovalDialog 
-} from './profile-removal.js';
-
-// Profile selection state
-let selectedProfiles = [];
-let profileData = null;
-
-/**
- * Profile ID migration constants and helpers for backward compatibility
- */
-const PROFILE_GROUPS = {
-    // Node profiles (show node configuration sections)
-    node: ['kaspa-node', 'kaspa-archive-node', 'core', 'archive-node'],
-    
-    // Archive node profiles (show archive-specific options)
-    archive: ['kaspa-archive-node', 'archive-node'],
-    
-    // Standard node profiles (show standard node options)
-    standardNode: ['kaspa-node', 'core'],
-    
-    // App profiles (show indexer endpoint configuration)
-    apps: ['kasia-app', 'k-social-app', 'kaspa-user-applications'],
-    
-    // Indexer profiles (show database configuration)
-    indexers: ['kasia-indexer', 'k-indexer-bundle', 'kaspa-explorer-bundle', 'indexer-services'],
-    
-    // Mining profiles (show mining/stratum configuration)
-    mining: ['kaspa-stratum', 'mining'],
-    
-    // Profiles needing network configuration (external IP, public node toggle)
-    network: ['kaspa-node', 'kaspa-archive-node', 'kaspa-stratum', 'core', 'archive-node', 'mining']
-};
-
-/**
- * Check if any profile from a group is selected
- * @param {string[]} selectedProfiles - Array of selected profile IDs
- * @param {string} groupName - Name of the profile group to check
- * @returns {boolean} True if any profile in the group is selected
- */
-function hasProfileGroup(selectedProfiles, groupName) {
-    const group = PROFILE_GROUPS[groupName];
-    if (!group) return false;
-    return selectedProfiles.some(p => group.includes(p));
-}
-
-/**
- * Check if a specific profile (new or legacy ID) is selected
- * @param {string[]} selectedProfiles - Array of selected profile IDs
- * @param {string} profileId - Profile ID to check (can be new or legacy)
- * @returns {boolean} True if profile is selected
- */
-function hasProfile(selectedProfiles, profileId) {
-    // Direct match
-    if (selectedProfiles.includes(profileId)) return true;
-    
-    // Check legacy → new mappings
-    const legacyMapping = {
-        'core': ['kaspa-node'],
-        'archive-node': ['kaspa-archive-node'],
-        'kaspa-user-applications': ['kasia-app', 'k-social-app'],
-        'indexer-services': ['kasia-indexer', 'k-indexer-bundle', 'kaspa-explorer-bundle'],
-        'mining': ['kaspa-stratum']
-    };
-    
-    // Check new → legacy mappings (reverse)
-    const newMapping = {
-        'kaspa-node': ['core'],
-        'kaspa-archive-node': ['archive-node'],
-        'kasia-app': ['kaspa-user-applications'],
-        'k-social-app': ['kaspa-user-applications'],
-        'kasia-indexer': ['indexer-services'],
-        'k-indexer-bundle': ['indexer-services'],
-        'kaspa-explorer-bundle': ['indexer-services'],
-        'kaspa-stratum': ['mining']
-    };
-    
-    // Check if legacy ID, look for new IDs
-    if (legacyMapping[profileId]) {
-        return selectedProfiles.some(p => legacyMapping[profileId].includes(p));
-    }
-    
-    // Check if new ID, look for legacy ID
-    if (newMapping[profileId]) {
-        return selectedProfiles.some(p => newMapping[profileId].includes(p));
-    }
-    
-    return false;
-}
 
 /**
  * Load configuration form from API
@@ -246,6 +142,13 @@ async function loadConfigurationFormWithProfiles(selectedProfiles) {
             // Use a small delay to ensure DOM is ready
             setTimeout(() => {
                 populateConfigurationForm(finalConfig, isReconfiguration);
+                
+                // Update wallet section visibility based on selected profiles
+                updateWalletSectionVisibility();
+                
+                // Setup wallet connectivity toggle listener
+                setupWalletConnectivityToggle();
+                
                 const message = isReconfiguration ? 
                     'Configuration loaded from existing installation' : 
                     'Configuration loaded from template';
@@ -271,6 +174,12 @@ async function loadConfigurationFormWithProfiles(selectedProfiles) {
         // Populate form fields
         populateConfigurationForm(finalConfig, false);
         
+        // Update wallet section visibility based on selected profiles
+        updateWalletSectionVisibility();
+        
+        // Setup wallet connectivity toggle listener
+        setupWalletConnectivityToggle();
+        
         showNotification('Configuration loaded successfully', 'success');
         return finalConfig;
         
@@ -279,6 +188,190 @@ async function loadConfigurationFormWithProfiles(selectedProfiles) {
         showNotification(`Failed to load configuration: ${error.message}`, 'error');
         return null;
     }
+}
+
+/**
+ * Handle wallet connectivity toggle change
+ * @param {boolean} enabled - Whether wallet connectivity is enabled
+ */
+async function handleWalletConnectivityToggle(enabled) {
+    const walletContainer = document.getElementById('wallet-setup-container');
+    
+    if (!walletContainer) {
+        console.warn('[CONFIGURE] Wallet setup container not found');
+        return;
+    }
+    
+    // Update state
+    stateManager.update('configuration', { WALLET_CONNECTIVITY_ENABLED: enabled });
+    
+    if (enabled) {
+        // Show wallet setup panel
+        walletContainer.classList.remove('hidden');
+        
+        // Get current network from configuration
+        const config = stateManager.get('configuration') || {};
+        const network = config.KASPA_NETWORK || 'mainnet';
+        
+        // Render wallet setup panel
+        await renderWalletSetupPanel(walletContainer, {
+            network: network,
+            onComplete: handleWalletSetupComplete,
+            onAddressChange: handleWalletAddressChange
+        });
+        
+        console.log('[CONFIGURE] Wallet setup panel rendered');
+    } else {
+        // Hide wallet setup panel
+        walletContainer.classList.add('hidden');
+        walletContainer.innerHTML = '';
+        
+        // Clear wallet state
+        clearWalletState();
+        
+        // Clear mining address
+        stateManager.update('configuration', { MINING_ADDRESS: '' });
+        
+        console.log('[CONFIGURE] Wallet setup panel hidden and cleared');
+    }
+    
+    // Update continue button state
+    updateContinueButtonState();
+}
+
+/**
+ * Handle wallet setup completion
+ * @param {Object} walletState - Wallet state from wallet-setup.js
+ */
+function handleWalletSetupComplete(walletState) {
+    console.log('[CONFIGURE] Wallet setup complete:', walletState);
+    
+    // Update configuration with mining address
+    if (walletState.address) {
+        stateManager.update('configuration', { MINING_ADDRESS: walletState.address });
+    }
+    
+    // Update continue button state
+    updateContinueButtonState();
+}
+
+/**
+ * Handle wallet address change
+ * @param {string} address - New mining address
+ */
+function handleWalletAddressChange(address) {
+    console.log('[CONFIGURE] Wallet address changed:', address ? address.substring(0, 20) + '...' : 'null');
+    
+    // Update configuration
+    stateManager.update('configuration', { MINING_ADDRESS: address || '' });
+    
+    // Update continue button state
+    updateContinueButtonState();
+}
+
+/**
+ * Setup wallet connectivity toggle event listener
+ */
+function setupWalletConnectivityToggle() {
+    const toggle = document.getElementById('wallet-connectivity-toggle');
+    
+    if (!toggle) {
+        console.warn('[CONFIGURE] Wallet connectivity toggle not found');
+        return;
+    }
+    
+    // Load saved state
+    const config = stateManager.get('configuration') || {};
+    const savedValue = config.WALLET_CONNECTIVITY_ENABLED;
+    
+    if (savedValue === true || savedValue === 'true') {
+        toggle.checked = true;
+        handleWalletConnectivityToggle(true);
+    }
+    
+    // Add change listener
+    toggle.addEventListener('change', (e) => {
+        handleWalletConnectivityToggle(e.target.checked);
+    });
+}
+
+/**
+ * Update continue button state based on wallet setup completion
+ * This will be fully implemented in the next prompt
+ */
+/**
+ * Update continue button state based on configuration validity
+ * Gates progress when wallet setup is incomplete
+ */
+function updateContinueButtonState() {
+    const continueBtn = document.querySelector('#step-configure .btn-primary[onclick*="nextStep"]') ||
+                        document.querySelector('#configure-continue-btn') ||
+                        document.querySelector('.wizard-navigation .btn-primary');
+
+    if (!continueBtn) {
+        console.warn('[CONFIGURE] Continue button not found');
+        return;
+    }
+
+    const selectedProfiles = stateManager.get('selectedProfiles') || [];
+    const config = stateManager.get('configuration') || {};
+    const walletEnabled = config.WALLET_CONNECTIVITY_ENABLED === true || config.WALLET_CONNECTIVITY_ENABLED === 'true';
+
+    let canProceed = true;
+    let disabledReason = '';
+
+    // Check if wallet setup is required and complete
+    if (walletEnabled) {
+        const walletComplete = isWalletSetupComplete();
+        if (!walletComplete) {
+            canProceed = false;
+            disabledReason = 'Complete wallet setup to continue';
+        }
+    }
+
+    // Check if mining address is required but missing
+    if (requiresMiningAddress(selectedProfiles)) {
+        const miningAddress = config.MINING_ADDRESS || getMiningAddress();
+        if (!miningAddress) {
+            canProceed = false;
+            disabledReason = 'Mining address is required for stratum';
+        }
+    }
+
+    // Update button state
+    continueBtn.disabled = !canProceed;
+
+    // Update button tooltip/title
+    if (!canProceed && disabledReason) {
+        continueBtn.title = disabledReason;
+        continueBtn.setAttribute('aria-describedby', 'continue-disabled-reason');
+
+        // Add or update reason text
+        let reasonElement = document.getElementById('continue-disabled-reason');
+        if (!reasonElement) {
+            reasonElement = document.createElement('div');
+            reasonElement.id = 'continue-disabled-reason';
+            reasonElement.className = 'continue-disabled-reason';
+            reasonElement.style.cssText = `
+                font-size: 0.75rem;
+                color: var(--text-tertiary);
+                margin-top: 0.5rem;
+                text-align: center;
+            `;
+            continueBtn.parentNode.appendChild(reasonElement);
+        }
+        reasonElement.textContent = disabledReason;
+        reasonElement.style.display = 'block';
+    } else {
+        continueBtn.title = '';
+        continueBtn.removeAttribute('aria-describedby');
+        const reasonElement = document.getElementById('continue-disabled-reason');
+        if (reasonElement) {
+            reasonElement.style.display = 'none';
+        }
+    }
+
+    console.log(`[CONFIGURE] Continue button ${canProceed ? 'enabled' : 'disabled'}: ${disabledReason || 'ready'}`);
 }
 
 /**
@@ -826,6 +919,39 @@ export async function validateConfiguration() {
     try {
         console.log('=== Starting configuration validation ===');
         
+        const selectedProfiles = stateManager.get('selectedProfiles') || [];
+        const currentConfig = stateManager.get('configuration') || {};
+        
+        // Basic profile validation
+        if (selectedProfiles.length === 0) {
+            showNotification('Please select at least one profile', 'error');
+            return false;
+        }
+        
+        // Wallet validation
+        const walletEnabled = currentConfig.WALLET_CONNECTIVITY_ENABLED === true || currentConfig.WALLET_CONNECTIVITY_ENABLED === 'true';
+        if (walletEnabled) {
+            if (!isWalletSetupComplete()) {
+                showNotification('Please complete wallet setup before continuing', 'error');
+                return false;
+            }
+            
+            // Ensure mining address is in configuration
+            const walletAddress = getMiningAddress();
+            if (walletAddress && !currentConfig.MINING_ADDRESS) {
+                stateManager.update('configuration', { MINING_ADDRESS: walletAddress });
+            }
+        }
+        
+        // Mining address required validation
+        if (requiresMiningAddress(selectedProfiles)) {
+            const miningAddress = currentConfig.MINING_ADDRESS || getMiningAddress();
+            if (!miningAddress) {
+                showNotification('Mining address is required for the selected profiles', 'error');
+                return false;
+            }
+        }
+        
         // First, validate client-side
         const clientValidation = validateAllFields();
         console.log('Client-side validation result:', clientValidation);
@@ -1094,28 +1220,49 @@ export function setupDeveloperModeToggle() {
 }
 
 /**
+/**
  * Setup network change detection
+ * Updates wallet address when network changes
  */
 export function setupNetworkChangeDetection() {
-    const networkSelect = document.getElementById('kaspa-network');
-    if (!networkSelect) return;
-    
-    // Store initial network value
-    let previousNetwork = networkSelect.value;
-    
-    networkSelect.addEventListener('change', (e) => {
+    const networkSelect = document.getElementById('kaspa-network') || document.querySelector('[data-field-key="KASPA_NETWORK"]');
+
+    if (!networkSelect) {
+        console.warn('[CONFIGURE] Network selector not found');
+        return;
+    }
+
+    networkSelect.addEventListener('change', async (e) => {
         const newNetwork = e.target.value;
-        const currentNetwork = document.getElementById('current-network-display').textContent;
-        
-        // If network is different from current, show warning
-        if (newNetwork !== currentNetwork) {
-            // Show warning modal
-            if (window.openNetworkChangeWarning) {
-                window.openNetworkChangeWarning(newNetwork);
+        console.log(`[CONFIGURE] Network changed to: ${newNetwork}`);
+
+        // Update configuration state
+        stateManager.update('configuration', { KASPA_NETWORK: newNetwork });
+
+        // Update current network display if it exists
+        const currentNetworkDisplay = document.getElementById('current-network-display');
+        if (currentNetworkDisplay) {
+            currentNetworkDisplay.textContent = newNetwork;
+        }
+
+        // Update wallet if wallet connectivity is enabled
+        const walletToggle = document.getElementById('wallet-connectivity-toggle');
+        if (walletToggle && walletToggle.checked) {
+            try {
+                // Update wallet network (will regenerate address)
+                await updateWalletNetwork(newNetwork);
+
+                // Get updated address
+                const newAddress = getMiningAddress();
+                if (newAddress) {
+                    stateManager.update('configuration', { MINING_ADDRESS: newAddress });
+                }
+
+                showNotification(`Address updated for ${newNetwork}`, 'info');
+            } catch (error) {
+                console.error('[CONFIGURE] Failed to update wallet network:', error);
+                showNotification('Failed to update address for new network', 'error');
             }
-        } else {
-            // Network matches current, just update display
-            document.getElementById('current-network-display').textContent = newNetwork;
         }
     });
 }
@@ -3669,4 +3816,50 @@ function calculateConfigurationDiff(currentConfig, newConfig) {
         hasChanges,
         changes
     };
+}
+
+
+/**
+ * Cleanup function for configuration step
+ * Called when leaving the configuration step
+ */
+export function cleanupConfigurationStep() {
+    console.log('[CONFIGURE] Cleaning up configuration step');
+    
+    // Clear sensitive wallet data if not proceeding
+    const walletComplete = isWalletSetupComplete();
+    if (!walletComplete) {
+        // User is leaving without completing wallet setup
+        clearWalletState();
+        console.log('[CONFIGURE] Wallet state cleared (incomplete setup)');
+    }
+}
+
+/**
+ * Initialize configuration step
+ * Called when entering the configuration step
+ */
+export async function initializeConfigurationStep() {
+    console.log('[CONFIGURE] Initializing configuration step');
+    
+    // Load configuration form
+    await loadConfigurationForm();
+    
+    // Update wallet section visibility
+    updateWalletSectionVisibility();
+    
+    // Setup wallet toggle
+    setupWalletConnectivityToggle();
+    
+    // Setup network change detection
+    setupNetworkChangeDetection();
+    
+    // Setup advanced options toggle
+    setupAdvancedOptionsToggle();
+    
+    // Setup form validation
+    setupFormValidation();
+    
+    // Initial button state
+    updateContinueButtonState();
 }

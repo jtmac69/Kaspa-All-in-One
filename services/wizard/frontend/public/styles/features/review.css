@@ -4,3 +4,38 @@
 
 /* This file will contain all review-related styles */
 /* TODO: Extract review section styles from main wizard.css */
+
+/* ============================================================================
+   Wallet Configuration Review Styles
+   ============================================================================ */
+
+.review-section .status-enabled {
+    color: var(--success);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.review-section .status-disabled {
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.review-section .status-indicator {
+    font-size: 0.875rem;
+}
+
+.review-section .review-note {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(112, 199, 186, 0.1);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.review-section .review-note strong {
+    color: var(--kaspa-blue);
+}

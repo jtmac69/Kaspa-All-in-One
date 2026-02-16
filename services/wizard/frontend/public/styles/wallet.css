@@ -1,0 +1,699 @@
+/* ============================================================================
+   Wallet Setup Components
+   Security-focused styles for wallet configuration in the wizard
+   ============================================================================ */
+
+/* Wallet Setup Panel Container */
+.wallet-setup-panel {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.wallet-setup-panel.hidden {
+    display: none;
+}
+
+.wallet-setup-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.wallet-setup-header h3 {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+}
+
+.wallet-setup-icon {
+    font-size: 1.5rem;
+}
+
+/* Setup Mode Selection */
+.wallet-mode-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.wallet-mode-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.wallet-mode-option:hover {
+    border-color: var(--kaspa-light);
+    background: rgba(112, 199, 186, 0.02);
+}
+
+.wallet-mode-option.selected {
+    border-color: var(--kaspa-blue);
+    background: rgba(112, 199, 186, 0.05);
+}
+
+.wallet-mode-option input[type="radio"] {
+    margin-top: 0.25rem;
+    accent-color: var(--kaspa-blue);
+}
+
+.wallet-mode-content {
+    flex: 1;
+}
+
+.wallet-mode-title {
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.wallet-mode-description {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Security Warning Banner */
+.wallet-security-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.wallet-security-warning.critical {
+    background: rgba(208, 2, 27, 0.1);
+    border-color: rgba(208, 2, 27, 0.3);
+}
+
+.wallet-security-warning-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.wallet-security-warning-content {
+    flex: 1;
+}
+
+.wallet-security-warning-title {
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.wallet-security-warning-text {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Mnemonic Display (Generate Mode) */
+.mnemonic-display-container {
+    margin-bottom: 1.5rem;
+}
+
+.mnemonic-display-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.mnemonic-display-label {
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mnemonic-reveal-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mnemonic-reveal-btn:hover {
+    border-color: var(--kaspa-blue);
+    color: var(--kaspa-blue);
+}
+
+.mnemonic-reveal-btn.revealed {
+    background: var(--kaspa-blue);
+    border-color: var(--kaspa-blue);
+    color: white;
+}
+
+.mnemonic-display {
+    position: relative;
+    padding: 1.25rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--font-code);
+    font-size: var(--text-base);
+    line-height: 2;
+    color: var(--text-primary);
+    user-select: none;
+    transition: filter 0.3s ease;
+}
+
+.mnemonic-display.blurred {
+    filter: blur(8px);
+    cursor: pointer;
+}
+
+.mnemonic-display.blurred::after {
+    content: 'Click to reveal';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    filter: blur(0);
+    pointer-events: none;
+}
+
+.mnemonic-display.revealed {
+    filter: none;
+    user-select: text;
+}
+
+.mnemonic-word {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    margin: 0.25rem;
+    background: rgba(112, 199, 186, 0.1);
+    border-radius: 4px;
+}
+
+.mnemonic-word-number {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    margin-right: 0.25rem;
+}
+
+/* Mnemonic Input (Import Mode) */
+.mnemonic-input-container {
+    margin-bottom: 1.5rem;
+}
+
+.mnemonic-input-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.mnemonic-input-label-text {
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+}
+
+.mnemonic-word-count {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.mnemonic-word-count.valid {
+    color: var(--success);
+}
+
+.mnemonic-word-count.invalid {
+    color: var(--error);
+}
+
+.mnemonic-input {
+    width: 100%;
+    min-height: 120px;
+    padding: 1rem;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--font-code);
+    font-size: var(--text-base);
+    line-height: 1.8;
+    background: var(--surface);
+    color: var(--text-primary);
+    resize: vertical;
+    transition: all 0.2s ease;
+}
+
+.mnemonic-input:focus {
+    outline: none;
+    border-color: var(--kaspa-blue);
+    box-shadow: 0 0 0 3px rgba(112, 199, 186, 0.1);
+}
+
+.mnemonic-input.field-error {
+    border-color: var(--error);
+}
+
+.mnemonic-input.field-success {
+    border-color: var(--success);
+}
+
+.mnemonic-input::placeholder {
+    color: var(--text-tertiary);
+    font-family: var(--font-body);
+}
+
+/* Security note for input */
+.mnemonic-input-security-note {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+}
+
+.mnemonic-input-security-note::before {
+    content: '🔒';
+}
+
+/* Field error message */
+.field-error-message {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(208, 2, 27, 0.1);
+    border: 1px solid rgba(208, 2, 27, 0.3);
+    border-radius: 6px;
+    color: var(--error);
+    font-size: var(--text-sm);
+    line-height: 1.4;
+}
+
+/* Address Display */
+.address-display-container {
+    margin-bottom: 1.5rem;
+}
+
+.address-display-label {
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.address-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: rgba(112, 199, 186, 0.05);
+    border: 1px solid var(--kaspa-blue);
+    border-radius: 8px;
+}
+
+.address-text {
+    flex: 1;
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    word-break: break-all;
+    line-height: 1.4;
+}
+
+.address-copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--kaspa-blue);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.address-copy-btn:hover {
+    background: var(--kaspa-dark);
+    transform: translateY(-1px);
+}
+
+.address-copy-btn.copied {
+    background: var(--success);
+}
+
+.address-copy-btn:active {
+    transform: translateY(0);
+}
+
+/* Manual Address Input */
+.manual-address-container {
+    margin-bottom: 1.5rem;
+}
+
+.manual-address-input {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+    background: var(--surface);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.manual-address-input:focus {
+    outline: none;
+    border-color: var(--kaspa-blue);
+    box-shadow: 0 0 0 3px rgba(112, 199, 186, 0.1);
+}
+
+.manual-address-input.field-error {
+    border-color: var(--error);
+}
+
+.manual-address-input.field-success {
+    border-color: var(--success);
+}
+
+.manual-address-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+/* Wallet Backup Section */
+.wallet-backup-section {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.wallet-backup-header {
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.wallet-backup-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.wallet-backup-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.wallet-backup-btn:hover {
+    border-color: var(--kaspa-blue);
+    background: rgba(112, 199, 186, 0.05);
+}
+
+.wallet-backup-btn.downloaded {
+    border-color: var(--success);
+    background: rgba(126, 211, 33, 0.1);
+    color: var(--success);
+}
+
+.wallet-backup-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Password Input for Backup Encryption */
+.backup-password-section {
+    margin-bottom: 1rem;
+}
+
+.backup-password-label {
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.backup-password-label .optional-badge {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    font-weight: normal;
+}
+
+.backup-password-input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.backup-password-input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: var(--text-sm);
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.backup-password-input:focus {
+    outline: none;
+    border-color: var(--kaspa-blue);
+}
+
+/* Backup Confirmation Checkbox */
+.wallet-backup-confirmation {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: rgba(112, 199, 186, 0.05);
+    border: 1px solid var(--kaspa-blue);
+    border-radius: 8px;
+}
+
+.wallet-backup-confirmation.unchecked {
+    background: rgba(255, 193, 7, 0.1);
+    border-color: rgba(255, 193, 7, 0.5);
+}
+
+.wallet-backup-confirmation input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-top: 0.125rem;
+    accent-color: var(--kaspa-blue);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.wallet-backup-confirmation-label {
+    cursor: pointer;
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.wallet-backup-confirmation-label strong {
+    color: var(--kaspa-blue);
+}
+
+/* Network Badge */
+.network-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.network-badge.mainnet {
+    background: rgba(112, 199, 186, 0.1);
+    color: var(--kaspa-blue);
+}
+
+.network-badge.testnet {
+    background: rgba(255, 193, 7, 0.1);
+    color: #d4a017;
+}
+
+/* Loading States */
+.wallet-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+}
+
+.wallet-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--kaspa-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.wallet-loading-text {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+}
+
+/* Error State */
+.wallet-error {
+    padding: 1rem;
+    background: rgba(208, 2, 27, 0.1);
+    border: 1px solid rgba(208, 2, 27, 0.3);
+    border-radius: 8px;
+    color: var(--error);
+    font-size: var(--text-sm);
+}
+
+.wallet-error-title {
+    font-weight: var(--font-semibold);
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .wallet-setup-panel {
+        padding: 1rem;
+    }
+
+    .wallet-mode-selection {
+        gap: 0.5rem;
+    }
+
+    .wallet-mode-option {
+        padding: 0.75rem;
+    }
+
+    .mnemonic-display {
+        font-size: var(--text-sm);
+        padding: 1rem;
+    }
+
+    .address-display {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .address-copy-btn {
+        justify-content: center;
+    }
+
+    .wallet-backup-actions {
+        flex-direction: column;
+    }
+
+    .wallet-backup-btn {
+        justify-content: center;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .wallet-setup-panel {
+        background: var(--surface-dark);
+        border-color: var(--border-dark);
+    }
+
+    .wallet-mode-option {
+        background: var(--surface-dark);
+        border-color: var(--border-dark);
+    }
+
+    .wallet-mode-option.selected {
+        background: rgba(112, 199, 186, 0.1);
+    }
+
+    .mnemonic-display {
+        background: var(--surface-dark);
+        border-color: var(--border-dark);
+    }
+
+    .mnemonic-input {
+        background: var(--surface-dark);
+        border-color: var(--border-dark);
+        color: var(--text-primary-dark);
+    }
+
+    .manual-address-input {
+        background: var(--surface-dark);
+        border-color: var(--border-dark);
+        color: var(--text-primary-dark);
+    }
+
+    .wallet-backup-btn {
+        background: var(--surface-dark);
+        border-color: var(--border-dark);
+    }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    .wallet-setup-panel,
+    .mnemonic-display,
+    .wallet-loading-spinner {
+        animation: none;
+    }
+
+    .mnemonic-display {
+        transition: none;
+    }
+}
