@@ -70,17 +70,19 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       
-      // Scripts: Allow self and WASM
+      // Scripts: Allow self, WASM, and inline (required for index.html inline scripts)
       scriptSrc: [
         "'self'",
+        "'unsafe-inline'",  // Required for inline scripts in index.html (navigation, rollback helpers)
         "'wasm-unsafe-eval'",  // Required for WASM execution
-        // Note: Avoid 'unsafe-inline' if possible - use nonces instead
+        "https://cdn.socket.io",  // Socket.IO CDN
       ],
-      
-      // Styles: Allow self and inline styles (for dynamic UI)
+
+      // Styles: Allow self, inline styles, and Google Fonts
       styleSrc: [
         "'self'",
-        "'unsafe-inline'"  // Required for some UI components
+        "'unsafe-inline'",  // Required for some UI components
+        "https://fonts.googleapis.com",  // Google Fonts
       ],
       
       // Images: Allow self, data URIs, and HTTPS
@@ -99,7 +101,7 @@ app.use(helmet({
       ],
       
       // Fonts
-      fontSrc: ["'self'"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
       
       // Objects: Block all plugins
       objectSrc: ["'none'"],
@@ -122,6 +124,9 @@ app.use(helmet({
       
       // Form actions
       formAction: ["'self'"],
+
+      // Script attributes: Allow inline event handlers (onclick, etc.) used throughout index.html
+      scriptSrcAttr: ["'unsafe-inline'"],
       
       // Upgrade insecure requests in production
       upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
@@ -169,7 +174,7 @@ app.use((req, res, next) => {
 // Rate limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // Increased limit for testing - was 100
+  max: 10000, // Increased limit for automated testing - was 500
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false
@@ -177,7 +182,7 @@ const apiLimiter = rateLimit({
 
 const installLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 100, // Increased limit for testing - was 5
+  max: 1000, // Increased limit for automated testing - was 100
   message: 'Too many installation attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false

@@ -122,12 +122,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const buildInfo = await fetchBuildInfo();
     if (buildInfo) {
         console.log('Build info updated from backend:', buildInfo);
-        // Reload if mode changed
+        // Reload if mode changed — but NOT if URL override is active
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasUrlOverride = urlParams.has('build-mode');
         const currentMode = BUILD_MODE;
-        if (buildInfo.mode !== currentMode) {
+        if (!hasUrlOverride && buildInfo.mode !== currentMode) {
             console.log(`Build mode changed from ${currentMode} to ${buildInfo.mode}, reloading...`);
             window.location.reload();
             return;
+        }
+        if (hasUrlOverride) {
+            console.log(`URL build-mode override active (${currentMode}), skipping backend mode sync`);
         }
     }
     

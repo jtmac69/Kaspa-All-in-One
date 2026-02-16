@@ -1,3 +1,10 @@
+import { stateManager } from './state-manager.js';
+import { api } from './api-client.js';
+import { showNotification } from './utils.js';
+
+// Module-level state
+let profileData = null;
+let selectedProfiles = [];
 
 /**
  * Load configuration form from API
@@ -188,6 +195,20 @@ async function loadConfigurationFormWithProfiles(selectedProfiles) {
         showNotification(`Failed to load configuration: ${error.message}`, 'error');
         return null;
     }
+}
+
+/**
+ * Update wallet section visibility based on selected profiles
+ * Wallet configuration is relevant when node or mining profiles are selected
+ */
+function updateWalletSectionVisibility() {
+    const walletSection = document.querySelector('.config-section:has(#wallet-enabled)') ||
+                          document.getElementById('wallet-config-section');
+    if (!walletSection) return;
+
+    const profiles = stateManager.get('selectedProfiles') || [];
+    const needsWallet = hasProfileGroup(profiles, 'node') || hasProfileGroup(profiles, 'mining');
+    walletSection.style.display = needsWallet ? 'block' : 'none';
 }
 
 /**
@@ -517,6 +538,73 @@ function populateConfigurationForm(config, isReconfiguration = false) {
     // Show/hide sections based on profiles
     const selectedProfiles = stateManager.get('selectedProfiles') || [];
     updateFormVisibility(selectedProfiles);
+}
+
+/**
+ * Check if a specific profile ID is in the selected profiles array
+ * @param {string[]} profiles - Array of selected profile IDs
+ * @param {string} profileId - Profile ID to check for
+ * @returns {boolean}
+ */
+function hasProfile(profiles, profileId) {
+    return profiles.includes(profileId);
+}
+
+/**
+ * Check if any profile in a logical group is selected
+ * @param {string[]} profiles - Array of selected profile IDs
+ * @param {string} group - Group name (network, apps, indexers, node, mining, standardNode, archive)
+ * @returns {boolean}
+ */
+function hasProfileGroup(profiles, group) {
+    const groups = {
+        network: ['kaspa-node', 'kaspa-archive-node', 'kaspa-stratum'],
+        apps: ['kasia-app', 'k-social-app', 'kaspa-user-applications', 'kaspa-explorer-bundle'],
+        indexers: ['kasia-indexer', 'k-indexer-bundle', 'kaspa-explorer-bundle', 'indexer-services'],
+        node: ['kaspa-node', 'kaspa-archive-node'],
+        mining: ['kaspa-stratum'],
+        standardNode: ['kaspa-node'],
+        archive: ['kaspa-archive-node'],
+    };
+    const groupProfiles = groups[group] || [];
+    return profiles.some(p => groupProfiles.includes(p));
+}
+
+/**
+ * Check if the selected profiles require a mining address
+ * @param {string[]} profiles - Array of selected profile IDs
+ * @returns {boolean}
+ */
+function requiresMiningAddress(profiles) {
+    return hasProfileGroup(profiles, 'mining');
+}
+
+/**
+ * Get the mining address from the configuration form
+ * @returns {string|null}
+ */
+function getMiningAddress() {
+    const miningAddressInput = document.getElementById('mining-address') ||
+                               document.querySelector('[name="MINING_ADDRESS"]');
+    if (miningAddressInput) {
+        return miningAddressInput.value.trim() || null;
+    }
+    const config = stateManager.get('configuration') || {};
+    return config.MINING_ADDRESS || null;
+}
+
+/**
+ * Check if wallet setup is complete (when wallet is enabled)
+ * @returns {boolean}
+ */
+function isWalletSetupComplete() {
+    const walletEnabled = document.getElementById('wallet-enabled');
+    if (!walletEnabled || !walletEnabled.checked) {
+        return true; // Wallet not enabled, so setup is "complete"
+    }
+    // If wallet is enabled, check that required wallet fields are filled
+    const miningAddress = getMiningAddress();
+    return !!miningAddress;
 }
 
 /**
@@ -2979,11 +3067,15 @@ window.confirmProfileRemoval = async function() {
 };
 
 /**
- * Global functions for profile addition
+ * Global functions for profile addition (lazy-loaded from profile-addition module)
  */
-window.openProfileAdditionDialog = openProfileAdditionDialog;
-window.closeProfileAdditionDialog = closeProfileAdditionDialog;
-window.confirmProfileAddition = confirmProfileAddition;
+import('./profile-addition.js').then(module => {
+    window.openProfileAdditionDialog = module.openProfileAdditionDialog;
+    window.closeProfileAdditionDialog = module.closeProfileAdditionDialog;
+    window.confirmProfileAddition = module.confirmProfileAddition;
+}).catch(err => {
+    console.warn('Profile addition module not available:', err.message);
+});
 
 /**
  * Advanced Configuration Functions
