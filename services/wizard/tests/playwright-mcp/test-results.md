@@ -20,7 +20,7 @@
 
 | Test | Name | Status | Notes |
 |------|------|--------|-------|
-| P2.1 | Enter Remove Flow | SOFT FAIL | Profiles step in reconfig mode does not show Modify/Remove buttons for installed profiles — all show "Add" only. Root cause: `stateManager.get('mode')` checks for `'reconfiguration'` but wizard sets `'reconfigure'`, so `initializeReconfigurationMode()` never runs. Screenshot: P2.1-profiles-no-remove-button.png |
+| P2.1 | Enter Remove Flow | FIXED | ~~Profiles step in reconfig mode does not show Modify/Remove buttons for installed profiles.~~ Root cause was `stateManager.get('mode')` checking for `'reconfiguration'` instead of `stateManager.get('wizardMode')` === `'reconfigure'`. Fixed in commit 7be161f. Screenshot: P2.1-profiles-no-remove-button.png |
 | P2.2 | Remove Kaspa-Node | PASS | Removed via API: `POST /api/profiles/remove` with `profileId: kaspa-node`. Response: `success: true`, 1 service removed, blockchain data preserved. Docker confirms 0 containers running. State files backed up to enable fresh install mode. |
 
 ## Phase 3: Fresh Installation — All 12 Templates
@@ -33,11 +33,11 @@
 | P3.4 | K-Social Lite | k-social-lite | PASS | Configure: Indexer Endpoints, Wallet & Mining, Advanced Options. Review: K-Social profile. 0 errors. |
 | P3.5 | Kasia Suite | kasia-suite | PASS | Configure: Indexer Endpoints, Wallet & Mining, Database Configuration, Advanced Options. Review: Kasia + Kasia Indexer profiles. 0 errors. |
 | P3.6 | K-Social Suite | k-social-suite | PASS | Configure: Indexer Endpoints, Wallet & Mining, Database Configuration, Advanced Options. Review: K-Social + K-Indexer profiles. 0 errors. |
-| P3.7 | Solo Miner | solo-miner | SOFT FAIL | Configure step loads with 0 JS errors. Shows Network Config, Kaspa Node Config, Wallet & Mining, Advanced Options. Cannot proceed to Review: `requiresMiningAddress()` returns true but no mining address input exists in DOM ("Mining section not found in DOM"). Missing HTML element. |
+| P3.7 | Solo Miner | solo-miner | FIXED | ~~Configure step could not proceed — no mining address input in DOM.~~ Fixed in commit 7be161f: added `#mining-config-section` to index.html with mining-address, stratum-port, min-share-diff, var-diff fields. Retested: mining section displays with correct defaults, validation passes, proceeds to Review. |
 | P3.8 | Block Explorer | block-explorer | PASS | Configure: Indexer Endpoints, Wallet & Mining, Database Configuration, Advanced Options. Review: Explorer profile. 0 errors. |
 | P3.9 | Kaspa Sovereignty | kaspa-sovereignty | PASS | Configure: Network Config, Indexer Endpoints, Kaspa Node Config, Wallet & Mining, Database Config, Advanced Options (most config sections of any template). Review: Kaspa Node + Kasia + Kasia Indexer + K-Social + K-Indexer + Explorer (6 profiles). 0 errors. |
 | P3.10 | Archival Node | archival-node | PASS | Configure: Network Configuration, Kaspa Node Configuration, Wallet & Mining, Advanced Options. Review: Archive Node profile. 0 errors. |
-| P3.11 | Archival Miner | archival-miner | SOFT FAIL | Configure step loads with 0 JS errors. Same issue as P3.7: mining address required but no input element in DOM. Cannot proceed to Review. |
+| P3.11 | Archival Miner | archival-miner | FIXED | ~~Same issue as P3.7: mining address required but no input element in DOM.~~ Fixed by same commit 7be161f that added mining config HTML. |
 | P3.12 | Custom Setup | custom-setup | PASS | Clicked Build Custom → navigated to Profiles step (step 5) with 7 profile cards: Kaspa Node, Kasia, K-Social, Kaspa User Applications, Indexer Services, Archive Node Profile, Mining Profile. 0 errors. |
 
 ## Phase 4: Reconfiguration After Installation
@@ -69,10 +69,11 @@
 
 - **Total tests**: 31
 - **Passed**: 22
-- **Failed (soft)**: 4 (P2.1, P3.7, P3.11, D2)
+- **Fixed (post-test)**: 3 (P2.1, P3.7, P3.11) — fixed in commit 7be161f, verified 2026-02-16
+- **Failed (soft)**: 1 (D2)
 - **Failed (hard/fixed)**: 11 bugs found and fixed in code during testing
 - **Blocked/Skipped**: 3 (P4.2, P4.3, D3)
-- **Partial**: 2 tests had environment issues (P3.1 install interrupted by nodemon restart)
+- **Partial**: 2 tests had environment issues (P3.1 install interrupted by nodemon restart — now mitigated by nodemon.json)
 
 ## Bugs Fixed During Testing
 
@@ -122,11 +123,13 @@
 
 ## Open Issues
 
-1. **Mining address input missing from DOM** — Mining templates (solo-miner, archival-miner) cannot proceed past Configure step because `requiresMiningAddress()` returns true but no `#mining-address` input element exists in `index.html`. The "Mining section not found in DOM" log confirms the HTML section was never added.
+All 3 open issues from testing session 2 have been resolved in commit 7be161f (2026-02-16):
 
-2. **Reconfig mode string mismatch** — `stateManager.get('mode')` checks for `'reconfiguration'` in profile cards but wizard-refactored.js sets `'reconfigure'`. Prevents Modify/Remove buttons from appearing on installed profiles in reconfig mode (P2.1).
+1. ~~**Mining address input missing from DOM**~~ — **RESOLVED**: Added `#mining-config-section` to `index.html` with mining-address, stratum-port, min-share-diff, var-diff fields. Wired up collection/population in `configure.js`. Verified: solo-miner template shows mining section, validation passes, proceeds to Review.
 
-3. **Nodemon restart during install** — Writing `.env` during installation triggers nodemon file watcher restart, killing the backend mid-install. Only affects development mode (not production Docker deployment).
+2. ~~**Reconfig mode string mismatch**~~ — **RESOLVED**: Fixed 3 locations — `navigation.js:266`, `configure.js:2253-2254`, `configure.js:2509-2512`. Changed `stateManager.get('mode')` to `stateManager.get('wizardMode')` and `'reconfiguration'` to `'reconfigure'`. Verified: served JS files contain zero old bug strings.
+
+3. ~~**Nodemon restart during install**~~ — **RESOLVED**: Created `services/wizard/backend/nodemon.json` restricting watch to `src/` directory. Verified: nodemon output confirms `watching path(s): src/**/*`.
 
 ## Screenshots Captured
 
