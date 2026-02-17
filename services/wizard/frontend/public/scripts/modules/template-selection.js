@@ -521,6 +521,11 @@ class TemplateSelection {
         // Insert banner at the top of templates step
         const templateStep = document.getElementById('step-templates');
         if (templateStep) {
+            // Remove any existing banner to prevent duplicates on re-navigation
+            const existingBanner = templateStep.querySelector('.reconfiguration-mode-banner');
+            if (existingBanner) {
+                existingBanner.remove();
+            }
             // Insert after the step title/description
             const stepContent = templateStep.querySelector('.step-content') || templateStep;
             stepContent.insertBefore(banner, stepContent.firstChild);
