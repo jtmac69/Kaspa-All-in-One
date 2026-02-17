@@ -14,6 +14,7 @@
 @import './cards.css';
 @import './forms.css';
 @import './status.css';
+@import './theme-toggle.css';
 
 /* ============================================================================
    Additional Shared Components
@@ -591,79 +592,77 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .main-content,
-  .wizard-content {
-    background: var(--surface-dark);
-  }
-  
-  .page-header {
-    border-color: var(--border-light-dark);
-  }
-  
-  .page-title,
-  .section-title,
-  .step-title {
-    color: var(--text-primary-dark);
-  }
-  
-  .page-subtitle,
-  .step-description {
-    color: var(--text-secondary-dark);
-  }
-  
-  .step-actions {
-    border-color: var(--border-dark);
-  }
-  
-  .stat .label,
-  .status-item .label,
-  .sync-label {
-    color: var(--text-tertiary);
-  }
-  
-  .stat .value,
-  .status-item .value,
-  .sync-value {
-    color: var(--text-primary-dark);
-  }
-  
-  .stat-row .label {
-    color: var(--text-secondary-dark);
-  }
-  
-  .stat-row .value {
-    color: var(--text-primary-dark);
-  }
-  
-  .modal-content {
-    background: var(--surface-dark);
-  }
-  
-  .modal-content .close {
-    color: var(--text-tertiary);
-  }
-  
-  .modal-content .close:hover {
-    color: var(--text-primary-dark);
-  }
-  
-  .dashboard-footer {
-    background: var(--surface-dark);
-    border-color: var(--border-light-dark);
-  }
-  
-  .footer-text {
-    color: var(--text-secondary-dark);
-  }
-  
-  .footer-links a {
-    color: var(--text-tertiary);
-  }
-  
-  .footer-links a:hover {
-    color: var(--kaspa-light);
-  }
+[data-theme="dark"] .main-content,
+[data-theme="dark"] .wizard-content {
+  background: var(--surface-dark);
+}
+
+[data-theme="dark"] .page-header {
+  border-color: var(--border-light-dark);
+}
+
+[data-theme="dark"] .page-title,
+[data-theme="dark"] .section-title,
+[data-theme="dark"] .step-title {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .page-subtitle,
+[data-theme="dark"] .step-description {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .step-actions {
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .stat .label,
+[data-theme="dark"] .status-item .label,
+[data-theme="dark"] .sync-label {
+  color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .stat .value,
+[data-theme="dark"] .status-item .value,
+[data-theme="dark"] .sync-value {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .stat-row .label {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .stat-row .value {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .modal-content {
+  background: var(--surface-dark);
+}
+
+[data-theme="dark"] .modal-content .close {
+  color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .modal-content .close:hover {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .dashboard-footer {
+  background: var(--surface-dark);
+  border-color: var(--border-light-dark);
+}
+
+[data-theme="dark"] .footer-text {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .footer-links a {
+  color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .footer-links a:hover {
+  color: var(--kaspa-light);
 }
 
 /* Reduced Motion Support */

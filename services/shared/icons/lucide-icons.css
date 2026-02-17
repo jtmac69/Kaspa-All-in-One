@@ -292,15 +292,13 @@ button:disabled .lucide {
    Dark Mode Support
    ============================================================================ */
 
-@media (prefers-color-scheme: dark) {
-    .icon-tooltip::after {
-        background: var(--surface-elevated-dark, #2a2a2a);
-        color: var(--text-primary-dark, #e5e7eb);
-    }
-    
-    .icon-tooltip::before {
-        border-top-color: var(--surface-elevated-dark, #2a2a2a);
-    }
+[data-theme="dark"] .icon-tooltip::after {
+    background: var(--surface-elevated-dark, #2a2a2a);
+    color: var(--text-primary-dark, #e5e7eb);
+}
+
+[data-theme="dark"] .icon-tooltip::before {
+    border-top-color: var(--surface-elevated-dark, #2a2a2a);
 }
 
 /* ============================================================================

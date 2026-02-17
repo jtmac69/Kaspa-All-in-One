@@ -15,8 +15,20 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/icons/png/kaspa-icon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/icons/png/kaspa-icon-16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/icons/png/kaspa-icon-180.png">
-    
+
+    <!-- FOUC prevention: apply theme before stylesheets render -->
+    <script>
+    (function(){
+      var s=localStorage.getItem('kaspa-aio-theme');
+      var t=(s==='light'||s==='dark')?s:
+        (window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+      document.documentElement.setAttribute('data-theme',t);
+      document.documentElement.setAttribute('data-theme-preference',s||'system');
+    })();
+    </script>
+
     <!-- Styles -->
+    <link rel="stylesheet" href="/shared/styles/theme-toggle.css">
     <link rel="stylesheet" href="/styles/wizard.css">
     <link rel="stylesheet" href="/styles/error-display.css">
     <link rel="stylesheet" href="/styles/wallet.css">
@@ -74,6 +86,11 @@
                     <div class="step-label">Complete</div>
                 </div>
             </div>
+            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
+                <svg class="theme-icon theme-icon-light" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                <svg class="theme-icon theme-icon-dark" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <svg class="theme-icon theme-icon-system" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </button>
         </div>
 
         <!-- Test Release Banner -->

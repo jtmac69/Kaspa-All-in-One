@@ -272,27 +272,25 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-    .service-status-item {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.1);
-    }
-    
-    .service-status-item:hover {
-        border-color: var(--primary-color);
-        background: rgba(255, 255, 255, 0.08);
-    }
-    
-    .verification-status,
-    .verification-summary {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.1);
-    }
-    
-    .spinner-small {
-        border-color: rgba(255, 255, 255, 0.1);
-        border-top-color: var(--primary-color);
-    }
+[data-theme="dark"] .service-status-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .service-status-item:hover {
+    border-color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .verification-status,
+[data-theme="dark"] .verification-summary {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .spinner-small {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-top-color: var(--primary-color);
 }
 /* Dashboard Navigation Section */
 .dashboard-navigation {
@@ -474,19 +472,17 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-    .dashboard-option {
-        background: rgba(255, 255, 255, 0.03);
-        border-color: rgba(255, 255, 255, 0.1);
-    }
-    
-    .dashboard-option.primary-option {
-        background: rgba(112, 199, 186, 0.08);
-        border-color: rgba(112, 199, 186, 0.3);
-    }
-    
-    .dashboard-url-input {
-        background: rgba(0, 0, 0, 0.3);
-        border-color: rgba(255, 255, 255, 0.2);
-    }
+[data-theme="dark"] .dashboard-option {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .dashboard-option.primary-option {
+    background: rgba(112, 199, 186, 0.08);
+    border-color: rgba(112, 199, 186, 0.3);
+}
+
+[data-theme="dark"] .dashboard-url-input {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.2);
 }

@@ -196,36 +196,34 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .modal-overlay {
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
-  }
-  
-  .modal-content {
-    background: var(--surface-dark);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-  }
-  
-  .modal-header,
-  .modal-footer {
-    background: var(--surface-elevated-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .modal-close:hover {
-    background: var(--border-dark);
-    color: var(--text-primary-dark);
-  }
-  
-  .btn-secondary {
-    background: var(--surface-dark);
-    color: var(--text-primary-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .btn-secondary:hover:not(:disabled) {
-    background: var(--border-dark);
-    border-color: var(--kaspa-blue);
-  }
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] .modal-content {
+  background: var(--surface-dark);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer {
+  background: var(--surface-elevated-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .modal-close:hover {
+  background: var(--border-dark);
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .btn-secondary {
+  background: var(--surface-dark);
+  color: var(--text-primary-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .btn-secondary:hover:not(:disabled) {
+  background: var(--border-dark);
+  border-color: var(--kaspa-blue);
 }

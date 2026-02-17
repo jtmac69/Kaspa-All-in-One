@@ -690,50 +690,48 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .config-modification-modal .modal-header {
-    background: var(--gradient-primary);
-  }
-  
-  .profile-info-section {
-    background: var(--surface-elevated-dark);
-    border-bottom-color: var(--border-dark);
-  }
-  
-  .profile-status,
-  .service-status-item {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .config-diff,
-  .impact-summary {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .config-change {
-    border-bottom-color: var(--border-dark);
-  }
-  
-  .form-input,
-  .form-select {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-    color: var(--text-primary-dark);
-  }
-  
-  .form-tooltip {
-    background: var(--border-dark);
-  }
-  
-  .value-text {
-    background: var(--border-dark);
-    color: var(--text-primary-dark);
-  }
-  
-  .service-tag {
-    background: rgba(112, 199, 186, 0.2);
-    color: var(--kaspa-light);
-  }
+[data-theme="dark"] .config-modification-modal .modal-header {
+  background: var(--gradient-primary);
+}
+
+[data-theme="dark"] .profile-info-section {
+  background: var(--surface-elevated-dark);
+  border-bottom-color: var(--border-dark);
+}
+
+[data-theme="dark"] .profile-status,
+[data-theme="dark"] .service-status-item {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .config-diff,
+[data-theme="dark"] .impact-summary {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .config-change {
+  border-bottom-color: var(--border-dark);
+}
+
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .form-tooltip {
+  background: var(--border-dark);
+}
+
+[data-theme="dark"] .value-text {
+  background: var(--border-dark);
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .service-tag {
+  background: rgba(112, 199, 186, 0.2);
+  color: var(--kaspa-light);
 }

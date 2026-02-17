@@ -8,6 +8,7 @@ import { WebSocketManager } from './modules/websocket-manager.js';
 import { UIManager } from './modules/ui-manager.js';
 import { WizardNavigation } from './modules/wizard-navigation.js';
 import IconManager from './modules/icon-manager.js';
+import { themeManager } from '/shared/scripts/theme-manager.js';
 
 class Dashboard {
     constructor() {
@@ -26,6 +27,9 @@ class Dashboard {
      */
     async init() {
         console.log('Initializing Kaspa Dashboard...');
+
+        // Initialize theme manager
+        themeManager.init();
 
         // Initialize icon system first
         this.iconManager.init();

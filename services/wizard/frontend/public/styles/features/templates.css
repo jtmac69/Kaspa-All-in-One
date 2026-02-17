@@ -144,19 +144,17 @@
 }
 
 /* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .template-card.template-installed {
-        background: linear-gradient(135deg, rgba(126, 211, 33, 0.1) 0%, var(--surface-dark) 100%);
-    }
-    
-    .template-card.template-partial {
-        background: linear-gradient(135deg, rgba(245, 166, 35, 0.1) 0%, var(--surface-dark) 100%);
-    }
-    
-    .template-installed-warning {
-        background: rgba(245, 166, 35, 0.15);
-        border-color: var(--warning-light);
-    }
+[data-theme="dark"] .template-card.template-installed {
+    background: linear-gradient(135deg, rgba(126, 211, 33, 0.1) 0%, var(--surface-dark) 100%);
+}
+
+[data-theme="dark"] .template-card.template-partial {
+    background: linear-gradient(135deg, rgba(245, 166, 35, 0.1) 0%, var(--surface-dark) 100%);
+}
+
+[data-theme="dark"] .template-installed-warning {
+    background: rgba(245, 166, 35, 0.15);
+    border-color: var(--warning-light);
 }
 
 
@@ -321,18 +319,16 @@
 }
 
 /* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .reconfiguration-mode-banner {
-        background: linear-gradient(135deg, rgba(112, 199, 186, 0.15) 0%, rgba(70, 185, 234, 0.1) 100%);
-        border-color: rgba(112, 199, 186, 0.3);
-    }
-    
-    .reconfiguration-mode-banner .banner-stats,
-    .reconfiguration-mode-banner .banner-info {
-        background: rgba(255, 255, 255, 0.05);
-    }
-    
-    .reconfiguration-mode-banner .banner-info {
-        border-left-color: var(--kaspa-light);
-    }
+[data-theme="dark"] .reconfiguration-mode-banner {
+    background: linear-gradient(135deg, rgba(112, 199, 186, 0.15) 0%, rgba(70, 185, 234, 0.1) 100%);
+    border-color: rgba(112, 199, 186, 0.3);
+}
+
+[data-theme="dark"] .reconfiguration-mode-banner .banner-stats,
+[data-theme="dark"] .reconfiguration-mode-banner .banner-info {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .reconfiguration-mode-banner .banner-info {
+    border-left-color: var(--kaspa-light);
 }

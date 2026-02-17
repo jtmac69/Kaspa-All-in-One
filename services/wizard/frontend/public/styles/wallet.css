@@ -647,42 +647,40 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-    .wallet-setup-panel {
-        background: var(--surface-dark);
-        border-color: var(--border-dark);
-    }
+[data-theme="dark"] .wallet-setup-panel {
+    background: var(--surface-dark);
+    border-color: var(--border-dark);
+}
 
-    .wallet-mode-option {
-        background: var(--surface-dark);
-        border-color: var(--border-dark);
-    }
+[data-theme="dark"] .wallet-mode-option {
+    background: var(--surface-dark);
+    border-color: var(--border-dark);
+}
 
-    .wallet-mode-option.selected {
-        background: rgba(112, 199, 186, 0.1);
-    }
+[data-theme="dark"] .wallet-mode-option.selected {
+    background: rgba(112, 199, 186, 0.1);
+}
 
-    .mnemonic-display {
-        background: var(--surface-dark);
-        border-color: var(--border-dark);
-    }
+[data-theme="dark"] .mnemonic-display {
+    background: var(--surface-dark);
+    border-color: var(--border-dark);
+}
 
-    .mnemonic-input {
-        background: var(--surface-dark);
-        border-color: var(--border-dark);
-        color: var(--text-primary-dark);
-    }
+[data-theme="dark"] .mnemonic-input {
+    background: var(--surface-dark);
+    border-color: var(--border-dark);
+    color: var(--text-primary-dark);
+}
 
-    .manual-address-input {
-        background: var(--surface-dark);
-        border-color: var(--border-dark);
-        color: var(--text-primary-dark);
-    }
+[data-theme="dark"] .manual-address-input {
+    background: var(--surface-dark);
+    border-color: var(--border-dark);
+    color: var(--text-primary-dark);
+}
 
-    .wallet-backup-btn {
-        background: var(--surface-dark);
-        border-color: var(--border-dark);
-    }
+[data-theme="dark"] .wallet-backup-btn {
+    background: var(--surface-dark);
+    border-color: var(--border-dark);
 }
 
 /* Reduced Motion Support */

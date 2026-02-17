@@ -251,31 +251,29 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .error-message {
-    background: var(--card-background-dark, #2c3e50);
-    color: var(--text-primary-dark, #ecf0f1);
-  }
-  
-  .error-message.error-critical {
-    background: rgba(208, 2, 27, 0.15);
-  }
-  
-  .error-message.error-warning {
-    background: rgba(245, 166, 35, 0.15);
-  }
-  
-  .error-message.error-info {
-    background: rgba(112, 199, 186, 0.15);
-  }
-  
-  .error-troubleshooting {
-    background: rgba(112, 199, 186, 0.2);
-    border-color: rgba(112, 199, 186, 0.3);
-  }
-  
-  .service-placeholder {
-    background: var(--card-background-dark, #2c3e50);
-    border-color: var(--border-color-dark, #34495e);
-  }
+[data-theme="dark"] .error-message {
+  background: var(--card-background-dark, #2c3e50);
+  color: var(--text-primary-dark, #ecf0f1);
+}
+
+[data-theme="dark"] .error-message.error-critical {
+  background: rgba(208, 2, 27, 0.15);
+}
+
+[data-theme="dark"] .error-message.error-warning {
+  background: rgba(245, 166, 35, 0.15);
+}
+
+[data-theme="dark"] .error-message.error-info {
+  background: rgba(112, 199, 186, 0.15);
+}
+
+[data-theme="dark"] .error-troubleshooting {
+  background: rgba(112, 199, 186, 0.2);
+  border-color: rgba(112, 199, 186, 0.3);
+}
+
+[data-theme="dark"] .service-placeholder {
+  background: var(--card-background-dark, #2c3e50);
+  border-color: var(--border-color-dark, #34495e);
 }

@@ -1973,122 +1973,121 @@ main {
    Dark Mode Support - Following Wizard's Dark Mode Implementation
    ============================================================================ */
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        /* Override neutral colors for dark mode with WCAG AA compliant contrast ratios */
-        --background: var(--background-dark);
-        --surface: var(--surface-dark);
-        --surface-elevated: var(--surface-elevated-dark);
-        --text-primary: var(--text-primary-dark);
-        --text-secondary: var(--text-secondary-dark);
-        --text-tertiary: var(--text-tertiary-dark);
-        --border: var(--border-dark);
-        --border-light: var(--border-light-dark);
-        
-        /* Enhanced gradients for dark mode */
-        --gradient-background: linear-gradient(180deg, #0F0F0F 0%, #1A1A1A 100%);
-        --gradient-primary: linear-gradient(135deg, var(--kaspa-blue) 0%, var(--kaspa-purple) 100%);
-        --gradient-secondary: linear-gradient(135deg, var(--kaspa-dark) 0%, var(--kaspa-blue) 100%);
-        
-        /* Adjust Kaspa colors for better dark mode contrast */
-        --kaspa-pale: rgba(112, 199, 186, 0.15);
-        
-        /* Enhanced shadows for dark mode depth */
-        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 4px 8px rgba(112, 199, 186, 0.2);
-        --shadow-lg: 0 8px 16px rgba(112, 199, 186, 0.25);
-        --shadow-xl: 0 12px 24px rgba(112, 199, 186, 0.3);
-        --shadow-kaspa: 0 4px 16px rgba(112, 199, 186, 0.4);
-    }
-    
-    /* Body background for dark mode */
-    body {
-        background: var(--gradient-background);
-    }
-    
-    /* Enhanced cards for dark mode */
-    .card,
-    .service-card,
-    .resource-card {
-        background: var(--surface-elevated);
-        border-color: var(--border);
-        box-shadow: var(--shadow-md);
-    }
-    
-    .card:hover,
-    .service-card:hover,
-    .resource-card:hover {
-        box-shadow: var(--shadow-kaspa);
-        border-color: var(--kaspa-blue);
-    }
-    
-    /* Enhanced buttons for dark mode */
-    .btn-wizard-nav,
-    .btn-reconfigure,
-    .btn-icon {
-        box-shadow: 0 4px 12px rgba(112, 199, 186, 0.3);
-    }
-    
-    .btn-wizard-nav:hover,
-    .btn-reconfigure:hover:not(:disabled),
-    .btn-icon:hover:not(:disabled) {
-        box-shadow: 0 6px 16px rgba(112, 199, 186, 0.4);
-    }
-    
-    /* Enhanced status indicators for dark mode */
-    .stat,
-    .status-item,
-    .sync-status-container {
-        background: rgba(112, 199, 186, 0.08);
-        border-color: rgba(112, 199, 186, 0.3);
-    }
-    
-    /* Progress bars for dark mode */
-    .progress-bar {
-        background: var(--border);
-    }
-    
-    /* Form elements for dark mode */
-    .profile-selector,
-    .monitoring-indicator {
-        background: var(--surface-elevated);
-        border-color: var(--border);
-        color: var(--text-primary);
-    }
-    
-    .profile-selector:hover,
-    .monitoring-indicator:hover {
-        border-color: var(--kaspa-blue);
-        background: rgba(112, 199, 186, 0.08);
-    }
-    
-    /* System status for dark mode */
-    .system-status {
-        background: var(--surface-elevated);
-        border-color: var(--border);
-    }
-    
-    /* Notification enhancements for dark mode */
-    .notification {
-        background: var(--surface-elevated);
-        box-shadow: var(--shadow-xl);
-    }
-    
-    .notification.info {
-        background: rgba(112, 199, 186, 0.08);
-    }
-    
-    .notification.success {
-        background: rgba(126, 211, 33, 0.08);
-    }
-    
-    .notification.warning {
-        background: rgba(245, 166, 35, 0.08);
-    }
-    
-    .notification.error {
-        background: rgba(208, 2, 27, 0.08);
-    }
+/* Dark mode via data-theme attribute */
+[data-theme="dark"] {
+    /* Override neutral colors for dark mode with WCAG AA compliant contrast ratios */
+    --background: var(--background-dark);
+    --surface: var(--surface-dark);
+    --surface-elevated: var(--surface-elevated-dark);
+    --text-primary: var(--text-primary-dark);
+    --text-secondary: var(--text-secondary-dark);
+    --text-tertiary: var(--text-tertiary-dark);
+    --border: var(--border-dark);
+    --border-light: var(--border-light-dark);
+
+    /* Enhanced gradients for dark mode */
+    --gradient-background: linear-gradient(180deg, #0F0F0F 0%, #1A1A1A 100%);
+    --gradient-primary: linear-gradient(135deg, var(--kaspa-blue) 0%, var(--kaspa-purple) 100%);
+    --gradient-secondary: linear-gradient(135deg, var(--kaspa-dark) 0%, var(--kaspa-blue) 100%);
+
+    /* Adjust Kaspa colors for better dark mode contrast */
+    --kaspa-pale: rgba(112, 199, 186, 0.15);
+
+    /* Enhanced shadows for dark mode depth */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 8px rgba(112, 199, 186, 0.2);
+    --shadow-lg: 0 8px 16px rgba(112, 199, 186, 0.25);
+    --shadow-xl: 0 12px 24px rgba(112, 199, 186, 0.3);
+    --shadow-kaspa: 0 4px 16px rgba(112, 199, 186, 0.4);
+}
+
+/* Body background for dark mode */
+[data-theme="dark"] body {
+    background: var(--gradient-background);
+}
+
+/* Enhanced cards for dark mode */
+[data-theme="dark"] .card,
+[data-theme="dark"] .service-card,
+[data-theme="dark"] .resource-card {
+    background: var(--surface-elevated);
+    border-color: var(--border);
+    box-shadow: var(--shadow-md);
+}
+
+[data-theme="dark"] .card:hover,
+[data-theme="dark"] .service-card:hover,
+[data-theme="dark"] .resource-card:hover {
+    box-shadow: var(--shadow-kaspa);
+    border-color: var(--kaspa-blue);
+}
+
+/* Enhanced buttons for dark mode */
+[data-theme="dark"] .btn-wizard-nav,
+[data-theme="dark"] .btn-reconfigure,
+[data-theme="dark"] .btn-icon {
+    box-shadow: 0 4px 12px rgba(112, 199, 186, 0.3);
+}
+
+[data-theme="dark"] .btn-wizard-nav:hover,
+[data-theme="dark"] .btn-reconfigure:hover:not(:disabled),
+[data-theme="dark"] .btn-icon:hover:not(:disabled) {
+    box-shadow: 0 6px 16px rgba(112, 199, 186, 0.4);
+}
+
+/* Enhanced status indicators for dark mode */
+[data-theme="dark"] .stat,
+[data-theme="dark"] .status-item,
+[data-theme="dark"] .sync-status-container {
+    background: rgba(112, 199, 186, 0.08);
+    border-color: rgba(112, 199, 186, 0.3);
+}
+
+/* Progress bars for dark mode */
+[data-theme="dark"] .progress-bar {
+    background: var(--border);
+}
+
+/* Form elements for dark mode */
+[data-theme="dark"] .profile-selector,
+[data-theme="dark"] .monitoring-indicator {
+    background: var(--surface-elevated);
+    border-color: var(--border);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .profile-selector:hover,
+[data-theme="dark"] .monitoring-indicator:hover {
+    border-color: var(--kaspa-blue);
+    background: rgba(112, 199, 186, 0.08);
+}
+
+/* System status for dark mode */
+[data-theme="dark"] .system-status {
+    background: var(--surface-elevated);
+    border-color: var(--border);
+}
+
+/* Notification enhancements for dark mode */
+[data-theme="dark"] .notification {
+    background: var(--surface-elevated);
+    box-shadow: var(--shadow-xl);
+}
+
+[data-theme="dark"] .notification.info {
+    background: rgba(112, 199, 186, 0.08);
+}
+
+[data-theme="dark"] .notification.success {
+    background: rgba(126, 211, 33, 0.08);
+}
+
+[data-theme="dark"] .notification.warning {
+    background: rgba(245, 166, 35, 0.08);
+}
+
+[data-theme="dark"] .notification.error {
+    background: rgba(208, 2, 27, 0.08);
 }
 
 /**

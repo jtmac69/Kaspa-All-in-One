@@ -1,0 +1,67 @@
+/* ============================================================================
+   Theme Toggle Button
+   Shared between Wizard and Dashboard
+   ============================================================================ */
+
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border, #e0e0e0);
+    background: var(--surface-elevated, #fff);
+    color: var(--text-secondary, #6b7280);
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+    border-color: var(--kaspa-blue, #49eacb);
+    box-shadow: 0 0 0 2px rgba(73, 234, 203, 0.2);
+}
+
+.theme-toggle:focus-visible {
+    outline: 2px solid var(--kaspa-blue, #49eacb);
+    outline-offset: 2px;
+}
+
+/* Icon visibility controlled by data-theme-preference on <html> */
+.theme-icon { display: none; }
+
+/* System mode (default) */
+[data-theme-preference="system"] .theme-icon-system { display: inline; }
+
+/* Light mode */
+[data-theme-preference="light"] .theme-icon-light { display: inline; }
+
+/* Dark mode */
+[data-theme-preference="dark"] .theme-icon-dark { display: inline; }
+
+/* Dark theme variant */
+[data-theme="dark"] .theme-toggle {
+    background: var(--surface-elevated-dark, #1e293b);
+    border-color: var(--border-dark, #334155);
+    color: var(--text-secondary-dark, #9ca3af);
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+    border-color: var(--kaspa-blue, #49eacb);
+}
+
+/* Wizard-specific positioning — inside .wizard-progress */
+.wizard-progress {
+    position: relative;
+}
+
+.wizard-progress > .theme-toggle {
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    z-index: 10;
+}
+
+/* Dashboard-specific — sits in header-controls flow, no special positioning needed */

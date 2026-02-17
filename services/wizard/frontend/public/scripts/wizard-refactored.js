@@ -36,6 +36,7 @@ import {
     completeOperation
 } from './modules/reconfiguration-navigation.js';
 import { customSetup } from './modules/custom-setup.js';
+import { themeManager } from '/shared/scripts/theme-manager.js';
 
 // Initialize WebSocket
 const wsManager = new WebSocketManager();
@@ -45,13 +46,18 @@ const wsManager = new WebSocketManager();
  */
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Kaspa Installation Wizard initialized (Refactored)');
-    
+
+    // Initialize theme manager (toggle button, OS change listener)
+    themeManager.init();
+
     // Clear old localStorage if version changed
     const WIZARD_VERSION = '3'; // Increment this when making breaking changes
     const storedVersion = localStorage.getItem('wizardVersion');
     if (storedVersion !== WIZARD_VERSION) {
         console.log('Wizard version changed, clearing old state');
+        const themePreference = localStorage.getItem('kaspa-aio-theme');
         localStorage.clear();
+        if (themePreference) localStorage.setItem('kaspa-aio-theme', themePreference);
         localStorage.setItem('wizardVersion', WIZARD_VERSION);
     }
     

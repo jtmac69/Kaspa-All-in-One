@@ -578,61 +578,59 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .connection-status,
-  .health-status {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .connection-status.connected {
-    background: rgba(126, 211, 33, 0.1);
-  }
-  
-  .connection-status.connecting {
-    background: rgba(245, 166, 35, 0.1);
-  }
-  
-  .connection-status.disconnected {
-    background: rgba(208, 2, 27, 0.1);
-  }
-  
-  .health-status.healthy {
-    background: rgba(126, 211, 33, 0.1);
-  }
-  
-  .health-status.unhealthy {
-    background: rgba(208, 2, 27, 0.1);
-  }
-  
-  .health-status.checking {
-    background: rgba(112, 199, 186, 0.1);
-  }
-  
-  .progress-bar {
-    background: var(--border-dark);
-  }
-  
-  .loading-spinner {
-    border-color: var(--border-dark);
-    border-top-color: var(--kaspa-light);
-  }
-  
-  .loading-indicator {
-    color: var(--text-secondary-dark);
-  }
-  
-  .status-list-item {
-    border-color: var(--border-light-dark);
-  }
-  
-  .status-list-item-label {
-    color: var(--text-primary-dark);
-  }
-  
-  .status-list-item-value {
-    color: var(--text-secondary-dark);
-  }
+[data-theme="dark"] .connection-status,
+[data-theme="dark"] .health-status {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .connection-status.connected {
+  background: rgba(126, 211, 33, 0.1);
+}
+
+[data-theme="dark"] .connection-status.connecting {
+  background: rgba(245, 166, 35, 0.1);
+}
+
+[data-theme="dark"] .connection-status.disconnected {
+  background: rgba(208, 2, 27, 0.1);
+}
+
+[data-theme="dark"] .health-status.healthy {
+  background: rgba(126, 211, 33, 0.1);
+}
+
+[data-theme="dark"] .health-status.unhealthy {
+  background: rgba(208, 2, 27, 0.1);
+}
+
+[data-theme="dark"] .health-status.checking {
+  background: rgba(112, 199, 186, 0.1);
+}
+
+[data-theme="dark"] .progress-bar {
+  background: var(--border-dark);
+}
+
+[data-theme="dark"] .loading-spinner {
+  border-color: var(--border-dark);
+  border-top-color: var(--kaspa-light);
+}
+
+[data-theme="dark"] .loading-indicator {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .status-list-item {
+  border-color: var(--border-light-dark);
+}
+
+[data-theme="dark"] .status-list-item-label {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .status-list-item-value {
+  color: var(--text-secondary-dark);
 }
 
 /* Reduced Motion Support */

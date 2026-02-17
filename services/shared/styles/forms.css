@@ -727,98 +727,96 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .form-section {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .form-label,
-  .toggle-label,
-  .form-checkbox,
-  .form-radio {
-    color: var(--text-primary-dark);
-  }
-  
-  .form-help,
-  .field-info-message {
-    color: var(--text-secondary-dark);
-  }
-  
-  .form-input,
-  .form-select,
-  .form-textarea {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-    color: var(--text-primary-dark);
-  }
-  
-  .form-input:disabled,
-  .form-select:disabled,
-  .form-textarea:disabled {
-    background: var(--border-dark);
-    color: var(--text-disabled);
-  }
-  
-  .form-input::placeholder,
-  .form-textarea::placeholder {
-    color: var(--text-tertiary);
-  }
-  
-  .toggle-switch {
-    background: var(--border-dark);
-  }
-  
-  .toggle-input:disabled + .toggle-label .toggle-switch {
-    background: var(--border-light-dark);
-  }
-  
-  .checkbox-input,
-  .radio-input {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .input-group-append,
-  .input-group-prepend {
-    background: var(--border-dark);
-    border-color: var(--border-dark);
-    color: var(--text-secondary-dark);
-  }
-  
-  .password-toggle-btn {
-    color: var(--text-tertiary);
-  }
-  
-  .password-toggle-btn:hover {
-    color: var(--text-primary-dark);
-  }
-  
-  .file-upload-label {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-    color: var(--text-secondary-dark);
-  }
-  
-  .file-upload-icon {
-    color: var(--text-tertiary);
-  }
-  
-  .form-validation-summary {
-    background: rgba(208, 2, 27, 0.1);
-  }
-  
-  .form-actions {
-    border-color: var(--border-light-dark);
-  }
-  
-  .search-icon {
-    color: var(--text-tertiary);
-  }
-  
-  .form-range {
-    background: var(--border-dark);
-  }
+[data-theme="dark"] .form-section {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .form-label,
+[data-theme="dark"] .toggle-label,
+[data-theme="dark"] .form-checkbox,
+[data-theme="dark"] .form-radio {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .form-help,
+[data-theme="dark"] .field-info-message {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .form-textarea {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .form-input:disabled,
+[data-theme="dark"] .form-select:disabled,
+[data-theme="dark"] .form-textarea:disabled {
+  background: var(--border-dark);
+  color: var(--text-disabled);
+}
+
+[data-theme="dark"] .form-input::placeholder,
+[data-theme="dark"] .form-textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .toggle-switch {
+  background: var(--border-dark);
+}
+
+[data-theme="dark"] .toggle-input:disabled + .toggle-label .toggle-switch {
+  background: var(--border-light-dark);
+}
+
+[data-theme="dark"] .checkbox-input,
+[data-theme="dark"] .radio-input {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .input-group-append,
+[data-theme="dark"] .input-group-prepend {
+  background: var(--border-dark);
+  border-color: var(--border-dark);
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .password-toggle-btn {
+  color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .password-toggle-btn:hover {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .file-upload-label {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .file-upload-icon {
+  color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .form-validation-summary {
+  background: rgba(208, 2, 27, 0.1);
+}
+
+[data-theme="dark"] .form-actions {
+  border-color: var(--border-light-dark);
+}
+
+[data-theme="dark"] .search-icon {
+  color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .form-range {
+  background: var(--border-dark);
 }
 
 /* Reduced Motion Support */

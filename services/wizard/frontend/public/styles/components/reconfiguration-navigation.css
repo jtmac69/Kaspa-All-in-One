@@ -633,21 +633,19 @@
    Dark Mode Support (Future Enhancement)
    ============================================================================ */
 
-@media (prefers-color-scheme: dark) {
-  .tooltip-content {
-    background: var(--surface-elevated);
-    color: var(--text-primary);
-    border: 1px solid var(--border);
-  }
-  
-  .tooltip-content::after {
-    border-top-color: var(--surface-elevated);
-  }
-  
-  .tooltip-container.tooltip-bottom .tooltip-content::after {
-    border-top-color: transparent;
-    border-bottom-color: var(--surface-elevated);
-  }
+[data-theme="dark"] .tooltip-content {
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+[data-theme="dark"] .tooltip-content::after {
+  border-top-color: var(--surface-elevated);
+}
+
+[data-theme="dark"] .tooltip-container.tooltip-bottom .tooltip-content::after {
+  border-top-color: transparent;
+  border-bottom-color: var(--surface-elevated);
 }
 
 /* ============================================================================

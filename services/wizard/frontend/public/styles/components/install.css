@@ -346,105 +346,103 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .progress-bar {
-    background: var(--border-dark);
-  }
-  
-  .progress-percentage {
-    color: var(--text-primary-dark);
-  }
-  
-  .install-status {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .status-title {
-    color: var(--text-primary-dark);
-  }
-  
-  .status-message {
-    color: var(--text-secondary-dark);
-  }
-  
-  .install-step {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .install-step.active {
-    background: rgba(112, 199, 186, 0.1);
-  }
-  
-  .install-step-title {
-    color: var(--text-primary-dark);
-  }
-  
-  .install-step-status {
-    color: var(--text-secondary-dark);
-  }
-  
-  .install-logs {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .logs-header {
-    background: var(--background-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .logs-title {
-    color: var(--text-primary-dark);
-  }
-  
-  .logs-text {
-    background: var(--surface-dark);
-    color: var(--text-secondary-dark);
-  }
-  
-  .service-progress-container,
-  .install-stats-container {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .service-progress-item.active {
-    background: rgba(112, 199, 186, 0.1);
-  }
-  
-  .service-progress-name {
-    color: var(--text-primary-dark);
-  }
-  
-  .service-progress-status {
-    color: var(--text-secondary-dark);
-  }
-  
-  .service-progress-bar-mini {
-    background: var(--border-dark);
-  }
-  
-  .stat-label {
-    color: var(--text-secondary-dark);
-  }
-  
-  .stat-value {
-    color: var(--text-primary-dark);
-  }
-  
-  #install-time-estimate {
-    background: rgba(112, 199, 186, 0.1);
-    color: var(--text-secondary-dark);
-  }
-  
-  .spinner,
-  .spinner-small,
-  .spinner-tiny {
-    border-color: var(--border-dark);
-    border-top-color: var(--kaspa-blue);
-  }
+[data-theme="dark"] .progress-bar {
+  background: var(--border-dark);
+}
+
+[data-theme="dark"] .progress-percentage {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .install-status {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .status-title {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .status-message {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .install-step {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .install-step.active {
+  background: rgba(112, 199, 186, 0.1);
+}
+
+[data-theme="dark"] .install-step-title {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .install-step-status {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .install-logs {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .logs-header {
+  background: var(--background-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .logs-title {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .logs-text {
+  background: var(--surface-dark);
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .service-progress-container,
+[data-theme="dark"] .install-stats-container {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .service-progress-item.active {
+  background: rgba(112, 199, 186, 0.1);
+}
+
+[data-theme="dark"] .service-progress-name {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .service-progress-status {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .service-progress-bar-mini {
+  background: var(--border-dark);
+}
+
+[data-theme="dark"] .stat-label {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .stat-value {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] #install-time-estimate {
+  background: rgba(112, 199, 186, 0.1);
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .spinner,
+[data-theme="dark"] .spinner-small,
+[data-theme="dark"] .spinner-tiny {
+  border-color: var(--border-dark);
+  border-top-color: var(--kaspa-blue);
 }
 
 /* Error panel */

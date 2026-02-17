@@ -669,10 +669,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Dark mode adjustments for test release banner */
-@media (prefers-color-scheme: dark) {
-  .test-release-banner {
-    box-shadow: 0 2px 8px rgba(255, 165, 0, 0.4);
-  }
+[data-theme="dark"] .test-release-banner {
+  box-shadow: 0 2px 8px rgba(255, 165, 0, 0.4);
 }
 
 /* Responsive adjustments for test release banner */
@@ -3501,139 +3499,137 @@ h1, h2, h3, h4, h5, h6 {
    Dark Mode Support
    ============================================================================ */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Override neutral colors for dark mode with WCAG AA compliant contrast ratios */
-    --background: var(--background-dark);
-    --surface: var(--surface-dark);
-    --surface-elevated: var(--surface-elevated-dark);
-    --text-primary: var(--text-primary-dark);
-    --text-secondary: var(--text-secondary-dark);
-    --text-tertiary: var(--text-tertiary-dark);
-    --border: var(--border-dark);
-    --border-light: var(--border-light-dark);
-    
-    /* Enhanced gradients for dark mode */
-    --gradient-background: linear-gradient(180deg, #0F0F0F 0%, #1A1A1A 100%);
-    --gradient-primary: linear-gradient(135deg, var(--kaspa-blue) 0%, var(--kaspa-purple) 100%);
-    --gradient-secondary: linear-gradient(135deg, var(--kaspa-dark) 0%, var(--kaspa-blue) 100%);
-    
-    /* Adjust Kaspa colors for better dark mode contrast */
-    --kaspa-pale: rgba(112, 199, 186, 0.15);
-  }
-  
-  /* Enhanced logo switching for dark mode */
-  .hero-logo,
-  .wizard-logo {
-    content: url('/assets/brand/logos/svg/kaspa-logo-dark.svg');
-    filter: brightness(1.1);
-  }
-  
-  .footer-logo-img,
-  .brand-icon {
-    content: url('/assets/brand/icons/svg/kaspa-icon-dark.svg');
-    filter: brightness(1.1);
-  }
-  
-  /* Navbar logo switching */
-  .navbar-logo {
-    content: url('/assets/brand/logos/svg/kaspa-logo-dark.svg');
-  }
-  
-  /* Enhanced shadows for dark mode depth */
-  .wizard-progress,
-  .wizard-content,
-  .wizard-footer {
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  }
-  
-  .profile-card {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  }
-  
-  .profile-card:hover {
-    box-shadow: 0 12px 32px rgba(112, 199, 186, 0.4);
-  }
-  
-  .completion-section {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  }
-  
-  .completion-section:hover {
-    box-shadow: 0 8px 24px rgba(112, 199, 186, 0.3);
-  }
-  
-  /* Enhanced borders for better dark mode visibility */
-  .check-item,
-  .profile-card,
-  .form-input,
-  .form-textarea {
-    border-color: var(--border-dark);
-  }
-  
-  /* Service tags with better contrast */
-  .service-tag {
-    background: var(--surface-elevated-dark);
-    color: var(--text-secondary-dark);
-    border: 1px solid var(--border-dark);
-  }
-  
-  /* Progress elements for dark mode */
-  .progress-line {
-    background: var(--border-dark);
-  }
-  
-  .progress-bar {
-    background: var(--kaspa-blue);
-    box-shadow: 0 0 8px rgba(112, 199, 186, 0.4);
-  }
-  
-  /* Button enhancements for dark mode */
-  .btn-primary {
-    box-shadow: 0 4px 12px rgba(112, 199, 186, 0.3);
-  }
-  
-  .btn-primary:hover {
-    box-shadow: 0 6px 16px rgba(112, 199, 186, 0.4);
-  }
-  
-  .btn-secondary {
-    background: var(--surface-elevated-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .btn-secondary:hover {
-    background: var(--kaspa-pale);
-    border-color: var(--kaspa-blue);
-  }
-  
-  /* Form elements with better dark mode styling */
-  .form-input:focus,
-  .form-textarea:focus {
-    box-shadow: 0 0 0 3px rgba(112, 199, 186, 0.2);
-  }
-  
-  /* Modal and overlay adjustments */
-  .modal-overlay {
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
-  }
-  
-  .modal-content {
-    background: var(--surface-dark);
-    border: 1px solid var(--border-dark);
-  }
-  
-  /* Link cards with enhanced dark mode styling */
-  .link-card {
-    background: var(--surface-elevated-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .link-card:hover {
-    background: var(--surface-dark);
-    box-shadow: 0 8px 24px rgba(112, 199, 186, 0.2);
-  }
+[data-theme="dark"] {
+  /* Override neutral colors for dark mode with WCAG AA compliant contrast ratios */
+  --background: var(--background-dark);
+  --surface: var(--surface-dark);
+  --surface-elevated: var(--surface-elevated-dark);
+  --text-primary: var(--text-primary-dark);
+  --text-secondary: var(--text-secondary-dark);
+  --text-tertiary: var(--text-tertiary-dark);
+  --border: var(--border-dark);
+  --border-light: var(--border-light-dark);
+
+  /* Enhanced gradients for dark mode */
+  --gradient-background: linear-gradient(180deg, #0F0F0F 0%, #1A1A1A 100%);
+  --gradient-primary: linear-gradient(135deg, var(--kaspa-blue) 0%, var(--kaspa-purple) 100%);
+  --gradient-secondary: linear-gradient(135deg, var(--kaspa-dark) 0%, var(--kaspa-blue) 100%);
+
+  /* Adjust Kaspa colors for better dark mode contrast */
+  --kaspa-pale: rgba(112, 199, 186, 0.15);
+}
+
+/* Enhanced logo switching for dark mode */
+[data-theme="dark"] .hero-logo,
+[data-theme="dark"] .wizard-logo {
+  content: url('/assets/brand/logos/svg/kaspa-logo-dark.svg');
+  filter: brightness(1.1);
+}
+
+[data-theme="dark"] .footer-logo-img,
+[data-theme="dark"] .brand-icon {
+  content: url('/assets/brand/icons/svg/kaspa-icon-dark.svg');
+  filter: brightness(1.1);
+}
+
+/* Navbar logo switching */
+[data-theme="dark"] .navbar-logo {
+  content: url('/assets/brand/logos/svg/kaspa-logo-dark.svg');
+}
+
+/* Enhanced shadows for dark mode depth */
+[data-theme="dark"] .wizard-progress,
+[data-theme="dark"] .wizard-content,
+[data-theme="dark"] .wizard-footer {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .profile-card {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .profile-card:hover {
+  box-shadow: 0 12px 32px rgba(112, 199, 186, 0.4);
+}
+
+[data-theme="dark"] .completion-section {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .completion-section:hover {
+  box-shadow: 0 8px 24px rgba(112, 199, 186, 0.3);
+}
+
+/* Enhanced borders for better dark mode visibility */
+[data-theme="dark"] .check-item,
+[data-theme="dark"] .profile-card,
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-textarea {
+  border-color: var(--border-dark);
+}
+
+/* Service tags with better contrast */
+[data-theme="dark"] .service-tag {
+  background: var(--surface-elevated-dark);
+  color: var(--text-secondary-dark);
+  border: 1px solid var(--border-dark);
+}
+
+/* Progress elements for dark mode */
+[data-theme="dark"] .progress-line {
+  background: var(--border-dark);
+}
+
+[data-theme="dark"] .progress-bar {
+  background: var(--kaspa-blue);
+  box-shadow: 0 0 8px rgba(112, 199, 186, 0.4);
+}
+
+/* Button enhancements for dark mode */
+[data-theme="dark"] .btn-primary {
+  box-shadow: 0 4px 12px rgba(112, 199, 186, 0.3);
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  box-shadow: 0 6px 16px rgba(112, 199, 186, 0.4);
+}
+
+[data-theme="dark"] .btn-secondary {
+  background: var(--surface-elevated-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  background: var(--kaspa-pale);
+  border-color: var(--kaspa-blue);
+}
+
+/* Form elements with better dark mode styling */
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] .form-textarea:focus {
+  box-shadow: 0 0 0 3px rgba(112, 199, 186, 0.2);
+}
+
+/* Modal and overlay adjustments */
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] .modal-content {
+  background: var(--surface-dark);
+  border: 1px solid var(--border-dark);
+}
+
+/* Link cards with enhanced dark mode styling */
+[data-theme="dark"] .link-card {
+  background: var(--surface-elevated-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .link-card:hover {
+  background: var(--surface-dark);
+  box-shadow: 0 8px 24px rgba(112, 199, 186, 0.2);
 }
 
 /* ============================================================================
@@ -4325,26 +4321,24 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Dark Mode Adjustments for Checklist */
-@media (prefers-color-scheme: dark) {
-  .checklist-help {
-    background: var(--surface-elevated-dark);
-  }
-  
-  .requirement-item {
-    background: var(--surface-elevated-dark);
-  }
-  
-  .quiz-option {
-    background: var(--surface-elevated-dark);
-  }
-  
-  .quiz-option:hover {
-    background: rgba(112, 199, 186, 0.1);
-  }
-  
-  .estimate-card {
-    background: var(--surface-elevated-dark);
-  }
+[data-theme="dark"] .checklist-help {
+  background: var(--surface-elevated-dark);
+}
+
+[data-theme="dark"] .requirement-item {
+  background: var(--surface-elevated-dark);
+}
+
+[data-theme="dark"] .quiz-option {
+  background: var(--surface-elevated-dark);
+}
+
+[data-theme="dark"] .quiz-option:hover {
+  background: rgba(112, 199, 186, 0.1);
+}
+
+[data-theme="dark"] .estimate-card {
+  background: var(--surface-elevated-dark);
 }
 
 
@@ -4737,38 +4731,36 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Dark Mode Adjustments for Modal */
-@media (prefers-color-scheme: dark) {
-  .modal-overlay {
-    background: rgba(0, 0, 0, 0.7);
-  }
-  
-  .guide-note {
-    background: rgba(112, 199, 186, 0.15);
-  }
-  
-  .guide-step {
-    background: var(--surface-elevated-dark);
-  }
-  
-  .step-command {
-    background: var(--background-dark);
-  }
-  
-  .troubleshooting-item {
-    background: var(--surface-elevated-dark);
-  }
-  
-  .why-explanation {
-    background: rgba(112, 199, 186, 0.1);
-  }
-  
-  .links-list li a {
-    background: var(--surface-elevated-dark);
-  }
-  
-  .links-list li a:hover {
-    background: rgba(112, 199, 186, 0.1);
-  }
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .guide-note {
+  background: rgba(112, 199, 186, 0.15);
+}
+
+[data-theme="dark"] .guide-step {
+  background: var(--surface-elevated-dark);
+}
+
+[data-theme="dark"] .step-command {
+  background: var(--background-dark);
+}
+
+[data-theme="dark"] .troubleshooting-item {
+  background: var(--surface-elevated-dark);
+}
+
+[data-theme="dark"] .why-explanation {
+  background: rgba(112, 199, 186, 0.1);
+}
+
+[data-theme="dark"] .links-list li a {
+  background: var(--surface-elevated-dark);
+}
+
+[data-theme="dark"] .links-list li a:hover {
+  background: rgba(112, 199, 186, 0.1);
 }
 
 /* Responsive Modal */
@@ -4975,34 +4967,32 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Dark Mode Adjustments for Remediation */
-@media (prefers-color-scheme: dark) {
-  .error-info {
-    background: var(--surface-elevated-dark);
-  }
-  
-  .error-message {
-    background: rgba(208, 2, 27, 0.1);
-  }
-  
-  .suggestion-card {
-    background: var(--surface-elevated-dark);
-  }
-  
-  .suggestion-card.priority-high {
-    background: rgba(245, 166, 35, 0.1);
-  }
-  
-  .suggestion-card.priority-critical {
-    background: rgba(208, 2, 27, 0.1);
-  }
-  
-  .suggestion-command {
-    background: var(--background-dark);
-  }
-  
-  .suggestion-warning {
-    background: rgba(245, 166, 35, 0.15);
-  }
+[data-theme="dark"] .error-info {
+  background: var(--surface-elevated-dark);
+}
+
+[data-theme="dark"] .error-message {
+  background: rgba(208, 2, 27, 0.1);
+}
+
+[data-theme="dark"] .suggestion-card {
+  background: var(--surface-elevated-dark);
+}
+
+[data-theme="dark"] .suggestion-card.priority-high {
+  background: rgba(245, 166, 35, 0.1);
+}
+
+[data-theme="dark"] .suggestion-card.priority-critical {
+  background: rgba(208, 2, 27, 0.1);
+}
+
+[data-theme="dark"] .suggestion-command {
+  background: var(--background-dark);
+}
+
+[data-theme="dark"] .suggestion-warning {
+  background: rgba(245, 166, 35, 0.15);
 }
 
 /* Responsive Remediation Modal */
@@ -6096,35 +6086,33 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Dark Mode Adjustments */
-@media (prefers-color-scheme: dark) {
-  .confirmation-details,
-  .confirmation-checkbox {
-    background: rgba(255, 255, 255, 0.05);
-  }
+[data-theme="dark"] .confirmation-details,
+[data-theme="dark"] .confirmation-checkbox {
+  background: rgba(255, 255, 255, 0.05);
+}
 
-  .confirmation-consequences {
-    background: rgba(255, 193, 7, 0.15);
-  }
+[data-theme="dark"] .confirmation-consequences {
+  background: rgba(255, 193, 7, 0.15);
+}
 
-  .confirmation-recommendations {
-    background: rgba(23, 162, 184, 0.15);
-  }
+[data-theme="dark"] .confirmation-recommendations {
+  background: rgba(23, 162, 184, 0.15);
+}
 
-  .resource-warning.low {
-    background: rgba(23, 162, 184, 0.15);
-  }
+[data-theme="dark"] .resource-warning.low {
+  background: rgba(23, 162, 184, 0.15);
+}
 
-  .resource-warning.medium {
-    background: rgba(255, 193, 7, 0.15);
-  }
+[data-theme="dark"] .resource-warning.medium {
+  background: rgba(255, 193, 7, 0.15);
+}
 
-  .resource-warning.high {
-    background: rgba(255, 107, 107, 0.15);
-  }
+[data-theme="dark"] .resource-warning.high {
+  background: rgba(255, 107, 107, 0.15);
+}
 
-  .resource-warning.critical {
-    background: rgba(220, 53, 69, 0.15);
-  }
+[data-theme="dark"] .resource-warning.critical {
+  background: rgba(220, 53, 69, 0.15);
 }
 
 
@@ -7010,14 +6998,12 @@ body.dark-mode .diagnostic-preview {
 }
 
 /* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-    .glossary-tooltip {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    }
-    
-    .glossary-modal-close:hover {
-        background: rgba(255, 255, 255, 0.1);
-    }
+[data-theme="dark"] .glossary-tooltip {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .glossary-modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* ===================================
@@ -7478,54 +7464,52 @@ button[onclick*="showGlossary"]:hover {
 }
 
 /* Dark Mode Adjustments for Rollback UI */
-@media (prefers-color-scheme: dark) {
-    .warning-message {
-        background: #664d03;
-        border-color: #997404;
-        color: #ffecb5;
-    }
-    
-    .error-details {
-        background: #58151c;
-        border-color: #842029;
-    }
-    
-    .error-details strong,
-    .error-stage,
-    .error-message {
-        color: #ea868f;
-    }
-    
-    .notification {
-        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
-        color: #e2e8f0;
-        border-color: rgba(255, 255, 255, 0.1);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
-    }
-    
-    .notification-success {
-        background: linear-gradient(135deg, #1e4620 0%, #14532d 100%);
-        border-left-color: var(--kaspa-green);
-        border-color: rgba(34, 197, 94, 0.3);
-    }
-    
-    .notification-error {
-        background: linear-gradient(135deg, #4c1d1d 0%, #7f1d1d 100%);
-        border-left-color: #ef4444;
-        border-color: rgba(239, 68, 68, 0.3);
-    }
-    
-    .notification-warning {
-        background: linear-gradient(135deg, #4d3800 0%, #713f12 100%);
-        border-left-color: #fbbf24;
-        border-color: rgba(251, 191, 36, 0.3);
-    }
-    
-    .notification-info {
-        background: linear-gradient(135deg, #164e63 0%, #0e7490 100%);
-        border-left-color: #06b6d4;
-        border-color: rgba(6, 182, 212, 0.3);
-    }
+[data-theme="dark"] .warning-message {
+    background: #664d03;
+    border-color: #997404;
+    color: #ffecb5;
+}
+
+[data-theme="dark"] .error-details {
+    background: #58151c;
+    border-color: #842029;
+}
+
+[data-theme="dark"] .error-details strong,
+[data-theme="dark"] .error-stage,
+[data-theme="dark"] .error-message {
+    color: #ea868f;
+}
+
+[data-theme="dark"] .notification {
+    background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+    color: #e2e8f0;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .notification-success {
+    background: linear-gradient(135deg, #1e4620 0%, #14532d 100%);
+    border-left-color: var(--kaspa-green);
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+[data-theme="dark"] .notification-error {
+    background: linear-gradient(135deg, #4c1d1d 0%, #7f1d1d 100%);
+    border-left-color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="dark"] .notification-warning {
+    background: linear-gradient(135deg, #4d3800 0%, #713f12 100%);
+    border-left-color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+[data-theme="dark"] .notification-info {
+    background: linear-gradient(135deg, #164e63 0%, #0e7490 100%);
+    border-left-color: #06b6d4;
+    border-color: rgba(6, 182, 212, 0.3);
 }
 
 /* Responsive Adjustments */
@@ -7769,41 +7753,39 @@ button[onclick*="showGlossary"]:hover {
 }
 
 /* Dark Mode Support for Enhanced Elements */
-@media (prefers-color-scheme: dark) {
-  .service-progress-container,
-  .install-stats-container {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .service-progress-item.active {
-    background: rgba(112, 199, 186, 0.1);
-  }
-  
-  .service-progress-name {
-    color: var(--text-primary-dark);
-  }
-  
-  .service-progress-status {
-    color: var(--text-secondary-dark);
-  }
-  
-  .stat-label {
-    color: var(--text-secondary-dark);
-  }
-  
-  .stat-value {
-    color: var(--text-primary-dark);
-  }
-  
-  #install-time-estimate {
-    background: rgba(112, 199, 186, 0.1);
-    color: var(--text-secondary-dark);
-  }
-  
-  .install-step.active {
-    background: rgba(112, 199, 186, 0.1);
-  }
+[data-theme="dark"] .service-progress-container,
+[data-theme="dark"] .install-stats-container {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .service-progress-item.active {
+  background: rgba(112, 199, 186, 0.1);
+}
+
+[data-theme="dark"] .service-progress-name {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .service-progress-status {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .stat-label {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .stat-value {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] #install-time-estimate {
+  background: rgba(112, 199, 186, 0.1);
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .install-step.active {
+  background: rgba(112, 199, 186, 0.1);
 }
 
 
@@ -9098,89 +9080,87 @@ input:checked + .toggle-slider:before {
 }
 
 /* Dark Mode Support for Resume Dialog */
-@media (prefers-color-scheme: dark) {
-  .resume-dialog {
-    background: var(--surface-dark);
-  }
-  
-  .resume-title {
-    color: var(--text-primary-dark);
-  }
-  
-  .resume-message {
-    color: var(--text-secondary-dark);
-  }
-  
-  .resume-details {
-    background: var(--background-dark);
-  }
-  
-  .resume-detail-item {
-    border-bottom-color: var(--border-light-dark);
-  }
-  
-  .resume-detail-item .detail-label {
-    color: var(--text-tertiary-dark);
-  }
-  
-  .resume-detail-item .detail-value {
-    color: var(--text-primary-dark);
-  }
-  
-  .resume-info-box {
-    background: rgba(112, 199, 186, 0.1);
-    border-color: var(--kaspa-dark);
-  }
-  
-  .resume-info-box .info-text {
-    color: var(--text-secondary-dark);
-  }
-  
-  .background-tasks-status {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .background-tasks-header {
-    background: var(--background-dark);
-    border-bottom-color: var(--border-dark);
-  }
-  
-  .background-tasks-header:hover {
-    background: rgba(112, 199, 186, 0.1);
-  }
-  
-  .background-tasks-header .header-title {
-    color: var(--text-primary-dark);
-  }
-  
-  .background-tasks-header .header-toggle {
-    color: var(--text-secondary-dark);
-  }
-  
-  .background-tasks-header .header-toggle:hover {
-    color: var(--text-primary-dark);
-  }
-  
-  .background-task-item {
-    border-bottom-color: var(--border-light-dark);
-  }
-  
-  .background-task-item:hover {
-    background: var(--background-dark);
-  }
-  
-  .background-task-item .task-name {
-    color: var(--text-primary-dark);
-  }
-  
-  .background-task-item .task-progress {
-    color: var(--text-secondary-dark);
-  }
-  
-  .background-task-item .task-progress-bar {
-    background: var(--border-light-dark);
-  }
+[data-theme="dark"] .resume-dialog {
+  background: var(--surface-dark);
+}
+
+[data-theme="dark"] .resume-title {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .resume-message {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .resume-details {
+  background: var(--background-dark);
+}
+
+[data-theme="dark"] .resume-detail-item {
+  border-bottom-color: var(--border-light-dark);
+}
+
+[data-theme="dark"] .resume-detail-item .detail-label {
+  color: var(--text-tertiary-dark);
+}
+
+[data-theme="dark"] .resume-detail-item .detail-value {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .resume-info-box {
+  background: rgba(112, 199, 186, 0.1);
+  border-color: var(--kaspa-dark);
+}
+
+[data-theme="dark"] .resume-info-box .info-text {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .background-tasks-status {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .background-tasks-header {
+  background: var(--background-dark);
+  border-bottom-color: var(--border-dark);
+}
+
+[data-theme="dark"] .background-tasks-header:hover {
+  background: rgba(112, 199, 186, 0.1);
+}
+
+[data-theme="dark"] .background-tasks-header .header-title {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .background-tasks-header .header-toggle {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .background-tasks-header .header-toggle:hover {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .background-task-item {
+  border-bottom-color: var(--border-light-dark);
+}
+
+[data-theme="dark"] .background-task-item:hover {
+  background: var(--background-dark);
+}
+
+[data-theme="dark"] .background-task-item .task-name {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .background-task-item .task-progress {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .background-task-item .task-progress-bar {
+  background: var(--border-light-dark);
 }
 
 /* Responsive Design for Resume Dialog */
@@ -9449,46 +9429,44 @@ input:checked + .toggle-slider:before {
 }
 
 /* Dark Mode Support for Sync UI */
-@media (prefers-color-scheme: dark) {
-    .sync-progress-section {
-        background: #2c3e50;
-        border-left-color: #70C7BA;
-    }
-    
-    .sync-progress-section h3 {
-        color: #ecf0f1;
-    }
-    
-    #sync-status-message {
-        background: rgba(112, 199, 186, 0.2);
-        color: #ecf0f1;
-    }
-    
-    .background-sync-indicator {
-        background: linear-gradient(135deg, rgba(112, 199, 186, 0.2) 0%, rgba(73, 200, 181, 0.2) 100%);
-    }
-    
-    #background-sync-title {
-        color: #ecf0f1;
-    }
-    
-    .sync-strategy-dialog {
-        background: #34495e;
-        color: #ecf0f1;
-    }
-    
-    .sync-strategy-option {
-        background: #2c3e50;
-        border-color: #4a5f7f;
-    }
-    
-    .sync-strategy-option:hover {
-        background: #3d5a80;
-    }
-    
-    .sync-strategy-option.recommended {
-        background: rgba(112, 199, 186, 0.1);
-    }
+[data-theme="dark"] .sync-progress-section {
+    background: #2c3e50;
+    border-left-color: #70C7BA;
+}
+
+[data-theme="dark"] .sync-progress-section h3 {
+    color: #ecf0f1;
+}
+
+[data-theme="dark"] #sync-status-message {
+    background: rgba(112, 199, 186, 0.2);
+    color: #ecf0f1;
+}
+
+[data-theme="dark"] .background-sync-indicator {
+    background: linear-gradient(135deg, rgba(112, 199, 186, 0.2) 0%, rgba(73, 200, 181, 0.2) 100%);
+}
+
+[data-theme="dark"] #background-sync-title {
+    color: #ecf0f1;
+}
+
+[data-theme="dark"] .sync-strategy-dialog {
+    background: #34495e;
+    color: #ecf0f1;
+}
+
+[data-theme="dark"] .sync-strategy-option {
+    background: #2c3e50;
+    border-color: #4a5f7f;
+}
+
+[data-theme="dark"] .sync-strategy-option:hover {
+    background: #3d5a80;
+}
+
+[data-theme="dark"] .sync-strategy-option.recommended {
+    background: rgba(112, 199, 186, 0.1);
 }
 
 /* Animations */
@@ -11463,45 +11441,43 @@ input:checked + .toggle-slider:before {
 }
 
 /* Dark Mode Support for Reconfiguration */
-@media (prefers-color-scheme: dark) {
-  .context-card {
-    background: rgba(112, 199, 186, 0.1);
-    border-color: rgba(112, 199, 186, 0.2);
-  }
-  
-  .section-header {
-    background: var(--surface-elevated-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .installation-info {
-    background: rgba(26, 26, 26, 0.9);
-  }
-  
-  .profile-card.installed {
-    background: linear-gradient(135deg, rgba(126, 211, 33, 0.1) 0%, var(--surface-dark) 100%);
-  }
-  
-  .profile-card.partial {
-    background: linear-gradient(135deg, rgba(245, 166, 35, 0.1) 0%, var(--surface-dark) 100%);
-  }
-  
-  .modal-dialog {
-    background: var(--surface-dark);
-  }
-  
-  .modal-header {
-    border-color: var(--border-dark);
-  }
-  
-  .modal-footer {
-    border-color: var(--border-dark);
-  }
-  
-  .profile-summary {
-    background: var(--surface-elevated-dark);
-    border-color: var(--border-dark);
-  }
+[data-theme="dark"] .context-card {
+  background: rgba(112, 199, 186, 0.1);
+  border-color: rgba(112, 199, 186, 0.2);
+}
+
+[data-theme="dark"] .section-header {
+  background: var(--surface-elevated-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .installation-info {
+  background: rgba(26, 26, 26, 0.9);
+}
+
+[data-theme="dark"] .profile-card.installed {
+  background: linear-gradient(135deg, rgba(126, 211, 33, 0.1) 0%, var(--surface-dark) 100%);
+}
+
+[data-theme="dark"] .profile-card.partial {
+  background: linear-gradient(135deg, rgba(245, 166, 35, 0.1) 0%, var(--surface-dark) 100%);
+}
+
+[data-theme="dark"] .modal-dialog {
+  background: var(--surface-dark);
+}
+
+[data-theme="dark"] .modal-header {
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .modal-footer {
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .profile-summary {
+  background: var(--surface-elevated-dark);
+  border-color: var(--border-dark);
 }
 
 /* ============================================================================
@@ -12339,53 +12315,51 @@ input:checked + .toggle-slider:before {
 }
 
 /* Dark mode support for removal dialogs */
-@media (prefers-color-scheme: dark) {
-  .removal-warning,
-  .blocked-message {
-    background: rgba(245, 166, 35, 0.2);
-  }
-  
-  .warning-text,
-  .blocked-text {
-    color: var(--text-primary-dark, #e0e0e0);
-  }
-  
-  .impact-item {
-    background: var(--bg-secondary-dark, #2a2a2a);
-  }
-  
-  .impact-item.warning {
-    background: rgba(245, 166, 35, 0.2);
-    color: var(--text-primary-dark, #e0e0e0);
-  }
-  
-  .service-item,
-  .dependent-service-item,
-  .blocked-reason-item {
-    background: var(--bg-secondary-dark, #2a2a2a);
-  }
-  
-  .data-option {
-    border-color: var(--border-color-dark, #404040);
-  }
-  
-  .data-option:hover {
-    border-color: var(--kaspa-blue, #70C7BA);
-    background: rgba(112, 199, 186, 0.1);
-  }
-  
-  .data-option-impact {
-    background: var(--bg-tertiary-dark, #1a1a1a);
-  }
-  
-  .removal-recommendation-item,
-  .blocked-recommendation-item {
-    background: var(--bg-secondary-dark, #2a2a2a);
-  }
-  
-  .removal-progress {
-    background: rgba(112, 199, 186, 0.1);
-  }
+[data-theme="dark"] .removal-warning,
+[data-theme="dark"] .blocked-message {
+  background: rgba(245, 166, 35, 0.2);
+}
+
+[data-theme="dark"] .warning-text,
+[data-theme="dark"] .blocked-text {
+  color: var(--text-primary-dark, #e0e0e0);
+}
+
+[data-theme="dark"] .impact-item {
+  background: var(--bg-secondary-dark, #2a2a2a);
+}
+
+[data-theme="dark"] .impact-item.warning {
+  background: rgba(245, 166, 35, 0.2);
+  color: var(--text-primary-dark, #e0e0e0);
+}
+
+[data-theme="dark"] .service-item,
+[data-theme="dark"] .dependent-service-item,
+[data-theme="dark"] .blocked-reason-item {
+  background: var(--bg-secondary-dark, #2a2a2a);
+}
+
+[data-theme="dark"] .data-option {
+  border-color: var(--border-color-dark, #404040);
+}
+
+[data-theme="dark"] .data-option:hover {
+  border-color: var(--kaspa-blue, #70C7BA);
+  background: rgba(112, 199, 186, 0.1);
+}
+
+[data-theme="dark"] .data-option-impact {
+  background: var(--bg-tertiary-dark, #1a1a1a);
+}
+
+[data-theme="dark"] .removal-recommendation-item,
+[data-theme="dark"] .blocked-recommendation-item {
+  background: var(--bg-secondary-dark, #2a2a2a);
+}
+
+[data-theme="dark"] .removal-progress {
+  background: rgba(112, 199, 186, 0.1);
 }
 
 /* ============================================================================
@@ -12460,21 +12434,19 @@ input:checked + .toggle-slider:before {
 }
 
 /* Dark mode support for profile actions */
-@media (prefers-color-scheme: dark) {
-  .profile-actions {
-    border-top-color: var(--border-color-dark, #404040);
-  }
-  
-  .profile-action-btn.btn-secondary {
-    background: var(--bg-secondary-dark, #2a2a2a);
-    color: var(--text-primary-dark, #e0e0e0);
-    border-color: var(--border-color-dark, #404040);
-  }
-  
-  .profile-action-btn.btn-secondary:hover:not(:disabled) {
-    background: var(--bg-tertiary-dark, #1a1a1a);
-    border-color: var(--kaspa-blue, #70C7BA);
-  }
+[data-theme="dark"] .profile-actions {
+  border-top-color: var(--border-color-dark, #404040);
+}
+
+[data-theme="dark"] .profile-action-btn.btn-secondary {
+  background: var(--bg-secondary-dark, #2a2a2a);
+  color: var(--text-primary-dark, #e0e0e0);
+  border-color: var(--border-color-dark, #404040);
+}
+
+[data-theme="dark"] .profile-action-btn.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-tertiary-dark, #1a1a1a);
+  border-color: var(--kaspa-blue, #70C7BA);
 }
 
 /* ============================================================================
@@ -12752,27 +12724,25 @@ input:checked + .toggle-slider:before {
 }
 
 /* Dark mode support for custom setup */
-@media (prefers-color-scheme: dark) {
-  .profile-checkbox-card {
-    background: var(--bg-secondary-dark, #2a2a2a);
-    border-color: var(--border-color-dark, #404040);
-  }
-  
-  .profile-checkbox-card:hover {
-    border-color: var(--kaspa-blue);
-  }
-  
-  .profile-checkbox-card.installed {
-    background: linear-gradient(135deg, rgba(126, 211, 33, 0.1) 0%, rgba(126, 211, 33, 0.05) 100%);
-  }
-  
-  .warning-item {
-    background: var(--bg-secondary-dark, #2a2a2a);
-  }
-  
-  .profile-category-section {
-    background: var(--bg-secondary-dark, #2a2a2a);
-  }
+[data-theme="dark"] .profile-checkbox-card {
+  background: var(--bg-secondary-dark, #2a2a2a);
+  border-color: var(--border-color-dark, #404040);
+}
+
+[data-theme="dark"] .profile-checkbox-card:hover {
+  border-color: var(--kaspa-blue);
+}
+
+[data-theme="dark"] .profile-checkbox-card.installed {
+  background: linear-gradient(135deg, rgba(126, 211, 33, 0.1) 0%, rgba(126, 211, 33, 0.05) 100%);
+}
+
+[data-theme="dark"] .warning-item {
+  background: var(--bg-secondary-dark, #2a2a2a);
+}
+
+[data-theme="dark"] .profile-category-section {
+  background: var(--bg-secondary-dark, #2a2a2a);
 }
 
 /* ============================================================================

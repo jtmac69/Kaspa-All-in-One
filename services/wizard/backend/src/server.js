@@ -210,6 +210,12 @@ const frontendPath = process.env.NODE_ENV === 'production'
   : path.join(__dirname, '../../frontend/public');
 app.use(express.static(frontendPath));
 
+// Serve shared library assets (styles, scripts, icons)
+app.use('/shared', express.static(
+  path.join(__dirname, '../../../shared'),
+  { maxAge: process.env.NODE_ENV === 'production' ? '1d' : '0' }
+));
+
 // API Routes
 app.use('/api/build-info', buildInfoRouter); // Build information (test vs production)
 app.use('/api/system-check', systemCheckRouter);

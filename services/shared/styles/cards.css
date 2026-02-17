@@ -557,51 +557,49 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .card,
-  .service-card,
-  .profile-card,
-  .resource-card,
-  .stats-card,
-  .application-card {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .card-header,
-  .card-footer {
-    border-color: var(--border-light-dark);
-  }
-  
-  .card-title,
-  .service-card-title,
-  .profile-card-title,
-  .stats-card-value,
-  .application-card-title {
-    color: var(--text-primary-dark);
-  }
-  
-  .card-subtitle,
-  .service-card-description,
-  .profile-card-description,
-  .stats-card-label,
-  .application-card-description {
-    color: var(--text-secondary-dark);
-  }
-  
-  .service-stat-label,
-  .resource-details {
-    color: var(--text-tertiary);
-  }
-  
-  .service-stat-value {
-    color: var(--text-primary-dark);
-  }
-  
-  .card-selected,
-  .profile-card.selected {
-    background: var(--surface-elevated-dark);
-  }
+[data-theme="dark"] .card,
+[data-theme="dark"] .service-card,
+[data-theme="dark"] .profile-card,
+[data-theme="dark"] .resource-card,
+[data-theme="dark"] .stats-card,
+[data-theme="dark"] .application-card {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .card-header,
+[data-theme="dark"] .card-footer {
+  border-color: var(--border-light-dark);
+}
+
+[data-theme="dark"] .card-title,
+[data-theme="dark"] .service-card-title,
+[data-theme="dark"] .profile-card-title,
+[data-theme="dark"] .stats-card-value,
+[data-theme="dark"] .application-card-title {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .card-subtitle,
+[data-theme="dark"] .service-card-description,
+[data-theme="dark"] .profile-card-description,
+[data-theme="dark"] .stats-card-label,
+[data-theme="dark"] .application-card-description {
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .service-stat-label,
+[data-theme="dark"] .resource-details {
+  color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .service-stat-value {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .card-selected,
+[data-theme="dark"] .profile-card.selected {
+  background: var(--surface-elevated-dark);
 }
 
 /* Reduced Motion Support */

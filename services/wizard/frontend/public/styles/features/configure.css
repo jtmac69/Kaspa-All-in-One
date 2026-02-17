@@ -54,17 +54,15 @@
 }
 
 /* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .has-existing-value {
-        border-color: rgba(112, 199, 186, 0.3);
-        background: rgba(112, 199, 186, 0.05);
-    }
-    
-    .existing-value-indicator {
-        background: rgba(70, 185, 234, 0.2);
-    }
-    
-    .existing-value-indicator:hover {
-        background: rgba(70, 185, 234, 0.3);
-    }
+[data-theme="dark"] .has-existing-value {
+    border-color: rgba(112, 199, 186, 0.3);
+    background: rgba(112, 199, 186, 0.05);
+}
+
+[data-theme="dark"] .existing-value-indicator {
+    background: rgba(70, 185, 234, 0.2);
+}
+
+[data-theme="dark"] .existing-value-indicator:hover {
+    background: rgba(70, 185, 234, 0.3);
 }

@@ -490,34 +490,38 @@ th {
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  body {
-    background: linear-gradient(180deg, var(--background-dark) 0%, var(--surface-dark) 100%);
-    color: var(--text-primary-dark);
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    color: var(--text-primary-dark);
-  }
-  
-  code {
-    background: var(--surface-elevated-dark);
-    color: var(--kaspa-light);
-  }
-  
-  pre {
-    background: var(--surface-elevated-dark);
-    border-color: var(--border-dark);
-  }
-  
-  th {
-    background: var(--surface-elevated-dark);
-    color: var(--text-primary-dark);
-  }
-  
-  th, td {
-    border-color: var(--border-dark);
-  }
+[data-theme="dark"] body {
+  background: linear-gradient(180deg, var(--background-dark) 0%, var(--surface-dark) 100%);
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] code {
+  background: var(--surface-elevated-dark);
+  color: var(--kaspa-light);
+}
+
+[data-theme="dark"] pre {
+  background: var(--surface-elevated-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] th {
+  background: var(--surface-elevated-dark);
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] th,
+[data-theme="dark"] td {
+  border-color: var(--border-dark);
 }
 
 /* Focus Management */

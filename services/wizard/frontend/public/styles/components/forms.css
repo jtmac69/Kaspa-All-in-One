@@ -416,46 +416,44 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .form-section {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .form-input,
-  .form-select,
-  .form-textarea {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-    color: var(--text-primary-dark);
-  }
-  
-  .form-input:disabled,
-  .form-select:disabled,
-  .form-textarea:disabled {
-    background: var(--border-dark);
-    color: var(--text-disabled);
-  }
-  
-  .input-group-append {
-    background: var(--border-dark);
-    border-color: var(--border-dark);
-    color: var(--text-secondary-dark);
-  }
-  
-  .checkbox-input,
-  .radio-input {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-  }
-  
-  .file-upload-label {
-    background: var(--surface-dark);
-    border-color: var(--border-dark);
-    color: var(--text-secondary-dark);
-  }
-  
-  .form-validation-summary {
-    background: rgba(208, 2, 27, 0.1);
-  }
+[data-theme="dark"] .form-section {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .form-textarea {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+  color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .form-input:disabled,
+[data-theme="dark"] .form-select:disabled,
+[data-theme="dark"] .form-textarea:disabled {
+  background: var(--border-dark);
+  color: var(--text-disabled);
+}
+
+[data-theme="dark"] .input-group-append {
+  background: var(--border-dark);
+  border-color: var(--border-dark);
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .checkbox-input,
+[data-theme="dark"] .radio-input {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .file-upload-label {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+  color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .form-validation-summary {
+  background: rgba(208, 2, 27, 0.1);
 }
