@@ -110,6 +110,9 @@ kaspa-backup-*.tar.gz
 test-results/
 screenshots/
 videos/
+/*.png
+/*.jpeg
+.playwright-mcp/
 
 # Temporary test files
 services/dashboard/test/test-installation-state-*.json
