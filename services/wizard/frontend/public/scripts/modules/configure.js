@@ -2737,10 +2737,19 @@ async function populateAvailableProfiles(availableProfiles) {
  * Create profile card for reconfiguration mode
  */
 function createProfileCardForReconfiguration(profile, section) {
+    // Map new granular profile IDs to legacy HTML card IDs
+    const profileToCardId = {
+        'kasia-indexer': 'indexer-services',
+        'k-indexer-bundle': 'indexer-services',
+        'kaspa-archive-node': 'archive-node',
+        'kaspa-stratum': 'mining'
+    };
+    const cardId = profileToCardId[profile.id] || profile.id;
+
     // Find the template card in the default grid
-    const templateCard = document.querySelector(`#default-profile-grid .profile-card[data-profile="${profile.id}"]`);
+    const templateCard = document.querySelector(`#default-profile-grid .profile-card[data-profile="${cardId}"]`);
     if (!templateCard) {
-        console.warn(`Template card not found for profile: ${profile.id}`);
+        console.warn(`Template card not found for profile: ${profile.id} (cardId: ${cardId})`);
         return document.createElement('div');
     }
     

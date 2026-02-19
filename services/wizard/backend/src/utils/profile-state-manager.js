@@ -549,29 +549,25 @@ class ProfileStateManager {
    * Configuration keys alone (especially REMOTE_* URLs) should NOT indicate installation.
    */
   determineInstallationState(isInInstallationState, isConfigured, isInDockerCompose, runningStatus) {
-    // Priority 1: Docker compose presence (most reliable)
-    if (isInDockerCompose) {
-      return 'installed';
-    }
-    
-    // Priority 2: Installation state file
+    // Priority 1: Installation state file (most authoritative — tracks explicit add/remove)
     if (isInInstallationState) {
       return 'installed';
     }
-    
-    // Priority 3: All services running (indicates actual installation)
+
+    // Priority 2: All services running (indicates actual installation even if state is stale)
     if (runningStatus.runningCount === runningStatus.totalCount && runningStatus.runningCount > 0) {
       return 'installed';
     }
-    
-    // Priority 4: Some services running (partial installation)
+
+    // Priority 3: Some services running (partial installation)
     if (runningStatus.runningCount > 0) {
       return 'partial';
     }
-    
-    // Configuration alone is NOT sufficient to indicate installation
-    // (REMOTE_* URLs are fallback settings, not installation indicators)
-    
+
+    // Docker compose presence alone is NOT sufficient — services may remain in
+    // docker-compose.yml after profile removal (cleanup is deferred).
+    // Configuration alone is also NOT sufficient (REMOTE_* URLs are fallback settings).
+
     return 'not-installed';
   }
 
