@@ -26,7 +26,8 @@ const profileStateManager = ProfileStateManager.getInstance();
 router.get('/profiles/state', async (req, res) => {
   try {
     // Use ProfileStateManager for comprehensive state detection
-    const stateResult = await profileStateManager.getProfileStates();
+    const forceRefresh = req.query.refresh === 'true';
+    const stateResult = await profileStateManager.getProfileStates(forceRefresh);
     
     if (!stateResult.success) {
       return res.status(500).json({

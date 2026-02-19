@@ -2564,13 +2564,14 @@ export async function initializeProfileSelectionWithReconfiguration() {
 /**
  * Initialize reconfiguration mode
  */
-async function initializeReconfigurationMode(context) {
+async function initializeReconfigurationMode(context, forceRefresh = false) {
     try {
         // Update UI for reconfiguration mode
         updateUIForReconfigurationMode(context);
-        
+
         // Load profile states from API
-        const response = await api.get('/wizard/profiles/state');
+        const refreshParam = forceRefresh ? '?refresh=true' : '';
+        const response = await api.get(`/wizard/profiles/state${refreshParam}`);
         
         if (!response.success) {
             throw new Error(response.error || 'Failed to load profile states');
@@ -2822,14 +2823,22 @@ function updateCardForSection(card, profile, section) {
         const modifyBtn = actionsEl.querySelector('.btn-modify');
         const removeBtn = actionsEl.querySelector('.btn-remove');
         
-        if (modifyBtn && !profile.canModify) {
-            modifyBtn.disabled = true;
-            modifyBtn.style.opacity = '0.5';
+        // Override onclick to use actual profile ID (not legacy card ID)
+        if (modifyBtn) {
+            modifyBtn.setAttribute('onclick', `modifyProfile('${profile.id}')`);
+            if (!profile.canModify) {
+                modifyBtn.disabled = true;
+                modifyBtn.style.opacity = '0.5';
+            }
         }
         
-        if (removeBtn && !profile.canRemove) {
-            removeBtn.disabled = true;
-            removeBtn.style.opacity = '0.5';
+        // Override onclick to use actual profile ID (not legacy card ID)
+        if (removeBtn) {
+            removeBtn.setAttribute('onclick', `removeProfile('${profile.id}')`);
+            if (!profile.canRemove) {
+                removeBtn.disabled = true;
+                removeBtn.style.opacity = '0.5';
+            }
         }
         
         // Show dependency warnings if any
@@ -3102,12 +3111,12 @@ window.confirmProfileRemoval = async function() {
         
         // Close dialog
         window.closeProfileRemovalDialog();
-        
+
         // Show success message
         showNotification(`Successfully removed ${profileId} profile`, 'success');
-        
-        // Refresh profile states
-        await initializeReconfigurationMode(stateManager.get('profileSelectionContext'));
+
+        // Refresh profile states (force cache refresh after removal)
+        await initializeReconfigurationMode(stateManager.get('profileSelectionContext'), true);
         
     } catch (error) {
         console.error('Failed to remove profile:', error);

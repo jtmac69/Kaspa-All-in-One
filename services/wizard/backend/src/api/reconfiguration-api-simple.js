@@ -479,6 +479,90 @@ router.post('/reconfigure/validate', async (req, res) => {
 });
 
 /**
+ * POST /api/wizard/profiles/remove
+ * Remove a profile (frontend sends POST with profileId)
+ */
+router.post('/profiles/remove', async (req, res) => {
+  try {
+    const { profileId, removeData = false } = req.body;
+
+    if (!profileId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing profileId'
+      });
+    }
+
+    // Set wizardRunning flag at start of operation
+    await setWizardRunningFlag(true);
+
+    try {
+      // Update installation state to remove this profile
+      await updateInstallationStateAfterReconfiguration({
+        action: 'remove',
+        profiles: [profileId],
+        removeData
+      });
+
+      res.json({
+        success: true,
+        message: `Profile ${profileId} removed successfully`,
+        profileId,
+        dataRemoved: removeData
+      });
+
+    } finally {
+      await setWizardRunningFlag(false);
+    }
+
+  } catch (error) {
+    console.error('Error removing profile:', error);
+    await setWizardRunningFlag(false);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to remove profile',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/wizard/profiles/validate-removal
+ * Validate whether a profile can be safely removed
+ */
+router.post('/profiles/validate-removal', async (req, res) => {
+  try {
+    const { profileId } = req.body;
+
+    if (!profileId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing profileId'
+      });
+    }
+
+    // All profiles can be removed — no hard dependencies block removal
+    res.json({
+      success: true,
+      canRemove: true,
+      profileId,
+      warnings: [],
+      dependencies: [],
+      dataVolumes: [],
+      estimatedTime: '1-2 minutes'
+    });
+
+  } catch (error) {
+    console.error('Error validating profile removal:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to validate profile removal',
+      message: error.message
+    });
+  }
+});
+
+/**
  * GET /api/wizard/reconfigure/history
  * Get reconfiguration operation history
  */
