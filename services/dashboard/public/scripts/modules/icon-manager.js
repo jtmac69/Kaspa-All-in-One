@@ -104,7 +104,7 @@ export class IconManager {
         // Updates button (icon only with tooltip)
         const updatesBtn = document.getElementById('updates-btn');
         if (updatesBtn) {
-            const icon = createIcon('update', { size: 'sm', color: 'kaspa-blue' });
+            const icon = createIcon('update', { size: 'sm' });
             updatesBtn.innerHTML = '';
             updatesBtn.appendChild(icon);
             updatesBtn.classList.add('icon-tooltip');
@@ -123,7 +123,7 @@ export class IconManager {
         // Config button (icon only with tooltip)
         const configBtn = document.getElementById('config-btn');
         if (configBtn) {
-            const icon = createIcon('config', { size: 'sm', color: 'kaspa-blue' });
+            const icon = createIcon('config', { size: 'sm' });
             configBtn.innerHTML = '';
             configBtn.appendChild(icon);
             configBtn.classList.add('icon-tooltip');
@@ -167,7 +167,8 @@ export class IconManager {
             'Mempool 🔄': { icon: 'refresh', text: 'Mempool' },
             'Hashrate 💪': { icon: 'cpu', text: 'Hashrate' },
             'Circulating 📊': { icon: 'trending', text: 'Circulating' },
-            'Recent Block Reward': { icon: 'coins', text: 'Recent Block Reward' }
+            'Recent Block Reward': { icon: 'coins', text: 'Recent Block Reward' },
+            'Block reward': { icon: 'coins', text: 'Block Reward' }
         };
 
         document.querySelectorAll('.stat .label').forEach(label => {
