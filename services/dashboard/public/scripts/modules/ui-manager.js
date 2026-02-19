@@ -209,6 +209,9 @@ export class UIManager {
         
         // Update icons in service cards
         this.updateServiceCardIcons();
+
+        // Update application access grid
+        this.updateApplications(services);
     }
 
     /**
@@ -355,6 +358,80 @@ export class UIManager {
             return profileClasses[groupName] || 'profile-other';
         }
         return '';
+    }
+
+    /**
+     * Application metadata for the Application Access grid
+     */
+    static APP_META = {
+        'kasia-app':      { icon: '💬', description: 'Kaspa messaging application' },
+        'k-social':       { icon: '👥', description: 'Kaspa social platform' },
+        'kaspa-explorer': { icon: '🔍', description: 'Kaspa block explorer' }
+    };
+
+    /**
+     * Update the Application Access grid from current service data
+     */
+    updateApplications(services) {
+        const grid = this.elements.applicationsGrid;
+        if (!grid) return;
+
+        const apps = services.filter(s => this.getServiceType(s.name) === 'Application');
+
+        if (apps.length === 0) {
+            grid.innerHTML = `
+                <div class="no-applications">
+                    <p>No applications installed. Use the wizard to add Kasia, K-Social, or Kaspa Explorer.</p>
+                </div>`;
+            return;
+        }
+
+        grid.innerHTML = `
+            <div class="app-cards">
+                ${apps.map(s => this.createAppCard(s)).join('')}
+            </div>`;
+    }
+
+    /**
+     * Create a single application card
+     */
+    createAppCard(service) {
+        const meta = UIManager.APP_META[service.name] || { icon: '📦', description: service.displayName || service.name };
+        const isRunning = service.status === 'healthy';
+        const statusClass = isRunning ? 'running' : service.status === 'unhealthy' ? 'unhealthy' : 'stopped';
+        const statusLabel = isRunning ? 'Running' : service.status === 'unhealthy' ? 'Unhealthy' : 'Stopped';
+
+        const hostname = window.location.hostname;
+        const port = service.hostPort;
+        const appUrl = port ? `http://${hostname}:${port}` : null;
+
+        return `
+            <div class="app-card ${statusClass}" data-app="${service.name}">
+                <div class="app-header">
+                    <div class="app-icon">${meta.icon}</div>
+                    <div class="app-info">
+                        <div class="app-name">${service.displayName || service.name}</div>
+                        <p class="app-description">${meta.description}</p>
+                    </div>
+                </div>
+                <div class="app-status">
+                    <span class="status-indicator ${statusClass}"></span>
+                    <span class="status-text">${statusLabel}</span>
+                </div>
+                ${appUrl ? `
+                <div class="app-url">
+                    <span class="url-label">URL:</span>
+                    <span class="url-value">${appUrl}</span>
+                    <button class="btn-copy" title="Copy URL" onclick="navigator.clipboard.writeText('${appUrl}')">📋</button>
+                </div>` : ''}
+                <div class="app-actions">
+                    <button class="app-launch"
+                        ${!isRunning || !appUrl ? 'disabled' : ''}
+                        ${isRunning && appUrl ? `onclick="window.open('${appUrl}', '_blank')"` : ''}>
+                        ${isRunning ? 'Open Application' : 'Service Stopped'}
+                    </button>
+                </div>
+            </div>`;
     }
 
     /**

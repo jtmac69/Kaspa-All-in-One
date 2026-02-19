@@ -221,19 +221,28 @@ class ServiceMonitor {
 
     async getDockerServices() {
         try {
-            const { stdout } = await execAsync('docker ps -a --format "{{.Names}}\t{{.Status}}\t{{.State}}\t{{.Image}}"');
+            const { stdout } = await execAsync('docker ps -a --format "{{.Names}}\t{{.Status}}\t{{.State}}\t{{.Image}}\t{{.Ports}}"');
             const services = new Map();
-            
+
             stdout.trim().split('\n').filter(line => line).forEach(line => {
-                const [name, status, state, image] = line.split('\t');
-                services.set(name, { 
-                    status, 
+                const [name, status, state, image, ports] = line.split('\t');
+                // Parse host port from ports string like "0.0.0.0:3001->3000/tcp"
+                let hostPort = null;
+                if (ports) {
+                    const match = ports.match(/(?:0\.0\.0\.0|::):(\d+)->\d+/);
+                    if (match) {
+                        hostPort = parseInt(match[1], 10);
+                    }
+                }
+                services.set(name, {
+                    status,
                     state: state.toLowerCase(),
                     image,
-                    isRunning: state.toLowerCase() === 'running'
+                    isRunning: state.toLowerCase() === 'running',
+                    hostPort
                 });
             });
-            
+
             return services;
         } catch (error) {
             console.error('Failed to get Docker services:', error);
@@ -261,10 +270,11 @@ class ServiceMonitor {
         const dependencyStatus = await this.checkDependencies(service.name);
         
         if (!containerInfo) {
-            return { 
-                ...service, 
-                status: 'stopped', 
+            return {
+                ...service,
+                status: 'stopped',
                 state: 'not_running',
+                hostPort: null,
                 lastCheck: new Date().toISOString(),
                 dependencyStatus,
                 uptime: null
@@ -272,11 +282,12 @@ class ServiceMonitor {
         }
 
         if (!containerInfo.isRunning) {
-            return { 
-                ...service, 
-                status: 'stopped', 
+            return {
+                ...service,
+                status: 'stopped',
                 state: containerInfo.state,
                 dockerStatus: containerInfo.status,
+                hostPort: containerInfo.hostPort,
                 lastCheck: new Date().toISOString(),
                 dependencyStatus,
                 uptime: null
@@ -285,11 +296,12 @@ class ServiceMonitor {
 
         try {
             const healthResult = await this.performHealthCheckWithRetry(service);
-            return { 
-                ...service, 
-                status: 'healthy', 
+            return {
+                ...service,
+                status: 'healthy',
                 state: containerInfo.state,
                 dockerStatus: containerInfo.status,
+                hostPort: containerInfo.hostPort,
                 lastCheck: new Date().toISOString(),
                 dependencyStatus,
                 uptime: await this.getServiceUptime(service.name),
@@ -297,18 +309,19 @@ class ServiceMonitor {
             };
         } catch (error) {
             // For kaspa-node, if container is running but RPC not responding, it's likely syncing
-            const isSyncing = service.name === 'kaspa-node' && 
-                             containerInfo.isRunning && 
-                             (error.message.includes('Parse Error') || 
+            const isSyncing = service.name === 'kaspa-node' &&
+                             containerInfo.isRunning &&
+                             (error.message.includes('Parse Error') ||
                               error.message.includes('ECONNREFUSED') ||
                               error.message.includes('timeout'));
-            
-            return { 
-                ...service, 
+
+            return {
+                ...service,
                 status: isSyncing ? 'syncing' : 'unhealthy',
                 state: containerInfo.state,
                 dockerStatus: containerInfo.status,
-                error: isSyncing ? 'Node is syncing with network' : error.message, 
+                hostPort: containerInfo.hostPort,
+                error: isSyncing ? 'Node is syncing with network' : error.message,
                 lastCheck: new Date().toISOString(),
                 dependencyStatus,
                 uptime: await this.getServiceUptime(service.name)
