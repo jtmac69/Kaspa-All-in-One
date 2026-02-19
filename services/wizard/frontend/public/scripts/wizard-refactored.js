@@ -1740,7 +1740,8 @@ if (typeof window !== 'undefined') {
      */
     window.startModifySettings = async function() {
         console.log('[WIZARD] Starting modify settings flow');
-        
+        updateSidebarReconfigActive('edit-settings');
+
         try {
             // Set reconfiguration flow type
             stateManager.set('reconfigurationFlow', 'modify-settings');
