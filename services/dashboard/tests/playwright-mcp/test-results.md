@@ -8,9 +8,9 @@
 | Metric | Value |
 |--------|-------|
 | Total Tests | 42 |
-| Passed | 36 |
+| Passed | 38 |
 | Failed | 0 |
-| Soft Fail | 2 |
+| Soft Fail | 0 |
 | Skipped | 1 |
 | Bugs Found | 3 |
 
@@ -43,8 +43,8 @@
 | D15 | Open logs modal | PASS | `display: flex` |
 | D16 | Logs content | PASS | Title "kasia-indexer Logs", real Rust indexer log content |
 | D17 | Close logs modal | PASS | Close button works, `display: none` |
-| D18 | Applications grid | SOFT FAIL | Grid section exists but empty — no app cards rendered |
-| D19 | Application links | SOFT FAIL | No app links in grid (related to D18) |
+| D18 | Applications grid | PASS | App cards rendered for Application-type services (kasia-app shown with icon, description, status) |
+| D19 | Application links | PASS | Launch button present (disabled when stopped), URL section hidden when no hostPort available |
 | D20 | Filter dropdown populated | PASS | 5 options: All (2), Application (1), Indexer (1), Kasia App (1), Kasia Idx (1) |
 | D21 | Filter by type | PASS | Selecting "Application (1)" shows only kasia-app (after bug #3 fix) |
 | D22 | Reset filter | PASS | Selecting "All" restores both cards |
@@ -81,5 +81,5 @@
 
 - **kasia-app**: Docker image has exec format error (architecture mismatch) — shows as "stopped/restarting". This is an environment issue, not a dashboard bug.
 - **kasia-indexer**: Shows "unhealthy" with error "getaddrinfo ENOTFOUND kasia-indexer" — expected since dashboard runs on host, not inside Docker network.
-- **Applications grid (D18/D19)**: Empty despite having kasia-app installed. The dashboard may not populate this section when services are unhealthy/stopped, or the app registration logic may need investigation.
+- **Applications grid (D18/D19)**: Fixed in commit 98f4498 — `updateApplications()` added to `ui-manager.js`, `hostPort` parsing added to `ServiceMonitor.js`. App cards now render for all Application-type services with status, URL, and launch button.
 - **Dashboard nodemon**: No `nodemon.json` config — watches all files including `.kaspa-aio/installation-state.json`, causing restart loops during testing. Used `node server.js` directly as workaround.
