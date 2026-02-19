@@ -897,25 +897,9 @@ function applyLaunchContextToReconfiguration(launchContext) {
  * Select reconfiguration action
  */
 function selectReconfigurationAction(action) {
-    // Remove previous selections
-    document.querySelectorAll('.action-card').forEach(card => {
-        card.classList.remove('selected');
-    });
-    
-    // Select current action
-    const actionCard = document.getElementById(`${action}-action`);
-    if (actionCard) {
-        actionCard.classList.add('selected');
-    }
-    
-    // Store selected action
+    // Store selected action and proceed immediately
     stateManager.set('reconfigurationAction', action);
-    
-    // Enable continue button
-    const continueBtn = document.getElementById('reconfigure-continue-btn');
-    if (continueBtn) {
-        continueBtn.disabled = false;
-    }
+    proceedWithReconfiguration();
 }
 
 /**

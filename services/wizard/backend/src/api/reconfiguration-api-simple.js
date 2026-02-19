@@ -19,21 +19,24 @@ const resolver = createResolver(__dirname);
 router.get('/profiles/status', async (req, res) => {
   try {
     const fs = require('fs').promises;
+    const { execFile } = require('child_process');
+    const { promisify } = require('util');
+    const execFileAsync = promisify(execFile);
     const { SharedStateManager } = require('../../../../shared/lib/state-manager');
-    
+
     const paths = resolver.getPaths();
     const projectRoot = paths.root;
     const statePath = paths.installationState;
-    
+
     console.log('[PROFILES STATUS] Project root:', projectRoot);
     console.log('[PROFILES STATUS] State path:', statePath);
-    
+
     // Load installation state
     const stateManager = new SharedStateManager(statePath);
     const installationState = await stateManager.readState();
-    
+
     console.log('[PROFILES STATUS] Installation state:', installationState ? 'found' : 'null');
-    
+
     if (!installationState) {
       return res.json({
         success: true,
@@ -55,10 +58,20 @@ router.get('/profiles/status', async (req, res) => {
         dependencyInfo: []
       });
     }
-    
+
+    // Query Docker for live container status
+    let runningContainerNames = [];
+    try {
+      const { stdout } = await execFileAsync('docker', ['ps', '--format', '{{.Names}}'], { timeout: 5000 });
+      runningContainerNames = stdout.trim().split('\n').filter(Boolean);
+      console.log('[PROFILES STATUS] Running Docker containers:', runningContainerNames);
+    } catch (dockerError) {
+      console.warn('[PROFILES STATUS] Could not query Docker:', dockerError.message);
+    }
+
     // Get installed profiles from state
     const installedProfiles = installationState.profiles?.selected || [];
-    
+
     // Define all available profiles using the NEW 8-profile architecture
     const allProfiles = [
       {
@@ -126,21 +139,24 @@ router.get('/profiles/status', async (req, res) => {
         services: ['kaspa-stratum']
       }
     ];
-    
-    // Categorize profiles
+
+    // Categorize profiles using live Docker status
     const profileStates = allProfiles.map(profile => {
       const isInstalled = installedProfiles.includes(profile.id);
       const services = installationState.services || [];
-      const profileServices = services.filter(s => 
+      const profileServices = services.filter(s =>
         profile.services.some(ps => s.name.includes(ps) || s.name === ps)
       );
-      
-      const runningServices = profileServices.filter(s => s.running).length;
+
+      // Check live Docker status instead of trusting state file
+      const runningServices = profileServices.filter(s =>
+        runningContainerNames.some(name => name === s.name || name.includes(s.name))
+      ).length;
       const totalServices = profileServices.length;
-      
+
       let profileInstallState = 'not-installed';
       let status = 'stopped';
-      
+
       if (isInstalled) {
         if (runningServices === totalServices && totalServices > 0) {
           profileInstallState = 'installed';
@@ -153,7 +169,7 @@ router.get('/profiles/status', async (req, res) => {
           status = 'stopped';
         }
       }
-      
+
       return {
         ...profile,
         installationState: profileInstallState,
@@ -163,14 +179,14 @@ router.get('/profiles/status', async (req, res) => {
         totalServices
       };
     });
-    
+
     const installed = profileStates.filter(p => p.installationState === 'installed');
     const available = profileStates.filter(p => p.installationState === 'not-installed');
     const partial = profileStates.filter(p => p.installationState === 'partial');
-    
-    // Calculate system health
-    const totalRunning = installationState.summary?.running || 0;
-    const totalServices = installationState.summary?.total || 0;
+
+    // Calculate system health from live data
+    const totalRunning = profileStates.reduce((sum, p) => sum + p.runningServices, 0);
+    const totalServices = profileStates.reduce((sum, p) => sum + p.totalServices, 0);
     const healthPercentage = totalServices > 0 ? Math.round((totalRunning / totalServices) * 100) : 0;
     const healthStatus = healthPercentage === 100 ? 'healthy' : 
                         healthPercentage >= 50 ? 'warning' : 'error';
