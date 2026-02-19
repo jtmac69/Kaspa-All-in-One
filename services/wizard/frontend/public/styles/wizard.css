@@ -4,6 +4,7 @@
    ============================================================================ */
 
 /* Component Imports */
+@import url('./components/sidebar-layout.css');
 @import url('./components/modals.css');
 @import url('./components/forms.css');
 @import url('./components/config-modification.css');
@@ -14153,4 +14154,36 @@ input:checked + .toggle-slider:before {
 #step-settings-modification .step-content {
   overflow-y: visible !important;
   max-height: none !important;
+}
+
+/* ============================================================================
+   Sidebar Layout Overrides
+   Higher specificity to override ultra-compact !important rules above
+   ============================================================================ */
+
+.wizard-layout .wizard-progress {
+  padding: var(--space-4) !important;
+  margin-bottom: 0 !important;
+}
+
+.wizard-layout .wizard-progress .step-number {
+  width: 28px !important;
+  height: 28px !important;
+  font-size: 12px !important;
+}
+
+.wizard-layout .wizard-content {
+  max-height: none !important;
+  margin-bottom: 0 !important;
+}
+
+.wizard-layout .wizard-progress .theme-toggle {
+  position: static !important;
+  bottom: unset !important;
+  left: unset !important;
+}
+
+/* Sidebar container should fill height, not be constrained */
+.wizard-container {
+  max-width: 100% !important;
 }

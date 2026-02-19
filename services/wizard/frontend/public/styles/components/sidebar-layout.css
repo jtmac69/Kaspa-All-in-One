@@ -1,0 +1,325 @@
+/* ============================================================================
+   Sidebar Navigation Layout
+   Converts horizontal progress bar to a left sidebar for better vertical space
+   ============================================================================ */
+
+/* Main flex-row wrapper: sidebar + content */
+.wizard-layout {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* --- Sidebar (was .wizard-progress) --- */
+.wizard-layout .wizard-progress {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  overflow-y: auto;
+  padding: var(--space-4);
+  margin-bottom: 0;
+  box-shadow: none;
+}
+
+/* Sidebar header: logo + app name */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-header .sidebar-logo {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.sidebar-header .sidebar-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* --- Progress steps: vertical layout --- */
+.wizard-layout .progress-steps {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow-x: visible;
+  padding: 0;
+  gap: var(--space-1);
+}
+
+/* Hide horizontal connecting lines */
+.wizard-layout .progress-line {
+  display: none;
+}
+
+/* Each step: row layout (number + label side-by-side) */
+.wizard-layout .progress-step {
+  flex-direction: row;
+  align-items: center;
+  min-width: unset;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  gap: var(--space-3);
+  transition: background var(--transition-base), opacity var(--transition-base);
+}
+
+.wizard-layout .progress-step:hover {
+  background: rgba(var(--kaspa-blue-rgb), 0.06);
+}
+
+.wizard-layout .progress-step.active {
+  background: rgba(var(--kaspa-blue-rgb), 0.1);
+}
+
+/* Smaller step circles for sidebar */
+.wizard-layout .step-number {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  font-size: 12px;
+}
+
+.wizard-layout .progress-step.active .step-number {
+  transform: scale(1.0); /* no inflate in sidebar */
+}
+
+/* Step label left-aligned */
+.wizard-layout .step-label {
+  text-align: left;
+  font-size: var(--text-sm);
+}
+
+/* --- Sidebar reconfig panel --- */
+.sidebar-reconfig-panel {
+  display: none; /* shown via JS in reconfig mode */
+  flex-direction: column;
+  gap: var(--space-3);
+  flex: 1;
+}
+
+.sidebar-reconfig-mode-label {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: var(--font-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--kaspa-blue);
+  padding: 4px 8px;
+  background: rgba(var(--kaspa-blue-rgb), 0.1);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.sidebar-install-summary {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  padding: 0 4px;
+}
+
+.sidebar-install-summary div {
+  padding: 2px 0;
+}
+
+/* Reconfig nav items */
+.sidebar-reconfig-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sidebar-reconfig-nav .sidebar-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: background var(--transition-base);
+  text-align: left;
+  width: 100%;
+}
+
+.sidebar-reconfig-nav .sidebar-nav-btn:hover {
+  background: rgba(var(--kaspa-blue-rgb), 0.08);
+}
+
+.sidebar-reconfig-nav .sidebar-nav-btn.active {
+  background: rgba(var(--kaspa-blue-rgb), 0.12);
+  color: var(--kaspa-blue);
+  font-weight: var(--font-semibold);
+}
+
+.sidebar-reconfig-nav .sidebar-nav-icon {
+  font-size: 16px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Exit reconfig button */
+.sidebar-exit-reconfig {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 8px 12px;
+  margin-top: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  width: 100%;
+}
+
+.sidebar-exit-reconfig:hover {
+  border-color: var(--kaspa-blue);
+  color: var(--kaspa-blue);
+  background: rgba(var(--kaspa-blue-rgb), 0.05);
+}
+
+/* --- Theme toggle: push to sidebar bottom --- */
+.wizard-layout .wizard-progress .theme-toggle {
+  position: static;
+  margin-top: auto;
+  align-self: flex-start;
+  bottom: unset;
+  left: unset;
+}
+
+/* --- Main content area (right panel) --- */
+.wizard-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Remove margin/border-radius that made sense for horizontal mode */
+.wizard-layout .wizard-content {
+  border-radius: 0 var(--radius-lg) 0 0;
+  margin-bottom: 0;
+}
+
+/* --- Hide the old reconfig landing action cards in sidebar mode --- */
+.wizard-layout .reconfiguration-options {
+  display: none;
+}
+
+/* Hide the injected #reconfiguration-nav bar — sidebar replaces it */
+.wizard-layout #reconfiguration-nav {
+  display: none !important;
+}
+
+/* --- Dark mode adjustments --- */
+[data-theme="dark"] .wizard-layout .wizard-progress {
+  border-right-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .sidebar-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .sidebar-reconfig-mode-label {
+  background: rgba(var(--kaspa-blue-rgb), 0.15);
+}
+
+[data-theme="dark"] .sidebar-exit-reconfig {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* --- Responsive: collapse sidebar at narrow viewports --- */
+@media (max-width: 768px) {
+  .wizard-layout {
+    flex-direction: column;
+  }
+
+  .wizard-layout .wizard-progress {
+    width: 100%;
+    flex-shrink: 0;
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .sidebar-header {
+    display: none; /* hide logo in horizontal mode */
+  }
+
+  .wizard-layout .progress-steps {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .wizard-layout .progress-step {
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+    width: auto;
+    padding: 4px;
+  }
+
+  .wizard-layout .step-label {
+    text-align: center;
+    font-size: 10px;
+  }
+
+  .wizard-layout .progress-line {
+    display: block; /* restore lines in horizontal */
+  }
+
+  .sidebar-reconfig-panel {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2);
+    overflow-x: auto;
+  }
+
+  .wizard-layout .wizard-progress .theme-toggle {
+    margin-top: 0;
+    margin-left: auto;
+  }
+
+  .wizard-layout .wizard-content {
+    border-radius: 0;
+  }
+
+  /* Re-show old reconfig cards on narrow screens where sidebar is collapsed */
+  .wizard-layout .reconfiguration-options {
+    display: block;
+  }
+
+  .wizard-layout #reconfiguration-nav {
+    display: flex !important;
+  }
+}

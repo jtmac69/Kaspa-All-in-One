@@ -511,11 +511,11 @@ async function showReconfigurationLanding(launchContext = null) {
         landingStep.classList.add('active');
         landingStep.style.display = 'block';
         
-        // Update progress indicator (hide it for reconfiguration mode)
-        const progressIndicator = document.querySelector('.wizard-progress');
-        if (progressIndicator) {
-            progressIndicator.style.display = 'none';
-        }
+        // Hide install steps, show reconfig sidebar panel
+        const progressSteps = document.querySelector('.wizard-progress .progress-steps');
+        if (progressSteps) progressSteps.style.display = 'none';
+        const reconfigPanel = document.getElementById('sidebar-reconfig-panel');
+        if (reconfigPanel) reconfigPanel.style.display = 'flex';
         
         // Load installation state and profile information
         await loadReconfigurationData();
@@ -592,6 +592,14 @@ async function loadReconfigurationData() {
                 }
             }
             
+            // Update sidebar summary
+            const sidebarSummary = document.getElementById('sidebar-install-summary');
+            if (sidebarSummary) {
+                const installedCount = response.profileStates ? response.profileStates.length : 0;
+                sidebarSummary.innerHTML = `<div>${installedCount} profile${installedCount !== 1 ? 's' : ''} installed</div>` +
+                    `<div>${response.runningServicesCount || 0}/${response.totalServicesCount || 0} services running</div>`;
+            }
+
             // Store data in state for later use
             stateManager.set('reconfigurationData', response);
             
@@ -899,7 +907,22 @@ function applyLaunchContextToReconfiguration(launchContext) {
 function selectReconfigurationAction(action) {
     // Store selected action and proceed immediately
     stateManager.set('reconfigurationAction', action);
+    updateSidebarReconfigActive(action);
     proceedWithReconfiguration();
+}
+
+/**
+ * Highlight the active sidebar reconfig nav button
+ */
+function updateSidebarReconfigActive(action) {
+    const actionMap = {
+        'add-profiles': 'manage-services',
+        'modify-config': 'edit-settings'
+    };
+    const activeKey = actionMap[action] || action;
+    document.querySelectorAll('.sidebar-reconfig-nav .sidebar-nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.action === activeKey);
+    });
 }
 
 /**
@@ -1165,11 +1188,11 @@ function goToInitialMode() {
     stateManager.remove('reconfigurationAction');
     stateManager.remove('reconfigurationContext');
     
-    // Show progress indicator again
-    const progressIndicator = document.querySelector('.wizard-progress');
-    if (progressIndicator) {
-        progressIndicator.style.display = 'block';
-    }
+    // Restore install steps, hide reconfig panel
+    const progressSteps = document.querySelector('.wizard-progress .progress-steps');
+    if (progressSteps) progressSteps.style.display = '';
+    const reconfigPanel = document.getElementById('sidebar-reconfig-panel');
+    if (reconfigPanel) reconfigPanel.style.display = 'none';
     
     // Go to welcome step
     goToStep(1);

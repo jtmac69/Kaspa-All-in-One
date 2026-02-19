@@ -389,7 +389,11 @@ export function goToStep(stepNumber) {
     // Update progress indicator
     updateProgressIndicator(stepNumber);
     
-    // Scroll to top
+    // Scroll content to top (in sidebar layout, content scrolls inside .wizard-main)
+    const wizardMain = document.querySelector('.wizard-main');
+    if (wizardMain) {
+        wizardMain.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
     // Handle step-specific entry logic
@@ -633,11 +637,11 @@ export function exitReconfigurationMode() {
     stateManager.set('wizardMode', 'normal');
     stateManager.set('reconfigurationFlow', null);
     
-    // Show regular wizard progress
-    const wizardProgress = document.querySelector('.wizard-progress');
-    if (wizardProgress) {
-        wizardProgress.style.display = 'block';
-    }
+    // Restore install steps, hide reconfig panel
+    const progressSteps = document.querySelector('.wizard-progress .progress-steps');
+    if (progressSteps) progressSteps.style.display = '';
+    const reconfigPanel = document.getElementById('sidebar-reconfig-panel');
+    if (reconfigPanel) reconfigPanel.style.display = 'none';
     
     // Navigate to appropriate step
     const currentInstallState = stateManager.get('installationComplete');

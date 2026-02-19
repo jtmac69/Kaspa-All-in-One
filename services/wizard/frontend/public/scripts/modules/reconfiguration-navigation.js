@@ -744,12 +744,12 @@ export function showReconfigurationNavigation() {
     if (nav) {
         nav.style.display = 'block';
     }
-    
-    // Hide main wizard progress
-    const wizardProgress = document.querySelector('.wizard-progress');
-    if (wizardProgress) {
-        wizardProgress.style.display = 'none';
-    }
+
+    // In sidebar layout: hide steps, show reconfig panel (don't hide entire sidebar)
+    const progressSteps = document.querySelector('.wizard-progress .progress-steps');
+    if (progressSteps) progressSteps.style.display = 'none';
+    const reconfigPanel = document.getElementById('sidebar-reconfig-panel');
+    if (reconfigPanel) reconfigPanel.style.display = 'flex';
 }
 
 export function hideReconfigurationNavigation() {
@@ -757,12 +757,12 @@ export function hideReconfigurationNavigation() {
     if (nav) {
         nav.style.display = 'none';
     }
-    
-    // Show main wizard progress
-    const wizardProgress = document.querySelector('.wizard-progress');
-    if (wizardProgress) {
-        wizardProgress.style.display = 'block';
-    }
+
+    // In sidebar layout: restore steps, hide reconfig panel
+    const progressSteps = document.querySelector('.wizard-progress .progress-steps');
+    if (progressSteps) progressSteps.style.display = '';
+    const reconfigPanel = document.getElementById('sidebar-reconfig-panel');
+    if (reconfigPanel) reconfigPanel.style.display = 'none';
 }
 
 // Global functions for HTML onclick handlers

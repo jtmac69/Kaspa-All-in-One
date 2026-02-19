@@ -36,9 +36,33 @@
 <body>
     <!-- Wizard Container -->
     <div id="wizard-app" class="wizard-container">
-        
-        <!-- Progress Indicator -->
+
+        <!-- Test Release Banner -->
+        <div class="test-release-banner" id="test-release-banner">
+            <div class="banner-icon">⚠️</div>
+            <div class="banner-content">
+                <strong>Test Release v0.10.0</strong>
+                <p>This is a pre-release version for testing purposes.
+                   <a href="/KNOWN_ISSUES.md" target="_blank">Known Issues</a> |
+                   <a href="https://github.com/kaspa-kcoin/kaspa-all-in-one/issues" target="_blank">Report Bug</a>
+                </p>
+            </div>
+            <button class="banner-dismiss" onclick="dismissBanner()" aria-label="Dismiss banner">×</button>
+        </div>
+
+        <!-- Sidebar + Main Content Layout -->
+        <div class="wizard-layout">
+
+        <!-- Sidebar Navigation (was Progress Indicator) -->
         <div class="wizard-progress">
+            <!-- Sidebar Header -->
+            <div class="sidebar-header">
+                <picture>
+                    <source srcset="/assets/brand/icons/svg/kaspa-icon-dark.svg" media="(prefers-color-scheme: dark)">
+                    <img src="/assets/brand/icons/svg/kaspa-icon-light.svg" alt="Kaspa" class="sidebar-logo">
+                </picture>
+                <span class="sidebar-title">Kaspa AIO</span>
+            </div>
             <div class="progress-steps">
                 <div class="progress-step active" data-step="1">
                     <div class="step-number">1</div>
@@ -86,6 +110,28 @@
                     <div class="step-label">Complete</div>
                 </div>
             </div>
+            <!-- Sidebar Reconfiguration Panel (hidden by default) -->
+            <div class="sidebar-reconfig-panel" id="sidebar-reconfig-panel">
+                <div class="sidebar-reconfig-mode-label">Reconfiguration</div>
+                <div class="sidebar-install-summary" id="sidebar-install-summary">
+                    <div>Loading...</div>
+                </div>
+                <nav class="sidebar-reconfig-nav">
+                    <button class="sidebar-nav-btn" data-action="manage-services" onclick="selectReconfigurationAction('add-profiles')">
+                        <span class="sidebar-nav-icon">📦</span> Manage Services
+                    </button>
+                    <button class="sidebar-nav-btn" data-action="edit-settings" onclick="startModifySettings()">
+                        <span class="sidebar-nav-icon">⚙️</span> Edit Settings
+                    </button>
+                    <button class="sidebar-nav-btn" data-action="dashboard" onclick="window.location.href='/dashboard'">
+                        <span class="sidebar-nav-icon">📊</span> Dashboard
+                    </button>
+                </nav>
+                <button class="sidebar-exit-reconfig" onclick="exitReconfigurationMode()">
+                    ← Exit Reconfiguration
+                </button>
+            </div>
+
             <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
                 <svg class="theme-icon theme-icon-light" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                 <svg class="theme-icon theme-icon-dark" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -93,18 +139,8 @@
             </button>
         </div>
 
-        <!-- Test Release Banner -->
-        <div class="test-release-banner" id="test-release-banner">
-            <div class="banner-icon">⚠️</div>
-            <div class="banner-content">
-                <strong>Test Release v0.10.0</strong>
-                <p>This is a pre-release version for testing purposes. 
-                   <a href="/KNOWN_ISSUES.md" target="_blank">Known Issues</a> | 
-                   <a href="https://github.com/kaspa-kcoin/kaspa-all-in-one/issues" target="_blank">Report Bug</a>
-                </p>
-            </div>
-            <button class="banner-dismiss" onclick="dismissBanner()" aria-label="Dismiss banner">×</button>
-        </div>
+        <!-- Main Content Panel -->
+        <div class="wizard-main">
 
         <!-- Main Content Area -->
         <main class="wizard-content">
@@ -2263,6 +2299,9 @@
                 <!-- Navigation buttons will be dynamically inserted here -->
             </div>
         </div>
+
+        </div><!-- /.wizard-main -->
+        </div><!-- /.wizard-layout -->
 
         <!-- Footer -->
         <footer class="wizard-footer">
