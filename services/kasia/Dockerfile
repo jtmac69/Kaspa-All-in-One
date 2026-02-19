@@ -95,75 +95,13 @@ RUN apk add --no-cache curl
 # Copy built application
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create nginx configuration
-RUN cat > /etc/nginx/conf.d/default.conf << 'EOF'
-server {
-    listen 3000;
-    server_name localhost;
-    root /usr/share/nginx/html;
-    index index.html;
+# Copy nginx configuration
+# Note: Using COPY instead of heredoc RUN to avoid Docker BuildKit
+# heredoc parsing issue that produces 0-byte files.
+COPY nginx-default.conf /etc/nginx/conf.d/default.conf
 
-    # Enable gzip compression
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json application/wasm;
-
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "no-referrer-when-downgrade" always;
-
-    # Main application
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Health check endpoint
-    location /health {
-        access_log off;
-        return 200 "healthy\n";
-        add_header Content-Type text/plain;
-    }
-
-    # API proxy endpoints for service health checks (optional)
-    location /api/indexer-health {
-        return 503 "Service not available in standalone mode";
-        add_header Content-Type text/plain;
-    }
-
-    location /api/node-health {
-        return 503 "Service not available in standalone mode";
-        add_header Content-Type text/plain;
-    }
-}
-EOF
-
-# Create startup script to handle environment variables
-RUN cat > /docker-entrypoint.sh << 'EOF'
-#!/bin/sh
-
-# Create environment configuration file for the frontend
-cat > /usr/share/nginx/html/env-config.js << EOL
-window.ENV = {
-  VITE_DEFAULT_KASPA_NETWORK: "${VITE_DEFAULT_KASPA_NETWORK:-mainnet}",
-  VITE_ALLOWED_KASPA_NETWORKS: "${VITE_ALLOWED_KASPA_NETWORKS:-mainnet}",
-  VITE_DISABLE_PASSWORD_REQUIREMENTS: "${VITE_DISABLE_PASSWORD_REQUIREMENTS:-false}",
-  VITE_LOG_LEVEL: "${VITE_LOG_LEVEL:-warn}",
-  VITE_DEV_MODE: "${VITE_DEV_MODE:-false}",
-  VITE_INDEXER_MAINNET_URL: "${VITE_INDEXER_MAINNET_URL:-}",
-  VITE_INDEXER_TESTNET_URL: "${VITE_INDEXER_TESTNET_URL:-}",
-  VITE_DISABLE_INDEXER: "${VITE_DISABLE_INDEXER:-false}",
-  VITE_DEFAULT_MAINNET_KASPA_NODE_URL: "${VITE_DEFAULT_MAINNET_KASPA_NODE_URL:-}",
-  VITE_DEFAULT_TESTNET_KASPA_NODE_URL: "${VITE_DEFAULT_TESTNET_KASPA_NODE_URL:-}"
-};
-EOL
-
-# Start nginx
-exec nginx -g 'daemon off;'
-EOF
-
+# Copy startup script to handle runtime environment variables
+COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 # Expose port
