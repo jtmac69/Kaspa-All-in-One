@@ -1572,7 +1572,7 @@ app.get('/api/kaspa/network/enhanced', async (req, res) => {
                     currentBlockReward: blockReward,
                     blockRewardSource: blockRewardSource,
                     blockRewardAccurate: blockRewardAccurate,
-                    lastBlockCoinbase: null,
+                    lastBlockCoinbase: blockReward,
                     nextReduction: {
                         reward: nextReduction.reward,
                         timeRemaining: nextReduction.timeRemaining,

@@ -26,13 +26,16 @@
 /* Import Shared Icon System */
 @import '/shared/icons/lucide-icons.css';
 
+/* Import Dashboard Sidebar Layout */
+@import 'styles/components/sidebar-layout.css';
+
 /* ============================================================================
    Dashboard-Specific Overrides and Extensions
    ============================================================================ */
 
-/* Container - More Compact Layout */
+/* Container - Full width to accommodate sidebar */
 .container {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
     padding: var(--space-compact-3) var(--space-compact-4);
 }
@@ -834,13 +837,6 @@ body.wizard-running {
 main {
     display: flex;
     flex-direction: column;
-    gap: var(--space-compact-3);
-}
-
-/* Overview Section - Horizontal Layout for Desktop */
-.overview {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
     gap: var(--space-compact-3);
 }
 

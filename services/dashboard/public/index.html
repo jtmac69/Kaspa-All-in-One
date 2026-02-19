@@ -74,7 +74,8 @@
             </div>
         </header>
 
-        <main role="main" id="main-content">
+        <div class="dashboard-layout">
+        <aside class="dashboard-sidebar" id="dashboard-sidebar">
             <!-- Overview Cards -->
             <section class="overview" aria-labelledby="overview-heading">
                 <h2 id="overview-heading" class="sr-only">System Overview</h2>
@@ -232,7 +233,9 @@
                     </div>
                 </article>
             </section>
+        </aside>
 
+        <main role="main" id="main-content" class="dashboard-main">
             <!-- Services Status -->
             <section class="services" aria-labelledby="services-heading">
                 <div class="services-header">
@@ -403,6 +406,7 @@
                 </div>
             </section>
         </main>
+        </div><!-- /.dashboard-layout -->
 
         <!-- Modal for logs -->
         <div id="logs-modal" class="modal" role="dialog" aria-labelledby="logs-title" aria-hidden="true">

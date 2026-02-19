@@ -1,0 +1,304 @@
+/* ============================================================================
+   Dashboard Sidebar Layout
+   Moves Kaspa Network + Local Node Status into a sticky left sidebar,
+   freeing main content width for service monitoring.
+   ============================================================================ */
+
+/* Layout wrapper: flex-row with sidebar + main */
+.dashboard-layout {
+    display: flex;
+    gap: var(--space-compact-4);
+    align-items: flex-start;
+}
+
+/* Sticky sidebar */
+.dashboard-sidebar {
+    position: sticky;
+    top: var(--space-compact-3);
+    width: 280px;
+    min-width: 280px;
+    max-height: calc(100vh - var(--space-compact-3) * 2);
+    overflow-y: auto;
+    flex-shrink: 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--kaspa-blue) transparent;
+}
+
+.dashboard-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb {
+    background: var(--kaspa-blue);
+    border-radius: var(--radius-full);
+}
+
+/* Override overview from 2-col grid to stacked column inside sidebar */
+.dashboard-sidebar .overview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-compact-3);
+    margin-bottom: 0;
+}
+
+/* Main content fills remaining space */
+.dashboard-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-compact-3);
+}
+
+/* ============================================================================
+   Network Stats Conversion: 3-col grid -> compact 1-col list
+   ============================================================================ */
+
+.dashboard-sidebar .stats-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-compact-2);
+}
+
+.dashboard-sidebar .kaspa-stats .stats-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-compact-2);
+}
+
+.dashboard-sidebar .stat {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-compact-1) var(--space-compact-2);
+}
+
+.dashboard-sidebar .stat .label {
+    margin-bottom: 0;
+}
+
+.dashboard-sidebar .stat .sub-value {
+    display: none;
+}
+
+/* Technical details: tighter within sidebar */
+.dashboard-sidebar .network-technical-details {
+    padding: var(--space-compact-2);
+    margin-top: var(--space-compact-2);
+}
+
+.dashboard-sidebar .network-technical-details .stats-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-compact-2);
+    margin-top: var(--space-compact-2);
+}
+
+.dashboard-sidebar .network-technical-details .stat {
+    min-height: auto;
+    padding: var(--space-compact-2);
+}
+
+.dashboard-sidebar .network-technical-details .stat .value {
+    font-size: var(--text-base);
+}
+
+/* Card headings: slightly smaller in sidebar */
+.dashboard-sidebar .card h2 {
+    font-size: var(--text-base);
+}
+
+.dashboard-sidebar .card {
+    padding: var(--space-compact-3);
+}
+
+/* ============================================================================
+   Sync Pipeline Conversion: horizontal -> vertical
+   ============================================================================ */
+
+.dashboard-sidebar .sync-pipeline {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: var(--space-compact-2);
+}
+
+.dashboard-sidebar .pipeline-phase {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-compact-2);
+    min-width: unset;
+    width: 100%;
+    padding: var(--space-compact-1) var(--space-compact-2);
+}
+
+.dashboard-sidebar .pipeline-phase .phase-name {
+    margin-top: 0;
+}
+
+.dashboard-sidebar .pipeline-connector {
+    display: flex;
+    justify-content: center;
+    transform: rotate(90deg);
+    margin: -2px 0;
+    font-size: 0.7rem;
+}
+
+/* ============================================================================
+   Node Stats Conversion: 2-col -> 1-col
+   ============================================================================ */
+
+.dashboard-sidebar .node-stats-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-compact-2);
+}
+
+/* Blocks/hour chart: full sidebar width */
+.dashboard-sidebar .blocks-hour-chart-container {
+    width: 100%;
+}
+
+/* Sync status container: tighter padding */
+.dashboard-sidebar .sync-status-container {
+    padding: var(--space-compact-2);
+}
+
+.dashboard-sidebar .sync-activity {
+    padding: var(--space-compact-1) var(--space-compact-2);
+}
+
+/* Network info source: compact */
+.dashboard-sidebar .network-info {
+    margin-top: var(--space-compact-2);
+    padding-top: var(--space-compact-1);
+}
+
+/* ============================================================================
+   Responsive: Collapse sidebar at narrower viewports
+   ============================================================================ */
+
+@media (max-width: 1024px) {
+    .dashboard-layout {
+        flex-direction: column;
+    }
+
+    .dashboard-sidebar {
+        position: static;
+        width: 100%;
+        min-width: unset;
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    /* Restore horizontal 2-card grid */
+    .dashboard-sidebar .overview {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-compact-3);
+    }
+
+    /* Restore 3-col stats */
+    .dashboard-sidebar .stats-grid,
+    .dashboard-sidebar .kaspa-stats .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-compact-2);
+    }
+
+    .dashboard-sidebar .stat {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: var(--space-compact-2) var(--space-compact-3);
+    }
+
+    .dashboard-sidebar .stat .label {
+        margin-bottom: var(--space-compact-1);
+    }
+
+    .dashboard-sidebar .stat .sub-value {
+        display: inline;
+    }
+
+    /* Restore horizontal pipeline */
+    .dashboard-sidebar .sync-pipeline {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .dashboard-sidebar .pipeline-phase {
+        flex-direction: column;
+        width: auto;
+        min-width: 55px;
+    }
+
+    .dashboard-sidebar .pipeline-phase .phase-name {
+        margin-top: 0.2rem;
+    }
+
+    .dashboard-sidebar .pipeline-connector {
+        transform: none;
+        margin: 0 0.15rem;
+    }
+
+    /* Restore 2-col node stats */
+    .dashboard-sidebar .node-stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .dashboard-sidebar .card {
+        padding: var(--space-compact-4);
+    }
+
+    .dashboard-sidebar .card h2 {
+        font-size: var(--text-h5);
+    }
+
+    .dashboard-sidebar .network-technical-details {
+        padding: var(--space-compact-4);
+        margin-top: var(--space-compact-4);
+    }
+
+    .dashboard-sidebar .network-technical-details .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        margin-top: var(--space-compact-4);
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-sidebar .overview {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-sidebar .stats-grid,
+    .dashboard-sidebar .kaspa-stats .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dashboard-sidebar .node-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-sidebar .stats-grid,
+    .dashboard-sidebar .kaspa-stats .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================================================
+   Dark Mode: Scrollbar adjustments
+   ============================================================================ */
+
+[data-theme="dark"] .dashboard-sidebar {
+    scrollbar-color: rgba(112, 199, 186, 0.4) transparent;
+}
+
+[data-theme="dark"] .dashboard-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(112, 199, 186, 0.4);
+}
+
+[data-theme="dark"] .dashboard-sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(112, 199, 186, 0.6);
+}
