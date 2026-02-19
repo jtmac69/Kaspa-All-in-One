@@ -33,10 +33,10 @@
    Dashboard-Specific Overrides and Extensions
    ============================================================================ */
 
-/* Container - Full width to accommodate sidebar */
+/* Container - Full width with sidebar */
 .container {
-    max-width: 1600px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
     padding: var(--space-compact-3) var(--space-compact-4);
 }
 
@@ -2514,8 +2514,8 @@ main {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
     gap: var(--space-compact-3);
 }
 

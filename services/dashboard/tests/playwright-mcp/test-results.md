@@ -77,6 +77,38 @@
 | 2 | Critical | `ReferenceError: profiles is not defined` in catch block — `const { config, profiles } = data` was block-scoped inside `try`, inaccessible from `catch`. | `services/wizard/backend/src/server.js` (line ~458→876) | Yes — moved destructuring before `try` block |
 | 3 | Medium | Profile filter shows 0 results — `s.type` from API is `"http"` (health check protocol), not display type like `"Application"`. Filter comparison `(s.type \|\| this.getServiceType(s.name))` always used `s.type` since it's truthy. Also affected service card type badges (showed "http" instead of "Application"/"Indexer") and grouping. | `services/dashboard/public/scripts/modules/ui-manager.js` (lines 181, 274, 412) | Yes — changed to `this.getServiceType(service.name)` on all 3 lines |
 
+## Sidebar Layout Tests (2026-02-19, commit 9f95d50)
+
+| ID | Test | Status | Notes |
+|----|------|--------|-------|
+| S01 | Sidebar exists with correct dimensions | PASS | position: sticky, width: 280px, top: 8px |
+| S02 | Dashboard layout is flex row | PASS | display: flex |
+| S03 | Main content fills remaining space | PASS | flex: 1 1 0% |
+| S04 | Overview section inside sidebar | PASS | |
+| S05 | Both cards in sidebar DOM | PASS | kaspa-stats + node-info (node-info hidden by JS when no local node) |
+| S06 | Stats in compact row layout | PASS | flex-direction: row, justify-content: space-between |
+| S07 | Sub-values hidden in sidebar | PASS | display: none |
+| S08 | Network stats populated | PASS | TPS=10, BPS=10, Hashrate=420 PH/s, Circulating=28.70B, Block Reward=3.27 |
+| S09 | Services in main content | PASS | Not in sidebar |
+| S10 | Service cards rendered | PASS | 2 cards |
+| S11 | Technical Details toggle | PASS | details element opens/closes within sidebar |
+| S12 | DAA Score populated | PASS | 361100050 |
+| S13 | Recent Block Reward populated | PASS | 19.62 (from local-node coinbase data) |
+| S14 | Node-info hidden when no local node | PASS | display: none |
+| S15 | Sync pipeline vertical in sidebar | PASS | flex-direction: column |
+| S16 | Modals outside dashboard-layout | PASS | 3 modals, none inside layout div |
+| S17 | Footer outside layout | PASS | |
+| S18 | Source indicator | PASS | "Source: local-node" |
+| S19 | Resources in main content | PASS | |
+| S20 | Config modal opens over sidebar | PASS | display: flex, position: fixed works correctly |
+| S21 | Config modal closes | PASS | display: none |
+| S22 | Theme toggle dark→light | PASS | data-theme attribute switches |
+| S23 | Light mode sidebar | PASS | Screenshot: sidebar-light-viewport.png |
+| S24 | Dark mode sidebar | PASS | Screenshot: sidebar-dark-full.png |
+| S25 | Responsive 1024px collapse | PASS | flex-direction: column, position: static, 2-col grid restored |
+| S26 | Responsive 768px stack | PASS | Single-column overview, 2-col stats |
+| S27 | Full width sidebar | PASS | Screenshot: sidebar-light-full.png |
+
 ## Notes
 
 - **kasia-app**: Docker image has exec format error (architecture mismatch) — shows as "stopped/restarting". This is an environment issue, not a dashboard bug.
