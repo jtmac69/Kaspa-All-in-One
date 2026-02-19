@@ -1035,7 +1035,7 @@ app.get('/api/kaspa/network/public', async (req, res) => {
         try {
             // Note: This is a placeholder - actual public API endpoint may vary
             // Common options: kas.fyi API, kaspa.org API, or public explorer APIs
-            const publicResponse = await axios.get('https://api.kaspa.org/info/blockg/info', {
+            const publicResponse = await axios.get('https://api.kaspa.org/info/blockdag', {
                 timeout: 5000
             });
             
@@ -1521,11 +1521,80 @@ app.get('/api/kaspa/network/enhanced', async (req, res) => {
             publicClient.destroy();
             
         } catch (fallbackError) {
-            res.status(503).json({
-                error: 'Network data unavailable',
-                message: 'Both local and public nodes failed',
-                timestamp: new Date().toISOString()
-            });
+            console.error('Public gRPC node fallback failed:', fallbackError.message);
+
+            // Tier 3: REST API fallback (works without gRPC connectivity)
+            try {
+                console.log('Attempting REST API fallback for enhanced network stats...');
+
+                // Try to get blockdag info from public REST API
+                let dagData = null;
+                const restApis = [
+                    'https://api.kaspa.org/info/blockdag',
+                    'https://api.kas.fyi/info/blockdag'
+                ];
+
+                for (const apiUrl of restApis) {
+                    try {
+                        const response = await axios.get(apiUrl, { timeout: 5000 });
+                        if (response.data && (response.data.virtualDaaScore || response.data.blockCount)) {
+                            dagData = response.data;
+                            break;
+                        }
+                    } catch (apiErr) {
+                        console.log(`REST API ${apiUrl} failed:`, apiErr.message);
+                    }
+                }
+
+                if (!dagData) {
+                    throw new Error('All REST APIs failed');
+                }
+
+                const daaScore = dagData.virtualDaaScore || dagData.virtualSelectedParentBlueScore || dagData.blockCount;
+
+                // Try to get block reward from API
+                const blockRewardData = await getBlockRewardFromAPI();
+                const blockReward = blockRewardData ? blockRewardData.blockReward : calculateBlockReward(daaScore);
+                const blockRewardSource = blockRewardData ? blockRewardData.source : 'calculated';
+                const blockRewardAccurate = blockRewardData ? blockRewardData.accurate : false;
+
+                const hashRate = calculateNetworkHashRate(dagData.difficulty);
+                const nextReduction = calculateNextReduction(daaScore, blockReward);
+                const circulating = calculateCirculatingSupply(daaScore);
+                const bps = daaScore >= KASPA_CONSTANTS.CRESCENDO_HARDFORK_DAA ? 10 : 1;
+
+                console.log('✓ REST API fallback successful for enhanced network stats');
+
+                res.json({
+                    blockHeight: daaScore,
+                    difficulty: dagData.difficulty,
+                    networkHashRate: hashRate,
+                    currentBlockReward: blockReward,
+                    blockRewardSource: blockRewardSource,
+                    blockRewardAccurate: blockRewardAccurate,
+                    lastBlockCoinbase: null,
+                    nextReduction: {
+                        reward: nextReduction.reward,
+                        timeRemaining: nextReduction.timeRemaining,
+                        blocksRemaining: nextReduction.blocksRemaining
+                    },
+                    circulatingSupply: circulating.formatted,
+                    percentMined: circulating.percentageFormatted,
+                    mempoolSize: 0,
+                    connectedPeers: 0,
+                    tps: 10,
+                    bps: bps,
+                    source: 'public-api',
+                    timestamp: new Date().toISOString()
+                });
+            } catch (restApiError) {
+                console.error('All network data sources failed (gRPC local, gRPC public, REST API):', restApiError.message);
+                res.status(503).json({
+                    error: 'Network data unavailable',
+                    message: 'All data sources (local node, public node, REST API) failed',
+                    timestamp: new Date().toISOString()
+                });
+            }
         }
     }
 });
