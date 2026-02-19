@@ -290,7 +290,7 @@ app.get('/api/wizard/current-config', async (req, res) => {
   try {
     const fs = require('fs').promises;
     const dotenv = require('dotenv');
-    const { SharedStateManager } = require('../../shared/lib/state-manager');
+    const { SharedStateManager } = require('../../../shared/lib/state-manager');
     
     const paths = pathResolver.getPaths();
     const envPath = paths.env;
@@ -435,7 +435,7 @@ io.on('connection', (socket) => {
   // Helper function to clear wizardRunning flag
   const clearWizardRunningFlag = async (phase = 'error') => {
     try {
-      const { SharedStateManager } = require('../../shared/lib/state-manager');
+      const { SharedStateManager } = require('../../../shared/lib/state-manager');
       const paths = pathResolver.getPaths();
       const statePath = paths.installationState;
       const stateManager = new SharedStateManager(statePath);
@@ -454,12 +454,11 @@ io.on('connection', (socket) => {
 
   // Handle installation progress streaming
   socket.on('install:start', async (data) => {
+    const { config, profiles } = data;
     try {
-      const { config, profiles } = data;
-      
       // Set wizardRunning flag at start of installation
       try {
-        const { SharedStateManager } = require('../../shared/lib/state-manager');
+        const { SharedStateManager } = require('../../../shared/lib/state-manager');
         const paths = pathResolver.getPaths();
         const statePath = paths.installationState;
         const stateManager = new SharedStateManager(statePath);

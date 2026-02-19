@@ -178,7 +178,7 @@ export class UIManager {
             if (filter.startsWith('type:')) {
                 // Filter by service type
                 const type = filter.substring(5);
-                filteredServices = services.filter(s => (s.type || this.getServiceType(s.name)) === type);
+                filteredServices = services.filter(s => this.getServiceType(s.name) === type);
             } else if (filter.startsWith('profile:')) {
                 // Filter by profile
                 const profile = filter.substring(8);
@@ -271,7 +271,7 @@ export class UIManager {
             let groupKey;
             
             if (groupBy === 'type') {
-                groupKey = service.type || this.getServiceType(service.name);
+                groupKey = this.getServiceType(service.name);
             } else if (groupBy === 'profile') {
                 groupKey = service.profile || this.getServiceProfile(service.name) || 'other';
             } else {
@@ -409,7 +409,7 @@ export class UIManager {
                           service.status === 'unhealthy' ? 'unhealthy' : 'stopped';
         
         // Determine service type for badge
-        const serviceType = service.type || this.getServiceType(service.name);
+        const serviceType = this.getServiceType(service.name);
         const profile = service.profile || this.getServiceProfile(service.name);
         const typeClass = this.getServiceTypeClass(serviceType);
         const profileClass = this.getProfileClass(profile);
