@@ -543,9 +543,10 @@ function getOperationStatusIcon(status) {
  * Format timestamp for display
  */
 function formatTimestamp(timestamp) {
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
     const now = new Date();
-    const diff = now - timestamp;
-    
+    const diff = now - date;
+
     if (diff < 60000) { // Less than 1 minute
         return 'Just now';
     } else if (diff < 3600000) { // Less than 1 hour
@@ -553,7 +554,7 @@ function formatTimestamp(timestamp) {
     } else if (diff < 86400000) { // Less than 1 day
         return `${Math.floor(diff / 3600000)}h ago`;
     } else {
-        return timestamp.toLocaleDateString();
+        return date.toLocaleDateString();
     }
 }
 
