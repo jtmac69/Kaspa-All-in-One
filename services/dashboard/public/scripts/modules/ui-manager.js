@@ -1767,6 +1767,16 @@ export class UIManager {
     }
 
     /**
+     * Show or hide the Local Node Status panel based on whether kaspa-node is installed
+     */
+    setNodePanelVisible(visible) {
+        const nodePanel = document.querySelector('.card.node-info');
+        if (nodePanel) {
+            nodePanel.style.display = visible ? '' : 'none';
+        }
+    }
+
+    /**
      * Update enhanced network stats with all new fields
      */
     updateEnhancedNetworkStats(networkData) {

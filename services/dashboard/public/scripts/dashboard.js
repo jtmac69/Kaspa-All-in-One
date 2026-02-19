@@ -20,6 +20,7 @@ class Dashboard {
         
         this.currentFilter = 'all';
         this.updateInterval = null;
+        this.kaspaNodeInstalled = false;
     }
 
     /**
@@ -351,17 +352,24 @@ class Dashboard {
             // Normal service display
             const services = response.services || response;
             this.ui.updateServices(services, this.currentFilter);
-            
+
+            // Check if kaspa-node is among the installed services
+            const serviceList = Array.isArray(services) ? services : [];
+            this.kaspaNodeInstalled = serviceList.some(s => s.name === 'kaspa-node');
+            this.ui.setNodePanelVisible(this.kaspaNodeInstalled);
+
             // IMPORTANT: After services are rendered, immediately update Kaspa node sync status
             // This prevents flickering between Docker status and actual sync status
-            try {
-                const syncStatus = await this.api.getKaspaSyncStatus();
-                if (syncStatus) {
-                    this.ui.updateKaspaServiceCardSync(syncStatus);
+            if (this.kaspaNodeInstalled) {
+                try {
+                    const syncStatus = await this.api.getKaspaSyncStatus();
+                    if (syncStatus) {
+                        this.ui.updateKaspaServiceCardSync(syncStatus);
+                    }
+                } catch (syncError) {
+                    // Sync status update failed, but don't break the service refresh
+                    console.warn('Failed to update Kaspa sync status:', syncError);
                 }
-            } catch (syncError) {
-                // Sync status update failed, but don't break the service refresh
-                console.warn('Failed to update Kaspa sync status:', syncError);
             }
         } catch (error) {
             console.error('Failed to refresh services:', error);
@@ -423,6 +431,7 @@ class Dashboard {
     async loadKaspaInfo() {
         try {
             // Load enhanced network data with all stats
+            // This works independently of local node (has public API fallback)
             const enhancedNetworkData = await this.api.getEnhancedNetworkStats();
             if (!enhancedNetworkData.error) {
                 this.ui.updateEnhancedNetworkStats(enhancedNetworkData);
@@ -430,6 +439,11 @@ class Dashboard {
                 // Fallback to basic network data
                 const publicNetworkData = await this.api.getPublicKaspaNetwork();
                 this.ui.updateKaspaNetworkStats(publicNetworkData);
+            }
+
+            // Skip local node status/sync calls if kaspa-node is not installed
+            if (!this.kaspaNodeInstalled) {
+                return;
             }
 
             // Load enhanced node status
@@ -441,7 +455,7 @@ class Dashboard {
             // Load log-based sync status (more reliable than RPC)
             const syncStatus = await this.api.getKaspaSyncStatus();
             this.ui.updateNodeSyncStatus(syncStatus);
-            
+
             // Update Services Status card
             this.ui.updateKaspaServiceCardSync(syncStatus);
 
@@ -800,17 +814,24 @@ class Dashboard {
             // Normal service display
             const services = response.services || response;
             this.ui.updateServices(services, this.currentFilter);
-            
+
+            // Check if kaspa-node is among the installed services
+            const serviceList = Array.isArray(services) ? services : [];
+            this.kaspaNodeInstalled = serviceList.some(s => s.name === 'kaspa-node');
+            this.ui.setNodePanelVisible(this.kaspaNodeInstalled);
+
             // IMPORTANT: After services are rendered, immediately update Kaspa node sync status
             // This prevents flickering between Docker status and actual sync status
-            try {
-                const syncStatus = await this.api.getKaspaSyncStatus();
-                if (syncStatus) {
-                    this.ui.updateKaspaServiceCardSync(syncStatus);
+            if (this.kaspaNodeInstalled) {
+                try {
+                    const syncStatus = await this.api.getKaspaSyncStatus();
+                    if (syncStatus) {
+                        this.ui.updateKaspaServiceCardSync(syncStatus);
+                    }
+                } catch (syncError) {
+                    // Sync status update failed, but don't break the service refresh
+                    console.warn('Failed to update Kaspa sync status:', syncError);
                 }
-            } catch (syncError) {
-                // Sync status update failed, but don't break the service refresh
-                console.warn('Failed to update Kaspa sync status:', syncError);
             }
         } catch (error) {
             console.error('Failed to refresh service status:', error);
