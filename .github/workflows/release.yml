@@ -12,6 +12,7 @@ jobs:
     permissions:
       packages: write
     strategy:
+      fail-fast: false
       matrix:
         include:
           - service: wizard
@@ -26,9 +27,7 @@ jobs:
           - service: k-social
             context: services/k-social
             dockerfile: services/k-social/Dockerfile
-          - service: k-indexer
-            context: services/k-indexer
-            dockerfile: services/k-indexer/Dockerfile
+          # k-indexer excluded: clones external repo + full Rust compile
           - service: kaspa-explorer
             context: services/kaspa-explorer
             dockerfile: services/kaspa-explorer/Dockerfile
