@@ -1161,6 +1161,8 @@ class ConfigGenerator {
     const walletConnectivityEnabled = config.WALLET_CONNECTIVITY_ENABLED === 'true' || config.WALLET_CONNECTIVITY_ENABLED === true;
 
     const args = [
+      // Binary name first — image entrypoint is `su-exec kaspa "$@"` which needs kaspad as $1
+      'kaspad',
       // Core configuration
       '--appdir=/app/data',
       `--rpclisten=0.0.0.0:${rpcPort}`,
