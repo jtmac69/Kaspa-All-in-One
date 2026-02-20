@@ -7,7 +7,7 @@
 2. ⏱️ **Kasia build takes 5-10 minutes** → See [Kasia App Build Time](#kasia-app-build-time) - Normal, be patient
 3. 🪟 **Windows users** → See [Windows Native Not Supported](#windows-native-not-supported) - Requires WSL2
 4. 🔌 **Port conflicts** → See [Port Conflicts](#port-conflicts) - Change ports in wizard
-5. 📊 **Dashboard not available** → See [Dashboard Not Included](#dashboard-not-included-in-test-release) - Use `docker ps` and `./status.sh`
+5. 📊 **Dashboard** → Available at http://localhost:8080 — run `cd services/dashboard && npm start`
 
 **Before You Start Testing:**
 - ✅ Docker 20.10+ installed
@@ -494,46 +494,11 @@ These are known limitations of the test release, categorized by their impact on 
    - No log aggregation or analysis tools
    - Dashboard provides basic status only
 
-10. **Dashboard Not Included in Test Release** [Severity: Medium]
-    
-    Management dashboard is not included in this test release
-    - Dashboard is still in development and not ready for testing
-    - Use `docker ps` to check service status
-    - Use `docker logs <container-name>` to view service logs
-    - Use `./status.sh` script for quick service overview
-    - Wizard at http://localhost:3000 can be used for reconfiguration
-    - Dashboard will be included in future releases once fully tested
-    
-    **Workaround**:
-    - **Check service status**:
-      ```bash
-      # View all running containers
-      docker ps
-      
-      # View all containers (including stopped)
-      docker ps -a
-      
-      # Use the status script
-      ./status.sh
-      ```
-    - **View service logs**:
-      ```bash
-      # View logs for specific service
-      docker logs kaspa-node
-      docker logs -f kaspa-node  # Follow logs in real-time
-      
-      # View logs for all services
-      docker-compose logs
-      docker-compose logs -f  # Follow all logs
-      ```
-    - **Check resource usage**:
-      ```bash
-      # View resource usage for all containers
-      docker stats
-      
-      # View for specific container
-      docker stats kaspa-node
-      ```
+10. **Dashboard Refresh Badge Staleness** [Severity: Low]
+
+    The Refresh button in the dashboard may not always update service status badges when WebSocket data is stale.
+    - Reload the page to force a full refresh
+    - Badge will update correctly on next WebSocket event
 
 11. **No Backup Automation** [Severity: Low]
     
