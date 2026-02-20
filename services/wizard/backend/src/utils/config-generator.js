@@ -47,6 +47,18 @@ class ConfigGenerator {
       ARCHIVE_POSTGRES_PASSWORD: Joi.string().min(16).optional(),
       ARCHIVE_POSTGRES_DB: Joi.string().pattern(/^[a-zA-Z0-9_]+$/).min(3).max(30).default('kaspa_archive'),
       ARCHIVE_POSTGRES_PORT: Joi.number().integer().min(1024).max(65535).default(5433),
+
+      // K-Indexer bundle database settings
+      POSTGRES_USER_KINDEXER: Joi.string().pattern(/^[a-zA-Z0-9_]+$/).min(3).max(30).default('k_indexer'),
+      POSTGRES_PASSWORD_KINDEXER: Joi.string().min(16).optional().allow(''),
+      POSTGRES_DB_KINDEXER: Joi.string().pattern(/^[a-zA-Z0-9_]+$/).min(3).max(30).default('k_indexer'),
+      TIMESCALEDB_KINDEXER_PORT: Joi.number().integer().min(1024).max(65535).default(5433),
+
+      // Kaspa Explorer bundle database settings
+      POSTGRES_USER_EXPLORER: Joi.string().pattern(/^[a-zA-Z0-9_]+$/).min(3).max(30).default('kaspa_explorer'),
+      POSTGRES_PASSWORD_EXPLORER: Joi.string().min(16).optional().allow(''),
+      POSTGRES_DB_EXPLORER: Joi.string().pattern(/^[a-zA-Z0-9_]+$/).min(3).max(30).default('simply_kaspa'),
+      TIMESCALEDB_EXPLORER_PORT: Joi.number().integer().min(1024).max(65535).default(5434),
       
       // Monitoring settings
       ENABLE_MONITORING: Joi.boolean().default(true),
@@ -563,6 +575,20 @@ class ConfigGenerator {
     // Add indexer settings if needed
     if (profiles.includes('indexer-services')) {
       config.INDEXER_MODE = 'full';
+    }
+
+    // Add k-indexer-bundle database settings if needed
+    if (profiles.includes('k-indexer-bundle')) {
+      config.POSTGRES_USER_KINDEXER = 'k_indexer';
+      config.POSTGRES_PASSWORD_KINDEXER = this.generateSecurePassword();
+      config.POSTGRES_DB_KINDEXER = 'k_indexer';
+    }
+
+    // Add kaspa-explorer-bundle database settings if needed
+    if (profiles.includes('kaspa-explorer-bundle')) {
+      config.POSTGRES_USER_EXPLORER = 'kaspa_explorer';
+      config.POSTGRES_PASSWORD_EXPLORER = this.generateSecurePassword();
+      config.POSTGRES_DB_EXPLORER = 'simply_kaspa';
     }
 
     // Add mining settings if needed

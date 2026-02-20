@@ -492,6 +492,14 @@ io.on('connection', (socket) => {
         progress: 0
       });
 
+      // Generate missing database passwords (not provided by templates)
+      if (profiles.includes('k-indexer-bundle') && !config.POSTGRES_PASSWORD_KINDEXER) {
+        config.POSTGRES_PASSWORD_KINDEXER = configGenerator.generateSecurePassword();
+      }
+      if (profiles.includes('kaspa-explorer-bundle') && !config.POSTGRES_PASSWORD_EXPLORER) {
+        config.POSTGRES_PASSWORD_EXPLORER = configGenerator.generateSecurePassword();
+      }
+
       // Save configuration
       const configValidation = await configGenerator.validateConfig(config);
       if (!configValidation.valid) {

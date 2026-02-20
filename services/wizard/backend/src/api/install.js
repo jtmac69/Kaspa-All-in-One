@@ -20,6 +20,14 @@ router.post('/start', async (req, res) => {
       });
     }
     
+    // Generate missing database passwords (not set by templates)
+    if (profiles.includes('k-indexer-bundle') && !config.POSTGRES_PASSWORD_KINDEXER) {
+      config.POSTGRES_PASSWORD_KINDEXER = configGenerator.generateSecurePassword();
+    }
+    if (profiles.includes('kaspa-explorer-bundle') && !config.POSTGRES_PASSWORD_EXPLORER) {
+      config.POSTGRES_PASSWORD_EXPLORER = configGenerator.generateSecurePassword();
+    }
+
     // Validate configuration
     const validation = await configGenerator.validateConfig(config);
     if (!validation.valid) {
@@ -28,7 +36,7 @@ router.post('/start', async (req, res) => {
         errors: validation.errors
       });
     }
-    
+
     // Save configuration
     const envContent = await configGenerator.generateEnvFile(validation.config, profiles);
     const envPath = require('path').resolve(__dirname, '../../../../.env');
