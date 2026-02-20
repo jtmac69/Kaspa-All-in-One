@@ -283,7 +283,7 @@ Examples from history:
 
 ## Things to Watch Out For
 
-1. **The wizard modifies `docker-compose.yml` at runtime** — it's generated, not purely hand-written. Be careful with manual edits.
+1. **The wizard modifies `docker-compose.yml` at runtime** — it's generated, not purely hand-written. Be careful with manual edits. Do NOT commit `docker-compose.yml` — it's runtime state.
 2. **Dashboard runs on the host**, not in Docker. It needs direct access to Docker socket and system metrics.
 3. **The dashboard `server.js` is ~116KB** — it's a large monolithic file. Changes there should be careful and targeted.
 4. **No CI/CD pipeline** — there are no GitHub Actions. Testing is done locally via shell scripts.
@@ -293,3 +293,8 @@ Examples from history:
 8. **`.env` files are gitignored** — never commit credentials. The `.env.example` is the template.
 9. **40+ shell test scripts at the repo root** — these are integration tests, not unit tests. Many require running Docker services.
 10. **The `services/` directory contains `installation-config.json`** which tracks the currently installed template/profile state.
+11. **`simply-kaspa-indexer` uses CLI args only** — NOT environment variables. The service generator must use a `command:` directive with `--rpc-url`, `--database-url`, `--listen 0.0.0.0:8080`, `--network`. Env vars are silently ignored and the container prints help text and exits.
+12. **`isValidServiceName()` in `ValidationMiddleware.js`** is a hardcoded whitelist — adding new services to the system requires adding them here too, or start/stop/restart API calls will return 400. Current valid services include: `kaspa-explorer`, `timescaledb-explorer`, `timescaledb-kindexer`, `k-social`, `k-indexer`, etc.
+13. **TimescaleDB data volumes persist across installs** — if a container was previously initialized with an empty/different password and the volume still exists, re-deploying with a new generated password will cause auth failures. Either clear the volume (`sudo rm -rf /var/lib/kaspa-aio/<service>/`) or update the password in-place via `docker exec ... psql ... ALTER USER`.
+14. **Joi schema `stripUnknown: true` in `validateConfig()`** — any config key not in the Joi schema in `config-generator.js` is silently stripped before reaching `generateEnvFile`. When adding new service config fields (e.g. passwords), they MUST be added to the schema first.
+15. **Wizard install uses WebSocket `install:start` event**, not the REST `POST /api/install/start` endpoint. Fixes to the install flow must be applied to the socket handler in `server.js`, not just `api/install.js`.
