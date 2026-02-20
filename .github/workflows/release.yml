@@ -93,9 +93,10 @@ jobs:
           echo "ARCHIVE=${ARCHIVE}" >> "$GITHUB_ENV"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            kaspa-aio-${{ env.VERSION }}.tar.gz
-            kaspa-aio-${{ env.VERSION }}.tar.gz.sha256
-          generate_release_notes: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --generate-notes \
+            "kaspa-aio-${VERSION}.tar.gz" \
+            "kaspa-aio-${VERSION}.tar.gz.sha256"
