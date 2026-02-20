@@ -1435,15 +1435,19 @@ ${portsYaml}
    * @param {Object} config - Configuration object
    * @returns {string} Docker compose service definition
    */
-  _generateKSocialAppService(config) {
+  _generateKSocialAppService(config, hasLocalIndexer = false) {
     const appPort = config.KSOCIAL_APP_PORT || 3003;
     const indexerMode = config.KSOCIAL_INDEXER_MODE || 'auto';
-    const localIndexerUrl = config.KSOCIAL_INDEXER_URL || 'http://k-indexer:8080';
     const publicIndexerUrl = config.REMOTE_KSOCIAL_INDEXER_URL || 'https://indexer0.kaspatalk.net/';
+    // Use public indexer URL when k-indexer is not deployed to prevent nginx
+    // startup failure (nginx resolves upstream hostnames at start time)
+    const localIndexerUrl = hasLocalIndexer
+      ? (config.KSOCIAL_INDEXER_URL || 'http://k-indexer:8080')
+      : publicIndexerUrl;
     const nodeMode = config.KSOCIAL_NODE_MODE || 'auto';
     const localNodeUrl = config.KSOCIAL_NODE_WRPC_URL || 'ws://kaspa-node:17110';
     const publicNodeUrl = config.REMOTE_KASPA_NODE_WRPC_URL || 'wss://wrpc.kasia.fyi';
-    
+
     // Use configurable image or placeholder
     // Note: Official Docker image does not exist for K frontend
     //       Project must provide custom image or Dockerfile
@@ -1886,7 +1890,8 @@ ${portsYaml}
     
     // k-social service (Step 5) - note: service name is 'k-social' not 'k-social-app'
     if (services.includes('k-social')) {
-      compose += this._generateKSocialAppService(config);
+      const hasLocalIndexer = services.includes('k-indexer');
+      compose += this._generateKSocialAppService(config, hasLocalIndexer);
     }
     
     // kaspa-explorer service (Step 6)
