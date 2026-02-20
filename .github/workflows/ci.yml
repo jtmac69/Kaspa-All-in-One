@@ -1,0 +1,172 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    name: Unit Tests (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: dashboard
+            path: services/dashboard
+          - service: shared
+            path: services/shared
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: '${{ matrix.path }}/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ${{ matrix.path }}
+
+      - name: Run tests
+        run: npm test
+        working-directory: ${{ matrix.path }}
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-${{ matrix.service }}
+          path: ${{ matrix.path }}/coverage
+
+  integration-tests:
+    name: Integration Tests (Mock)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make mock scripts executable
+        run: chmod +x test-wizard-*-mock.sh
+
+      - name: Core profile mock
+        run: bash -e ./test-wizard-core-profile-mock.sh
+
+      - name: Explorer profile mock
+        run: bash -e ./test-wizard-explorer-profile-mock.sh
+
+      - name: Archive profile mock
+        run: bash -e ./test-wizard-archive-profile-mock.sh
+
+      - name: Development profile mock
+        run: bash -e ./test-wizard-development-profile-mock.sh
+
+      - name: Mining profile mock
+        run: bash -e ./test-wizard-mining-profile-mock.sh
+
+      - name: Prod profile mock
+        run: bash -e ./test-wizard-prod-profile-mock.sh
+
+      - name: Errors mock
+        run: bash -e ./test-wizard-errors-mock.sh
+
+  docker-build:
+    name: Docker Build (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: wizard
+            context: services/wizard
+            dockerfile: services/wizard/Dockerfile
+          - service: dashboard
+            context: services/dashboard
+            dockerfile: services/dashboard/Dockerfile
+          - service: kasia
+            context: services/kasia
+            dockerfile: services/kasia/Dockerfile
+          - service: k-social
+            context: services/k-social
+            dockerfile: services/k-social/Dockerfile
+          - service: k-indexer
+            context: services/k-indexer
+            dockerfile: services/k-indexer/Dockerfile
+          - service: kaspa-explorer
+            context: services/kaspa-explorer
+            dockerfile: services/kaspa-explorer/Dockerfile
+          - service: kaspa-stratum
+            context: services/kaspa-stratum
+            dockerfile: services/kaspa-stratum/Dockerfile
+          - service: simply-kaspa-indexer
+            context: services/simply-kaspa-indexer
+            dockerfile: services/simply-kaspa-indexer/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  publish-edge:
+    name: Publish Edge Images (${{ matrix.service }})
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [unit-tests, docker-build]
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - service: wizard
+            context: services/wizard
+            dockerfile: services/wizard/Dockerfile
+          - service: dashboard
+            context: services/dashboard
+            dockerfile: services/dashboard/Dockerfile
+          - service: kasia
+            context: services/kasia
+            dockerfile: services/kasia/Dockerfile
+          - service: k-social
+            context: services/k-social
+            dockerfile: services/k-social/Dockerfile
+          - service: k-indexer
+            context: services/k-indexer
+            dockerfile: services/k-indexer/Dockerfile
+          - service: kaspa-explorer
+            context: services/kaspa-explorer
+            dockerfile: services/kaspa-explorer/Dockerfile
+          - service: kaspa-stratum
+            context: services/kaspa-stratum
+            dockerfile: services/kaspa-stratum/Dockerfile
+          - service: simply-kaspa-indexer
+            context: services/simply-kaspa-indexer
+            dockerfile: services/simply-kaspa-indexer/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push edge image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/kaspa-aio-${{ matrix.service }}:edge
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
