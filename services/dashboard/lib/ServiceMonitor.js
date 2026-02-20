@@ -42,131 +42,132 @@ class ServiceMonitor {
     getServiceDefinitions() {
         return [
             // Kaspa Node
-            { 
-                name: 'kaspa-node', 
-                displayName: 'Kaspa Node', 
-                url: 'http://kaspa-node:16110', 
-                type: 'grpc', 
+            // Dashboard runs on host — use localhost with host-mapped ports, not Docker hostnames
+            {
+                name: 'kaspa-node',
+                displayName: 'Kaspa Node',
+                url: 'http://localhost:16110',
+                type: 'grpc',
                 profile: 'kaspa-node',  // Changed from 'core'
                 dependencies: [],
                 healthCheckPath: null,
                 critical: true
             },
-            
+
             // Kaspa Archive Node
-            { 
-                name: 'kaspa-archive-node', 
-                displayName: 'Kaspa Archive Node', 
-                url: 'http://kaspa-archive-node:16110', 
-                type: 'grpc', 
+            {
+                name: 'kaspa-archive-node',
+                displayName: 'Kaspa Archive Node',
+                url: 'http://localhost:16110',
+                type: 'grpc',
                 profile: 'kaspa-archive-node',  // Changed from 'archive-node'
                 dependencies: [],
                 healthCheckPath: null,
                 critical: true
             },
-            
-            // Kasia App
-            { 
-                name: 'kasia-app', 
-                displayName: 'Kasia App', 
-                url: 'http://kasia-app:3000', 
-                type: 'http', 
+
+            // Kasia App (host port: KASIA_APP_PORT=3001, container port: 3000)
+            {
+                name: 'kasia-app',
+                displayName: 'Kasia App',
+                url: 'http://localhost:3001',
+                type: 'http',
                 profile: 'kasia-app',  // Changed from 'kaspa-user-applications'
                 dependencies: [],
                 healthCheckPath: '/health',
                 critical: false
             },
-            
-            // K-Social App (container name is 'k-social')
-            { 
-                name: 'k-social', 
-                displayName: 'K-Social', 
-                url: 'http://k-social:3000', 
-                type: 'http', 
+
+            // K-Social App (host port: KSOCIAL_APP_PORT=3003, container port: 3000)
+            {
+                name: 'k-social',
+                displayName: 'K-Social',
+                url: 'http://localhost:3003',
+                type: 'http',
                 profile: 'k-social-app',  // Changed from 'kaspa-user-applications'
                 dependencies: [],
                 healthCheckPath: '/health',
                 critical: false
             },
-            
-            // Kaspa Explorer (part of kaspa-explorer-bundle)
-            { 
-                name: 'kaspa-explorer', 
-                displayName: 'Kaspa Explorer', 
-                url: 'http://kaspa-explorer:80', 
-                type: 'http', 
+
+            // Kaspa Explorer (host port: KASPA_EXPLORER_PORT=3004, container port: 80)
+            {
+                name: 'kaspa-explorer',
+                displayName: 'Kaspa Explorer',
+                url: 'http://localhost:3004',
+                type: 'http',
                 profile: 'kaspa-explorer-bundle',  // Changed from 'kaspa-user-applications'
                 dependencies: ['simply-kaspa-indexer'],
                 healthCheckPath: '/health',
                 critical: false
             },
-            
-            // Simply-Kaspa Indexer (part of kaspa-explorer-bundle)
-            { 
-                name: 'simply-kaspa-indexer', 
-                displayName: 'Simply Kaspa Indexer', 
-                url: 'http://simply-kaspa-indexer:3000', 
-                type: 'http', 
+
+            // Simply-Kaspa Indexer (host port: SIMPLY_INDEXER_PORT=3005, container port: 3000)
+            {
+                name: 'simply-kaspa-indexer',
+                displayName: 'Simply Kaspa Indexer',
+                url: 'http://localhost:3005',
+                type: 'http',
                 profile: 'kaspa-explorer-bundle',  // Changed from 'indexer-services'
                 dependencies: ['timescaledb-explorer'],
                 healthCheckPath: '/health',
                 critical: false
             },
-            
-            // TimescaleDB for Explorer (part of kaspa-explorer-bundle)
-            { 
-                name: 'timescaledb-explorer', 
-                displayName: 'TimescaleDB (Explorer)', 
-                url: 'postgresql://timescaledb-explorer:5432', 
-                type: 'postgres', 
+
+            // TimescaleDB for Explorer (postgres — no HTTP health check)
+            {
+                name: 'timescaledb-explorer',
+                displayName: 'TimescaleDB (Explorer)',
+                url: 'postgresql://localhost:5434',
+                type: 'postgres',
                 profile: 'kaspa-explorer-bundle',
                 dependencies: [],
                 healthCheckPath: null,
                 critical: false
             },
-            
-            // Kasia Indexer
-            { 
-                name: 'kasia-indexer', 
-                displayName: 'Kasia Indexer', 
-                url: 'http://kasia-indexer:8080', 
-                type: 'http', 
+
+            // Kasia Indexer (host port: KASIA_INDEXER_PORT=3002, container port: 8080)
+            {
+                name: 'kasia-indexer',
+                displayName: 'Kasia Indexer',
+                url: 'http://localhost:3002',
+                type: 'http',
                 profile: 'kasia-indexer',  // Changed from 'kaspa-user-applications'
                 dependencies: [],
                 healthCheckPath: '/health',
                 critical: false
             },
-            
-            // K-Indexer (part of k-indexer-bundle)
-            { 
-                name: 'k-indexer', 
-                displayName: 'K-Indexer', 
-                url: 'http://k-indexer:8080', 
-                type: 'http', 
+
+            // K-Indexer (host port: K_INDEXER_PORT=3006, container port: 8080)
+            {
+                name: 'k-indexer',
+                displayName: 'K-Indexer',
+                url: 'http://localhost:3006',
+                type: 'http',
                 profile: 'k-indexer-bundle',  // Changed from 'indexer-services'
                 dependencies: ['timescaledb-kindexer'],
                 healthCheckPath: '/health',
                 critical: false
             },
-            
-            // TimescaleDB for K-Indexer (part of k-indexer-bundle)
-            { 
-                name: 'timescaledb-kindexer', 
-                displayName: 'TimescaleDB (K-Indexer)', 
-                url: 'postgresql://timescaledb-kindexer:5432', 
-                type: 'postgres', 
+
+            // TimescaleDB for K-Indexer (postgres — no HTTP health check)
+            {
+                name: 'timescaledb-kindexer',
+                displayName: 'TimescaleDB (K-Indexer)',
+                url: 'postgresql://localhost:5432',
+                type: 'postgres',
                 profile: 'k-indexer-bundle',
                 dependencies: [],
                 healthCheckPath: null,
                 critical: false
             },
-            
-            // Kaspa Stratum
-            { 
-                name: 'kaspa-stratum', 
-                displayName: 'Kaspa Stratum', 
-                url: 'http://kaspa-stratum:5555', 
-                type: 'stratum', 
+
+            // Kaspa Stratum (host port: STRATUM_PORT=5555)
+            {
+                name: 'kaspa-stratum',
+                displayName: 'Kaspa Stratum',
+                url: 'http://localhost:5555',
+                type: 'stratum',
                 profile: 'kaspa-stratum',  // Changed from 'mining'
                 dependencies: ['kaspa-node'],
                 healthCheckPath: null,

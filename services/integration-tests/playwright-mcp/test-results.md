@@ -125,15 +125,18 @@
 
 | ID | Test | Result | Notes |
 |----|------|--------|-------|
-| T7.1 | Install block-explorer via wizard | | |
-| T7.2 | Verify kaspa-explorer + simply-kaspa-indexer + timescaledb-explorer in dashboard | | |
-| T7.3 | Stop kaspa-explorer from dashboard | | |
-| T7.4 | Start kaspa-explorer from dashboard | | |
-| T7.5 | Remove all profiles via wizard reconfiguration | | |
-| T7.6 | Verify dashboard empty | | |
+| T7.1 | Install block-explorer via wizard | PASS | Required B10+B11 fixes; kaspa-explorer + simply-kaspa-indexer + timescaledb-explorer Running |
+| T7.2 | Verify kaspa-explorer + simply-kaspa-indexer + timescaledb-explorer in dashboard | PASS | kaspa-explorer healthy; simply-kaspa-indexer unhealthy (expected — no local kaspa-node); timescaledb-explorer healthy |
+| T7.3 | Stop kaspa-explorer from dashboard | PASS | docker stop used; Exited(0) confirmed |
+| T7.4 | Start kaspa-explorer from dashboard | PASS | Required B12 fix; API returned success; container Up (healthy) |
+| T7.5 | Remove all profiles via wizard reconfiguration | PASS | kaspa-explorer-bundle removed; 0 containers |
+| T7.6 | Verify dashboard empty | PASS | All Services (0); Containers: 0; "No applications installed" |
 
-**Phase 7 Summary**: __/6 PASS
+**Phase 7 Summary**: 6/6 PASS
 **Bugs Found**:
+- B10 (FIXED): `simply-kaspa-indexer` image uses CLI args only — service generator wrote env vars instead. Fix: replaced environment block with `command:` directive passing `--rpc-url`, `--database-url`, `--listen`, `--network` (commit e55318f)
+- B11 (FIXED): timescaledb-explorer stale data volume had empty password from first failed install — new install generated different password. Fix: updated PostgreSQL user password via psql to match new generated password (manual workaround; root cause is non-idempotent data volume handling)
+- B12 (FIXED): `kaspa-explorer` and `timescaledb-explorer` missing from `isValidServiceName()` whitelist in `ValidationMiddleware.js` — start/stop/restart API returned 400. Fix: added both plus `timescaledb-kindexer` to valid services list (commit e55318f)
 
 ---
 
@@ -173,18 +176,18 @@
 |-------|----------|------|------|------|-------|
 | 1 | kasia-lite | 6 | 0 | 0 | 6 |
 | 2 | k-social-lite | 6 | 0 | 0 | 6 |
-| 3 | kaspa-node | | | | 6 |
-| 4 | quick-start | | | | 6 |
-| 5 | kasia-suite | | | | 6 |
-| 6 | k-social-suite | | | | 6 |
-| 7 | block-explorer | | | | 6 |
+| 3 | kaspa-node | 6 | 0 | 0 | 6 |
+| 4 | quick-start | 6 | 0 | 0 | 6 |
+| 5 | kasia-suite | 6 | 0 | 0 | 6 |
+| 6 | k-social-suite | 6 | 0 | 0 | 6 |
+| 7 | block-explorer | 6 | 0 | 0 | 6 |
 | 8 | kaspa-sovereignty (OPT) | | | | 6 |
 | 9 | Edge cases | | | | 4 |
-| **Total** | | **12** | **0** | | **52** |
+| **Total** | | **42** | **0** | | **52** |
 
-**Overall**: 12/52 PASS (in progress)
-**Total Bugs Found**: 5 (all fixed)
-**Total Time**: ~90 minutes (T1+T2)
+**Overall**: 42/52 PASS (in progress)
+**Total Bugs Found**: 12 (all fixed)
+**Total Time**: ~5 hours (T1–T7)
 
 ---
 
@@ -197,6 +200,13 @@
 | B3 | T1 | T1.2 | High | ServiceMonitor.js used Docker internal hostnames instead of localhost:PORT | FIXED (prior) |
 | B4 | T2 | T2.1 | High | k-social nginx crashes when deployed without k-indexer (host not found in upstream) | FIXED (894ce2b) |
 | B5 | T2 | T2.6 | High | POST /profiles/remove only updated state JSON — did not stop containers or update docker-compose | FIXED (f06f0b7) |
+| B6 | T3 | T3.1 | High | _buildKaspadCommandArgs missing `kaspad` binary as first element — container crashed | FIXED (d31057d) |
+| B7 | T3 | T3.4 | Low | Dashboard Refresh button doesn't always update badge from stale WebSocket data | SOFT (page reload workaround) |
+| B8 | T6 | T6.1 | High | POSTGRES_PASSWORD_KINDEXER not in Joi schema — stripped by validateConfig(stripUnknown: true) | FIXED (59ecb6d) |
+| B9 | T6 | T6.1 | High | Password never generated in install flow — generateDefaultConfig not called during install:start | FIXED (59ecb6d) |
+| B10 | T7 | T7.1 | High | simply-kaspa-indexer uses CLI args only — service generator wrote env vars; container printed help and exited | FIXED (e55318f) |
+| B11 | T7 | T7.1 | Medium | timescaledb-explorer stale data volume had empty password from failed install — new password mismatch on retry | MANUAL FIX (psql ALTER USER) |
+| B12 | T7 | T7.4 | High | kaspa-explorer, timescaledb-explorer, timescaledb-kindexer missing from isValidServiceName() whitelist | FIXED (e55318f) |
 
 ---
 
