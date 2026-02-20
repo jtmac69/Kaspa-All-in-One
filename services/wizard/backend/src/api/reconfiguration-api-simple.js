@@ -497,18 +497,44 @@ router.post('/profiles/remove', async (req, res) => {
     await setWizardRunningFlag(true);
 
     try {
-      // Update installation state to remove this profile
+      const DockerManager = require('../utils/docker-manager');
+      const dockerManager = new DockerManager();
+
+      // Determine which Docker services belong to this profile
+      const profileServiceMap = {
+        'kaspa-node':           ['kaspa-node'],
+        'kasia-app':            ['kasia-app'],
+        'k-social-app':         ['k-social'],
+        'kaspa-explorer-bundle':['kaspa-explorer', 'simply-kaspa-indexer', 'timescaledb-explorer'],
+        'kasia-indexer':        ['kasia-indexer'],
+        'k-indexer-bundle':     ['k-indexer', 'timescaledb-kindexer'],
+        'kaspa-archive-node':   ['kaspa-archive-node'],
+        'kaspa-stratum':        ['kaspa-stratum']
+      };
+      const servicesToRemove = profileServiceMap[profileId] || [];
+
+      // Stop and remove Docker containers for this profile
+      if (servicesToRemove.length > 0) {
+        await dockerManager.removeServices(servicesToRemove, { removeData });
+      }
+
+      // Update docker-compose.yml to remove this profile's services
+      await removeProfileFromDockerCompose(profileId, servicesToRemove);
+
+      // Update installation state to remove this profile and its services
       await updateInstallationStateAfterReconfiguration({
         action: 'remove',
         profiles: [profileId],
-        removeData
+        removeData,
+        removedServices: servicesToRemove
       });
 
       res.json({
         success: true,
         message: `Profile ${profileId} removed successfully`,
         profileId,
-        dataRemoved: removeData
+        dataRemoved: removeData,
+        removedServices: servicesToRemove
       });
 
     } finally {
@@ -1452,6 +1478,73 @@ async function setWizardRunningFlag(isRunning) {
  * Update installation state after reconfiguration operations
  * @param {Object} operation - Operation details (action, profiles, etc.)
  */
+/**
+ * Remove a profile's services from docker-compose.yml
+ */
+async function removeProfileFromDockerCompose(profileId, serviceNames) {
+  try {
+    const fs = require('fs').promises;
+    const paths = resolver.getPaths();
+    const composePath = require('path').join(paths.root, 'docker-compose.yml');
+
+    let content;
+    try {
+      content = await fs.readFile(composePath, 'utf8');
+    } catch (e) {
+      return; // No compose file, nothing to do
+    }
+
+    const lines = content.split('\n');
+    const result = [];
+    let skipSection = false;
+    let skipIndent = null;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      // Detect start of a service section to remove
+      if (!skipSection) {
+        const serviceMatch = line.match(/^  ([a-z][a-z0-9_-]*):\s*$/);
+        if (serviceMatch && serviceNames.includes(serviceMatch[1])) {
+          skipSection = true;
+          skipIndent = '  '; // service indent level
+          continue;
+        }
+      }
+
+      if (skipSection) {
+        // Stop skipping when we hit the next top-level service or a non-indented section
+        const isTopLevel = line.length > 0 && !line.startsWith(' ') && !line.startsWith('#');
+        const isNewService = /^  [a-z][a-z0-9_-]*:\s*$/.test(line);
+        const isNetworksSection = /^networks:\s*$/.test(line) || /^volumes:\s*$/.test(line);
+
+        if (isTopLevel || isNewService || isNetworksSection) {
+          skipSection = false;
+          skipIndent = null;
+
+          // Check if this new service should also be removed
+          const serviceMatch = line.match(/^  ([a-z][a-z0-9_-]*):\s*$/);
+          if (serviceMatch && serviceNames.includes(serviceMatch[1])) {
+            skipSection = true;
+            continue;
+          }
+          result.push(line);
+        }
+        // else skip this line
+      } else {
+        result.push(line);
+      }
+    }
+
+    // If all services removed, docker-compose just has network section - that's fine
+    await fs.writeFile(composePath, result.join('\n'), 'utf8');
+    console.log(`[COMPOSE] Removed services ${serviceNames.join(', ')} from docker-compose.yml`);
+  } catch (error) {
+    console.error('[COMPOSE] Error removing profile from docker-compose.yml:', error);
+    // Don't throw - state update should still proceed
+  }
+}
+
 async function updateInstallationStateAfterReconfiguration(operation) {
   try {
     const { SharedStateManager } = require('../../../../shared/lib/state-manager');
@@ -1466,9 +1559,9 @@ async function updateInstallationStateAfterReconfiguration(operation) {
       return;
     }
     
-    const { action, profiles, configuration } = operation;
+    const { action, profiles, configuration, removedServices = [] } = operation;
     let updatedProfiles = [...(currentState.profiles?.selected || [])];
-    
+
     // Update profiles based on action
     if (action === 'add') {
       // Add new profiles (avoid duplicates)
@@ -1482,13 +1575,19 @@ async function updateInstallationStateAfterReconfiguration(operation) {
       updatedProfiles = updatedProfiles.filter(profile => !profiles.includes(profile));
     }
     // For 'configure' action, profiles list stays the same
-    
+
     // Update configuration if provided
     const updatedConfiguration = configuration ? {
       ...currentState.configuration,
       ...configuration
     } : currentState.configuration;
-    
+
+    // Remove services associated with removed profiles from the services array
+    let updatedServices = currentState.services || [];
+    if (action === 'remove' && removedServices.length > 0) {
+      updatedServices = updatedServices.filter(s => !removedServices.includes(s.name));
+    }
+
     // Update state
     await stateManager.updateState({
       profiles: {
@@ -1496,6 +1595,13 @@ async function updateInstallationStateAfterReconfiguration(operation) {
         count: updatedProfiles.length
       },
       configuration: updatedConfiguration,
+      services: updatedServices,
+      summary: {
+        total: updatedServices.length,
+        running: updatedServices.filter(s => s.running).length,
+        stopped: updatedServices.filter(s => !s.running).length,
+        missing: 0
+      },
       lastModified: new Date().toISOString()
     });
     
