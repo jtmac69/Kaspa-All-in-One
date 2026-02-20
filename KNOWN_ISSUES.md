@@ -494,11 +494,10 @@ These are known limitations of the test release, categorized by their impact on 
    - No log aggregation or analysis tools
    - Dashboard provides basic status only
 
-10. **Dashboard Refresh Badge Staleness** [Severity: Low]
+10. ~~**Dashboard Refresh Badge Staleness**~~ [Fixed in c2f6aaa]
 
-    The Refresh button in the dashboard may not always update service status badges when WebSocket data is stale.
-    - Reload the page to force a full refresh
-    - Badge will update correctly on next WebSocket event
+    ~~The Refresh button in the dashboard may not always update service status badges when WebSocket data is stale.~~
+    Fixed: Refresh button now immediately polls the REST API for current status rather than waiting passively for a WebSocket event.
 
 11. **No Backup Automation** [Severity: Low]
     
