@@ -1,5 +1,10 @@
 # CLAUDE.md — Kaspa All-in-One
 
+## Workflow
+- Start complex tasks in Plan mode
+- Get plan approval before implementation
+- Break large changes into reviewable chunks
+
 ## Project Overview
 
 Kaspa All-in-One (AIO) is a Docker-based deployment system for the Kaspa blockchain ecosystem. It provides a web-based installation wizard, a management dashboard, and orchestrates 11+ containerized services (node, indexers, apps, explorer, mining). The project targets self-hosted operators who want to run various combinations of Kaspa infrastructure on their own hardware.
