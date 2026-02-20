@@ -1410,6 +1410,9 @@ ${portsYaml}
     console.log('NOTE: If image not found, provide KASIA_APP_IMAGE config or add Dockerfile');
     
     return `  kasia-app:
+    build:
+      context: ./services/kasia
+      dockerfile: Dockerfile
     image: ${kasiaImage}
     container_name: kasia-app
     restart: unless-stopped
@@ -1450,6 +1453,9 @@ ${portsYaml}
     console.log('NOTE: If image not found, provide KSOCIAL_APP_IMAGE config or add Dockerfile');
     
     return `  k-social:
+    build:
+      context: ./services/k-social
+      dockerfile: Dockerfile
     image: ${kSocialImage}
     container_name: k-social
     restart: unless-stopped
@@ -1530,6 +1536,9 @@ ${portsYaml}
     const explorerImage = config.KASPA_EXPLORER_IMAGE || 'kaspa-explorer:latest';
     
     return `  kaspa-explorer:
+    build:
+      context: ./services/kaspa-explorer
+      dockerfile: Dockerfile
     image: ${explorerImage}
     container_name: kaspa-explorer
     restart: unless-stopped
@@ -1657,6 +1666,9 @@ ${portsYaml}
     const indexerImage = config.K_INDEXER_IMAGE || 'k-indexer:latest';
     
     return `  k-indexer:
+    build:
+      context: ./services/k-indexer
+      dockerfile: Dockerfile
     image: ${indexerImage}
     container_name: k-indexer
     restart: unless-stopped

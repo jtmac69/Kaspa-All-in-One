@@ -110,11 +110,21 @@ class DockerManager {
     // Map wizard profiles to pre-built Docker images that need pulling
     // Services with local Dockerfiles are built, not pulled
     const imageMap = {
-      core: ['kaspanet/rusty-kaspad:latest', 'nginx:alpine'],
+      // New profile IDs (8-profile architecture)
+      'kaspa-node': ['kaspanet/rusty-kaspad:latest'],
+      'kasia-app': [],              // Built locally from ./services/kasia
+      'k-social-app': [],           // Built locally from ./services/k-social
+      'kaspa-explorer-bundle': ['timescale/timescaledb:latest-pg16'],
+      'kasia-indexer': ['kkluster/kasia-indexer:main'],
+      'k-indexer-bundle': ['timescale/timescaledb:latest-pg16'],
+      'kaspa-archive-node': ['kaspanet/rusty-kaspad:latest'],
+      'kaspa-stratum': [],          // Built locally from ./services/kaspa-stratum
+      // Legacy profile IDs (backward compatibility)
+      core: ['kaspanet/rusty-kaspad:latest'],
       'indexer-services': ['timescale/timescaledb:latest-pg16', 'kkluster/kasia-indexer:main'],
-      'kaspa-user-applications': [],  // These are built locally
-      'archive-node': ['timescale/timescaledb:latest-pg16'],
-      mining: []  // Built locally
+      'kaspa-user-applications': [],
+      'archive-node': ['kaspanet/rusty-kaspad:latest'],
+      mining: []
     };
 
     const imagesToPull = new Set();
@@ -169,15 +179,26 @@ class DockerManager {
 
   async buildServices(profiles, progressCallback) {
     // Map wizard profiles to docker-compose services that need building
-    // Note: Services using pre-built images (kaspanet/rusty-kaspad, nginx:alpine, 
-    // timescale/timescaledb, kkluster/kasia-indexer) don't need building
+    // Note: Services using pre-built images (kaspanet/rusty-kaspad,
+    // timescale/timescaledb, kkluster/kasia-indexer, supertypo/simply-kaspa-indexer)
+    // don't need building — only services with local Dockerfiles are built here.
     // Note: dashboard is now host-based, not containerized
     const servicesToBuild = {
-      core: [],  // Core uses pre-built images only (kaspad, nginx)
-      'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],  // These have Dockerfiles
-      'indexer-services': ['k-indexer', 'simply-kaspa-indexer'],  // These have Dockerfiles
-      'archive-node': ['archive-indexer'],  // Uses simply-kaspa-indexer Dockerfile
-      mining: ['kaspa-stratum']  // Has a Dockerfile
+      // New profile IDs (8-profile architecture)
+      'kaspa-node': [],             // Pre-built image
+      'kasia-app': ['kasia-app'],   // Has local Dockerfile in ./services/kasia
+      'k-social-app': ['k-social'], // Has local Dockerfile in ./services/k-social
+      'kaspa-explorer-bundle': ['kaspa-explorer'], // Has local Dockerfile; simply-kaspa-indexer uses pre-built
+      'kasia-indexer': [],          // Uses pre-built kkluster/kasia-indexer image
+      'k-indexer-bundle': ['k-indexer'], // Has local Dockerfile in ./services/k-indexer
+      'kaspa-archive-node': [],     // Pre-built image
+      'kaspa-stratum': ['kaspa-stratum'], // Has local Dockerfile
+      // Legacy profile IDs (backward compatibility)
+      core: [],
+      'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],
+      'indexer-services': ['k-indexer'],
+      'archive-node': [],
+      mining: ['kaspa-stratum']
     };
 
     const services = [];
