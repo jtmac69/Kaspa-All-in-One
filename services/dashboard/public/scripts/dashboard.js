@@ -389,8 +389,8 @@ class Dashboard {
             const response = await this.api.post('/api/installation/refresh');
             
             if (response.success) {
-                // The WebSocket will handle the actual UI update via manual_refresh_completed event
-                console.log('Manual refresh initiated successfully');
+                // Immediately poll REST API for current status — don't rely solely on WebSocket
+                await this.refreshServiceStatus();
             } else {
                 this.ui.showNotification('Failed to refresh dashboard', 'error');
             }
