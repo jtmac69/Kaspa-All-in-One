@@ -196,6 +196,10 @@ Cargo.lock
 services/*/logs/
 services/*/*.log
 
+# Playwright MCP test screenshots (ephemeral debugging artifacts)
+**/playwright-mcp/*.png
+**/playwright-mcp/*.jpeg
+
 # Wizard test artifacts and backups
 .env.backup.*
 services/.env.backup.*
