@@ -235,14 +235,3 @@ export function getRelativeTime(timestamp) {
     return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
 }
 
-/**
- * Dismiss test release banner
- */
-export function dismissBanner() {
-    const banner = document.getElementById('test-release-banner');
-    if (banner) {
-        banner.classList.add('dismissed');
-        // Remember dismissal in localStorage
-        localStorage.setItem('testReleaseBannerDismissed', 'true');
-    }
-}
