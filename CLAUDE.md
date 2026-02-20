@@ -291,7 +291,7 @@ Examples from history:
 1. **The wizard modifies `docker-compose.yml` at runtime** — it's generated, not purely hand-written. Be careful with manual edits. Do NOT commit `docker-compose.yml` — it's runtime state.
 2. **Dashboard runs on the host**, not in Docker. It needs direct access to Docker socket and system metrics.
 3. **The dashboard `server.js` is ~116KB** — it's a large monolithic file. Changes there should be careful and targeted.
-4. **No CI/CD pipeline** — there are no GitHub Actions. Testing is done locally via shell scripts.
+4. **CI/CD pipeline** — `.github/workflows/ci.yml` runs unit tests and Docker builds on every PR/push to `main`; `.github/workflows/release.yml` publishes images to ghcr.io and creates a GitHub Release on `v*.*.*` tags.
 5. **Pre-production state** — the project is at v0.9.0-test. Expect rough edges and check `KNOWN_ISSUES.md`.
 6. **Some services use pre-built Docker images** (kasia-indexer, simply-kaspa-indexer, kaspa-node) while others build from Dockerfiles in the repo.
 7. **Port conflicts** are a real concern — the shared library includes `port-fallback.js` specifically for this.

@@ -90,6 +90,7 @@ Thumbs.db
 
 # Backup files
 *.backup
+*.backup.*
 *.bak
 *.tmp
 
