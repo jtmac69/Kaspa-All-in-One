@@ -1531,20 +1531,25 @@ ${portsYaml}
     
     console.log(`[ConfigGenerator] Using supertypo/simply-kaspa-indexer:${indexerRelease} for simply-kaspa-indexer`);
     
+    const rpcUrl = nodeMode === 'local' ? nodeUrl : remoteNodeUrl;
+    const dbUrl = `postgres://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
+    const network = config.KASPA_NETWORK || 'mainnet';
+
     return `  simply-kaspa-indexer:
     image: supertypo/simply-kaspa-indexer:${indexerRelease}
     container_name: simply-kaspa-indexer
     restart: unless-stopped
     ports:
       - "${indexerPort}:8080"
-    environment:
-      - NODE_MODE=${nodeMode}
-      - KASPA_NODE_WRPC_URL=${nodeMode === 'local' ? nodeUrl : remoteNodeUrl}
-      - DB_HOST=${dbHost}
-      - DB_PORT=${dbPort}
-      - DB_USER=${dbUser}
-      - DB_PASSWORD=${dbPassword}
-      - DB_NAME=${dbName}
+    command:
+      - "--rpc-url"
+      - "${rpcUrl}"
+      - "--database-url"
+      - "${dbUrl}"
+      - "--listen"
+      - "0.0.0.0:8080"
+      - "--network"
+      - "${network}"
     depends_on:
       - timescaledb-explorer
     networks:

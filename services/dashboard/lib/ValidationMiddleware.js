@@ -280,6 +280,7 @@ function isValidServiceName(serviceName) {
         'kasia-indexer', 'kasia-app',
         'k-indexer', 'k-social',
         'simply-kaspa-indexer', 'kaspa-stratum',
+        'kaspa-explorer', 'timescaledb-explorer', 'timescaledb-kindexer',
         'indexer-db', 'archive-db', 'archive-indexer',
         'portainer', 'pgadmin'
     ];
