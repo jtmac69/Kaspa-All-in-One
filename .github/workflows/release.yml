@@ -84,24 +84,15 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           ARCHIVE="kaspa-aio-${VERSION}.tar.gz"
-          tar czf "${ARCHIVE}" \
+          tar czf "/tmp/${ARCHIVE}" \
             --exclude='.git' \
             --exclude='node_modules' \
             --exclude='*/node_modules' \
-            --exclude='*.tar.gz' \
             .
+          mv "/tmp/${ARCHIVE}" "./${ARCHIVE}"
           sha256sum "${ARCHIVE}" > "${ARCHIVE}.sha256"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "ARCHIVE=${ARCHIVE}" >> "$GITHUB_ENV"
-
-      - name: Debug release info
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Tag: $GITHUB_REF_NAME"
-          echo "Version: $VERSION"
-          ls -lh kaspa-aio-*.tar.gz kaspa-aio-*.sha256 || echo "WARNING: tarball files not found"
-          gh auth status
 
       - name: Create GitHub Release
         env:
