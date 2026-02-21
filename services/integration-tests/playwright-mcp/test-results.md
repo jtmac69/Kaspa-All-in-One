@@ -213,7 +213,7 @@
 ## Notes
 
 - kaspa-node health check uses `grpc` type in ServiceMonitor — may show "unhealthy" while syncing; accept "syncing" as valid
-- kasia-app may show "unhealthy" on arm64 hosts due to exec format error (x86 image on arm64)
+- ~~kasia-app may show "unhealthy" on arm64 hosts due to exec format error~~ Fixed in commit 3488429 — multi-platform images now published for all services.
 - After profile removal, docker-compose.yml is updated to remove those services (fixed in B5)
 - Dashboard filter dropdown correctly shows installed service types
 - k-social v0.1.5 auto-fetched during Docker build from GitHub releases

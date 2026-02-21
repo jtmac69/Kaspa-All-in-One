@@ -108,7 +108,7 @@ Check service cards exist and statuses are not "stopped".
 ```
 
 **Known Limitations**:
-- kasia-app may show "unhealthy" due to architecture mismatch (exec format error)
+- ~~kasia-app may show "unhealthy" due to architecture mismatch~~ Fixed — multi-platform images (amd64+arm64) now published
 - Indexer services may show "unhealthy" because dashboard runs on host, can't reach Docker-internal URLs
 - Accept "unhealthy" as valid — it means the container IS running
 
@@ -608,7 +608,7 @@ Expected: Document behavior
 
 | Issue | Impact | Mitigation |
 |-------|--------|-----------|
-| kasia-app "unhealthy" on some architectures | Soft fail — container runs but health check fails | Accept "unhealthy" as valid |
+| ~~kasia-app "unhealthy" on some architectures~~ | Fixed — multi-platform images published | — |
 | Indexers "unhealthy" from host network | Dashboard can't reach Docker-internal health URLs | Accept "unhealthy" as valid |
 | timescaledb-* not in isValidServiceName | 400 error on stop/start API calls | Skip stop/start for timescaledb, test other service |
 | First-run Docker pulls slow | T1 may take 10+ minutes | Subsequent templates use cached images |

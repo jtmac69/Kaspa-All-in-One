@@ -111,7 +111,7 @@
 
 ## Notes
 
-- **kasia-app**: Docker image has exec format error (architecture mismatch) — shows as "stopped/restarting". This is an environment issue, not a dashboard bug.
+- **kasia-app**: ~~Docker image has exec format error (architecture mismatch)~~ Fixed in commit 3488429 — CI now publishes multi-platform images (linux/amd64,linux/arm64); kasia builder stage pinned to amd64 for fast builds.
 - **kasia-indexer**: Shows "unhealthy" with error "getaddrinfo ENOTFOUND kasia-indexer" — expected since dashboard runs on host, not inside Docker network.
 - **Applications grid (D18/D19)**: Fixed in commit 98f4498 — `updateApplications()` added to `ui-manager.js`, `hostPort` parsing added to `ServiceMonitor.js`. App cards now render for all Application-type services with status, URL, and launch button.
 - **Dashboard nodemon**: No `nodemon.json` config — watches all files including `.kaspa-aio/installation-state.json`, causing restart loops during testing. Used `node server.js` directly as workaround.
