@@ -10,6 +10,12 @@ import { WizardNavigation } from './modules/wizard-navigation.js';
 import IconManager from './modules/icon-manager.js';
 import { themeManager } from '/shared/scripts/theme-manager.js';
 
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = String(str ?? '');
+    return div.innerHTML;
+}
+
 class Dashboard {
     constructor() {
         this.api = new APIClient();
@@ -17,7 +23,7 @@ class Dashboard {
         this.ui = new UIManager();
         this.wizardNav = new WizardNavigation();
         this.iconManager = IconManager;
-        
+
         this.currentFilter = 'all';
         this.updateInterval = null;
         this.kaspaNodeInstalled = false;
@@ -534,22 +540,33 @@ class Dashboard {
                     content.innerHTML = '<p class="no-updates">Your Kaspa All-in-One installation is up to date.</p>';
                 } else {
                     const wizardUrl = `http://${window.location.hostname}:3000/?mode=update`;
-                    content.innerHTML = updates.map(u => `
+                    content.innerHTML = updates.map(u => {
+                        const name = escapeHtml(u.serviceName || u.service);
+                        const current = escapeHtml(u.currentVersion);
+                        const available = escapeHtml(u.availableVersion);
+                        const date = u.releaseDate ? escapeHtml(new Date(u.releaseDate).toLocaleDateString()) : '';
+                        const releaseNotesLink = u.htmlUrl
+                            ? `<a href="${escapeHtml(u.htmlUrl)}" target="_blank" rel="noopener noreferrer">Release notes</a>`
+                            : '';
+                        const changelog = u.changelog
+                            ? `<pre class="update-changelog">${escapeHtml(u.changelog.substring(0, 400))}${u.changelog.length > 400 ? '...' : ''}</pre>`
+                            : '';
+                        return `
                         <div class="update-item">
                             <div class="update-header">
-                                <strong>${u.serviceName || u.service}</strong>
-                                <span class="version-comparison">${u.currentVersion} → ${u.availableVersion}</span>
+                                <strong>${name}</strong>
+                                <span class="version-comparison">${current} → ${available}</span>
                             </div>
                             <div class="update-meta">
-                                <span class="update-date">${u.releaseDate ? new Date(u.releaseDate).toLocaleDateString() : ''}</span>
-                                ${u.htmlUrl ? `<a href="${u.htmlUrl}" target="_blank" rel="noopener noreferrer">Release notes</a>` : ''}
+                                <span class="update-date">${date}</span>
+                                ${releaseNotesLink}
                             </div>
-                            ${u.changelog ? `<pre class="update-changelog">${u.changelog.substring(0, 400)}${u.changelog.length > 400 ? '...' : ''}</pre>` : ''}
-                            <button class="btn-primary apply-update-btn" data-wizard-url="${wizardUrl}">
+                            ${changelog}
+                            <button class="btn-primary apply-update-btn" data-wizard-url="${escapeHtml(wizardUrl)}">
                                 Update Now
                             </button>
-                        </div>
-                    `).join('');
+                        </div>`;
+                    }).join('');
 
                     // Wire update buttons via event delegation (avoids CSP inline handler violation)
                     content.querySelectorAll('.apply-update-btn').forEach(btn => {

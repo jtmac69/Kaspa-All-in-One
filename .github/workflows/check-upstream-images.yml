@@ -180,12 +180,10 @@ jobs:
           [[ -z "$KASIA" ]]  && KASIA="${{ steps.stored.outputs.kasia_indexer }}"
           [[ -z "$SIMPLY" ]] && SIMPLY="${{ steps.stored.outputs.simply_kaspa }}"
 
-          cat > .github/upstream-image-digests.txt << EOF
-          # Auto-updated by check-upstream-images workflow — do not edit manually
-          # Last checked: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          kasia-indexer=${KASIA}
-          simply-kaspa-indexer=${SIMPLY}
-          EOF
+          printf '# Auto-updated by check-upstream-images workflow — do not edit manually\n' > .github/upstream-image-digests.txt
+          printf '# Last checked: %s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> .github/upstream-image-digests.txt
+          printf 'kasia-indexer=%s\n' "${KASIA}" >> .github/upstream-image-digests.txt
+          printf 'simply-kaspa-indexer=%s\n' "${SIMPLY}" >> .github/upstream-image-digests.txt
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -197,12 +195,10 @@ jobs:
         if: steps.changes.outputs.any_changed == 'false' && steps.stored.outputs.kasia_indexer == ''
         run: |
           mkdir -p .github
-          cat > .github/upstream-image-digests.txt << EOF
-          # Auto-updated by check-upstream-images workflow — do not edit manually
-          # Last checked: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          kasia-indexer=${{ steps.fetch.outputs.kasia_indexer }}
-          simply-kaspa-indexer=${{ steps.fetch.outputs.simply_kaspa }}
-          EOF
+          printf '# Auto-updated by check-upstream-images workflow — do not edit manually\n' > .github/upstream-image-digests.txt
+          printf '# Last checked: %s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> .github/upstream-image-digests.txt
+          printf 'kasia-indexer=%s\n' '${{ steps.fetch.outputs.kasia_indexer }}' >> .github/upstream-image-digests.txt
+          printf 'simply-kaspa-indexer=%s\n' '${{ steps.fetch.outputs.simply_kaspa }}' >> .github/upstream-image-digests.txt
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

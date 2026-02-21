@@ -88,11 +88,12 @@ class UpdateMonitor {
                 htmlUrl: release.html_url
             };
         } catch (error) {
-            if (error.response?.status === 404) {
-                throw new Error(`Repository ${repo} not found or has no releases`);
-            } else if (error.response?.status === 403) {
-                throw new Error('GitHub API rate limit exceeded');
-            }
+            const status = error.response?.status;
+            if (status === 404) throw new Error(`Repository ${repo} not found or has no releases`);
+            if (status === 401) throw new Error('GitHub API authentication failed (401)');
+            if (status === 403) throw new Error('GitHub API rate limit exceeded (403)');
+            if (status === 429) throw new Error('GitHub API secondary rate limit exceeded (429) — retry later');
+            if (status >= 500) throw new Error(`GitHub API server error (${status})`);
             throw new Error(`Failed to fetch release info: ${error.message}`);
         }
     }

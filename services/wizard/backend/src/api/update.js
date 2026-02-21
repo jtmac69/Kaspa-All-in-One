@@ -44,11 +44,13 @@ router.get('/available', async (req, res) => {
       hasUpdates: updates.some(u => u.updateAvailable)
     });
   } catch (error) {
-    console.error('Error checking for updates:', error);
-    res.status(500).json({
+    console.error('Error checking for updates:', error.message);
+    const isNetworkError = /ECONNREFUSED|ETIMEDOUT|ENOTFOUND|rate limit|timeout|Update check failed/i.test(error.message);
+    res.status(isNetworkError ? 503 : 500).json({
       success: false,
-      error: 'Failed to check for updates',
-      message: error.message
+      error: isNetworkError ? 'Unable to reach GitHub to check for updates' : 'Failed to check for updates',
+      message: error.message,
+      hint: isNetworkError ? 'Check your internet connection and try again.' : undefined
     });
   }
 });
@@ -323,16 +325,24 @@ function fetchLatestRelease() {
       res.on('end', () => {
         try {
           if (res.statusCode === 404) {
-            reject(new Error('No releases found'));
+            reject(new Error('No releases found (GitHub 404)'));
             return;
           }
           if (res.statusCode === 403) {
-            reject(new Error('GitHub API rate limit exceeded'));
+            reject(new Error('GitHub API rate limit exceeded (403)'));
+            return;
+          }
+          if (res.statusCode === 429) {
+            reject(new Error('GitHub API secondary rate limit exceeded (429) — retry later'));
+            return;
+          }
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            reject(new Error(`GitHub API returned unexpected status ${res.statusCode}`));
             return;
           }
           resolve(JSON.parse(data));
         } catch (e) {
-          reject(new Error('Invalid JSON from GitHub API'));
+          reject(new Error(`Invalid JSON from GitHub API (status ${res.statusCode}): ${e.message}`));
         }
       });
     });
@@ -375,8 +385,8 @@ async function checkForUpdates() {
   try {
     release = await fetchLatestRelease();
   } catch (err) {
-    console.warn('Could not fetch AIO release:', err.message);
-    return [];
+    console.error('Could not fetch AIO release:', err.message);
+    throw new Error(`Update check failed: ${err.message}`);
   }
 
   const availableVersion = cleanVersion(release.tag_name);
