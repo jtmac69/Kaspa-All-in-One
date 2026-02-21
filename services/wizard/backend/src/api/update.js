@@ -321,22 +321,27 @@ router.post('/rollback', authenticateToken, async (req, res) => {
     }
 
     // Start services
+    let serviceRestartFailed = false;
     if (profiles.length > 0) {
       try {
         const startResult = await dockerManager.startServices(profiles);
         if (startResult && !startResult.success) {
+          serviceRestartFailed = true;
           warnings.push(`Service restart failed after rollback: ${startResult.error || 'unknown error'} — start them manually`);
         }
       } catch (startErr) {
+        serviceRestartFailed = true;
         warnings.push(`Service restart failed after rollback: ${startErr.message} — start them manually`);
       }
     } else if (!warnings.some(w => w.includes('automatically restarted'))) {
       warnings.push('No profiles found in restored state — services were not restarted');
     }
 
-    res.json({
-      success: true,
-      message: 'Rollback completed successfully',
+    res.status(serviceRestartFailed ? 207 : 200).json({
+      success: !serviceRestartFailed,
+      message: serviceRestartFailed
+        ? 'Files restored but services could not be restarted — manual intervention required'
+        : 'Rollback completed successfully',
       restoredFiles,
       warnings: warnings.length > 0 ? warnings : undefined
     });
@@ -515,6 +520,10 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
       const updateScript = path.join(projectRoot, 'services', 'dashboard', 'scripts', 'update.sh');
       const { stderr: dashStderr } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
       const scriptWarnings = parseScriptWarnings(dashStderr);
+      const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
+      if (scriptErrors.length > 0) {
+        return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || 'latest' };
+      }
       return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Dashboard updated successfully`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
     }
 
@@ -522,6 +531,10 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
       const updateScript = path.join(projectRoot, 'services', 'wizard', 'scripts', 'update.sh');
       const { stderr: wizStderr } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
       const scriptWarnings = parseScriptWarnings(wizStderr);
+      const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
+      if (scriptErrors.length > 0) {
+        return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || 'latest' };
+      }
       return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Wizard updated successfully`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
     }
 
@@ -531,6 +544,10 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
       const wizScript = path.join(projectRoot, 'services', 'wizard', 'scripts', 'update.sh');
       const { stderr: dashStderr } = await execFileAsync('sudo', ['bash', dashScript], { timeout: 120000 });
       const scriptWarnings = parseScriptWarnings(dashStderr);
+      const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
+      if (scriptErrors.length > 0) {
+        return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || 'latest' };
+      }
       // Schedule wizard self-update asynchronously: running it now would kill this process
       // before the HTTP response can be flushed. The caller should expect a connection drop
       // ~500ms after receiving this response as the wizard restarts.
@@ -654,11 +671,16 @@ async function createConfigurationBackup(projectRoot, reason) {
     files: backedUpFiles
   };
   
-  await fs.writeFile(
-    path.join(backupDir, 'backup-metadata.json'),
-    JSON.stringify(metadata, null, 2)
-  );
-  
+  try {
+    await fs.writeFile(
+      path.join(backupDir, 'backup-metadata.json'),
+      JSON.stringify(metadata, null, 2)
+    );
+  } catch (metaErr) {
+    try { await fs.rm(backupDir, { recursive: true, force: true }); } catch (_) {}
+    throw new Error(`Backup failed: could not write metadata (${metaErr.message})`);
+  }
+
   return { timestamp, backupDir, files: backedUpFiles };
 }
 

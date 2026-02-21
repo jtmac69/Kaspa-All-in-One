@@ -236,9 +236,12 @@ rollback_update() {
             chown -R "$WIZARD_USER:$WIZARD_USER" "$WIZARD_HOME"
             systemctl start "$SERVICE_NAME"
             if systemctl is-active --quiet "$SERVICE_NAME"; then
-                log_success "Rollback completed"
+                log_success "Rollback completed — service is running"
             else
                 log_error "Rollback: service failed to start after restore — manual intervention required"
+                log_error "Check: sudo journalctl -u $SERVICE_NAME --no-pager -n 50"
+                rm -rf "$restore_tmp"
+                return 1
             fi
         else
             log_error "No backup data found for rollback"

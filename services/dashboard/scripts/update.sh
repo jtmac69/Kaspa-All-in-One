@@ -323,10 +323,14 @@ apply_update() {
         return 1
     fi
 
-    # Restore preserved files
+    # Restore preserved files — .env failure is fatal
     for file in "${preserve_files[@]}"; do
         if [[ -e "$temp_preserve/$file" ]]; then
-            cp -r "$temp_preserve/$file" "$DASHBOARD_HOME/" 2>/dev/null || true
+            if ! cp -r "$temp_preserve/$file" "$DASHBOARD_HOME/"; then
+                log_error "Failed to restore preserved file: $file"
+                rm -rf "$temp_preserve"
+                return 1
+            fi
         fi
     done
     
@@ -374,8 +378,14 @@ update_systemd_service() {
         # Compare service files
         if ! diff -q "$service_file" "$new_service_file" >/dev/null 2>&1; then
             log_info "Updating systemd service configuration..."
-            cp "$new_service_file" "$service_file"
-            systemctl daemon-reload
+            if ! cp "$new_service_file" "$service_file"; then
+                log_error "Failed to copy updated service file to $service_file — aborting update"
+                return 1
+            fi
+            if ! systemctl daemon-reload; then
+                log_error "systemctl daemon-reload failed — service file may be malformed"
+                return 1
+            fi
             log_success "Systemd service configuration updated"
         else
             log_info "Systemd service configuration unchanged"

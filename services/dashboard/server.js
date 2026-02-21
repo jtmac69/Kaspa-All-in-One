@@ -2181,9 +2181,14 @@ app.get('/api/updates/available', async (req, res) => {
         const ONE_HOUR = 60 * 60 * 1000;
         const cacheStale = !lastUpdateCheck || (Date.now() - lastUpdateCheck > ONE_HOUR);
 
-        if (cacheStale || cachedUpdates === null) {
-            cachedUpdates = await updateMonitor.getAvailableUpdates();
-            lastUpdateCheck = Date.now();
+        if ((cacheStale || cachedUpdates === null) && !updateCheckInProgress) {
+            updateCheckInProgress = true;
+            try {
+                cachedUpdates = await updateMonitor.getAvailableUpdates();
+                lastUpdateCheck = Date.now();
+            } finally {
+                updateCheckInProgress = false;
+            }
         }
 
         res.json({
@@ -2857,6 +2862,7 @@ updateBroadcaster.start();
 const updateMonitor = new UpdateMonitor();
 let cachedUpdates = null;
 let lastUpdateCheck = null;
+let updateCheckInProgress = false;
 
 // Schedule periodic update checks (runs immediately, then every 24h)
 updateMonitor.scheduleUpdateChecks((err, updates) => {

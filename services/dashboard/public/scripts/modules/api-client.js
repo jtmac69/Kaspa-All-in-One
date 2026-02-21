@@ -35,7 +35,9 @@ export class APIClient {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                const err = new Error(`HTTP ${response.status}: ${response.statusText}`);
+                err.status = response.status;
+                throw err;
             }
 
             const data = await response.json();

@@ -98,6 +98,7 @@ class UpdateMonitor {
             if (status === 403) throw new Error('GitHub API rate limit exceeded (403)');
             if (status === 429) throw new Error('GitHub API secondary rate limit exceeded (429) — retry later');
             if (status >= 500) throw new Error(`GitHub API server error (${status})`);
+            if (error.code) throw new Error(`Failed to fetch release info (${error.code}): ${error.message}`);
             throw new Error(`Failed to fetch release info: ${error.message}`);
         }
     }
@@ -188,7 +189,7 @@ class UpdateMonitor {
             const trimmedHistory = history.slice(0, 100);
             await fs.writeFile(this.updateHistoryFile, JSON.stringify(trimmedHistory, null, 2));
         } catch (error) {
-            console.warn('Failed to save update history:', error.message);
+            console.error(`Failed to write ${this.updateHistoryFile} (${error.constructor.name}):`, error.message);
         }
     }
 
@@ -209,7 +210,7 @@ class UpdateMonitor {
         try {
             await fs.writeFile(this.lastCheckFile, JSON.stringify({ lastCheck: new Date().toISOString() }, null, 2));
         } catch (error) {
-            console.warn('Failed to save last check time:', error.message);
+            console.error(`Failed to write ${this.lastCheckFile} (${error.constructor.name}):`, error.message);
         }
     }
 
