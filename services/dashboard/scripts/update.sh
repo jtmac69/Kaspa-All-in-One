@@ -15,7 +15,7 @@ UPDATE_LOG="$DASHBOARD_HOME/logs/update.log"
 # Default update source (can be overridden)
 UPDATE_SOURCE="${UPDATE_SOURCE:-}"
 UPDATE_BRANCH="${UPDATE_BRANCH:-main}"
-UPDATE_REPO="${UPDATE_REPO:-https://github.com/kaspa-community/kaspa-aio.git}"
+UPDATE_REPO="${UPDATE_REPO:-https://github.com/jtmac69/Kaspa-All-in-One.git}"
 
 # Colors for output
 RED='\033[0;31m'

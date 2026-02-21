@@ -7,6 +7,7 @@ const { promisify } = require('util');
 const https = require('https');
 const DockerManager = require('../utils/docker-manager');
 const StateManager = require('../utils/state-manager');
+const { authenticateToken } = require('../middleware/security');
 
 const execFileAsync = promisify(execFile);
 
@@ -59,8 +60,9 @@ router.get('/available', async (req, res) => {
  * POST /api/wizard/updates/apply
  * Apply selected service updates
  * Handles backup, update, and rollback on failure
+ * Requires authentication — triggers sudo bash execution of update scripts
  */
-router.post('/apply', async (req, res) => {
+router.post('/apply', authenticateToken, async (req, res) => {
   try {
     const { updates, createBackup = true } = req.body;
     
@@ -518,7 +520,10 @@ async function waitForServiceHealth(service, timeout = 60000) {
         return true;
       }
     } catch (error) {
-      // Service not ready yet
+      // Service may not be ready yet; log non-transient errors for diagnosis
+      if (error.code && !['ECONNREFUSED', 'ECONNRESET'].includes(error.code)) {
+        console.warn(`Health check error for ${service} (${error.code || error.message})`);
+      }
     }
     
     // Wait 2 seconds before checking again

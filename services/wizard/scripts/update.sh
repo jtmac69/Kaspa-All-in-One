@@ -13,7 +13,7 @@ BACKUP_DIR="$WIZARD_HOME/backups"
 UPDATE_LOG="$WIZARD_HOME/logs/update.log"
 
 UPDATE_BRANCH="${UPDATE_BRANCH:-main}"
-UPDATE_REPO="${UPDATE_REPO:-https://github.com/kaspa-community/kaspa-aio.git}"
+UPDATE_REPO="${UPDATE_REPO:-https://github.com/jtmac69/Kaspa-All-in-One.git}"
 
 # Colors
 RED='\033[0;31m'
@@ -94,6 +94,10 @@ stop_wizard() {
         while systemctl is-active --quiet "$SERVICE_NAME" && [[ $timeout -gt 0 ]]; do
             sleep 1; ((timeout--))
         done
+        if systemctl is-active --quiet "$SERVICE_NAME"; then
+            log_error "Wizard service did not stop within 30 seconds — aborting update"
+            return 1
+        fi
         log_success "Wizard service stopped"
     else
         log_info "Wizard service was not running"

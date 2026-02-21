@@ -60,7 +60,7 @@ class UpdateMonitor {
                 priority: this.calculateUpdatePriority(latestRelease)
             }];
         } catch (error) {
-            throw new Error(`Failed to check for updates: ${error.message}`);
+            throw new Error(`Failed to check for updates: ${error.message}`, { cause: error });
         }
     }
 
@@ -170,6 +170,9 @@ class UpdateMonitor {
             const historyData = await fs.readFile(this.updateHistoryFile, 'utf-8');
             return JSON.parse(historyData);
         } catch (error) {
+            if (error.code !== 'ENOENT') {
+                console.warn('Failed to read update history:', error.message);
+            }
             return [];
         }
     }
@@ -191,6 +194,9 @@ class UpdateMonitor {
             const data = JSON.parse(checkData);
             return data.lastCheck;
         } catch (error) {
+            if (error.code !== 'ENOENT') {
+                console.warn('Failed to read last check time:', error.message);
+            }
             return null;
         }
     }

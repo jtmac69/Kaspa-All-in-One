@@ -77,8 +77,8 @@ describe('UpdateMonitor', () => {
       expect(updateMonitor.isNewer('1.2.2', '1.2.3')).toBe(false);
     });
 
-    it('should handle unknown current version', () => {
-      expect(updateMonitor.isNewer('1.2.3', 'unknown')).toBe(true);
+    it('should suppress update for unknown current version (avoid false positives on fresh installs)', () => {
+      expect(updateMonitor.isNewer('1.2.3', 'unknown')).toBe(false);
     });
 
     it('should handle latest current version', () => {
@@ -119,7 +119,7 @@ describe('UpdateMonitor', () => {
       const release = {
         changelog: 'Security vulnerability fix for CVE-2023-1234'
       };
-      const priority = updateMonitor.calculateUpdatePriority('kaspa-node', release);
+      const priority = updateMonitor.calculateUpdatePriority(release);
       expect(priority).toBe('high');
     });
 
@@ -127,35 +127,16 @@ describe('UpdateMonitor', () => {
       const release = {
         changelog: 'BREAKING: Security fix that changes API'
       };
-      const priority = updateMonitor.calculateUpdatePriority('kaspa-node', release);
+      const priority = updateMonitor.calculateUpdatePriority(release);
       expect(priority).toBe('critical');
     });
 
-    it('should assign medium priority to critical services', () => {
+    it('should assign medium priority for regular updates (minimum floor)', () => {
       const release = {
         changelog: 'Regular update with improvements'
       };
-      const priority = updateMonitor.calculateUpdatePriority('kaspa-node', release);
+      const priority = updateMonitor.calculateUpdatePriority(release);
       expect(priority).toBe('medium');
-    });
-
-    it('should assign low priority to non-critical services', () => {
-      const release = {
-        changelog: 'Regular update with improvements'
-      };
-      const priority = updateMonitor.calculateUpdatePriority('kasia-app', release);
-      expect(priority).toBe('low');
-    });
-  });
-
-  describe('getServiceDisplayName', () => {
-    it('should return display name for known service', () => {
-      expect(updateMonitor.getServiceDisplayName('kaspa-node')).toBe('Kaspa Node');
-      expect(updateMonitor.getServiceDisplayName('kasia-app')).toBe('Kasia Application');
-    });
-
-    it('should return service name for unknown service', () => {
-      expect(updateMonitor.getServiceDisplayName('unknown-service')).toBe('unknown-service');
     });
   });
 
