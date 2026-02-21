@@ -576,6 +576,12 @@ class Dashboard {
             }
         } catch (error) {
             console.error('Failed to load updates:', error);
+            const summaryEl = document.querySelector('#updates-summary .summary-text');
+            if (summaryEl) summaryEl.textContent = 'Unable to check for updates';
+            const contentEl = document.getElementById('updates-content');
+            if (contentEl) {
+                contentEl.innerHTML = `<p class="updates-error">Failed to load update information: ${escapeHtml(error.message || 'Unknown error')}. Check your network connection and try again.</p>`;
+            }
         }
     }
 
@@ -688,10 +694,15 @@ class Dashboard {
                 checkBtn.textContent = 'Checking...';
                 try {
                     await this.api.checkForUpdates();
-                } catch (_) { /* ignore */ }
-                await this.loadUpdates();
-                checkBtn.disabled = false;
-                checkBtn.textContent = '🔄 Check Now';
+                    await this.loadUpdates();
+                } catch (err) {
+                    console.error('Force update check failed:', err);
+                    const summaryEl = document.querySelector('#updates-summary .summary-text');
+                    if (summaryEl) summaryEl.textContent = `Check failed: ${escapeHtml(err.message || 'Unable to reach update server')}`;
+                } finally {
+                    checkBtn.disabled = false;
+                    checkBtn.textContent = '🔄 Check Now';
+                }
             });
         }
     }

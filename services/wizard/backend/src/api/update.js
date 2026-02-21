@@ -211,9 +211,17 @@ router.post('/rollback', authenticateToken, async (req, res) => {
         error: 'Missing backupTimestamp'
       });
     }
-    
+
+    // Validate backupTimestamp is a numeric Unix timestamp to prevent path traversal
+    if (!/^\d+$/.test(String(backupTimestamp))) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid backupTimestamp: must be a numeric Unix timestamp'
+      });
+    }
+
     const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
-    const backupDir = path.join(projectRoot, '.kaspa-backups', backupTimestamp.toString());
+    const backupDir = path.join(projectRoot, '.kaspa-backups', String(backupTimestamp));
     
     // Verify backup exists
     try {
@@ -262,27 +270,34 @@ router.post('/rollback', authenticateToken, async (req, res) => {
     const installationStatePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
     let profiles = [];
     
+    let profileLoadWarning = null;
     try {
       const stateContent = await fs.readFile(installationStatePath, 'utf8');
       const installationState = JSON.parse(stateContent);
       profiles = installationState.profiles?.selected || [];
     } catch (error) {
-      console.error('Error loading profiles from restored state:', error);
+      console.error('Error loading profiles from restored state:', error.message);
+      profileLoadWarning = 'Services could not be automatically restarted — start them manually via the dashboard or manage.sh';
     }
-    
+
     // Start services
     if (profiles.length > 0) {
       await dockerManager.startServices(profiles);
+    } else if (!profileLoadWarning) {
+      profileLoadWarning = 'No profiles found in restored state — services were not restarted';
     }
-    
+
+    const warnings = profileLoadWarning ? [profileLoadWarning] : undefined;
+
     res.json({
       success: true,
       message: 'Rollback completed successfully',
       restoredFiles,
-      errors: errors.length > 0 ? errors : undefined
+      errors: errors.length > 0 ? errors : undefined,
+      warnings
     });
   } catch (error) {
-    console.error('Error during rollback:', error);
+    console.error('Error during rollback:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to rollback',

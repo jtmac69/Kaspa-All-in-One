@@ -2212,6 +2212,8 @@ app.post('/api/updates/check', async (req, res) => {
             lastChecked: new Date(lastUpdateCheck).toISOString()
         });
     } catch (error) {
+        lastUpdateCheck = Date.now(); // stamp even on failure to enforce back-off
+        console.warn('Forced update check failed:', error.message);
         const isNetworkError = /rate limit|timeout|not found|network|ECONNREFUSED|ENOTFOUND/i.test(error.message);
         res.status(isNetworkError ? 503 : 500).json({
             error: isNetworkError ? 'Update check temporarily unavailable' : 'Failed to check for updates',

@@ -175,14 +175,14 @@ EOF
     tar -czf "${backup_name}.tar.gz" "$backup_name"
     rm -rf "$backup_name"
     
-    # Set ownership
-    chown "$DASHBOARD_USER:$DASHBOARD_USER" "${backup_path}.tar.gz"
-    
+    # Set ownership (archive is at $BACKUP_DIR/$backup_name.tar.gz — not $backup_path which was deleted)
+    chown "$DASHBOARD_USER:$DASHBOARD_USER" "$BACKUP_DIR/${backup_name}.tar.gz" 2>/dev/null || true
+
     # Clean up old backups (keep last 10)
     log_info "Cleaning up old backups..."
     ls -t "$BACKUP_DIR"/dashboard_backup_*.tar.gz 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true
-    
-    BACKUP_FILE="${backup_path}.tar.gz"
+
+    BACKUP_FILE="$BACKUP_DIR/${backup_name}.tar.gz"
     log_success "Backup created: $BACKUP_FILE"
 }
 
@@ -556,72 +556,45 @@ main() {
 }
 
 # Handle script arguments
-case "${1:-}" in
-    --help|-h)
-        echo "Kaspa Dashboard Update Script"
-        echo
-        echo "Usage: $0 [options]"
-        echo
-        echo "Options:"
-        echo "  --help, -h           Show this help message"
-        echo "  --source PATH        Update from local directory"
-        echo "  --repo URL           Update from Git repository"
-        echo "  --branch BRANCH      Git branch to use (default: main)"
-        echo "  --skip-backup        Skip creating backup before update"
-        echo "  --no-rollback        Don't attempt rollback on failure"
-        echo "  --check-only         Check for updates without applying"
-        echo
-        echo "Environment variables:"
-        echo "  UPDATE_SOURCE=PATH   Local directory path"
-        echo "  UPDATE_REPO=URL      Git repository URL"
-        echo "  UPDATE_BRANCH=NAME   Git branch name"
-        echo "  SKIP_BACKUP=true     Skip backup creation"
-        echo "  NO_ROLLBACK=true     Disable automatic rollback"
-        echo
-        echo "Examples:"
-        echo "  $0                                    # Update from default repository"
-        echo "  $0 --source /path/to/kaspa-aio       # Update from local directory"
-        echo "  $0 --repo https://github.com/user/kaspa-aio.git --branch develop"
-        echo
-        exit 0
-        ;;
-    --source)
-        export UPDATE_SOURCE="$2"
-        shift 2
-        main
-        ;;
-    --repo)
-        export UPDATE_REPO="$2"
-        shift 2
-        main
-        ;;
-    --branch)
-        export UPDATE_BRANCH="$2"
-        shift 2
-        main
-        ;;
-    --skip-backup)
-        export SKIP_BACKUP=true
-        shift
-        main
-        ;;
-    --no-rollback)
-        export NO_ROLLBACK=true
-        shift
-        main
-        ;;
-    --check-only)
-        log_info "Check-only mode not yet implemented"
-        log_info "This feature will be added in a future update"
-        exit 0
-        ;;
-    "")
-        # No arguments, proceed with default update
-        main
-        ;;
-    *)
-        log_error "Unknown option: $1"
-        echo "Use --help for usage information"
-        exit 1
-        ;;
-esac
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --help|-h)
+            echo "Kaspa Dashboard Update Script"
+            echo
+            echo "Usage: $0 [options]"
+            echo
+            echo "Options:"
+            echo "  --help, -h           Show this help message"
+            echo "  --source PATH        Update from local directory"
+            echo "  --repo URL           Update from Git repository"
+            echo "  --branch BRANCH      Git branch to use (default: main)"
+            echo "  --skip-backup        Skip creating backup before update"
+            echo "  --no-rollback        Don't attempt rollback on failure"
+            echo
+            echo "Environment variables:"
+            echo "  UPDATE_SOURCE=PATH   Local directory path"
+            echo "  UPDATE_REPO=URL      Git repository URL"
+            echo "  UPDATE_BRANCH=NAME   Git branch name"
+            echo "  SKIP_BACKUP=true     Skip backup creation"
+            echo "  NO_ROLLBACK=true     Disable automatic rollback"
+            echo
+            echo "Examples:"
+            echo "  $0                                    # Update from default repository"
+            echo "  $0 --source /path/to/kaspa-aio       # Update from local directory"
+            echo "  $0 --repo https://github.com/user/kaspa-aio.git --branch develop"
+            echo
+            exit 0
+            ;;
+        --source)  export UPDATE_SOURCE="$2"; shift 2 ;;
+        --repo)    export UPDATE_REPO="$2";   shift 2 ;;
+        --branch)  export UPDATE_BRANCH="$2"; shift 2 ;;
+        --skip-backup) export SKIP_BACKUP=true; shift ;;
+        --no-rollback) export NO_ROLLBACK=true; shift ;;
+        *)
+            log_error "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+main
