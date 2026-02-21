@@ -54,8 +54,8 @@ Before you begin, make sure you have:
 1. **Download** the test release from [GitHub Releases](https://github.com/jtmac69/Kaspa-All-in-One/releases)
 2. **Extract** the archive:
    ```bash
-   tar -xzf kaspa-aio-v0.9.0-test.tar.gz
-   cd kaspa-aio-v0.9.0-test
+   tar -xzf kaspa-aio-v0.9.1.tar.gz
+   cd kaspa-aio-v0.9.1
    ```
 3. **Start** the test:
    ```bash

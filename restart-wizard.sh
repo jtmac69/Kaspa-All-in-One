@@ -1,6 +1,6 @@
 #!/bin/bash
 # Kaspa All-in-One Test Release - Restart Wizard
-# Version: v0.9.0-test
+# Version: v0.9.1
 #
 # This script restarts the wizard server to pick up code changes
 # or to reset the wizard to a fresh state.
@@ -23,7 +23,7 @@ WIZARD_PORT=3000
 echo ""
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║   Kaspa All-in-One - Restart Wizard                       ║"
-echo "║   Version: v0.9.0-test                                     ║"
+echo "║   Version: v0.9.1                                     ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
 

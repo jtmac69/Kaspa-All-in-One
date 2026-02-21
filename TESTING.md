@@ -1,4 +1,4 @@
-# Testing Kaspa All-in-One v0.9.0
+# Testing Kaspa All-in-One v0.9.1
 
 ## Welcome Testers! 🎉
 
@@ -10,7 +10,7 @@ Kaspa All-in-One is a comprehensive deployment system that makes it easy to run 
 
 ### What is This Test Release?
 
-This is **version 0.9.0-test**, a pre-production release designed specifically for testing. Your feedback will help us:
+This is **version 0.9.1**, a pre-production release designed specifically for testing. Your feedback will help us:
 
 - **Identify bugs** before the official v1.0 release
 - **Improve documentation** to make it clearer for all users
@@ -332,7 +332,7 @@ Ready to begin testing? Follow these simple steps to get started:
 
 Download the test release archive from GitHub:
 - Go to: [GitHub Releases](https://github.com/jtmac69/Kaspa-All-in-One/releases)
-- Find the latest test release (tagged as `v0.9.0-test` or similar)
+- Find the latest test release (tagged as `v0.9.1` or similar)
 - Download the archive file (`.tar.gz` or `.zip`)
 
 ### Step 2: Extract the Archive
@@ -341,14 +341,14 @@ Extract the downloaded archive to a directory of your choice:
 
 **Linux/macOS:**
 ```bash
-tar -xzf kaspa-aio-v0.9.0-test.tar.gz
-cd kaspa-aio-v0.9.0-test
+tar -xzf kaspa-aio-v0.9.1.tar.gz
+cd kaspa-aio-v0.9.1
 ```
 
 **Windows (WSL2):**
 ```bash
-unzip kaspa-aio-v0.9.0-test.zip
-cd kaspa-aio-v0.9.0-test
+unzip kaspa-aio-v0.9.1.zip
+cd kaspa-aio-v0.9.1
 ```
 
 ### Step 3: Run the Quick Start Script
@@ -369,7 +369,7 @@ Execute the start script to launch the installation wizard:
 **Expected output:**
 ```
 ╔════════════════════════════════════════════════════════════╗
-║   Kaspa All-in-One - Test Release v0.9.0                  ║
+║   Kaspa All-in-One - Test Release v0.9.1                  ║
 ║   Thank you for testing!                                   ║
 ╚════════════════════════════════════════════════════════════╝
 
@@ -553,7 +553,7 @@ This section provides detailed step-by-step instructions for testing different a
 
 1. **Navigate to the test package directory**:
    ```bash
-   cd kaspa-aio-v0.9.0-test
+   cd kaspa-aio-v0.9.1
    ```
 
 2. **Run the start script**:
@@ -2463,7 +2463,7 @@ Verify that all services are properly integrated.
    - ✓ Should show "Connected to database" or similar
    - ✓ Should show database name and host
 
-3. **Test service monitoring** (Dashboard not yet available in v0.9.0):
+3. **Test service monitoring** (Dashboard available at http://localhost:8080):
    - Use `docker ps` to check service status
    - ✓ All indexer services should show "Up (healthy)"
    - ✓ Database services should show "Up (healthy)"
@@ -2510,7 +2510,7 @@ Observe the sync and indexing process for a few minutes.
    - Monitor indexer logs for progress indicators
    - ✓ Should show current block height being processed
    - ✓ Should show indexing progress messages
-   - Note: Web dashboard not available in v0.9.0
+   - Note: Web dashboard available at http://localhost:8080
 
 3. **Monitor additional indexers**:
    ```bash
@@ -3804,7 +3804,7 @@ kaspa-node    kaspanet/rusty-kaspad:latest   "entrypoint.sh kaspa…"   kaspa-no
 
 ✓ Restart complete!
 
-Note: Dashboard not available in v0.9.0 - use `docker ps` to verify services
+Note: Dashboard available at http://localhost:8080
 ```
 
 **When to Use:**
@@ -3851,7 +3851,7 @@ Use this when you want to pause testing without losing any data.
 ```
 ╔════════════════════════════════════════════════════════════╗
 ║   Kaspa All-in-One - Stop Services                        ║
-║   Version: v0.9.0-test                                     ║
+║   Version: v0.9.1                                     ║
 ╚════════════════════════════════════════════════════════════╝
 
 ✓ Using: docker compose
@@ -4204,7 +4204,7 @@ The template will guide you through providing:
    - Docker Version (from `docker --version`)
    - Docker Compose Version (from `docker compose version`)
    - Node.js Version (from `node --version`)
-   - Test Release Version (v0.9.0-test)
+   - Test Release Version (v0.9.1)
 
 4. **Logs and Error Messages**
    - Copy exact error messages
@@ -5302,7 +5302,7 @@ New to Kaspa or blockchain technology? This glossary explains terms you'll encou
 
 ### Version Terms
 
-**v0.9.0-test**
+**v0.9.1**
 - Current test release version
 - "v" = version
 - "test" = pre-release for testing
@@ -5394,7 +5394,7 @@ Every bug you find, every suggestion you make, and every question you ask helps 
 
 ### Version Information
 
-- **Test Release**: v0.9.0-test
+- **Test Release**: v0.9.1
 - **Document Version**: 1.0
 - **Last Updated**: December 2025
 

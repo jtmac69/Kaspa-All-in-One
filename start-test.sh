@@ -1,6 +1,6 @@
 #!/bin/bash
 # Kaspa All-in-One Test Release - Quick Start
-# Version: v0.9.0-test
+# Version: v0.9.1
 
 set -e
 
@@ -21,7 +21,7 @@ WIZARD_LOG_FILE="/tmp/kaspa-wizard.log"
 print_banner() {
   echo ""
   echo "╔════════════════════════════════════════════════════════════╗"
-  echo "║   Kaspa All-in-One - Test Release v0.9.0                  ║"
+  echo "║   Kaspa All-in-One - v0.9.1                  ║"
   echo "║   Thank you for testing!                                   ║"
   echo "╚════════════════════════════════════════════════════════════╝"
   echo ""

@@ -9,7 +9,7 @@
 
 Kaspa All-in-One (AIO) is a Docker-based deployment system for the Kaspa blockchain ecosystem. It provides a web-based installation wizard, a management dashboard, and orchestrates 11+ containerized services (node, indexers, apps, explorer, mining). The project targets self-hosted operators who want to run various combinations of Kaspa infrastructure on their own hardware.
 
-- **Version**: 0.9.0-test (pre-production)
+- **Version**: 0.9.1
 - **License**: MIT
 - **Primary languages**: JavaScript (Node.js), Bash, with Rust and Go services pulled as Docker images
 - **Node.js requirement**: >= 18.0.0
@@ -292,7 +292,7 @@ Examples from history:
 2. **Dashboard runs on the host**, not in Docker. It needs direct access to Docker socket and system metrics.
 3. **The dashboard `server.js` is ~116KB** — it's a large monolithic file. Changes there should be careful and targeted.
 4. **CI/CD pipeline** — `.github/workflows/ci.yml` runs unit tests and Docker builds on every PR/push to `main`; `.github/workflows/release.yml` publishes images to ghcr.io and creates a GitHub Release on `v*.*.*` tags.
-5. **Pre-production state** — the project is at v0.9.0-test. Expect rough edges and check `KNOWN_ISSUES.md`.
+5. **Version** — the project is at v0.9.1. Check `KNOWN_ISSUES.md` for any open issues.
 6. **Some services use pre-built Docker images** (kasia-indexer, simply-kaspa-indexer, kaspa-node) while others build from Dockerfiles in the repo.
 7. **Port conflicts** are a real concern — the shared library includes `port-fallback.js` specifically for this.
 8. **`.env` files are gitignored** — never commit credentials. The `.env.example` is the template.

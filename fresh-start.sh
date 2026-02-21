@@ -1,6 +1,6 @@
 #!/bin/bash
 # Kaspa All-in-One Test Release - Fresh Start
-# Version: v0.9.0-test
+# Version: v0.9.1
 
 set -e
 
@@ -16,7 +16,7 @@ print_banner() {
   echo ""
   echo "╔════════════════════════════════════════════════════════════╗"
   echo "║   Kaspa All-in-One - Fresh Start                          ║"
-  echo "║   Version: v0.9.0-test                                     ║"
+  echo "║   Version: v0.9.1                                     ║"
   echo "╚════════════════════════════════════════════════════════════╝"
   echo ""
 }

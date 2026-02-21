@@ -1,4 +1,4 @@
-# Known Issues - Test Release v0.9.0
+# Known Issues - v0.9.1
 
 ## Quick Reference
 
@@ -126,7 +126,7 @@ The Kasia v0.6.2 release requires `kaspa-wasm` which wasn't available in the rep
 **What Was Wrong**:
 - Scenario 5 described a sophisticated "Existing Installation Detection" screen that doesn't exist
 - Documented service addition/removal workflows not implemented in wizard
-- Described configuration change features not available in v0.9.0-test
+- Described configuration change features not available in v0.9.1
 - Created confusion for testers expecting features that weren't there
 
 **What Was Fixed**:
@@ -149,7 +149,7 @@ The Kasia v0.6.2 release requires `kaspa-wasm` which wasn't available in the rep
 - **Documentation Accuracy**: TESTING.md now matches actual wizard behavior
 
 **Root Cause**:
-The documentation was written to describe an ideal reconfiguration system that was planned but not implemented in the v0.9.0-test wizard. The current wizard focuses on fresh installations rather than modifying existing ones.
+The documentation was written to describe an ideal reconfiguration system that was planned but not implemented in the v0.9.1 wizard. The current wizard focuses on fresh installations rather than modifying existing ones.
 
 **Future Plans**:
 Advanced reconfiguration features (service addition/removal, configuration changes) are planned for future releases (v1.0+) and will be documented when actually implemented.
@@ -553,7 +553,7 @@ These are known limitations of the test release, categorized by their impact on 
 
 15. **Limited Reconfiguration** [Severity: Medium]
     
-    Advanced reconfiguration features are not available in v0.9.0-test
+    Advanced reconfiguration features are not available in v0.9.1
     - **No service addition/removal**: Cannot add or remove services from existing installation
     - **No configuration changes**: Cannot modify existing service configurations through wizard
     - **No existing installation detection**: Wizard doesn't detect or display running Docker containers
@@ -874,7 +874,7 @@ When new issues are discovered:
 
 ### Version History
 
-**v0.9.0-test (Initial Release)**
+**v0.9.1 (Initial Release)**
 - Initial documentation of known issues
 - 31 documented limitations across all categories
 - Comprehensive workarounds and troubleshooting steps
@@ -911,7 +911,7 @@ Found a bug not listed here? Please report it!
 
 ---
 
-**Note**: This is a test release (v0.9.0). Known issues are expected and help us improve the system before the v1.0 production release. Thank you for your patience and feedback!
+**Note**: This is a v0.9.1. Known issues are expected and help us improve the system before the v1.0 production release. Thank you for your patience and feedback!
 
 
 ---
