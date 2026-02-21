@@ -134,15 +134,18 @@ create_backup() {
     # Backup critical files
     log_info "Backing up configuration and data..."
     
-    # .env is required — abort if it can't be copied
-    if [[ -f "$DASHBOARD_HOME/.env" ]]; then
-        if ! cp "$DASHBOARD_HOME/.env" "$backup_path/"; then
-            log_error "Failed to back up .env — aborting backup"
-            rm -rf "$backup_path"
-            return 1
-        fi
-        log_info "Backed up .env configuration"
+    # .env is required — abort if missing or if copy fails
+    if [[ ! -f "$DASHBOARD_HOME/.env" ]]; then
+        log_error ".env not found at $DASHBOARD_HOME/.env — cannot create valid backup, aborting"
+        rm -rf "$backup_path"
+        return 1
     fi
+    if ! cp "$DASHBOARD_HOME/.env" "$backup_path/"; then
+        log_error "Failed to back up .env — aborting backup"
+        rm -rf "$backup_path"
+        return 1
+    fi
+    log_info "Backed up .env configuration"
     
     if [[ -f "$DASHBOARD_HOME/package.json" ]]; then
         cp "$DASHBOARD_HOME/package.json" "$backup_path/"
@@ -205,8 +208,11 @@ stop_dashboard() {
     log_info "Stopping dashboard service..."
     
     if systemctl is-active --quiet "$SERVICE_NAME"; then
-        systemctl stop "$SERVICE_NAME"
-        
+        if ! systemctl stop "$SERVICE_NAME"; then
+            log_error "systemctl stop $SERVICE_NAME returned an error — service may be masked or in a failed state"
+            return 1
+        fi
+
         # Wait for service to stop
         local timeout=30
         while systemctl is-active --quiet "$SERVICE_NAME" && [[ $timeout -gt 0 ]]; do
@@ -431,8 +437,9 @@ verify_update() {
             fi
             
             if [[ $attempt -eq $max_attempts ]]; then
-                log_warning "Health check failed after $max_attempts attempts"
-                log_warning "Dashboard may still be starting up"
+                log_error "Health check failed after $max_attempts attempts — dashboard may not be serving requests"
+                log_error "Check logs: sudo journalctl -u $SERVICE_NAME --no-pager -n 50"
+                return 1
             else
                 log_info "Health check attempt $attempt/$max_attempts failed, retrying..."
                 sleep 2
@@ -499,8 +506,14 @@ rollback_update() {
 
             # Restart service
             systemctl start "$SERVICE_NAME"
+            if ! systemctl is-active --quiet "$SERVICE_NAME"; then
+                log_error "Rollback: service failed to start after restore — manual intervention required"
+                log_error "Check: sudo journalctl -u $SERVICE_NAME --no-pager -n 50"
+                rm -rf "$restore_temp"
+                return 1
+            fi
 
-            log_success "Rollback completed"
+            log_success "Rollback completed — service is running"
         else
             log_error "Could not find backup data in archive"
         fi
@@ -563,7 +576,10 @@ main() {
     
     # Create backup
     if [[ "${SKIP_BACKUP:-}" != "true" ]]; then
-        create_backup
+        if ! create_backup; then
+            log_error "Backup failed — aborting update to preserve current installation"
+            exit 1
+        fi
     else
         log_warning "Skipping backup (SKIP_BACKUP=true)"
     fi

@@ -11,6 +11,12 @@ const { authenticateToken } = require('../middleware/security');
 
 const execFileAsync = promisify(execFile);
 
+// Extract [WARNING]/[ERROR] lines from shell script stderr for inclusion in API responses
+function parseScriptWarnings(stderr) {
+  if (!stderr) return [];
+  return stderr.trim().split('\n').filter(l => /\[WARNING\]|\[ERROR\]/.test(l)).slice(0, 20);
+}
+
 const dockerManager = new DockerManager();
 const stateManager = new StateManager();
 
@@ -248,9 +254,15 @@ router.post('/rollback', authenticateToken, async (req, res) => {
     }
     
     // Stop services before rollback
-    const stopResult = await dockerManager.stopAllServices();
+    let stopResult;
     const warnings = [];
-    if (!stopResult.success) {
+    try {
+      stopResult = await dockerManager.stopAllServices();
+    } catch (stopErr) {
+      console.warn('[rollback] stopAllServices threw:', stopErr.message);
+      warnings.push(`Could not stop services before rollback: ${stopErr.message} — proceeding anyway`);
+    }
+    if (stopResult && !stopResult.success) {
       const msg = `Services may still be running before rollback: ${stopResult.error || 'unknown error'}`;
       console.warn('[rollback] stopAllServices failed:', stopResult.error);
       warnings.push(msg);
@@ -467,7 +479,7 @@ async function checkForUpdates() {
     release = await fetchLatestRelease();
   } catch (err) {
     console.error('Could not fetch AIO release:', err.message);
-    throw new Error(`Update check failed: ${err.message}`);
+    throw new Error(`Update check failed: ${err.message}`, { cause: err });
   }
 
   const availableVersion = cleanVersion(release.tag_name);
@@ -501,21 +513,24 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
   try {
     if (service === 'dashboard') {
       const updateScript = path.join(projectRoot, 'services', 'dashboard', 'scripts', 'update.sh');
-      await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
-      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Dashboard updated successfully` };
+      const { stderr: dashStderr } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
+      const scriptWarnings = parseScriptWarnings(dashStderr);
+      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Dashboard updated successfully`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
     }
 
     if (service === 'wizard') {
       const updateScript = path.join(projectRoot, 'services', 'wizard', 'scripts', 'update.sh');
-      await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
-      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Wizard updated successfully` };
+      const { stderr: wizStderr } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
+      const scriptWarnings = parseScriptWarnings(wizStderr);
+      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Wizard updated successfully`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
     }
 
     if (service === 'kaspa-aio') {
       // Update dashboard first (synchronous — does not kill this process)
       const dashScript = path.join(projectRoot, 'services', 'dashboard', 'scripts', 'update.sh');
       const wizScript = path.join(projectRoot, 'services', 'wizard', 'scripts', 'update.sh');
-      await execFileAsync('sudo', ['bash', dashScript], { timeout: 120000 });
+      const { stderr: dashStderr } = await execFileAsync('sudo', ['bash', dashScript], { timeout: 120000 });
+      const scriptWarnings = parseScriptWarnings(dashStderr);
       // Schedule wizard self-update asynchronously: running it now would kill this process
       // before the HTTP response can be flushed. The caller should expect a connection drop
       // ~500ms after receiving this response as the wizard restarts.
@@ -526,7 +541,7 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
             console.error(`Wizard self-update failed (exit ${err.code ?? 'unknown'}):`, err.message, stderr);
           });
       }, 500);
-      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Kaspa All-in-One update initiated — wizard will restart momentarily` };
+      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Kaspa All-in-One update initiated — wizard will restart momentarily`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
     }
 
     // Docker-based services: pull new image and restart

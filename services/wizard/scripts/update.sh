@@ -75,7 +75,16 @@ create_backup() {
     backup_path="$BACKUP_DIR/$backup_name"
     mkdir -p "$backup_path"
 
-    [[ -f "$WIZARD_HOME/.env" ]]              && cp "$WIZARD_HOME/.env"              "$backup_path/"
+    if [[ ! -f "$WIZARD_HOME/.env" ]]; then
+        log_error ".env not found at $WIZARD_HOME/.env — cannot create valid backup, aborting"
+        rm -rf "$backup_path"
+        return 1
+    fi
+    if ! cp "$WIZARD_HOME/.env" "$backup_path/"; then
+        log_error "Failed to back up .env — aborting backup"
+        rm -rf "$backup_path"
+        return 1
+    fi
     [[ -f "$WIZARD_HOME/backend/package.json" ]]      && cp "$WIZARD_HOME/backend/package.json"      "$backup_path/"
     [[ -f "$WIZARD_HOME/backend/package-lock.json" ]] && cp "$WIZARD_HOME/backend/package-lock.json" "$backup_path/"
 
@@ -106,7 +115,10 @@ create_backup() {
 stop_wizard() {
     log_info "Stopping wizard service..."
     if systemctl is-active --quiet "$SERVICE_NAME"; then
-        systemctl stop "$SERVICE_NAME"
+        if ! systemctl stop "$SERVICE_NAME"; then
+            log_error "systemctl stop $SERVICE_NAME returned an error — service may be masked or in a failed state"
+            return 1
+        fi
         local timeout=30
         while systemctl is-active --quiet "$SERVICE_NAME" && [[ $timeout -gt 0 ]]; do
             sleep 1; ((timeout--))
@@ -251,7 +263,10 @@ main() {
     get_current_version
 
     if [[ "${SKIP_BACKUP:-}" != "true" ]]; then
-        create_backup
+        if ! create_backup; then
+            log_error "Backup failed — aborting update to preserve current installation"
+            exit 1
+        fi
     fi
 
     if stop_wizard && prepare_update && apply_update && update_dependencies && start_wizard; then

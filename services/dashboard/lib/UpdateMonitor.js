@@ -21,7 +21,7 @@ class UpdateMonitor {
             const dataDir = process.env.DATA_DIR || './data';
             await fs.mkdir(dataDir, { recursive: true });
         } catch (error) {
-            console.warn('Failed to create data directory:', error.message);
+            console.error('Failed to create data directory:', error.message);
         }
     }
 
@@ -175,7 +175,7 @@ class UpdateMonitor {
             return JSON.parse(historyData);
         } catch (error) {
             if (error.code !== 'ENOENT') {
-                console.warn('Failed to read update history:', error.message);
+                console.error(`Failed to read ${this.updateHistoryFile} (${error.constructor.name}):`, error.message);
             }
             return [];
         }
@@ -199,7 +199,7 @@ class UpdateMonitor {
             return data.lastCheck;
         } catch (error) {
             if (error.code !== 'ENOENT') {
-                console.warn('Failed to read last check time:', error.message);
+                console.error(`Failed to read ${this.lastCheckFile} (${error.constructor.name}):`, error.message);
             }
             return null;
         }

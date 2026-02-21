@@ -584,7 +584,14 @@ class Dashboard {
             if (summaryEl) summaryEl.textContent = 'Unable to check for updates';
             const contentEl = document.getElementById('updates-content');
             if (contentEl) {
-                contentEl.innerHTML = `<p class="updates-error">Failed to load update information: ${escapeHtml(error.message || 'Unknown error')}. Check your network connection and try again.</p>`;
+                const isAuthError = error.status === 401 || error.status === 403;
+                const isServerError = typeof error.status === 'number' && error.status >= 500;
+                const hint = isAuthError
+                    ? 'Authentication error — please refresh the page.'
+                    : isServerError
+                    ? 'The dashboard server encountered an error. Check server logs.'
+                    : 'Check your network connection and try again.';
+                contentEl.innerHTML = `<p class="updates-error">Failed to load update information: ${escapeHtml(error.message || 'Unknown error')}. ${hint}</p>`;
             }
         }
     }
@@ -691,6 +698,10 @@ class Dashboard {
             await this.loadUpdates();
         } catch (err) {
             console.error('openUpdatesModal: loadUpdates threw unexpectedly:', err);
+            const contentEl = document.getElementById('updates-content');
+            if (contentEl) {
+                contentEl.innerHTML = '<p class="updates-error">An unexpected error occurred while loading update information. Please refresh the page and try again.</p>';
+            }
         }
 
         // Wire the "Check Now" button — guard with _wired flag to prevent
