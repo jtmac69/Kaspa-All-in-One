@@ -2861,7 +2861,9 @@ let lastUpdateCheck = null;
 // Schedule periodic update checks (runs immediately, then every 24h)
 updateMonitor.scheduleUpdateChecks((err, updates) => {
     lastUpdateCheck = Date.now(); // always record attempt time to prevent retry storms
-    if (!err) {
+    if (err) {
+        console.warn('[UpdateMonitor] Scheduled check failed:', err.message);
+    } else {
         cachedUpdates = updates;
     }
 });

@@ -281,6 +281,7 @@ apply_update() {
     
     # Update files (exclude preserved files and node_modules)
     log_info "Updating dashboard files..."
+    set +e
     rsync -av \
         --exclude='.env' \
         --exclude='logs' \
@@ -290,7 +291,14 @@ apply_update() {
         --exclude='*.log' \
         --exclude='.last_update' \
         "$UPDATE_TEMP_DIR/" "$DASHBOARD_HOME/"
-    
+    local rsync_rc=$?
+    set -e
+    if [[ $rsync_rc -ne 0 ]]; then
+        log_error "rsync failed (exit $rsync_rc)"
+        rm -rf "$temp_preserve"
+        return 1
+    fi
+
     # Restore preserved files
     for file in "${preserve_files[@]}"; do
         if [[ -e "$temp_preserve/$file" ]]; then
@@ -317,7 +325,14 @@ update_dependencies() {
     # Check if package.json changed
     if [[ -f "package.json" ]]; then
         # Update dependencies as dashboard user
+        set +e
         sudo -u "$DASHBOARD_USER" npm ci --omit=dev
+        local npm_rc=$?
+        set -e
+        if [[ $npm_rc -ne 0 ]]; then
+            log_error "npm ci failed (exit $npm_rc)"
+            return 1
+        fi
         log_success "Dependencies updated"
     else
         log_warning "package.json not found, skipping dependency update"

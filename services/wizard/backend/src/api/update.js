@@ -175,15 +175,26 @@ router.post('/apply', authenticateToken, async (req, res) => {
       installationState.lastModified = new Date().toISOString();
       
       // Save updated installation state
-      await fs.writeFile(installationStatePath, JSON.stringify(installationState, null, 2));
+      try {
+        await fs.writeFile(installationStatePath, JSON.stringify(installationState, null, 2));
+      } catch (writeErr) {
+        console.error('Failed to save updated installation state:', writeErr.message);
+        return res.json({
+          success: true,
+          results,
+          backup: backupInfo,
+          message: 'Updates applied but installation state could not be saved — run the wizard to sync state',
+          stateWriteError: writeErr.message
+        });
+      }
     }
-    
+
     res.json({
       success: allSuccessful,
       results,
       backup: backupInfo,
-      message: allSuccessful 
-        ? 'All updates applied successfully' 
+      message: allSuccessful
+        ? 'All updates applied successfully'
         : 'Some updates failed. Rollback available.'
     });
   } catch (error) {
@@ -235,11 +246,15 @@ router.post('/rollback', authenticateToken, async (req, res) => {
     }
     
     // Stop services before rollback
-    await dockerManager.stopAllServices();
-    
+    const stopResult = await dockerManager.stopAllServices();
+    const warnings = [];
+    if (stopResult && !stopResult.success) {
+      warnings.push(`Services may still be running before rollback: ${stopResult.error || 'unknown error'}`);
+    }
+
     // Wait for services to stop
     await new Promise(resolve => setTimeout(resolve, 3000));
-    
+
     // Restore files from backup
     const filesToRestore = [
       { src: '.env', dest: '.env' },
@@ -247,14 +262,14 @@ router.post('/rollback', authenticateToken, async (req, res) => {
       { src: 'docker-compose.override.yml', dest: 'docker-compose.override.yml', optional: true },
       { src: 'installation-state.json', dest: '.kaspa-aio/installation-state.json' }
     ];
-    
+
     const restoredFiles = [];
     const errors = [];
-    
+
     for (const file of filesToRestore) {
       const srcPath = path.join(backupDir, file.src);
       const destPath = path.join(projectRoot, file.dest);
-      
+
       try {
         await fs.access(srcPath);
         await fs.copyFile(srcPath, destPath);
@@ -265,36 +280,49 @@ router.post('/rollback', authenticateToken, async (req, res) => {
         }
       }
     }
-    
+
+    // Fail fast if required files could not be restored
+    if (errors.length > 0) {
+      return res.status(500).json({
+        success: false,
+        error: 'Rollback incomplete — critical files could not be restored',
+        errors,
+        restoredFiles
+      });
+    }
+
     // Restart services with restored configuration
     const installationStatePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
     let profiles = [];
-    
-    let profileLoadWarning = null;
+
     try {
       const stateContent = await fs.readFile(installationStatePath, 'utf8');
       const installationState = JSON.parse(stateContent);
       profiles = installationState.profiles?.selected || [];
     } catch (error) {
       console.error('Error loading profiles from restored state:', error.message);
-      profileLoadWarning = 'Services could not be automatically restarted — start them manually via the dashboard or manage.sh';
+      warnings.push('Services could not be automatically restarted — start them manually via the dashboard or manage.sh');
     }
 
     // Start services
     if (profiles.length > 0) {
-      await dockerManager.startServices(profiles);
-    } else if (!profileLoadWarning) {
-      profileLoadWarning = 'No profiles found in restored state — services were not restarted';
+      try {
+        const startResult = await dockerManager.startServices(profiles);
+        if (startResult && !startResult.success) {
+          warnings.push(`Service restart failed after rollback: ${startResult.error || 'unknown error'} — start them manually`);
+        }
+      } catch (startErr) {
+        warnings.push(`Service restart failed after rollback: ${startErr.message} — start them manually`);
+      }
+    } else if (!warnings.some(w => w.includes('automatically restarted'))) {
+      warnings.push('No profiles found in restored state — services were not restarted');
     }
-
-    const warnings = profileLoadWarning ? [profileLoadWarning] : undefined;
 
     res.json({
       success: true,
       message: 'Rollback completed successfully',
       restoredFiles,
-      errors: errors.length > 0 ? errors : undefined,
-      warnings
+      warnings: warnings.length > 0 ? warnings : undefined
     });
   } catch (error) {
     console.error('Error during rollback:', error.message);
@@ -312,7 +340,7 @@ router.post('/rollback', authenticateToken, async (req, res) => {
  */
 router.get('/changelog/:service/:version', async (req, res) => {
   try {
-    const { version } = req.params;
+    const { version: requestedVersion } = req.params;
 
     const release = await fetchLatestRelease();
     const releaseVersion = (release.tag_name || '').replace(/^(version-?|v)/i, '');
@@ -320,7 +348,11 @@ router.get('/changelog/:service/:version', async (req, res) => {
     res.json({
       success: true,
       service: 'kaspa-aio',
+      requestedVersion,
       version: releaseVersion,
+      note: requestedVersion !== releaseVersion
+        ? 'Historical changelogs are not available; returning latest release'
+        : undefined,
       changelog: {
         version: releaseVersion,
         releaseDate: release.published_at,

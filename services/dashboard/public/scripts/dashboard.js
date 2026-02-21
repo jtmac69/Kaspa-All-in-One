@@ -683,7 +683,11 @@ class Dashboard {
      */
     async openUpdatesModal() {
         this.ui.showModal('updates-modal');
-        await this.loadUpdates();
+        try {
+            await this.loadUpdates();
+        } catch (err) {
+            console.error('openUpdatesModal: loadUpdates threw unexpectedly:', err);
+        }
 
         // Wire the "Check Now" button to force a fresh check
         const checkBtn = document.getElementById('check-updates-btn');

@@ -26,13 +26,16 @@ class UpdateMonitor {
     }
 
     async getInstalledVersion() {
+        const statePath = path.join(this.projectRoot, '.kaspa-aio', 'installation-state.json');
         try {
-            const statePath = path.join(this.projectRoot, '.kaspa-aio', 'installation-state.json');
             const content = await fs.readFile(statePath, 'utf-8');
             const state = JSON.parse(content);
             return state.version || 'unknown';
         } catch (error) {
-            console.warn('Failed to read installation-state.json:', error.message);
+            if (error.code !== 'ENOENT') {
+                // Permissions, parse errors, etc. are worth surfacing
+                console.warn('Failed to read installation-state.json:', error.code || error.constructor.name, error.message);
+            }
             return 'unknown';
         }
     }
@@ -89,6 +92,7 @@ class UpdateMonitor {
             };
         } catch (error) {
             const status = error.response?.status;
+            if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) throw new Error('GitHub API timeout');
             if (status === 404) throw new Error(`Repository ${repo} not found or has no releases`);
             if (status === 401) throw new Error('GitHub API authentication failed (401)');
             if (status === 403) throw new Error('GitHub API rate limit exceeded (403)');

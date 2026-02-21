@@ -86,6 +86,12 @@ create_backup() {
 
     cd "$BACKUP_DIR"
     tar -czf "${backup_name}.tar.gz" "$backup_name"
+    if ! tar -tzf "${backup_name}.tar.gz" > /dev/null 2>&1; then
+        log_error "Backup archive is corrupt — aborting update to prevent unrecoverable state"
+        rm -f "${backup_name}.tar.gz"
+        rm -rf "$backup_path"
+        return 1
+    fi
     rm -rf "$backup_path"
     ls -t "$BACKUP_DIR"/wizard_backup_*.tar.gz 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true
 
@@ -118,6 +124,11 @@ prepare_update() {
 
     local update_src="${UPDATE_SOURCE:-}"
     if [[ -n "$update_src" && -d "$update_src" ]]; then
+        if [[ ! -d "$update_src/services/wizard" ]]; then
+            log_error "Invalid update source: services/wizard not found in $update_src"
+            rm -rf "$temp_dir"
+            return 1
+        fi
         cp -r "$update_src/services/wizard"/* "$temp_dir/"
     else
         cd "$temp_dir"
@@ -132,6 +143,7 @@ prepare_update() {
 
 apply_update() {
     log_info "Applying update..."
+    set +e
     rsync -av \
         --exclude='.env' \
         --exclude='logs' \
@@ -140,7 +152,12 @@ apply_update() {
         --exclude='.git' \
         --exclude='*.log' \
         "$UPDATE_TEMP_DIR/" "$WIZARD_HOME/"
-
+    local rsync_rc=$?
+    set -e
+    if [[ $rsync_rc -ne 0 ]]; then
+        log_error "rsync failed (exit $rsync_rc)"
+        return 1
+    fi
     chown -R "$WIZARD_USER:$WIZARD_USER" "$WIZARD_HOME"
     rm -rf "$UPDATE_TEMP_DIR"
     log_success "Files updated"
@@ -149,7 +166,14 @@ apply_update() {
 update_dependencies() {
     log_info "Updating npm dependencies..."
     cd "$WIZARD_HOME/backend"
+    set +e
     sudo -u "$WIZARD_USER" npm ci --omit=dev
+    local npm_rc=$?
+    set -e
+    if [[ $npm_rc -ne 0 ]]; then
+        log_error "npm ci failed (exit $npm_rc)"
+        return 1
+    fi
     log_success "Dependencies updated"
 }
 
