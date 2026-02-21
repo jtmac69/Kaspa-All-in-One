@@ -6,7 +6,7 @@
 # Pin builder to amd64: Rust/wasm-pack compilation produces platform-independent
 # static web files, so there's no benefit to emulating arm64 in the builder stage.
 # The final nginx stage uses the target platform natively.
-FROM --platform=linux/amd64 node:20-alpine AS builder
+FROM --platform=linux/amd64 node:25-alpine AS builder
 
 WORKDIR /app
 
