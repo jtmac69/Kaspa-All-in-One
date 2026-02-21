@@ -1,0 +1,226 @@
+name: Check Upstream Image Digests
+
+on:
+  schedule:
+    # Every Monday at 09:00 UTC (same day as Dependabot)
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    # Allow manual trigger from the Actions tab
+
+jobs:
+  check-digests:
+    name: Check for upstream image updates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # To commit updated digest file
+      issues: write     # To open alert issues
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch current remote digests
+        id: fetch
+        run: |
+          fetch_digest() {
+            local image="$1"
+            local tag="$2"
+            # Use Docker Hub manifest API (works without auth for public images)
+            local token
+            token=$(curl -sf "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${image}:pull" \
+              | jq -r '.token')
+            local digest
+            digest=$(curl -sf -H "Authorization: Bearer ${token}" \
+              -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+              -I "https://registry-1.docker.io/v2/${image}/manifests/${tag}" \
+              | grep -i 'docker-content-digest' | tr -d '[:space:]' | cut -d: -f2-)
+            echo "${digest}"
+          }
+
+          KASIA_INDEXER_DIGEST=$(fetch_digest "kkluster/kasia-indexer" "main")
+          SIMPLY_KASPA_DIGEST=$(fetch_digest "supertypo/simply-kaspa-indexer" "latest")
+
+          echo "kasia_indexer=${KASIA_INDEXER_DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "simply_kaspa=${SIMPLY_KASPA_DIGEST}"   >> "$GITHUB_OUTPUT"
+
+          echo "Fetched digests:"
+          echo "  kkluster/kasia-indexer:main         = ${KASIA_INDEXER_DIGEST}"
+          echo "  supertypo/simply-kaspa-indexer:latest = ${SIMPLY_KASPA_DIGEST}"
+
+      - name: Load stored digests
+        id: stored
+        run: |
+          DIGEST_FILE=".github/upstream-image-digests.txt"
+          if [[ -f "$DIGEST_FILE" ]]; then
+            STORED_KASIA=$(grep "^kasia-indexer=" "$DIGEST_FILE" | cut -d= -f2-)
+            STORED_SIMPLY=$(grep "^simply-kaspa-indexer=" "$DIGEST_FILE" | cut -d= -f2-)
+          else
+            # First run — treat as no stored digest
+            STORED_KASIA=""
+            STORED_SIMPLY=""
+          fi
+          echo "kasia_indexer=${STORED_KASIA}" >> "$GITHUB_OUTPUT"
+          echo "simply_kaspa=${STORED_SIMPLY}"  >> "$GITHUB_OUTPUT"
+
+          echo "Stored digests:"
+          echo "  kkluster/kasia-indexer:main         = ${STORED_KASIA}"
+          echo "  supertypo/simply-kaspa-indexer:latest = ${STORED_SIMPLY}"
+
+      - name: Detect changes
+        id: changes
+        run: |
+          CHANGED_IMAGES=""
+
+          if [[ "${{ steps.fetch.outputs.kasia_indexer }}" != "${{ steps.stored.outputs.kasia_indexer }}" ]] \
+             && [[ -n "${{ steps.fetch.outputs.kasia_indexer }}" ]]; then
+            echo "kasia_indexer_changed=true" >> "$GITHUB_OUTPUT"
+            CHANGED_IMAGES="${CHANGED_IMAGES}kasia-indexer "
+          else
+            echo "kasia_indexer_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [[ "${{ steps.fetch.outputs.simply_kaspa }}" != "${{ steps.stored.outputs.simply_kaspa }}" ]] \
+             && [[ -n "${{ steps.fetch.outputs.simply_kaspa }}" ]]; then
+            echo "simply_kaspa_changed=true" >> "$GITHUB_OUTPUT"
+            CHANGED_IMAGES="${CHANGED_IMAGES}simply-kaspa-indexer "
+          else
+            echo "simply_kaspa_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "changed_images=${CHANGED_IMAGES}" >> "$GITHUB_OUTPUT"
+
+          if [[ -n "$CHANGED_IMAGES" ]]; then
+            echo "any_changed=true" >> "$GITHUB_OUTPUT"
+            echo "Changed: ${CHANGED_IMAGES}"
+          else
+            echo "any_changed=false" >> "$GITHUB_OUTPUT"
+            echo "No changes detected."
+          fi
+
+      - name: Open issue for kasia-indexer update
+        if: steps.changes.outputs.kasia_indexer_changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const oldDigest = '${{ steps.stored.outputs.kasia_indexer }}' || '(none — first run)';
+            const newDigest = '${{ steps.fetch.outputs.kasia_indexer }}';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🐳 Upstream image updated: kkluster/kasia-indexer:main',
+              labels: ['dependencies', 'docker', 'kasia'],
+              body: [
+                '## Upstream image digest changed',
+                '',
+                'The `kkluster/kasia-indexer:main` image on Docker Hub has a new digest.',
+                '',
+                '| | Digest |',
+                '|---|---|',
+                `| **Previous** | \`${oldDigest}\` |`,
+                `| **Current**  | \`${newDigest}\` |`,
+                '',
+                '## Action required',
+                '',
+                '1. Review the upstream changes: [K-Kluster/kasia-indexer](https://github.com/K-Kluster/kasia-indexer)',
+                '2. Check their recent commits/releases to understand what changed',
+                '3. If the update looks good, close this issue and cut a new kaspa-aio release',
+                '   so operators receive the updated image',
+                '',
+                '> **Note:** The new image will be pulled automatically on `docker compose pull`',
+                '> once included in a kaspa-aio release.',
+                '',
+                '---',
+                '_Opened automatically by the [check-upstream-images](.github/workflows/check-upstream-images.yml) workflow._',
+              ].join('\n'),
+            });
+
+      - name: Open issue for simply-kaspa-indexer update
+        if: steps.changes.outputs.simply_kaspa_changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const oldDigest = '${{ steps.stored.outputs.simply_kaspa }}' || '(none — first run)';
+            const newDigest = '${{ steps.fetch.outputs.simply_kaspa }}';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🐳 Upstream image updated: supertypo/simply-kaspa-indexer:latest',
+              labels: ['dependencies', 'docker', 'simply-kaspa-indexer'],
+              body: [
+                '## Upstream image digest changed',
+                '',
+                'The `supertypo/simply-kaspa-indexer:latest` image on Docker Hub has a new digest.',
+                '',
+                '| | Digest |',
+                '|---|---|',
+                `| **Previous** | \`${oldDigest}\` |`,
+                `| **Current**  | \`${newDigest}\` |`,
+                '',
+                '## Action required',
+                '',
+                '1. Review the upstream changes: [supertypo/simply-kaspa-indexer](https://github.com/supertypo/simply-kaspa-indexer)',
+                '2. Check their recent commits/releases to understand what changed',
+                '3. If the update looks good, close this issue and cut a new kaspa-aio release',
+                '   so operators receive the updated image',
+                '',
+                '> **Note:** The new image will be pulled automatically on `docker compose pull`',
+                '> once included in a kaspa-aio release.',
+                '',
+                '---',
+                '_Opened automatically by the [check-upstream-images](.github/workflows/check-upstream-images.yml) workflow._',
+              ].join('\n'),
+            });
+
+      - name: Update stored digests
+        if: steps.changes.outputs.any_changed == 'true'
+        run: |
+          # Use current fetch values; fall back to stored if fetch failed
+          KASIA="${{ steps.fetch.outputs.kasia_indexer }}"
+          SIMPLY="${{ steps.fetch.outputs.simply_kaspa }}"
+          [[ -z "$KASIA" ]]  && KASIA="${{ steps.stored.outputs.kasia_indexer }}"
+          [[ -z "$SIMPLY" ]] && SIMPLY="${{ steps.stored.outputs.simply_kaspa }}"
+
+          cat > .github/upstream-image-digests.txt << EOF
+          # Auto-updated by check-upstream-images workflow — do not edit manually
+          # Last checked: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          kasia-indexer=${KASIA}
+          simply-kaspa-indexer=${SIMPLY}
+          EOF
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/upstream-image-digests.txt
+          git commit -m "chore(ci): update upstream image digests [skip ci]"
+          git push
+
+      - name: Initialize digest file (first run)
+        if: steps.changes.outputs.any_changed == 'false' && steps.stored.outputs.kasia_indexer == ''
+        run: |
+          mkdir -p .github
+          cat > .github/upstream-image-digests.txt << EOF
+          # Auto-updated by check-upstream-images workflow — do not edit manually
+          # Last checked: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          kasia-indexer=${{ steps.fetch.outputs.kasia_indexer }}
+          simply-kaspa-indexer=${{ steps.fetch.outputs.simply_kaspa }}
+          EOF
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/upstream-image-digests.txt
+          git commit -m "chore(ci): initialize upstream image digest tracking [skip ci]"
+          git push
+
+      - name: Summary
+        run: |
+          echo "## Upstream Image Check Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Image | Tag | Changed |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-----|---------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| kkluster/kasia-indexer | :main | ${{ steps.changes.outputs.kasia_indexer_changed }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| supertypo/simply-kaspa-indexer | :latest | ${{ steps.changes.outputs.simply_kaspa_changed }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "${{ steps.changes.outputs.any_changed }}" == "true" ]]; then
+            echo "⚠️ Changes detected — issues opened." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "✅ No changes — digests are up to date." >> "$GITHUB_STEP_SUMMARY"
+          fi
