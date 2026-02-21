@@ -1,7 +1,7 @@
 # Kaspa Explorer Dockerfile
 # Builds from https://github.com/lAmeR1/kaspa-explorer
 
-FROM node:18-alpine AS builder
+FROM node:25-alpine AS builder
 
 # Install git
 RUN apk add --no-cache git
