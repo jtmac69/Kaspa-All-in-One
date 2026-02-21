@@ -2193,7 +2193,8 @@ app.get('/api/updates/available', async (req, res) => {
 
         res.json({
             updates: cachedUpdates,
-            lastChecked: lastUpdateCheck ? new Date(lastUpdateCheck).toISOString() : null
+            lastChecked: lastUpdateCheck ? new Date(lastUpdateCheck).toISOString() : null,
+            ...(updateCheckInProgress && { checkInProgress: true })
         });
     } catch (error) {
         lastUpdateCheck = Date.now(); // stamp even on failure to enforce back-off
@@ -2221,7 +2222,8 @@ app.post('/api/updates/check', async (req, res) => {
 
         res.json({
             updates: cachedUpdates,
-            lastChecked: new Date(lastUpdateCheck).toISOString()
+            lastChecked: lastUpdateCheck ? new Date(lastUpdateCheck).toISOString() : null,
+            ...(updateCheckInProgress && { checkInProgress: true })
         });
     } catch (error) {
         lastUpdateCheck = Date.now(); // stamp even on failure to enforce back-off

@@ -164,6 +164,11 @@ prepare_update() {
         fi
         mv kaspa-aio/services/wizard/* .
         rm -rf kaspa-aio
+        if [[ ! -f "$temp_dir/backend/package.json" ]]; then
+            log_error "Cloned wizard directory appears empty — aborting to prevent destructive rsync"
+            rm -rf "$temp_dir"
+            return 1
+        fi
     fi
 
     UPDATE_TEMP_DIR="$temp_dir"
@@ -241,7 +246,12 @@ rollback_update() {
                 return 1
             fi
             chown -R "$WIZARD_USER:$WIZARD_USER" "$WIZARD_HOME"
-            systemctl start "$SERVICE_NAME"
+            if ! systemctl start "$SERVICE_NAME"; then
+                log_error "Rollback: systemctl start $SERVICE_NAME failed immediately — manual intervention required"
+                log_error "Check: sudo journalctl -u $SERVICE_NAME --no-pager -n 50"
+                rm -rf "$restore_tmp"
+                return 1
+            fi
             if systemctl is-active --quiet "$SERVICE_NAME"; then
                 log_success "Rollback completed — service is running"
             else

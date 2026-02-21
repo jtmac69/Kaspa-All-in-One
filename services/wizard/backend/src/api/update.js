@@ -11,10 +11,11 @@ const { authenticateToken } = require('../middleware/security');
 
 const execFileAsync = promisify(execFile);
 
-// Extract [WARNING]/[ERROR] lines from shell script stderr for inclusion in API responses
-function parseScriptWarnings(stderr) {
-  if (!stderr) return [];
-  return stderr.trim().split('\n').filter(l => /\[WARNING\]|\[ERROR\]/.test(l)).slice(0, 20);
+// Extract [WARNING]/[ERROR] lines from shell script stdout for inclusion in API responses.
+// The update scripts write all log output (including [ERROR]) to stdout via echo, not stderr.
+function parseScriptWarnings(stdout) {
+  if (!stdout) return [];
+  return stdout.trim().split('\n').filter(l => /\[WARNING\]|\[ERROR\]/.test(l)).slice(0, 20);
 }
 
 const dockerManager = new DockerManager();
@@ -189,8 +190,8 @@ router.post('/apply', authenticateToken, async (req, res) => {
         await fs.writeFile(installationStatePath, JSON.stringify(installationState, null, 2));
       } catch (writeErr) {
         console.error('Failed to save updated installation state:', writeErr.message);
-        return res.json({
-          success: true,
+        return res.status(207).json({
+          success: false,
           results,
           backup: backupInfo,
           message: 'Updates applied but installation state could not be saved — run the wizard to sync state',
@@ -390,7 +391,7 @@ router.get('/changelog/:version', async (req, res) => {
       }
     });
   } catch (error) {
-    const isNetworkError = error.message.includes('rate limit') || error.message.includes('timeout');
+    const isNetworkError = /ECONNREFUSED|ETIMEDOUT|ENOTFOUND|rate limit|timeout|Update check failed/i.test(error.message);
     console.error('Error fetching changelog:', error.message);
     res.status(isNetworkError ? 503 : 500).json({
       success: false,
@@ -523,8 +524,8 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
   try {
     if (service === 'dashboard') {
       const updateScript = path.join(projectRoot, 'services', 'dashboard', 'scripts', 'update.sh');
-      const { stderr: dashStderr } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
-      const scriptWarnings = parseScriptWarnings(dashStderr);
+      const { stdout: dashStdout } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
+      const scriptWarnings = parseScriptWarnings(dashStdout);
       const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
       if (scriptErrors.length > 0) {
         return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || 'latest' };
@@ -534,8 +535,8 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
 
     if (service === 'wizard') {
       const updateScript = path.join(projectRoot, 'services', 'wizard', 'scripts', 'update.sh');
-      const { stderr: wizStderr } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
-      const scriptWarnings = parseScriptWarnings(wizStderr);
+      const { stdout: wizStdout } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
+      const scriptWarnings = parseScriptWarnings(wizStdout);
       const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
       if (scriptErrors.length > 0) {
         return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || 'latest' };
@@ -547,8 +548,8 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
       // Update dashboard first (synchronous — does not kill this process)
       const dashScript = path.join(projectRoot, 'services', 'dashboard', 'scripts', 'update.sh');
       const wizScript = path.join(projectRoot, 'services', 'wizard', 'scripts', 'update.sh');
-      const { stderr: dashStderr } = await execFileAsync('sudo', ['bash', dashScript], { timeout: 120000 });
-      const scriptWarnings = parseScriptWarnings(dashStderr);
+      const { stdout: dashStdout } = await execFileAsync('sudo', ['bash', dashScript], { timeout: 120000 });
+      const scriptWarnings = parseScriptWarnings(dashStdout);
       const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
       if (scriptErrors.length > 0) {
         return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || 'latest' };
@@ -567,9 +568,26 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
     }
 
     // Docker-based services: pull new image and restart
-    await dockerManager.stopService(service);
-    await dockerManager.pullImage(service, version);
-    await dockerManager.startService(service);
+    try {
+      await dockerManager.stopService(service);
+    } catch (stopErr) {
+      throw new Error(`Failed to stop ${service} before update: ${stopErr.message}`);
+    }
+
+    try {
+      await dockerManager.pullImage(service, version);
+    } catch (pullErr) {
+      // Service is stopped — tell the user so they can restart manually
+      console.error(`Image pull failed for ${service} — service is currently stopped:`, pullErr.message);
+      throw new Error(`Failed to pull new image for ${service} (service is now stopped — restart manually): ${pullErr.message}`);
+    }
+
+    try {
+      await dockerManager.startService(service);
+    } catch (startErr) {
+      console.error(`Failed to start ${service} after image pull:`, startErr.message);
+      throw new Error(`New image pulled but ${service} failed to start — start it manually: ${startErr.message}`);
+    }
 
     await waitForServiceHealth(service, 60000); // throws with diagnostics on timeout
 
@@ -581,17 +599,16 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
       message: `Successfully updated ${service} from ${oldVersion} to ${version}`
     };
   } catch (error) {
-    const stderr = error.stderr ? `\nScript stderr: ${error.stderr.trim()}` : '';
-    console.error(`applyServiceUpdate failed for ${service} (exit ${error.code ?? 'unknown'}):`, error.message, stderr);
-    const scriptWarnings = parseScriptWarnings(error.stderr);
+    const scriptOutput = error.stdout ? `\nScript output: ${error.stdout.trim()}` : '';
+    console.error(`applyServiceUpdate failed for ${service} (exit ${error.code ?? 'unknown'}):`, error.message, scriptOutput);
+    const scriptWarnings = parseScriptWarnings(error.stdout);
     return {
       service,
       success: false,
       error: error.message,
-      stderr: error.stderr || null,
       exitCode: error.code || null,
       ...(scriptWarnings.length > 0 && { scriptWarnings }),
-      message: `Failed to update ${service}: ${error.message}${stderr}`
+      message: `Failed to update ${service}: ${error.message}${scriptOutput}`
     };
   }
 }
@@ -684,7 +701,9 @@ async function createConfigurationBackup(projectRoot, reason) {
       JSON.stringify(metadata, null, 2)
     );
   } catch (metaErr) {
-    try { await fs.rm(backupDir, { recursive: true, force: true }); } catch (_) {}
+    try { await fs.rm(backupDir, { recursive: true, force: true }); } catch (cleanupErr) {
+    console.error('Failed to clean up partial backup directory:', backupDir, cleanupErr.message);
+  }
     throw new Error(`Backup failed: could not write metadata (${metaErr.message})`);
   }
 

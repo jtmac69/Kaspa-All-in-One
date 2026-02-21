@@ -274,7 +274,12 @@ prepare_update() {
         
         mv kaspa-aio/services/dashboard/* .
         rm -rf kaspa-aio
-        
+        if [[ ! -f "$temp_dir/package.json" ]]; then
+            log_error "Cloned dashboard directory appears empty — aborting to prevent destructive rsync"
+            rm -rf "$temp_dir"
+            return 1
+        fi
+
     else
         log_error "No update source specified"
         log_error "Set UPDATE_SOURCE (local path) or UPDATE_REPO (git repository)"
@@ -303,7 +308,15 @@ apply_update() {
     
     for file in "${preserve_files[@]}"; do
         if [[ -e "$DASHBOARD_HOME/$file" ]]; then
-            cp -r "$DASHBOARD_HOME/$file" "$temp_preserve/" 2>/dev/null || true
+            if ! cp -r "$DASHBOARD_HOME/$file" "$temp_preserve/"; then
+                if [[ "$file" == ".env" ]]; then
+                    log_error "Failed to preserve .env before rsync — aborting to prevent data loss"
+                    rm -rf "$temp_preserve"
+                    return 1
+                else
+                    log_warning "Failed to preserve non-critical file: $file (continuing)"
+                fi
+            fi
         fi
     done
     
@@ -526,7 +539,12 @@ rollback_update() {
             chown -R "$DASHBOARD_USER:$DASHBOARD_USER" "$DASHBOARD_HOME"
 
             # Restart service
-            systemctl start "$SERVICE_NAME"
+            if ! systemctl start "$SERVICE_NAME"; then
+                log_error "Rollback: systemctl start $SERVICE_NAME failed immediately — manual intervention required"
+                log_error "Check: sudo journalctl -u $SERVICE_NAME --no-pager -n 50"
+                rm -rf "$restore_temp"
+                return 1
+            fi
             if ! systemctl is-active --quiet "$SERVICE_NAME"; then
                 log_error "Rollback: service failed to start after restore — manual intervention required"
                 log_error "Check: sudo journalctl -u $SERVICE_NAME --no-pager -n 50"
@@ -613,8 +631,8 @@ main() {
        update_systemd_service && \
        start_dashboard && \
        verify_update; then
-        
-        record_update
+
+        record_update || log_warning "Failed to record update history (non-fatal)"
         print_summary
         log_success "Update completed successfully!"
         exit 0
