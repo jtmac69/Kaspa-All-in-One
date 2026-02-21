@@ -533,6 +533,7 @@ class Dashboard {
                 if (updates.length === 0) {
                     content.innerHTML = '<p class="no-updates">Your Kaspa All-in-One installation is up to date.</p>';
                 } else {
+                    const wizardUrl = `http://${window.location.hostname}:3000/?mode=update`;
                     content.innerHTML = updates.map(u => `
                         <div class="update-item">
                             <div class="update-header">
@@ -544,11 +545,16 @@ class Dashboard {
                                 ${u.htmlUrl ? `<a href="${u.htmlUrl}" target="_blank" rel="noopener noreferrer">Release notes</a>` : ''}
                             </div>
                             ${u.changelog ? `<pre class="update-changelog">${u.changelog.substring(0, 400)}${u.changelog.length > 400 ? '...' : ''}</pre>` : ''}
-                            <button class="btn-primary apply-update-btn" onclick="window.open('http://${window.location.hostname}:3000/?mode=update', '_blank')">
+                            <button class="btn-primary apply-update-btn" data-wizard-url="${wizardUrl}">
                                 Update Now
                             </button>
                         </div>
                     `).join('');
+
+                    // Wire update buttons via event delegation (avoids CSP inline handler violation)
+                    content.querySelectorAll('.apply-update-btn').forEach(btn => {
+                        btn.addEventListener('click', () => window.open(btn.dataset.wizardUrl, '_blank'));
+                    });
                 }
             }
         } catch (error) {
