@@ -85,7 +85,11 @@ create_backup() {
     fi
 
     cd "$BACKUP_DIR"
-    tar -czf "${backup_name}.tar.gz" "$backup_name"
+    if ! tar -czf "${backup_name}.tar.gz" "$backup_name" 2>/dev/null; then
+        log_error "Failed to create backup archive — disk full or permissions error"
+        rm -rf "$backup_path"
+        return 1
+    fi
     if ! tar -tzf "${backup_name}.tar.gz" > /dev/null 2>&1; then
         log_error "Backup archive is corrupt — aborting update to prevent unrecoverable state"
         rm -f "${backup_name}.tar.gz"
@@ -133,6 +137,11 @@ prepare_update() {
     else
         cd "$temp_dir"
         git clone --depth 1 --branch "$UPDATE_BRANCH" "$UPDATE_REPO" kaspa-aio
+        if [[ ! -d "kaspa-aio/services/wizard" ]]; then
+            log_error "Invalid repository: services/wizard not found after clone"
+            rm -rf "$temp_dir"
+            return 1
+        fi
         mv kaspa-aio/services/wizard/* .
         rm -rf kaspa-aio
     fi

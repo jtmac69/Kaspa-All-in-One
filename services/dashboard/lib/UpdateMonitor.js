@@ -32,11 +32,11 @@ class UpdateMonitor {
             const state = JSON.parse(content);
             return state.version || 'unknown';
         } catch (error) {
-            if (error.code !== 'ENOENT') {
-                // Permissions, parse errors, etc. are worth surfacing
-                console.warn('Failed to read installation-state.json:', error.code || error.constructor.name, error.message);
+            if (error.code === 'ENOENT') {
+                return 'unknown'; // Not yet installed — suppress update check silently
             }
-            return 'unknown';
+            // Parse errors, permissions, etc. — propagate so checkForUpdates can surface them
+            throw new Error(`installation-state.json is unreadable (${error.constructor.name}): ${error.message}`);
         }
     }
 

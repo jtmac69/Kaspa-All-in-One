@@ -472,12 +472,16 @@ rollback_update() {
         
         if [[ -n "$backup_dir" && -d "$backup_dir" ]]; then
             # Restore files
-            cp -r "$backup_dir"/* "$DASHBOARD_HOME/"
+            if ! cp -r "$backup_dir"/* "$DASHBOARD_HOME/"; then
+                log_error "Rollback: cp failed — files may be incomplete. Manual intervention required."
+                rm -rf "$restore_temp"
+                return 1
+            fi
             chown -R "$DASHBOARD_USER:$DASHBOARD_USER" "$DASHBOARD_HOME"
-            
+
             # Restart service
             systemctl start "$SERVICE_NAME"
-            
+
             log_success "Rollback completed"
         else
             log_error "Could not find backup data in archive"

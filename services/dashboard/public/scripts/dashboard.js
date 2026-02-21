@@ -507,12 +507,12 @@ class Dashboard {
     async loadUpdates() {
         try {
             const result = await this.api.getAvailableUpdates();
-            const updates = result.updates || [];
+            const updates = Array.isArray(result.updates) ? result.updates : null;
 
             // Update badge
             const badge = document.getElementById('update-badge');
             if (badge) {
-                if (updates.length > 0) {
+                if (updates && updates.length > 0) {
                     badge.textContent = updates.length;
                     badge.style.display = 'block';
                 } else {
@@ -523,7 +523,9 @@ class Dashboard {
             // Update modal summary text
             const summary = document.querySelector('#updates-summary .summary-text');
             if (summary) {
-                if (updates.length > 0) {
+                if (updates === null) {
+                    summary.textContent = 'Update check pending — click Check Now to check manually';
+                } else if (updates.length > 0) {
                     summary.textContent = `${updates.length} update${updates.length !== 1 ? 's' : ''} available`;
                 } else {
                     const checked = result.lastChecked
@@ -536,7 +538,9 @@ class Dashboard {
             // Populate modal content
             const content = document.getElementById('updates-content');
             if (content) {
-                if (updates.length === 0) {
+                if (updates === null) {
+                    content.innerHTML = '<p class="no-updates">Update check has not completed yet. Click "Check Now" to check manually.</p>';
+                } else if (updates.length === 0) {
                     content.innerHTML = '<p class="no-updates">Your Kaspa All-in-One installation is up to date.</p>';
                 } else {
                     const wizardUrl = `http://${window.location.hostname}:3000/?mode=update`;

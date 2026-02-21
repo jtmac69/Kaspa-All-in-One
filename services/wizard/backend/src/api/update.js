@@ -122,8 +122,10 @@ router.post('/apply', authenticateToken, async (req, res) => {
     let allSuccessful = true;
     
     for (const update of updates) {
+      const serviceState = installationState.services?.find(s => s.name === update.service);
+      const oldVersion = serviceState?.version || 'unknown';
       try {
-        const result = await applyServiceUpdate(update, projectRoot);
+        const result = await applyServiceUpdate(update, projectRoot, oldVersion);
         results.push(result);
         
         if (!result.success) {
@@ -248,8 +250,10 @@ router.post('/rollback', authenticateToken, async (req, res) => {
     // Stop services before rollback
     const stopResult = await dockerManager.stopAllServices();
     const warnings = [];
-    if (stopResult && !stopResult.success) {
-      warnings.push(`Services may still be running before rollback: ${stopResult.error || 'unknown error'}`);
+    if (!stopResult.success) {
+      const msg = `Services may still be running before rollback: ${stopResult.error || 'unknown error'}`;
+      console.warn('[rollback] stopAllServices failed:', stopResult.error);
+      warnings.push(msg);
     }
 
     // Wait for services to stop
@@ -335,12 +339,14 @@ router.post('/rollback', authenticateToken, async (req, res) => {
 });
 
 /**
- * GET /api/wizard/updates/changelog/:service/:version
- * Get changelog for a specific service version from GitHub releases
+ * GET /api/wizard/updates/changelog/:version
+ * Get changelog for a specific AIO version from GitHub releases.
+ * Only the latest release is available; historical changelogs are not stored.
  */
-router.get('/changelog/:service/:version', async (req, res) => {
+router.get('/changelog/:version', async (req, res) => {
   try {
     const { version: requestedVersion } = req.params;
+    const cleanRequested = requestedVersion.replace(/^(version-?|v)/i, '');
 
     const release = await fetchLatestRelease();
     const releaseVersion = (release.tag_name || '').replace(/^(version-?|v)/i, '');
@@ -348,9 +354,9 @@ router.get('/changelog/:service/:version', async (req, res) => {
     res.json({
       success: true,
       service: 'kaspa-aio',
-      requestedVersion,
+      requestedVersion: cleanRequested,
       version: releaseVersion,
-      note: requestedVersion !== releaseVersion
+      note: cleanRequested !== releaseVersion
         ? 'Historical changelogs are not available; returning latest release'
         : undefined,
       changelog: {
@@ -488,17 +494,10 @@ async function checkForUpdates() {
  * - 'kaspa-aio': runs both dashboard and wizard update scripts
  * - All other services: docker compose pull + up
  */
-async function applyServiceUpdate(update, projectRoot) {
+async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
   const { service, version } = update;
 
   try {
-    const installationStatePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
-    const stateContent = await fs.readFile(installationStatePath, 'utf8');
-    const installationState = JSON.parse(stateContent);
-
-    const serviceState = installationState.services?.find(s => s.name === service);
-    const oldVersion = serviceState?.version || 'unknown';
-
     if (service === 'dashboard') {
       const updateScript = path.join(projectRoot, 'services', 'dashboard', 'scripts', 'update.sh');
       await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
@@ -521,7 +520,10 @@ async function applyServiceUpdate(update, projectRoot) {
       // ~500ms after receiving this response as the wizard restarts.
       setTimeout(() => {
         execFileAsync('sudo', ['bash', wizScript], { timeout: 120000 })
-          .catch(err => console.error('Wizard self-update failed:', err.message));
+          .catch(err => {
+            const stderr = err.stderr ? `\nScript stderr: ${err.stderr.trim()}` : '';
+            console.error(`Wizard self-update failed (exit ${err.code ?? 'unknown'}):`, err.message, stderr);
+          });
       }, 500);
       return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Kaspa All-in-One update initiated — wizard will restart momentarily` };
     }
@@ -623,13 +625,19 @@ async function createConfigurationBackup(projectRoot, reason) {
     }
   }
   
+  // Fail if any required files could not be backed up
+  if (errors.length > 0) {
+    throw new Error(
+      `Backup incomplete — required files could not be copied: ${errors.map(e => e.file).join(', ')}`
+    );
+  }
+
   // Create backup metadata
   const metadata = {
     timestamp,
     date: new Date(timestamp).toISOString(),
     reason,
-    files: backedUpFiles,
-    errors: errors.length > 0 ? errors : undefined
+    files: backedUpFiles
   };
   
   await fs.writeFile(
@@ -637,12 +645,7 @@ async function createConfigurationBackup(projectRoot, reason) {
     JSON.stringify(metadata, null, 2)
   );
   
-  return {
-    timestamp,
-    backupDir,
-    files: backedUpFiles,
-    errors: errors.length > 0 ? errors : undefined
-  };
+  return { timestamp, backupDir, files: backedUpFiles };
 }
 
 module.exports = router;
