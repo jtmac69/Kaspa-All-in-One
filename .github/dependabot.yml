@@ -1,0 +1,131 @@
+version: 2
+updates:
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "github-actions"]
+    commit-message:
+      prefix: "chore(ci)"
+
+  # npm — wizard backend
+  - package-ecosystem: "npm"
+    directory: "/services/wizard/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "wizard"]
+    commit-message:
+      prefix: "chore(wizard)"
+    ignore:
+      # Major version bumps require manual review
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # npm — dashboard
+  - package-ecosystem: "npm"
+    directory: "/services/dashboard"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "dashboard"]
+    commit-message:
+      prefix: "chore(dashboard)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # npm — shared library
+  - package-ecosystem: "npm"
+    directory: "/services/shared"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "shared"]
+    commit-message:
+      prefix: "chore(shared)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # Docker — wizard (node:18-alpine)
+  - package-ecosystem: "docker"
+    directory: "/services/wizard"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "docker", "wizard"]
+    commit-message:
+      prefix: "chore(wizard)"
+
+  # Docker — dashboard (node:18-alpine)
+  - package-ecosystem: "docker"
+    directory: "/services/dashboard"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "docker", "dashboard"]
+    commit-message:
+      prefix: "chore(dashboard)"
+
+  # Docker — kasia app (node:20-alpine, nginx:alpine)
+  - package-ecosystem: "docker"
+    directory: "/services/kasia"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "docker", "kasia"]
+    commit-message:
+      prefix: "chore(kasia)"
+
+  # Docker — k-social (node:20-alpine, nginx:alpine)
+  - package-ecosystem: "docker"
+    directory: "/services/k-social"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "docker", "k-social"]
+    commit-message:
+      prefix: "chore(k-social)"
+
+  # Docker — kaspa-explorer (node:18-alpine, nginx:alpine)
+  - package-ecosystem: "docker"
+    directory: "/services/kaspa-explorer"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "docker", "kaspa-explorer"]
+    commit-message:
+      prefix: "chore(kaspa-explorer)"
+
+  # Docker — kaspa-stratum (golang:1.23-alpine, alpine)
+  - package-ecosystem: "docker"
+    directory: "/services/kaspa-stratum"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "docker", "kaspa-stratum"]
+    commit-message:
+      prefix: "chore(kaspa-stratum)"
+
+  # Docker — k-indexer (rust:1.88-alpine, alpine)
+  - package-ecosystem: "docker"
+    directory: "/services/k-indexer"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "docker", "k-indexer"]
+    commit-message:
+      prefix: "chore(k-indexer)"
+
+  # Docker — simply-kaspa-indexer (supertypo/simply-kaspa-indexer:latest)
+  - package-ecosystem: "docker"
+    directory: "/services/simply-kaspa-indexer"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "docker", "simply-kaspa-indexer"]
+    commit-message:
+      prefix: "chore(simply-kaspa-indexer)"
