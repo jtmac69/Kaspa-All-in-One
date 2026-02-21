@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 
 # Build arguments for version control
 # Set to "latest" to automatically fetch the most recent release tag
