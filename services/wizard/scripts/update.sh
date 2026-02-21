@@ -168,7 +168,7 @@ rollback_update() {
         local restore_tmp="/tmp/wizard-restore-$$"
         mkdir -p "$restore_tmp"
         cd "$restore_tmp"
-        tar -xzf "$BACKUP_FILE"
+        tar -xzf "$BACKUP_FILE" || { log_error "Rollback: failed to extract backup archive — manual intervention required"; rm -rf "$restore_tmp"; return 1; }
         local backup_dir
         backup_dir=$(find . -name "wizard_backup_*" -type d | head -1)
         if [[ -n "$backup_dir" ]]; then
@@ -216,14 +216,16 @@ main() {
     fi
 }
 
-case "${1:-}" in
-    --help|-h)
-        echo "Usage: $0 [--skip-backup] [--no-rollback] [--source PATH] [--branch BRANCH]"
-        exit 0 ;;
-    --source)  export UPDATE_SOURCE="$2"; shift 2; main ;;
-    --branch)  export UPDATE_BRANCH="$2"; shift 2; main ;;
-    --skip-backup) export SKIP_BACKUP=true; shift; main ;;
-    --no-rollback) export NO_ROLLBACK=true; shift; main ;;
-    "") main ;;
-    *) echo "Unknown option: $1"; exit 1 ;;
-esac
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --help|-h)
+            echo "Usage: $0 [--skip-backup] [--no-rollback] [--source PATH] [--branch BRANCH]"
+            exit 0 ;;
+        --source)  export UPDATE_SOURCE="$2"; shift 2 ;;
+        --branch)  export UPDATE_BRANCH="$2"; shift 2 ;;
+        --skip-backup) export SKIP_BACKUP=true; shift ;;
+        --no-rollback) export NO_ROLLBACK=true; shift ;;
+        *) echo "Unknown option: $1"; exit 1 ;;
+    esac
+done
+main

@@ -450,7 +450,7 @@ rollback_update() {
         mkdir -p "$restore_temp"
         
         cd "$restore_temp"
-        tar -xzf "$BACKUP_FILE"
+        tar -xzf "$BACKUP_FILE" || { log_error "Rollback: failed to extract backup archive — manual intervention required"; rm -rf "$restore_temp"; return 1; }
         
         # Find backup directory
         local backup_dir=$(find . -name "dashboard_backup_*" -type d | head -1)

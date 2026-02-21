@@ -72,6 +72,20 @@ router.post('/apply', authenticateToken, async (req, res) => {
         error: 'Missing or invalid updates array'
       });
     }
+
+    const ALLOWED_SERVICES = [
+      'kaspa-aio', 'dashboard', 'wizard',
+      'kaspa-node', 'kasia', 'kasia-indexer',
+      'k-social', 'k-indexer', 'simply-kaspa-indexer',
+      'kaspa-explorer', 'kaspa-stratum', 'timescaledb'
+    ];
+    const invalidService = updates.find(u => !ALLOWED_SERVICES.includes(u.service));
+    if (invalidService) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid service name: ${invalidService.service}`
+      });
+    }
     
     const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
     const installationStatePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
@@ -94,7 +108,7 @@ router.post('/apply', authenticateToken, async (req, res) => {
       try {
         backupInfo = await createConfigurationBackup(projectRoot, 'Before applying updates');
       } catch (error) {
-        console.error('Error creating backup:', error);
+        console.error('Error creating backup:', error.message);
         return res.status(500).json({
           success: false,
           error: 'Failed to create backup',
@@ -122,7 +136,7 @@ router.post('/apply', authenticateToken, async (req, res) => {
           }
         }
       } catch (error) {
-        console.error(`Error updating ${update.service}:`, error);
+        console.error(`Error updating ${update.service}:`, error.message);
         results.push({
           service: update.service,
           success: false,
@@ -173,7 +187,7 @@ router.post('/apply', authenticateToken, async (req, res) => {
         : 'Some updates failed. Rollback available.'
     });
   } catch (error) {
-    console.error('Error applying updates:', error);
+    console.error('Error applying updates:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to apply updates',
@@ -185,8 +199,9 @@ router.post('/apply', authenticateToken, async (req, res) => {
 /**
  * POST /api/wizard/updates/rollback
  * Rollback to previous configuration after failed update
+ * Requires authentication — restores config files and restarts services
  */
-router.post('/rollback', async (req, res) => {
+router.post('/rollback', authenticateToken, async (req, res) => {
   try {
     const { backupTimestamp } = req.body;
     
@@ -369,7 +384,7 @@ function parseVersion(v) {
 }
 
 function isNewer(available, current) {
-  if (!current || current === 'unknown') return true;
+  if (!current || current === 'unknown') return false; // suppress false positives on fresh installs
   const a = parseVersion(available), c = parseVersion(current);
   if (a.major !== c.major) return a.major > c.major;
   if (a.minor !== c.minor) return a.minor > c.minor;
@@ -387,7 +402,11 @@ async function checkForUpdates() {
   try {
     const raw = await fs.readFile(statePath, 'utf8');
     currentVersion = JSON.parse(raw).version || 'unknown';
-  } catch (_) { /* installation-state may not have a version field */ }
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      console.warn('Failed to read installation-state.json for version check:', err.message);
+    }
+  }
 
   let release;
   try {
@@ -446,12 +465,18 @@ async function applyServiceUpdate(update, projectRoot) {
     }
 
     if (service === 'kaspa-aio') {
-      // Update both local services
+      // Update dashboard first (synchronous — does not kill this process)
       const dashScript = path.join(projectRoot, 'services', 'dashboard', 'scripts', 'update.sh');
       const wizScript = path.join(projectRoot, 'services', 'wizard', 'scripts', 'update.sh');
       await execFileAsync('sudo', ['bash', dashScript], { timeout: 120000 });
-      await execFileAsync('sudo', ['bash', wizScript], { timeout: 120000 });
-      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Kaspa All-in-One updated successfully` };
+      // Schedule wizard self-update asynchronously: running it now would kill this process
+      // before the HTTP response can be flushed. The caller should expect a connection drop
+      // ~500ms after receiving this response as the wizard restarts.
+      setTimeout(() => {
+        execFileAsync('sudo', ['bash', wizScript], { timeout: 120000 })
+          .catch(err => console.error('Wizard self-update failed:', err.message));
+      }, 500);
+      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Kaspa All-in-One update initiated — wizard will restart momentarily` };
     }
 
     // Docker-based services: pull new image and restart
