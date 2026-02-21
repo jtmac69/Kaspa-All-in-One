@@ -2,9 +2,13 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
+const https = require('https');
 const DockerManager = require('../utils/docker-manager');
 const StateManager = require('../utils/state-manager');
+
+const execFileAsync = promisify(execFile);
 
 const dockerManager = new DockerManager();
 const stateManager = new StateManager();
@@ -32,12 +36,7 @@ router.get('/available', async (req, res) => {
       });
     }
     
-    // Get current service versions from installation state
-    const currentServices = installationState.services || [];
-    
-    // Check for available updates (in real implementation, this would query GitHub releases)
-    // For now, we'll simulate with mock data
-    const updates = await checkForUpdates(currentServices);
+    const updates = await checkForUpdates();
     
     res.json({
       success: true,
@@ -303,97 +302,150 @@ router.get('/changelog/:service/:version', async (req, res) => {
 
 // Helper functions
 
+const AIO_REPO = 'jtmac69/Kaspa-All-in-One';
+
 /**
- * Check for available updates for services
- * In production, this would query GitHub releases or update server
+ * Fetch the latest GitHub release for the AIO repo
  */
-async function checkForUpdates(currentServices) {
-  const updates = [];
-  
-  // Service repository mapping
-  const serviceRepos = {
-    'kaspa-node': 'kaspanet/kaspad',
-    'kasia-app': 'argonmining/kasia',
-    'kasia-indexer': 'argonmining/kasia-indexer',
-    'k-social': 'kaspa-social/k-social',
-    'k-indexer': 'kaspa-social/k-indexer',
-    'simply-kaspa-indexer': 'simplykaspa/indexer',
-    'kaspa-stratum': 'kaspanet/kaspa-stratum-bridge',
-    'dashboard': 'local/dashboard'
-  };
-  
-  for (const service of currentServices) {
-    const repo = serviceRepos[service.name];
-    
-    if (!repo) {
-      continue;
-    }
-    
-    // In production, query GitHub API for latest release
-    // For now, simulate with mock data
-    const latestVersion = await getLatestVersion(repo);
-    const updateAvailable = latestVersion && latestVersion !== service.version;
-    
-    updates.push({
-      service: service.name,
-      currentVersion: service.version || 'unknown',
-      latestVersion: latestVersion || 'unknown',
-      updateAvailable,
-      repository: repo,
-      breaking: false, // Would be determined from release notes
-      releaseDate: new Date().toISOString()
+function fetchLatestRelease() {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.github.com',
+      path: `/repos/${AIO_REPO}/releases/latest`,
+      headers: {
+        'User-Agent': 'Kaspa-AIO-Wizard/1.0',
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    };
+    const req = https.get(options, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try {
+          if (res.statusCode === 404) {
+            reject(new Error('No releases found'));
+            return;
+          }
+          if (res.statusCode === 403) {
+            reject(new Error('GitHub API rate limit exceeded'));
+            return;
+          }
+          resolve(JSON.parse(data));
+        } catch (e) {
+          reject(new Error('Invalid JSON from GitHub API'));
+        }
+      });
     });
-  }
-  
-  return updates;
+    req.on('error', reject);
+    req.setTimeout(10000, () => { req.destroy(); reject(new Error('GitHub API timeout')); });
+  });
+}
+
+function cleanVersion(v) {
+  return v.replace(/^(version-?|v)/i, '');
+}
+
+function parseVersion(v) {
+  const parts = cleanVersion(v).split('.').map(p => { const m = p.match(/^(\d+)/); return m ? parseInt(m[1], 10) : 0; });
+  return { major: parts[0] || 0, minor: parts[1] || 0, patch: parts[2] || 0 };
+}
+
+function isNewer(available, current) {
+  if (!current || current === 'unknown') return true;
+  const a = parseVersion(available), c = parseVersion(current);
+  if (a.major !== c.major) return a.major > c.major;
+  if (a.minor !== c.minor) return a.minor > c.minor;
+  return a.patch > c.patch;
 }
 
 /**
- * Get latest version for a service from repository
- * In production, this would query GitHub API
+ * Check for available kaspa-aio updates against real GitHub releases
  */
-async function getLatestVersion(repo) {
-  // Mock implementation
-  // In production: const response = await fetch(`https://api.github.com/repos/${repo}/releases/latest`);
-  
-  // Return mock version
-  return '1.0.1';
+async function checkForUpdates() {
+  const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
+  const statePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+
+  let currentVersion = 'unknown';
+  try {
+    const raw = await fs.readFile(statePath, 'utf8');
+    currentVersion = JSON.parse(raw).version || 'unknown';
+  } catch (_) { /* installation-state may not have a version field */ }
+
+  let release;
+  try {
+    release = await fetchLatestRelease();
+  } catch (err) {
+    console.warn('Could not fetch AIO release:', err.message);
+    return [];
+  }
+
+  const availableVersion = cleanVersion(release.tag_name);
+
+  if (!isNewer(availableVersion, currentVersion)) {
+    return [];
+  }
+
+  return [{
+    service: 'kaspa-aio',
+    serviceName: 'Kaspa All-in-One',
+    currentVersion,
+    latestVersion: availableVersion,
+    updateAvailable: true,
+    changelog: (release.body || '').substring(0, 500),
+    breaking: false,
+    releaseDate: release.published_at,
+    htmlUrl: release.html_url
+  }];
 }
 
 /**
- * Apply update to a specific service
+ * Apply update to a specific service.
+ * - 'dashboard' and 'wizard': executed via local update shell scripts
+ * - 'kaspa-aio': runs both dashboard and wizard update scripts
+ * - All other services: docker compose pull + up
  */
 async function applyServiceUpdate(update, projectRoot) {
   const { service, version } = update;
-  
+
   try {
-    // Get current version
     const installationStatePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
     const stateContent = await fs.readFile(installationStatePath, 'utf8');
     const installationState = JSON.parse(stateContent);
-    
-    const serviceState = installationState.services.find(s => s.name === service);
+
+    const serviceState = installationState.services?.find(s => s.name === service);
     const oldVersion = serviceState?.version || 'unknown';
-    
-    // Stop the service
+
+    if (service === 'dashboard') {
+      const updateScript = path.join(projectRoot, 'services', 'dashboard', 'scripts', 'update.sh');
+      await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
+      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Dashboard updated successfully` };
+    }
+
+    if (service === 'wizard') {
+      const updateScript = path.join(projectRoot, 'services', 'wizard', 'scripts', 'update.sh');
+      await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
+      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Wizard updated successfully` };
+    }
+
+    if (service === 'kaspa-aio') {
+      // Update both local services
+      const dashScript = path.join(projectRoot, 'services', 'dashboard', 'scripts', 'update.sh');
+      const wizScript = path.join(projectRoot, 'services', 'wizard', 'scripts', 'update.sh');
+      await execFileAsync('sudo', ['bash', dashScript], { timeout: 120000 });
+      await execFileAsync('sudo', ['bash', wizScript], { timeout: 120000 });
+      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Kaspa All-in-One updated successfully` };
+    }
+
+    // Docker-based services: pull new image and restart
     await dockerManager.stopService(service);
-    
-    // Update docker-compose.yml with new version
-    await updateDockerComposeVersion(service, version, projectRoot);
-    
-    // Pull new image
     await dockerManager.pullImage(service, version);
-    
-    // Start service with new version
     await dockerManager.startService(service);
-    
-    // Wait for service to be healthy
-    const healthy = await waitForServiceHealth(service, 60000); // 60 second timeout
-    
+
+    const healthy = await waitForServiceHealth(service, 60000);
     if (!healthy) {
       throw new Error(`Service ${service} failed health check after update`);
     }
-    
+
     return {
       service,
       success: true,

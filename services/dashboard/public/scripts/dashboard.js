@@ -496,13 +496,14 @@ class Dashboard {
     }
 
     /**
-     * Load updates
+     * Load updates — updates badge and populates modal content
      */
     async loadUpdates() {
         try {
             const result = await this.api.getAvailableUpdates();
             const updates = result.updates || [];
-            
+
+            // Update badge
             const badge = document.getElementById('update-badge');
             if (badge) {
                 if (updates.length > 0) {
@@ -510,6 +511,44 @@ class Dashboard {
                     badge.style.display = 'block';
                 } else {
                     badge.style.display = 'none';
+                }
+            }
+
+            // Update modal summary text
+            const summary = document.querySelector('#updates-summary .summary-text');
+            if (summary) {
+                if (updates.length > 0) {
+                    summary.textContent = `${updates.length} update${updates.length !== 1 ? 's' : ''} available`;
+                } else {
+                    const checked = result.lastChecked
+                        ? new Date(result.lastChecked).toLocaleString()
+                        : 'just now';
+                    summary.textContent = `Up to date (checked ${checked})`;
+                }
+            }
+
+            // Populate modal content
+            const content = document.getElementById('updates-content');
+            if (content) {
+                if (updates.length === 0) {
+                    content.innerHTML = '<p class="no-updates">Your Kaspa All-in-One installation is up to date.</p>';
+                } else {
+                    content.innerHTML = updates.map(u => `
+                        <div class="update-item">
+                            <div class="update-header">
+                                <strong>${u.serviceName || u.service}</strong>
+                                <span class="version-comparison">${u.currentVersion} → ${u.availableVersion}</span>
+                            </div>
+                            <div class="update-meta">
+                                <span class="update-date">${u.releaseDate ? new Date(u.releaseDate).toLocaleDateString() : ''}</span>
+                                ${u.htmlUrl ? `<a href="${u.htmlUrl}" target="_blank" rel="noopener noreferrer">Release notes</a>` : ''}
+                            </div>
+                            ${u.changelog ? `<pre class="update-changelog">${u.changelog.substring(0, 400)}${u.changelog.length > 400 ? '...' : ''}</pre>` : ''}
+                            <button class="btn-primary apply-update-btn" onclick="window.open('http://${window.location.hostname}:3000/?mode=update', '_blank')">
+                                Update Now
+                            </button>
+                        </div>
+                    `).join('');
                 }
             }
         } catch (error) {
@@ -616,6 +655,22 @@ class Dashboard {
     async openUpdatesModal() {
         this.ui.showModal('updates-modal');
         await this.loadUpdates();
+
+        // Wire the "Check Now" button to force a fresh check
+        const checkBtn = document.getElementById('check-updates-btn');
+        if (checkBtn && !checkBtn._wired) {
+            checkBtn._wired = true;
+            checkBtn.addEventListener('click', async () => {
+                checkBtn.disabled = true;
+                checkBtn.textContent = 'Checking...';
+                try {
+                    await this.api.checkForUpdates();
+                } catch (_) { /* ignore */ }
+                await this.loadUpdates();
+                checkBtn.disabled = false;
+                checkBtn.textContent = '🔄 Check Now';
+            });
+        }
     }
 
     /**
@@ -668,9 +723,8 @@ class Dashboard {
     }
 
     async updateServices() {
-        this.ui.showNotification('Checking for updates...', 'info');
-        await this.loadUpdates();
-        this.openUpdatesModal();
+        const wizardUrl = `http://${window.location.hostname}:3000/?mode=update`;
+        window.open(wizardUrl, '_blank');
     }
 
     async backupData() {

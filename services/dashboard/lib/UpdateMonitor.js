@@ -1,10 +1,6 @@
 const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
-const { exec } = require('child_process');
-const { promisify } = require('util');
-
-const execAsync = promisify(exec);
 
 class UpdateMonitor {
     constructor() {
@@ -14,19 +10,8 @@ class UpdateMonitor {
         this.lastCheckFile = `${dataDir}/last-update-check.json`;
         this.githubApiBase = 'https://api.github.com';
         this.timeout = 10000; // 10 seconds
-        
-        // Service repository mappings
-        this.serviceRepositories = new Map([
-            ['kaspa-node', 'kaspanet/rusty-kaspa'],
-            ['kasia-app', 'aspectron/kasia'],
-            ['kasia-indexer', 'aspectron/kasia-indexer'],
-            ['k-social', 'kaspa-live/k-social'],
-            ['k-indexer', 'kaspa-live/k-indexer'],
-            ['simply-kaspa-indexer', 'simply-kaspa/indexer'],
-            ['kaspa-explorer', 'kaspanet/kaspa-explorer'],
-            ['kaspa-stratum', 'kaspanet/kaspa-stratum-bridge'],
-            ['kaspa-aio', 'kaspa-live/kaspa-all-in-one'] // The main project
-        ]);
+        this.repo = 'jtmac69/Kaspa-All-in-One';
+        this.projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../..');
 
         this.ensureDataDirectory();
     }
@@ -40,90 +25,40 @@ class UpdateMonitor {
         }
     }
 
-    async getCurrentVersions() {
-        const versions = new Map();
-        
+    async getInstalledVersion() {
         try {
-            // Get versions from Docker images
-            const { stdout } = await execAsync('docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(kaspa|kasia|k-social|k-indexer|simply-kaspa)"');
-            
-            stdout.trim().split('\n').filter(line => line).forEach(line => {
-                const [image, tag] = line.split(':');
-                const serviceName = this.extractServiceName(image);
-                if (serviceName && tag !== '<none>') {
-                    versions.set(serviceName, tag);
-                }
-            });
+            const statePath = path.join(this.projectRoot, '.kaspa-aio', 'installation-state.json');
+            const content = await fs.readFile(statePath, 'utf-8');
+            const state = JSON.parse(content);
+            return state.version || 'unknown';
         } catch (error) {
-            console.warn('Failed to get current versions from Docker:', error.message);
+            console.warn('Failed to read installation-state.json:', error.message);
+            return 'unknown';
         }
-
-        // Add fallback versions for services that might not be running
-        this.serviceRepositories.forEach((repo, service) => {
-            if (!versions.has(service)) {
-                versions.set(service, 'unknown');
-            }
-        });
-
-        return versions;
-    }
-
-    extractServiceName(imageName) {
-        const imageMap = {
-            'kaspa-node': 'kaspa-node',
-            'kasia-app': 'kasia-app',
-            'kasia-indexer': 'kasia-indexer',
-            'k-social': 'k-social',
-            'k-indexer': 'k-indexer',
-            'simply-kaspa-indexer': 'simply-kaspa-indexer',
-            'kaspa-explorer': 'kaspa-explorer',
-            'kaspa-stratum': 'kaspa-stratum',
-            'kaspa-aio': 'kaspa-aio'
-        };
-
-        for (const [key, value] of Object.entries(imageMap)) {
-            if (imageName.includes(key)) {
-                return value;
-            }
-        }
-
-        return null;
     }
 
     async checkForUpdates() {
         try {
-            const currentVersions = await this.getCurrentVersions();
-            const updates = [];
+            const currentVersion = await this.getInstalledVersion();
+            const latestRelease = await this.getLatestGitHubRelease(this.repo);
 
-            for (const [service, repo] of this.serviceRepositories) {
-                try {
-                    const latestRelease = await this.getLatestGitHubRelease(repo);
-                    const currentVersion = currentVersions.get(service) || 'unknown';
-                    
-                    if (this.isNewer(latestRelease.version, currentVersion)) {
-                        const update = {
-                            service,
-                            serviceName: this.getServiceDisplayName(service),
-                            currentVersion,
-                            availableVersion: latestRelease.version,
-                            changelog: latestRelease.changelog,
-                            breaking: this.detectBreakingChanges(latestRelease),
-                            releaseDate: latestRelease.publishedAt,
-                            downloadUrl: latestRelease.downloadUrl,
-                            repository: repo,
-                            priority: this.calculateUpdatePriority(service, latestRelease)
-                        };
-                        updates.push(update);
-                    }
-                } catch (error) {
-                    console.warn(`Failed to check updates for ${service}:`, error.message);
-                }
+            await this.saveLastCheckTime();
+
+            if (!this.isNewer(latestRelease.version, currentVersion)) {
+                return [];
             }
 
-            // Save last check time
-            await this.saveLastCheckTime();
-            
-            return updates;
+            return [{
+                service: 'kaspa-aio',
+                serviceName: 'Kaspa All-in-One',
+                currentVersion,
+                availableVersion: latestRelease.version,
+                changelog: latestRelease.changelog,
+                breaking: this.detectBreakingChanges(latestRelease),
+                releaseDate: latestRelease.publishedAt,
+                htmlUrl: latestRelease.htmlUrl,
+                priority: this.calculateUpdatePriority(latestRelease)
+            }];
         } catch (error) {
             throw new Error(`Failed to check for updates: ${error.message}`);
         }
@@ -133,7 +68,7 @@ class UpdateMonitor {
         try {
             const response = await axios.get(
                 `${this.githubApiBase}/repos/${repo}/releases/latest`,
-                { 
+                {
                     timeout: this.timeout,
                     headers: {
                         'User-Agent': 'Kaspa-AIO-Dashboard/1.0',
@@ -143,12 +78,11 @@ class UpdateMonitor {
             );
 
             const release = response.data;
-            
+
             return {
                 version: this.cleanVersion(release.tag_name),
                 changelog: release.body || 'No changelog available',
                 publishedAt: release.published_at,
-                downloadUrl: release.assets?.[0]?.browser_download_url || release.html_url,
                 prerelease: release.prerelease,
                 draft: release.draft,
                 htmlUrl: release.html_url
@@ -164,34 +98,31 @@ class UpdateMonitor {
     }
 
     cleanVersion(version) {
-        // Remove common prefixes like 'v', 'version-', etc.
         return version.replace(/^(version-?|v)/i, '');
     }
 
     isNewer(availableVersion, currentVersion) {
         if (currentVersion === 'unknown' || currentVersion === 'latest') {
-            return true; // Always show updates for unknown versions
+            return true;
         }
 
-        // Simple version comparison - in production, use a proper semver library
         const available = this.parseVersion(availableVersion);
         const current = this.parseVersion(currentVersion);
 
         if (available.major > current.major) return true;
         if (available.major < current.major) return false;
-        
+
         if (available.minor > current.minor) return true;
         if (available.minor < current.minor) return false;
-        
+
         if (available.patch > current.patch) return true;
-        
+
         return false;
     }
 
     parseVersion(version) {
         const cleaned = this.cleanVersion(version);
         const parts = cleaned.split('.').map(part => {
-            // Extract numeric part from strings like "1.2.3-beta"
             const match = part.match(/^(\d+)/);
             return match ? parseInt(match[1], 10) : 0;
         });
@@ -207,36 +138,22 @@ class UpdateMonitor {
     detectBreakingChanges(release) {
         const changelog = (release.changelog || '').toLowerCase();
         const breakingKeywords = [
-            'breaking change',
-            'breaking',
-            'incompatible',
-            'migration required',
-            'deprecated',
-            'removed',
-            'major version',
-            'breaking:'
+            'breaking change', 'breaking', 'incompatible',
+            'migration required', 'deprecated', 'removed',
+            'major version', 'breaking:'
         ];
-
         return breakingKeywords.some(keyword => changelog.includes(keyword));
     }
 
-    calculateUpdatePriority(service, release) {
-        let priority = 'low';
+    calculateUpdatePriority(release) {
+        let priority = 'medium'; // AIO updates are always at least medium
 
-        // Critical services get higher priority
-        const criticalServices = ['kaspa-node', 'dashboard', 'nginx'];
-        if (criticalServices.includes(service)) {
-            priority = 'medium';
-        }
-
-        // Security updates get highest priority
         const changelog = (release.changelog || '').toLowerCase();
         const securityKeywords = ['security', 'vulnerability', 'cve', 'exploit', 'patch'];
         if (securityKeywords.some(keyword => changelog.includes(keyword))) {
             priority = 'high';
         }
 
-        // Breaking changes get special attention
         if (this.detectBreakingChanges(release)) {
             priority = priority === 'high' ? 'critical' : 'medium';
         }
@@ -244,28 +161,11 @@ class UpdateMonitor {
         return priority;
     }
 
-    getServiceDisplayName(service) {
-        const displayNames = {
-            'kaspa-node': 'Kaspa Node',
-            'kasia-app': 'Kasia Application',
-            'kasia-indexer': 'Kasia Indexer',
-            'k-social': 'K Social',
-            'k-indexer': 'K Indexer',
-            'simply-kaspa-indexer': 'Simply Kaspa Indexer',
-            'kaspa-explorer': 'Kaspa Explorer',
-            'kaspa-stratum': 'Kaspa Stratum Bridge',
-            'kaspa-aio': 'Kaspa All-in-One'
-        };
-
-        return displayNames[service] || service;
-    }
-
     async getUpdateHistory() {
         try {
             const historyData = await fs.readFile(this.updateHistoryFile, 'utf-8');
             return JSON.parse(historyData);
         } catch (error) {
-            // Return empty history if file doesn't exist
             return [];
         }
     }
@@ -273,18 +173,9 @@ class UpdateMonitor {
     async saveUpdateHistory(update) {
         try {
             const history = await this.getUpdateHistory();
-            history.unshift({
-                ...update,
-                timestamp: new Date().toISOString()
-            });
-
-            // Keep only last 100 entries
+            history.unshift({ ...update, timestamp: new Date().toISOString() });
             const trimmedHistory = history.slice(0, 100);
-            
-            await fs.writeFile(
-                this.updateHistoryFile, 
-                JSON.stringify(trimmedHistory, null, 2)
-            );
+            await fs.writeFile(this.updateHistoryFile, JSON.stringify(trimmedHistory, null, 2));
         } catch (error) {
             console.warn('Failed to save update history:', error.message);
         }
@@ -302,29 +193,21 @@ class UpdateMonitor {
 
     async saveLastCheckTime() {
         try {
-            const data = {
-                lastCheck: new Date().toISOString()
-            };
-            await fs.writeFile(this.lastCheckFile, JSON.stringify(data, null, 2));
+            await fs.writeFile(this.lastCheckFile, JSON.stringify({ lastCheck: new Date().toISOString() }, null, 2));
         } catch (error) {
             console.warn('Failed to save last check time:', error.message);
         }
     }
 
     scheduleUpdateChecks(callback) {
-        // Initial check
         this.performScheduledCheck(callback);
-
-        // Schedule periodic checks
-        setInterval(() => {
-            this.performScheduledCheck(callback);
-        }, this.checkInterval);
+        setInterval(() => this.performScheduledCheck(callback), this.checkInterval);
     }
 
     async performScheduledCheck(callback) {
         try {
             const updates = await this.checkForUpdates();
-            if (updates.length > 0 && callback) {
+            if (callback) {
                 callback(updates);
             }
         } catch (error) {
@@ -334,40 +217,14 @@ class UpdateMonitor {
 
     async getAvailableUpdates() {
         try {
-            const updates = await this.checkForUpdates();
-            
-            // Sort by priority and date
-            const priorityOrder = { 'critical': 4, 'high': 3, 'medium': 2, 'low': 1 };
-            
-            return updates.sort((a, b) => {
-                const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
-                if (priorityDiff !== 0) return priorityDiff;
-                
-                // If same priority, sort by release date (newest first)
-                return new Date(b.releaseDate) - new Date(a.releaseDate);
-            });
+            return await this.checkForUpdates();
         } catch (error) {
             throw new Error(`Failed to get available updates: ${error.message}`);
         }
     }
 
-    // Format update information for display
-    formatUpdateInfo(update) {
-        return {
-            ...update,
-            formattedReleaseDate: new Date(update.releaseDate).toLocaleDateString(),
-            changelogPreview: this.truncateChangelog(update.changelog),
-            versionComparison: `${update.currentVersion} → ${update.availableVersion}`,
-            priorityBadge: this.getPriorityBadge(update.priority),
-            breakingBadge: update.breaking ? '⚠️ Breaking Changes' : null
-        };
-    }
-
     truncateChangelog(changelog, maxLength = 200) {
-        if (!changelog || changelog.length <= maxLength) {
-            return changelog;
-        }
-        
+        if (!changelog || changelog.length <= maxLength) return changelog;
         return changelog.substring(0, maxLength) + '...';
     }
 
@@ -378,7 +235,6 @@ class UpdateMonitor {
             'medium': '🟡 Medium',
             'low': '🟢 Low'
         };
-        
         return badges[priority] || '⚪ Unknown';
     }
 }

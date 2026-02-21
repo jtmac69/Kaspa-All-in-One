@@ -171,6 +171,7 @@ function getServicesForProfile(profileId) {
 // Dashboard modules
 const WebSocketManager = require('./lib/WebSocketManager');
 const UpdateBroadcaster = require('./lib/UpdateBroadcaster');
+const UpdateMonitor = require('./lib/UpdateMonitor');
 const AlertManager = require('./lib/AlertManager');
 const ServiceMonitor = require('./lib/ServiceMonitor');
 const ResourceMonitor = require('./lib/ResourceMonitor');
@@ -2174,21 +2175,45 @@ app.get('/api/kaspa/wallet', async (req, res) => {
     }
 });
 
-// Updates API endpoint (placeholder implementation)
+// Updates API - return cached or fresh update check
 app.get('/api/updates/available', async (req, res) => {
     try {
-        // For now, return empty updates since update checking is not implemented
+        const ONE_HOUR = 60 * 60 * 1000;
+        const cacheStale = !lastUpdateCheck || (Date.now() - lastUpdateCheck > ONE_HOUR);
+
+        if (cacheStale || cachedUpdates === null) {
+            cachedUpdates = await updateMonitor.getAvailableUpdates();
+            lastUpdateCheck = Date.now();
+        }
+
         res.json({
-            updates: [],
-            lastChecked: new Date().toISOString(),
-            message: 'Update checking not yet implemented'
+            updates: cachedUpdates,
+            lastChecked: lastUpdateCheck ? new Date(lastUpdateCheck).toISOString() : null
         });
     } catch (error) {
-        // Use ErrorDisplay for consistent error handling
         const errorResult = errorDisplay.showApiError('/api/updates/available', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: errorResult.userMessage,
-            details: errorResult.errorType 
+            details: errorResult.errorType
+        });
+    }
+});
+
+// Force a fresh update check (clears cache)
+app.post('/api/updates/check', async (req, res) => {
+    try {
+        cachedUpdates = await updateMonitor.getAvailableUpdates();
+        lastUpdateCheck = Date.now();
+
+        res.json({
+            updates: cachedUpdates,
+            lastChecked: new Date(lastUpdateCheck).toISOString()
+        });
+    } catch (error) {
+        const errorResult = errorDisplay.showApiError('/api/updates/check', error);
+        res.status(500).json({
+            error: errorResult.userMessage,
+            details: errorResult.errorType
         });
     }
 });
@@ -2823,6 +2848,17 @@ const alertManager = new AlertManager(wsManager);
 // Initialize Update Broadcaster
 const updateBroadcaster = new UpdateBroadcaster(wsManager, serviceMonitor, resourceMonitor);
 updateBroadcaster.start();
+
+// Initialize Update Monitor
+const updateMonitor = new UpdateMonitor();
+let cachedUpdates = null;
+let lastUpdateCheck = null;
+
+// Schedule periodic update checks (runs immediately, then every 24h)
+updateMonitor.scheduleUpdateChecks((updates) => {
+    cachedUpdates = updates;
+    lastUpdateCheck = Date.now();
+});
 
 // Setup state file watching for configuration changes
 let stateWatchUnsubscribe = null;
