@@ -11,6 +11,7 @@ A comprehensive Docker-based solution for running a complete Kaspa blockchain ec
 - **📊 Diagnostic Tools** - Comprehensive system diagnostics and help system
 - **🌐 Multi-OS Support** - Ubuntu, Debian, CentOS, macOS, and Windows (WSL2)
 - **📱 Management Dashboard** - Host-based service monitoring and management interface
+- **🔔 Automated Update Detection** - Dashboard monitors GitHub for new kaspa-aio releases and notifies you with one-click wizard-guided updates
 
 ## 🚀 Architecture Overview
 
@@ -314,6 +315,7 @@ Features:
 - 🔌 Public node accessibility status
 - 🔄 Service restart and reconfiguration
 - 🚀 Integration with Installation Wizard for easy reconfiguration
+- 🔔 Automatic update detection — badge appears when a new kaspa-aio release is available, with one-click launch of the update wizard
 
 ## 🎯 Installation Wizard Features
 
@@ -645,9 +647,22 @@ Upstream release (kaspa-node v1.2.3)
   → Maintainer bumps version + tests
     → New kaspa-aio release (v0.9.x)
       → New Docker images published to ghcr.io
-        → Your dashboard notifies you
-          → Update via wizard
+        → Your dashboard detects and notifies you
+          → Click "Update Now" → wizard applies updates
 ```
+
+### Automatic Update Detection
+
+The management dashboard checks GitHub for new kaspa-aio releases automatically:
+
+- **Startup check** — runs when the dashboard starts
+- **24-hour interval** — rechecks in the background
+- **Force refresh** — click 🔄 Check Now in the updates modal at any time
+
+When a newer version is found:
+1. A notification badge appears on the bell icon in the dashboard header
+2. Click the badge to open the updates modal — shows current vs available version, release date, changelog excerpt, and a link to the full release notes
+3. Click **Update Now** — opens the installation wizard in update mode, which guides you through applying the update
 
 ### Automatic Dependency Tracking (Dependabot)
 
@@ -662,26 +677,26 @@ This repository uses [GitHub Dependabot](https://docs.github.com/en/code-securit
 
 When Dependabot detects a newer version, it automatically opens a pull request. After CI passes, the maintainer merges and publishes a new kaspa-aio release — which your dashboard will then offer as an update.
 
-### Updating Your Installation
+### Applying Updates
 
-When a new kaspa-aio release is available, the management dashboard will display a notification badge. Click it to launch the update wizard, which will:
+**Recommended: via the Dashboard**
 
-1. Pull the updated Docker images from `ghcr.io`
-2. Perform a rolling restart of affected services
-3. Verify health before completing
+1. When the notification badge appears, click it to open the updates modal
+2. Review the version and changelog
+3. Click **Update Now** — the wizard opens in update mode
+4. Follow the guided update process
 
+**Manual update (command line)**
 ```bash
-# Manual update (if not using the dashboard)
-# Download the latest release, then:
-./install.sh --update
-```
+# Pull latest code
+git pull
 
-### Manual Docker Image Updates
-```bash
-# Pull latest images for running services
+# Restart dashboard and wizard (they run as local npm services)
+sudo systemctl restart kaspa-dashboard
+sudo systemctl restart kaspa-wizard
+
+# Pull updated Docker images for containerised services
 docker compose pull
-
-# Restart services with new images
 docker compose up -d
 ```
 
