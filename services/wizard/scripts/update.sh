@@ -145,7 +145,11 @@ prepare_update() {
             rm -rf "$temp_dir"
             return 1
         fi
-        cp -r "$update_src/services/wizard"/* "$temp_dir/"
+        if ! cp -r "$update_src/services/wizard"/* "$temp_dir/"; then
+            log_error "Failed to copy from local source — disk full or permissions error"
+            rm -rf "$temp_dir"
+            return 1
+        fi
     else
         cd "$temp_dir"
         if ! git clone --depth 1 --branch "$UPDATE_BRANCH" "$UPDATE_REPO" kaspa-aio; then
@@ -204,7 +208,10 @@ update_dependencies() {
 
 start_wizard() {
     log_info "Starting wizard service..."
-    systemctl start "$SERVICE_NAME"
+    if ! systemctl start "$SERVICE_NAME"; then
+        log_error "systemctl start $SERVICE_NAME failed — check: sudo journalctl -u $SERVICE_NAME --no-pager -n 20"
+        return 1
+    fi
     local timeout=30
     while ! systemctl is-active --quiet "$SERVICE_NAME" && [[ $timeout -gt 0 ]]; do
         sleep 1; ((timeout--))

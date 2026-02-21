@@ -248,8 +248,12 @@ prepare_update() {
             return 1
         fi
         
-        cp -r "$UPDATE_SOURCE/services/dashboard"/* "$temp_dir/"
-        
+        if ! cp -r "$UPDATE_SOURCE/services/dashboard"/* "$temp_dir/"; then
+            log_error "Failed to copy from local source — disk full or permissions error"
+            rm -rf "$temp_dir"
+            return 1
+        fi
+
     elif [[ -n "$UPDATE_REPO" ]]; then
         # Update from Git repository
         log_info "Updating from Git repository: $UPDATE_REPO"
@@ -323,13 +327,17 @@ apply_update() {
         return 1
     fi
 
-    # Restore preserved files — .env failure is fatal
+    # Restore preserved files — .env failure is fatal; others are non-critical
     for file in "${preserve_files[@]}"; do
         if [[ -e "$temp_preserve/$file" ]]; then
             if ! cp -r "$temp_preserve/$file" "$DASHBOARD_HOME/"; then
-                log_error "Failed to restore preserved file: $file"
-                rm -rf "$temp_preserve"
-                return 1
+                if [[ "$file" == ".env" ]]; then
+                    log_error "Failed to restore .env — update cannot be considered safe"
+                    rm -rf "$temp_preserve"
+                    return 1
+                else
+                    log_warning "Failed to restore non-critical file: $file (continuing)"
+                fi
             fi
         fi
     done
@@ -399,8 +407,11 @@ update_systemd_service() {
 start_dashboard() {
     log_info "Starting dashboard service..."
     
-    systemctl start "$SERVICE_NAME"
-    
+    if ! systemctl start "$SERVICE_NAME"; then
+        log_error "systemctl start $SERVICE_NAME failed — check: sudo journalctl -u $SERVICE_NAME --no-pager -n 20"
+        return 1
+    fi
+
     # Wait for service to start
     local timeout=30
     while ! systemctl is-active --quiet "$SERVICE_NAME" && [[ $timeout -gt 0 ]]; do

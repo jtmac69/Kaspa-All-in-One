@@ -2209,8 +2209,15 @@ app.get('/api/updates/available', async (req, res) => {
 // Force a fresh update check (clears cache)
 app.post('/api/updates/check', async (req, res) => {
     try {
-        cachedUpdates = await updateMonitor.getAvailableUpdates();
-        lastUpdateCheck = Date.now();
+        if (!updateCheckInProgress) {
+            updateCheckInProgress = true;
+            try {
+                cachedUpdates = await updateMonitor.getAvailableUpdates();
+                lastUpdateCheck = Date.now();
+            } finally {
+                updateCheckInProgress = false;
+            }
+        }
 
         res.json({
             updates: cachedUpdates,

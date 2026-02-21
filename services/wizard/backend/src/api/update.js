@@ -164,6 +164,8 @@ router.post('/apply', authenticateToken, async (req, res) => {
           if (serviceIndex >= 0) {
             installationState.services[serviceIndex].version = result.newVersion;
             installationState.services[serviceIndex].lastUpdated = new Date().toISOString();
+          } else {
+            console.warn(`[update] Service '${result.service}' not found in installationState.services — installation state not updated for this service`);
           }
         }
       }
@@ -363,6 +365,9 @@ router.post('/rollback', authenticateToken, async (req, res) => {
 router.get('/changelog/:version', async (req, res) => {
   try {
     const { version: requestedVersion } = req.params;
+    if (!/^v?\d+\.\d+/.test(requestedVersion)) {
+      return res.status(400).json({ success: false, error: 'Invalid version format — expected semver (e.g. v1.2.3)' });
+    }
     const cleanRequested = requestedVersion.replace(/^(version-?|v)/i, '');
 
     const release = await fetchLatestRelease();
@@ -385,7 +390,7 @@ router.get('/changelog/:version', async (req, res) => {
       }
     });
   } catch (error) {
-    const isNetworkError = error.message.includes('rate limit') || error.message.includes('timeout') || error.message.includes('404');
+    const isNetworkError = error.message.includes('rate limit') || error.message.includes('timeout');
     console.error('Error fetching changelog:', error.message);
     res.status(isNetworkError ? 503 : 500).json({
       success: false,
@@ -497,7 +502,7 @@ async function checkForUpdates() {
     service: 'kaspa-aio',
     serviceName: 'Kaspa All-in-One',
     currentVersion,
-    latestVersion: availableVersion,
+    availableVersion,
     updateAvailable: true,
     changelog: (release.body || '').substring(0, 500),
     breaking: false,
@@ -578,12 +583,14 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
   } catch (error) {
     const stderr = error.stderr ? `\nScript stderr: ${error.stderr.trim()}` : '';
     console.error(`applyServiceUpdate failed for ${service} (exit ${error.code ?? 'unknown'}):`, error.message, stderr);
+    const scriptWarnings = parseScriptWarnings(error.stderr);
     return {
       service,
       success: false,
       error: error.message,
       stderr: error.stderr || null,
       exitCode: error.code || null,
+      ...(scriptWarnings.length > 0 && { scriptWarnings }),
       message: `Failed to update ${service}: ${error.message}${stderr}`
     };
   }

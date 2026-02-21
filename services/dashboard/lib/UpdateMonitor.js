@@ -21,7 +21,7 @@ class UpdateMonitor {
             const dataDir = process.env.DATA_DIR || './data';
             await fs.mkdir(dataDir, { recursive: true });
         } catch (error) {
-            console.error('Failed to create data directory:', error.message);
+            console.error('Failed to create data directory — update check history will not persist (degraded mode):', error.message);
         }
     }
 
@@ -109,7 +109,7 @@ class UpdateMonitor {
 
     isNewer(availableVersion, currentVersion) {
         if (currentVersion === 'latest') {
-            return true;
+            return false; // Cannot compare meaningfully — suppress spurious update notifications
         }
         if (currentVersion === 'unknown') {
             return false;
