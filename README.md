@@ -1,99 +1,3 @@
-# ⚠️ TEST RELEASE v0.10.0 ⚠️
-
-> **This is a pre-production test release for validation purposes.**  
-> We're looking for testers to help validate the installation wizard and overall system before the v1.0 release.
-> 
-> 📖 **Testing Instructions**: See [TESTING.md](TESTING.md)  
-> 🐛 **Report Issues**: [GitHub Issues](https://github.com/jtmac69/Kaspa-All-in-One/issues/new/choose)  
-> 📋 **Known Issues**: See [KNOWN_ISSUES.md](KNOWN_ISSUES.md)  
-> 💬 **Feedback**: [GitHub Discussions](https://github.com/jtmac69/Kaspa-All-in-One/discussions)
-
-## ⚠️ Pre-Production Disclaimer
-
-**IMPORTANT: This software is not yet ready for production use.**
-
-This test release (v0.10.0) is provided for testing and validation purposes only. By using this software, you acknowledge that:
-
-- ⚠️ **Not Production-Ready**: This is a pre-release version that may contain bugs, incomplete features, or unexpected behavior
-- 🔧 **Active Development**: Features and configurations may change significantly before the v1.0 release
-- 💾 **Data Safety**: While we implement backup systems, you should not rely on this software for critical data or production workloads
-- 🐛 **Known Issues**: See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for current limitations and problems
-- 🧪 **Testing Purpose**: This release is specifically for gathering feedback and identifying issues before production release
-- 📝 **No Warranties**: This software is provided "as is" without warranties of any kind, express or implied
-- 🤝 **Community Effort**: Your testing and feedback are essential to making this software production-ready
-
-**What This Means for You:**
-- ✅ Perfect for testing, learning, and providing feedback
-- ✅ Safe for development and experimental environments
-- ✅ Great for contributing to the project's improvement
-- ❌ Not recommended for production deployments
-- ❌ Not suitable for critical infrastructure
-- ❌ Should not be used for managing significant value or sensitive data
-
-**When Will It Be Production-Ready?**  
-We'll release v1.0 when we achieve:
-- ✅ 90% installation success rate across all platforms
-- ✅ Zero critical bugs
-- ✅ Comprehensive documentation validated by testers
-- ✅ Positive feedback from the testing community
-
-**Thank you for helping us get there!** Your participation in this test release is invaluable.
-
-## 🚀 Quick Start for Testers
-
-**New to testing?** Welcome! Here's how to get started in 5 simple steps:
-
-### Step 1: Check Prerequisites
-Before you begin, make sure you have:
-- **Docker 20.10+** and **Docker Compose 2.0+** installed ([Installation help](TESTING.md#prerequisites))
-- **4GB+ RAM** available (8GB+ recommended)
-- **100GB+ free disk space** (500GB+ for full testing)
-- **30 minutes to 2 hours** depending on which scenarios you test
-
-### Step 2: Get the Test Package
-1. **Download** the test release from [GitHub Releases](https://github.com/jtmac69/Kaspa-All-in-One/releases)
-2. **Extract** the archive:
-   ```bash
-   tar -xzf kaspa-aio-v0.9.1.tar.gz
-   cd kaspa-aio-v0.9.1
-   ```
-3. **Start** the test:
-   ```bash
-   ./start-test.sh
-   ```
-
-The script will automatically:
-- ✅ Check your system requirements
-- ✅ Install wizard dependencies
-- ✅ Start the installation wizard
-- ✅ Open it in your browser
-
-### Step 3: Follow the Wizard
-The wizard will guide you through:
-1. **System Check** - Verifies your system is ready
-2. **Template Selection** - Choose from pre-configured setups (recommended) or build custom
-3. **Configuration** - Set up your preferences based on your template
-4. **Installation** - Watch real-time progress
-5. **Verification** - Confirm everything works
-
-### Step 4: Test Scenarios
-Pick one or more scenarios from [TESTING.md](TESTING.md):
-- **Scenario 1**: Home Node Template (15 min) - Perfect for first-time testers
-- **Scenario 2**: Public Node Template (20 min)
-- **Scenario 3**: Custom Setup (30 min) - Advanced users
-- **Scenario 4**: Error Handling (15 min)
-- **Scenario 5**: Reconfiguration (20 min)
-
-### Step 5: Share Your Feedback
-Tell us about your experience:
-- **Found a bug?** → [Report it](https://github.com/jtmac69/Kaspa-All-in-One/issues/new/choose)
-- **Have a suggestion?** → [Share it](https://github.com/jtmac69/Kaspa-All-in-One/discussions)
-- **Something unclear?** → [Ask us](https://github.com/jtmac69/Kaspa-All-in-One/discussions)
-
-**Thank you for testing!** Your feedback helps make Kaspa All-in-One better for everyone. 🙏
-
----
-
 # Kaspa All-in-One
 
 A comprehensive Docker-based solution for running a complete Kaspa blockchain ecosystem. This package provides everything needed to run a full Kaspa node with mining capabilities, messaging, social features, and blockchain indexing - all with an intuitive web-based installation wizard.
@@ -732,20 +636,53 @@ docker compose build kasia-app
 
 ## 🔄 Updates & Maintenance
 
-### Automatic Updates
-The system supports automatic updates for:
-- Docker images
-- Security patches
-- Configuration updates
+### How Updates Work
 
-### Manual Updates
+Kaspa All-in-One treats upstream Kaspa services the same way a Linux distro treats packages — **you track one thing: the kaspa-aio release**, not individual upstream services. When kaspa-node, kasia, or any other service publishes a new version, the AIO maintainers incorporate it, test the combination, and publish a new versioned release.
+
+```
+Upstream release (kaspa-node v1.2.3)
+  → Maintainer bumps version + tests
+    → New kaspa-aio release (v0.9.x)
+      → New Docker images published to ghcr.io
+        → Your dashboard notifies you
+          → Update via wizard
+```
+
+### Automatic Dependency Tracking (Dependabot)
+
+This repository uses [GitHub Dependabot](https://docs.github.com/en/code-security/dependabot) to automatically track and update dependencies on a weekly basis:
+
+| Ecosystem | What's tracked |
+|-----------|----------------|
+| **Docker base images** | `node`, `nginx`, `golang`, `rust`, `alpine` in all service Dockerfiles |
+| **Upstream service images** | `supertypo/simply-kaspa-indexer` and other pre-built images |
+| **npm packages** | Wizard, dashboard, and shared library dependencies |
+| **GitHub Actions** | CI/CD workflow action versions |
+
+When Dependabot detects a newer version, it automatically opens a pull request. After CI passes, the maintainer merges and publishes a new kaspa-aio release — which your dashboard will then offer as an update.
+
+### Updating Your Installation
+
+When a new kaspa-aio release is available, the management dashboard will display a notification badge. Click it to launch the update wizard, which will:
+
+1. Pull the updated Docker images from `ghcr.io`
+2. Perform a rolling restart of affected services
+3. Verify health before completing
+
 ```bash
-# Update all services
-./scripts/manage.sh update
+# Manual update (if not using the dashboard)
+# Download the latest release, then:
+./install.sh --update
+```
 
-# Update specific service
-docker compose pull kaspa-node
-docker compose up -d kaspa-node
+### Manual Docker Image Updates
+```bash
+# Pull latest images for running services
+docker compose pull
+
+# Restart services with new images
+docker compose up -d
 ```
 
 ## 💾 Backup & Recovery
