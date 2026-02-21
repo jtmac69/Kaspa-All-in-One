@@ -2191,10 +2191,10 @@ app.get('/api/updates/available', async (req, res) => {
             lastChecked: lastUpdateCheck ? new Date(lastUpdateCheck).toISOString() : null
         });
     } catch (error) {
-        const errorResult = errorDisplay.showApiError('/api/updates/available', error);
-        res.status(500).json({
-            error: errorResult.userMessage,
-            details: errorResult.errorType
+        const isNetworkError = /rate limit|timeout|not found|network|ECONNREFUSED|ENOTFOUND/i.test(error.message);
+        res.status(isNetworkError ? 503 : 500).json({
+            error: isNetworkError ? 'Update check temporarily unavailable' : 'Failed to check for updates',
+            message: error.message
         });
     }
 });
@@ -2210,10 +2210,10 @@ app.post('/api/updates/check', async (req, res) => {
             lastChecked: new Date(lastUpdateCheck).toISOString()
         });
     } catch (error) {
-        const errorResult = errorDisplay.showApiError('/api/updates/check', error);
-        res.status(500).json({
-            error: errorResult.userMessage,
-            details: errorResult.errorType
+        const isNetworkError = /rate limit|timeout|not found|network|ECONNREFUSED|ENOTFOUND/i.test(error.message);
+        res.status(isNetworkError ? 503 : 500).json({
+            error: isNetworkError ? 'Update check temporarily unavailable' : 'Failed to check for updates',
+            message: error.message
         });
     }
 });
@@ -2855,9 +2855,11 @@ let cachedUpdates = null;
 let lastUpdateCheck = null;
 
 // Schedule periodic update checks (runs immediately, then every 24h)
-updateMonitor.scheduleUpdateChecks((updates) => {
-    cachedUpdates = updates;
-    lastUpdateCheck = Date.now();
+updateMonitor.scheduleUpdateChecks((err, updates) => {
+    lastUpdateCheck = Date.now(); // always record attempt time to prevent retry storms
+    if (!err) {
+        cachedUpdates = updates;
+    }
 });
 
 // Setup state file watching for configuration changes

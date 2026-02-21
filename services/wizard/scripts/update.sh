@@ -138,7 +138,7 @@ apply_update() {
 update_dependencies() {
     log_info "Updating npm dependencies..."
     cd "$WIZARD_HOME/backend"
-    sudo -u "$WIZARD_USER" npm ci --only=production
+    sudo -u "$WIZARD_USER" npm ci --omit=dev
     log_success "Dependencies updated"
 }
 
@@ -171,7 +171,11 @@ rollback_update() {
             cp -r "$backup_dir"/* "$WIZARD_HOME/"
             chown -R "$WIZARD_USER:$WIZARD_USER" "$WIZARD_HOME"
             systemctl start "$SERVICE_NAME"
-            log_success "Rollback completed"
+            if systemctl is-active --quiet "$SERVICE_NAME"; then
+                log_success "Rollback completed"
+            else
+                log_error "Rollback: service failed to start after restore — manual intervention required"
+            fi
         else
             log_error "No backup data found for rollback"
         fi

@@ -276,25 +276,31 @@ router.post('/rollback', async (req, res) => {
 
 /**
  * GET /api/wizard/updates/changelog/:service/:version
- * Get changelog for a specific service version
+ * Get changelog for a specific service version from GitHub releases
  */
 router.get('/changelog/:service/:version', async (req, res) => {
   try {
-    const { service, version } = req.params;
-    
-    // In real implementation, this would fetch from GitHub releases
-    // For now, return mock changelog
-    const changelog = await getServiceChangelog(service, version);
-    
+    const { version } = req.params;
+
+    const release = await fetchLatestRelease();
+    const releaseVersion = (release.tag_name || '').replace(/^(version-?|v)/i, '');
+
     res.json({
       success: true,
-      service,
-      version,
-      changelog
+      service: 'kaspa-aio',
+      version: releaseVersion,
+      changelog: {
+        version: releaseVersion,
+        releaseDate: release.published_at,
+        notes: release.body || 'No changelog available',
+        breaking: /breaking/i.test(release.body || ''),
+        htmlUrl: release.html_url
+      }
     });
   } catch (error) {
-    console.error('Error fetching changelog:', error);
-    res.status(500).json({
+    const isNetworkError = error.message.includes('rate limit') || error.message.includes('timeout') || error.message.includes('404');
+    console.error('Error fetching changelog:', error.message);
+    res.status(isNetworkError ? 503 : 500).json({
       success: false,
       error: 'Failed to fetch changelog',
       message: error.message
@@ -464,11 +470,15 @@ async function applyServiceUpdate(update, projectRoot) {
       message: `Successfully updated ${service} from ${oldVersion} to ${version}`
     };
   } catch (error) {
+    const stderr = error.stderr ? `\nScript stderr: ${error.stderr.trim()}` : '';
+    console.error(`applyServiceUpdate failed for ${service} (exit ${error.code ?? 'unknown'}):`, error.message, stderr);
     return {
       service,
       success: false,
       error: error.message,
-      message: `Failed to update ${service}: ${error.message}`
+      stderr: error.stderr || null,
+      exitCode: error.code || null,
+      message: `Failed to update ${service}: ${error.message}${stderr}`
     };
   }
 }
@@ -518,26 +528,6 @@ async function waitForServiceHealth(service, timeout = 60000) {
   return false;
 }
 
-/**
- * Get changelog for a service version
- * In production, this would fetch from GitHub releases
- */
-async function getServiceChangelog(service, version) {
-  // Mock implementation
-  // In production: fetch from GitHub API
-  
-  return {
-    version,
-    releaseDate: new Date().toISOString(),
-    changes: [
-      'Bug fixes and performance improvements',
-      'Updated dependencies',
-      'Security patches'
-    ],
-    breaking: false,
-    notes: 'This is a minor update with bug fixes and improvements.'
-  };
-}
 
 /**
  * Create comprehensive backup of configuration

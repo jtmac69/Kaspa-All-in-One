@@ -103,8 +103,11 @@ class UpdateMonitor {
     }
 
     isNewer(availableVersion, currentVersion) {
-        if (currentVersion === 'unknown' || currentVersion === 'latest') {
+        if (currentVersion === 'latest') {
             return true;
+        }
+        if (currentVersion === 'unknown') {
+            return false;
         }
 
         const available = this.parseVersion(availableVersion);
@@ -209,19 +212,18 @@ class UpdateMonitor {
         try {
             const updates = await this.checkForUpdates();
             if (callback) {
-                callback(updates);
+                callback(null, updates);
             }
         } catch (error) {
             console.error('Scheduled update check failed:', error.message);
+            if (callback) {
+                callback(error, null);
+            }
         }
     }
 
     async getAvailableUpdates() {
-        try {
-            return await this.checkForUpdates();
-        } catch (error) {
-            throw new Error(`Failed to get available updates: ${error.message}`);
-        }
+        return this.checkForUpdates();
     }
 
     truncateChangelog(changelog, maxLength = 200) {

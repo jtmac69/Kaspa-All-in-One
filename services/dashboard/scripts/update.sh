@@ -317,7 +317,7 @@ update_dependencies() {
     # Check if package.json changed
     if [[ -f "package.json" ]]; then
         # Update dependencies as dashboard user
-        sudo -u "$DASHBOARD_USER" npm ci --only=production
+        sudo -u "$DASHBOARD_USER" npm ci --omit=dev
         log_success "Dependencies updated"
     else
         log_warning "package.json not found, skipping dependency update"
