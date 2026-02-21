@@ -526,27 +526,6 @@ async function applyServiceUpdate(update, projectRoot) {
 }
 
 /**
- * Update docker-compose.yml with new service version
- */
-async function updateDockerComposeVersion(service, version, projectRoot) {
-  const dockerComposePath = path.join(projectRoot, 'docker-compose.yml');
-  
-  try {
-    let content = await fs.readFile(dockerComposePath, 'utf8');
-    
-    // Update image version for the service
-    // This is a simple regex replacement - in production, use a YAML parser
-    const servicePattern = new RegExp(`(${service}:.*image:\\s*[^:]+:)([^\\s]+)`, 'g');
-    content = content.replace(servicePattern, `$1${version}`);
-    
-    await fs.writeFile(dockerComposePath, content);
-  } catch (error) {
-    console.error(`Error updating docker-compose.yml for ${service}:`, error);
-    throw error;
-  }
-}
-
-/**
  * Wait for service to become healthy after update
  */
 async function waitForServiceHealth(service, timeout = 60000) {

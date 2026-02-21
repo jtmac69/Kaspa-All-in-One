@@ -75,7 +75,14 @@ create_backup() {
     backup_path="$BACKUP_DIR/$backup_name"
     mkdir -p "$backup_path"
 
-    [[ -f "$WIZARD_HOME/.env" ]] && cp "$WIZARD_HOME/.env" "$backup_path/"
+    [[ -f "$WIZARD_HOME/.env" ]]              && cp "$WIZARD_HOME/.env"              "$backup_path/"
+    [[ -f "$WIZARD_HOME/backend/package.json" ]]      && cp "$WIZARD_HOME/backend/package.json"      "$backup_path/"
+    [[ -f "$WIZARD_HOME/backend/package-lock.json" ]] && cp "$WIZARD_HOME/backend/package-lock.json" "$backup_path/"
+
+    if [[ -d "$WIZARD_HOME/logs" ]]; then
+        mkdir -p "$backup_path/logs"
+        find "$WIZARD_HOME/logs" -name "*.log" -mtime -7 -exec cp {} "$backup_path/logs/" \; 2>/dev/null || true
+    fi
 
     cd "$BACKUP_DIR"
     tar -czf "${backup_name}.tar.gz" "$backup_name"

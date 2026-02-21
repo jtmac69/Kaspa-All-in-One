@@ -208,21 +208,13 @@ export class APIClient {
         return this.request('/api/system/resources');
     }
 
-    // Updates (placeholder)
+    // Updates
     async getAvailableUpdates() {
-        try {
-            return await this.request('/api/updates/available');
-        } catch (error) {
-            return { updates: [], message: 'Update checking not available' };
-        }
+        return this.request('/api/updates/available');
     }
 
     async checkForUpdates() {
-        try {
-            return await this.request('/api/updates/check', { method: 'POST' });
-        } catch (error) {
-            return { updates: [], message: 'Update checking not available' };
-        }
+        return this.request('/api/updates/check', { method: 'POST' });
     }
 
     // Configuration
