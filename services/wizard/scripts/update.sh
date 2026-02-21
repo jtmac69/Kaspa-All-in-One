@@ -136,7 +136,11 @@ prepare_update() {
         cp -r "$update_src/services/wizard"/* "$temp_dir/"
     else
         cd "$temp_dir"
-        git clone --depth 1 --branch "$UPDATE_BRANCH" "$UPDATE_REPO" kaspa-aio
+        if ! git clone --depth 1 --branch "$UPDATE_BRANCH" "$UPDATE_REPO" kaspa-aio; then
+            log_error "git clone failed — check network connectivity and branch '$UPDATE_BRANCH'"
+            rm -rf "$temp_dir"
+            return 1
+        fi
         if [[ ! -d "kaspa-aio/services/wizard" ]]; then
             log_error "Invalid repository: services/wizard not found after clone"
             rm -rf "$temp_dir"
@@ -212,7 +216,11 @@ rollback_update() {
         local backup_dir
         backup_dir=$(find . -name "wizard_backup_*" -type d | head -1)
         if [[ -n "$backup_dir" ]]; then
-            cp -r "$backup_dir"/* "$WIZARD_HOME/"
+            if ! cp -r "$backup_dir"/* "$WIZARD_HOME/"; then
+                log_error "Rollback: cp failed — files may be incomplete. Manual intervention required."
+                rm -rf "$restore_tmp"
+                return 1
+            fi
             chown -R "$WIZARD_USER:$WIZARD_USER" "$WIZARD_HOME"
             systemctl start "$SERVICE_NAME"
             if systemctl is-active --quiet "$SERVICE_NAME"; then
@@ -261,8 +269,8 @@ while [[ $# -gt 0 ]]; do
         --help|-h)
             echo "Usage: $0 [--skip-backup] [--no-rollback] [--source PATH] [--branch BRANCH]"
             exit 0 ;;
-        --source)  export UPDATE_SOURCE="$2"; shift 2 ;;
-        --branch)  export UPDATE_BRANCH="$2"; shift 2 ;;
+        --source)  [[ -z "${2:-}" ]] && { echo "Error: --source requires a PATH argument"; exit 1; }; export UPDATE_SOURCE="$2"; shift 2 ;;
+        --branch)  [[ -z "${2:-}" ]] && { echo "Error: --branch requires a BRANCH argument"; exit 1; }; export UPDATE_BRANCH="$2"; shift 2 ;;
         --skip-backup) export SKIP_BACKUP=true; shift ;;
         --no-rollback) export NO_ROLLBACK=true; shift ;;
         *) echo "Unknown option: $1"; exit 1 ;;

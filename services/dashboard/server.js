@@ -2193,7 +2193,7 @@ app.get('/api/updates/available', async (req, res) => {
     } catch (error) {
         lastUpdateCheck = Date.now(); // stamp even on failure to enforce back-off
         console.error('On-demand update check failed:', error.message);
-        const isNetworkError = /rate limit|timeout|not found|network|ECONNREFUSED|ENOTFOUND/i.test(error.message);
+        const isNetworkError = /rate limit|timeout|network|ECONNREFUSED|ENOTFOUND/i.test(error.message);
         res.status(isNetworkError ? 503 : 500).json({
             error: isNetworkError ? 'Update check temporarily unavailable' : 'Failed to check for updates',
             message: error.message
@@ -2214,7 +2214,7 @@ app.post('/api/updates/check', async (req, res) => {
     } catch (error) {
         lastUpdateCheck = Date.now(); // stamp even on failure to enforce back-off
         console.error('Forced update check failed:', error.message);
-        const isNetworkError = /rate limit|timeout|not found|network|ECONNREFUSED|ENOTFOUND/i.test(error.message);
+        const isNetworkError = /rate limit|timeout|network|ECONNREFUSED|ENOTFOUND/i.test(error.message);
         res.status(isNetworkError ? 503 : 500).json({
             error: isNetworkError ? 'Update check temporarily unavailable' : 'Failed to check for updates',
             message: error.message

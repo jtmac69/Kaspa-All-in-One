@@ -134,9 +134,13 @@ create_backup() {
     # Backup critical files
     log_info "Backing up configuration and data..."
     
-    # Configuration files
+    # .env is required — abort if it can't be copied
     if [[ -f "$DASHBOARD_HOME/.env" ]]; then
-        cp "$DASHBOARD_HOME/.env" "$backup_path/"
+        if ! cp "$DASHBOARD_HOME/.env" "$backup_path/"; then
+            log_error "Failed to back up .env — aborting backup"
+            rm -rf "$backup_path"
+            return 1
+        fi
         log_info "Backed up .env configuration"
     fi
     
@@ -172,7 +176,17 @@ EOF
     # Create compressed archive
     log_info "Creating compressed backup archive..."
     cd "$BACKUP_DIR"
-    tar -czf "${backup_name}.tar.gz" "$backup_name"
+    if ! tar -czf "${backup_name}.tar.gz" "$backup_name" 2>/dev/null; then
+        log_error "Failed to create backup archive — disk full or permissions error"
+        rm -rf "$backup_name"
+        return 1
+    fi
+    if ! tar -tzf "${backup_name}.tar.gz" > /dev/null 2>&1; then
+        log_error "Backup archive is corrupt — aborting update to prevent unrecoverable state"
+        rm -f "${backup_name}.tar.gz"
+        rm -rf "$backup_name"
+        return 1
+    fi
     rm -rf "$backup_name"
     
     # Set ownership (archive is at $BACKUP_DIR/$backup_name.tar.gz — not $backup_path which was deleted)
@@ -236,8 +250,12 @@ prepare_update() {
         log_info "Branch: $UPDATE_BRANCH"
         
         cd "$temp_dir"
-        git clone --depth 1 --branch "$UPDATE_BRANCH" "$UPDATE_REPO" kaspa-aio
-        
+        if ! git clone --depth 1 --branch "$UPDATE_BRANCH" "$UPDATE_REPO" kaspa-aio; then
+            log_error "git clone failed — check network connectivity and branch '$UPDATE_BRANCH'"
+            rm -rf "$temp_dir"
+            return 1
+        fi
+
         if [[ ! -d "kaspa-aio/services/dashboard" ]]; then
             log_error "Invalid repository: services/dashboard not found"
             rm -rf "$temp_dir"
@@ -604,9 +622,9 @@ while [[ $# -gt 0 ]]; do
             echo
             exit 0
             ;;
-        --source)  export UPDATE_SOURCE="$2"; shift 2 ;;
-        --repo)    export UPDATE_REPO="$2";   shift 2 ;;
-        --branch)  export UPDATE_BRANCH="$2"; shift 2 ;;
+        --source)  [[ -z "${2:-}" ]] && { log_error "--source requires a PATH argument"; exit 1; }; export UPDATE_SOURCE="$2"; shift 2 ;;
+        --repo)    [[ -z "${2:-}" ]] && { log_error "--repo requires a URL argument";  exit 1; }; export UPDATE_REPO="$2";   shift 2 ;;
+        --branch)  [[ -z "${2:-}" ]] && { log_error "--branch requires a BRANCH argument"; exit 1; }; export UPDATE_BRANCH="$2"; shift 2 ;;
         --skip-backup) export SKIP_BACKUP=true; shift ;;
         --no-rollback) export NO_ROLLBACK=true; shift ;;
         *)

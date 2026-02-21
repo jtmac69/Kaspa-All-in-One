@@ -693,7 +693,8 @@ class Dashboard {
             console.error('openUpdatesModal: loadUpdates threw unexpectedly:', err);
         }
 
-        // Wire the "Check Now" button to force a fresh check
+        // Wire the "Check Now" button — guard with _wired flag to prevent
+        // duplicate listeners being registered each time the modal is opened
         const checkBtn = document.getElementById('check-updates-btn');
         if (checkBtn && !checkBtn._wired) {
             checkBtn._wired = true;
@@ -706,7 +707,8 @@ class Dashboard {
                 } catch (err) {
                     console.error('Force update check failed:', err);
                     const summaryEl = document.querySelector('#updates-summary .summary-text');
-                    if (summaryEl) summaryEl.textContent = `Check failed: ${escapeHtml(err.message || 'Unable to reach update server')}`;
+                    // Use textContent (not innerHTML) — no escapeHtml needed
+                    if (summaryEl) summaryEl.textContent = `Check failed: ${err.message || 'Unable to reach update server'}`;
                 } finally {
                     checkBtn.disabled = false;
                     checkBtn.textContent = '🔄 Check Now';

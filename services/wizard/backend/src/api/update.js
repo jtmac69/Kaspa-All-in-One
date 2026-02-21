@@ -457,8 +457,9 @@ async function checkForUpdates() {
     currentVersion = JSON.parse(raw).version || 'unknown';
   } catch (err) {
     if (err.code !== 'ENOENT') {
-      console.warn('Failed to read installation-state.json for version check:', err.message);
+      throw new Error(`installation-state.json is unreadable (${err.constructor.name}): ${err.message}`);
     }
+    // ENOENT = not yet installed; proceed with 'unknown' version
   }
 
   let release;
@@ -533,10 +534,7 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
     await dockerManager.pullImage(service, version);
     await dockerManager.startService(service);
 
-    const healthy = await waitForServiceHealth(service, 60000);
-    if (!healthy) {
-      throw new Error(`Service ${service} failed health check after update`);
-    }
+    await waitForServiceHealth(service, 60000); // throws with diagnostics on timeout
 
     return {
       service,
@@ -564,26 +562,27 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
  */
 async function waitForServiceHealth(service, timeout = 60000) {
   const startTime = Date.now();
-  
+  let lastError = null;
+
   while (Date.now() - startTime < timeout) {
     try {
       const health = await dockerManager.checkServiceHealth(service);
-      
       if (health.healthy) {
         return true;
       }
     } catch (error) {
-      // Service may not be ready yet; log non-transient errors for diagnosis
+      lastError = error;
+      // Transient connection errors are expected during startup — don't log
       if (error.code && !['ECONNREFUSED', 'ECONNRESET'].includes(error.code)) {
         console.warn(`Health check error for ${service} (${error.code || error.message})`);
       }
     }
-    
-    // Wait 2 seconds before checking again
+
     await new Promise(resolve => setTimeout(resolve, 2000));
   }
-  
-  return false;
+
+  const detail = lastError ? ` (last error: ${lastError.message})` : '';
+  throw new Error(`Service ${service} failed health check after update${detail}`);
 }
 
 
