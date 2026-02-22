@@ -41,17 +41,12 @@ class UpdateMonitor {
     }
 
     async checkForUpdates() {
+        let result;
         try {
             const currentVersion = await this.getInstalledVersion();
             const latestRelease = await this.getLatestGitHubRelease(this.repo);
 
-            await this.saveLastCheckTime();
-
-            if (!this.isNewer(latestRelease.version, currentVersion)) {
-                return [];
-            }
-
-            return [{
+            result = this.isNewer(latestRelease.version, currentVersion) ? [{
                 service: 'kaspa-aio',
                 serviceName: 'Kaspa All-in-One',
                 currentVersion,
@@ -61,13 +56,18 @@ class UpdateMonitor {
                 releaseDate: latestRelease.publishedAt,
                 htmlUrl: latestRelease.htmlUrl,
                 priority: this.calculateUpdatePriority(latestRelease)
-            }];
+            }] : [];
         } catch (error) {
             await this.saveLastCheckTime().catch(err => {
                 console.error('checkForUpdates: failed to persist last-check timestamp:', err.message);
             }); // stamp even on failure for disk-persisted back-off
             throw new Error(`Failed to check for updates: ${error.message}`, { cause: error });
         }
+
+        // Stamp timestamp after result is fully constructed — write failure must not discard the result
+        // (saveLastCheckTime has its own internal catch and never throws)
+        await this.saveLastCheckTime();
+        return result;
     }
 
     async getLatestGitHubRelease(repo) {

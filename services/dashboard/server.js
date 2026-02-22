@@ -2226,6 +2226,7 @@ app.post('/api/updates/check', async (req, res) => {
             return res.status(202).json({
                 checkInProgress: true,
                 updates: cachedUpdates,
+                hasUpdates: cachedUpdates.length > 0 ? true : null, // null = unknown (check in-flight)
                 lastChecked: lastUpdateCheck ? new Date(lastUpdateCheck).toISOString() : null,
                 message: 'Update check already in progress — try again shortly'
             });
