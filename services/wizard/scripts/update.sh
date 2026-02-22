@@ -85,8 +85,8 @@ create_backup() {
         rm -rf "$backup_path"
         return 1
     fi
-    [[ -f "$WIZARD_HOME/backend/package.json" ]]      && cp "$WIZARD_HOME/backend/package.json"      "$backup_path/"
-    [[ -f "$WIZARD_HOME/backend/package-lock.json" ]] && cp "$WIZARD_HOME/backend/package-lock.json" "$backup_path/"
+    [[ -f "$WIZARD_HOME/backend/package.json" ]]      && { cp "$WIZARD_HOME/backend/package.json"      "$backup_path/" || log_warning "Failed to back up package.json — continuing"; }
+    [[ -f "$WIZARD_HOME/backend/package-lock.json" ]] && { cp "$WIZARD_HOME/backend/package-lock.json" "$backup_path/" || log_warning "Failed to back up package-lock.json — continuing"; }
 
     if [[ -d "$WIZARD_HOME/logs" ]]; then
         mkdir -p "$backup_path/logs"
@@ -184,6 +184,19 @@ prepare_update() {
 
 apply_update() {
     log_info "Applying update..."
+
+    # Preserve critical files before rsync so they survive even if --exclude flags misbehave
+    local temp_preserve="/tmp/wizard-preserve-$$"
+    mkdir -p "$temp_preserve" || { log_error "Cannot create preserve temp directory '$temp_preserve' — aborting update"; rm -rf "$UPDATE_TEMP_DIR"; return 1; }
+
+    if [[ -f "$WIZARD_HOME/.env" ]]; then
+        if ! cp "$WIZARD_HOME/.env" "$temp_preserve/"; then
+            log_error "Failed to preserve .env before rsync — aborting to prevent data loss"
+            rm -rf "$temp_preserve"
+            return 1
+        fi
+    fi
+
     set +e
     rsync -av \
         --exclude='.env' \
@@ -197,8 +210,20 @@ apply_update() {
     set -e
     if [[ $rsync_rc -ne 0 ]]; then
         log_error "rsync failed (exit $rsync_rc)"
+        rm -rf "$temp_preserve"
         return 1
     fi
+
+    # Restore .env after rsync
+    if [[ -f "$temp_preserve/.env" ]]; then
+        if ! cp "$temp_preserve/.env" "$WIZARD_HOME/"; then
+            log_error "Failed to restore .env — update cannot be considered safe"
+            rm -rf "$temp_preserve"
+            return 1
+        fi
+    fi
+    rm -rf "$temp_preserve"
+
     if [[ ! -s "$WIZARD_HOME/.env" ]]; then
         log_error ".env is missing or empty after rsync — possible exclude flag failure; aborting"
         return 1
@@ -273,6 +298,8 @@ rollback_update() {
             fi
         else
             log_error "No backup data found for rollback"
+            rm -rf "$restore_tmp"
+            return 1
         fi
         rm -rf "$restore_tmp"
     else

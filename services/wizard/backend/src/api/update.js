@@ -31,11 +31,11 @@ router.get('/available', async (req, res) => {
     const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
     const installationStatePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
     
-    // Load installation state to get current versions
-    let installationState = null;
+    // Load installation state — also extracts currentVersion to avoid double-read in checkForUpdates
+    let currentVersion;
     try {
       const stateContent = await fs.readFile(installationStatePath, 'utf8');
-      installationState = JSON.parse(stateContent);
+      currentVersion = JSON.parse(stateContent).version || 'unknown';
     } catch (error) {
       if (error.code === 'ENOENT') {
         return res.status(404).json({
@@ -51,8 +51,8 @@ router.get('/available', async (req, res) => {
         message: error.message
       });
     }
-    
-    const updates = await checkForUpdates();
+
+    const updates = await checkForUpdates(currentVersion);
     
     res.json({
       success: true,
@@ -99,6 +99,14 @@ router.post('/apply', authenticateToken, async (req, res) => {
       return res.status(400).json({
         success: false,
         error: `Invalid service name: ${invalidService.service}`
+      });
+    }
+
+    const invalidVersion = updates.find(u => u.version && !/^v?\d+\.\d+(\.\d+)?(-[\w.]+)?$/.test(u.version));
+    if (invalidVersion) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid version format: ${invalidVersion.version} — expected semver (e.g., 1.2.3)`
       });
     }
     
@@ -477,21 +485,23 @@ function isNewer(available, current) {
 }
 
 /**
- * Check for available kaspa-aio updates against real GitHub releases
+ * Check for available kaspa-aio updates against real GitHub releases.
+ * Pass currentVersion to avoid re-reading installation-state.json when the caller already has it.
  */
-async function checkForUpdates() {
-  const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
-  const statePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
-
-  let currentVersion = 'unknown';
-  try {
-    const raw = await fs.readFile(statePath, 'utf8');
-    currentVersion = JSON.parse(raw).version || 'unknown';
-  } catch (err) {
-    if (err.code !== 'ENOENT') {
-      throw new Error(`installation-state.json is unreadable (${err.constructor.name}): ${err.message}`);
+async function checkForUpdates(currentVersion) {
+  if (currentVersion === undefined) {
+    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../../..');
+    const statePath = path.join(projectRoot, '.kaspa-aio', 'installation-state.json');
+    currentVersion = 'unknown';
+    try {
+      const raw = await fs.readFile(statePath, 'utf8');
+      currentVersion = JSON.parse(raw).version || 'unknown';
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        throw new Error(`installation-state.json is unreadable (${err.constructor.name}): ${err.message}`);
+      }
+      // ENOENT = not yet installed; proceed with 'unknown' version
     }
-    // ENOENT = not yet installed; proceed with 'unknown' version
   }
 
   let release;
@@ -598,9 +608,15 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
     };
   } catch (error) {
     const scriptOutput = error.stdout ? `\nScript output: ${error.stdout.trim()}` : '';
-    console.error(`applyServiceUpdate failed for ${service} (exit ${error.code ?? 'unknown'}):`, error.message, scriptOutput);
+    // Distinguish shell exit codes from Node.js error codes (e.g. ENOENT vs 1)
+    const isExecError = error.stdout !== undefined || error.signal !== undefined;
+    const exitContext = error.signal
+      ? `signal: ${error.signal}`
+      : isExecError ? `exit ${error.code ?? 'unknown'}` : `error: ${error.code || 'none'}`;
+    console.error(`applyServiceUpdate failed for ${service} (${exitContext}):`, error.message, scriptOutput);
     const scriptWarnings = parseScriptWarnings(error.stdout);
-    const rollbackFailed = error.code === 2;
+    // exit 2 = update failed AND rollback failed; null code + signal = process killed (state unknown)
+    const rollbackFailed = error.code === 2 || (error.code === null && error.signal != null);
     const errorMsg = rollbackFailed
       ? `${error.message} — rollback also failed, service may be stopped`
       : error.message;
@@ -609,6 +625,7 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
       success: false,
       error: errorMsg,
       exitCode: error.code || null,
+      ...(error.signal && { signal: error.signal }),
       ...(rollbackFailed && { rollbackFailed: true }),
       ...(scriptWarnings.length > 0 && { scriptWarnings }),
       message: `Failed to update ${service}: ${errorMsg}${scriptOutput}`

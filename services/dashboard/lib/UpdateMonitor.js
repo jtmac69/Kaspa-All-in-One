@@ -63,7 +63,9 @@ class UpdateMonitor {
                 priority: this.calculateUpdatePriority(latestRelease)
             }];
         } catch (error) {
-            await this.saveLastCheckTime().catch(() => {}); // stamp even on failure for disk-persisted back-off
+            await this.saveLastCheckTime().catch(err => {
+                console.error('checkForUpdates: failed to persist last-check timestamp:', err.message);
+            }); // stamp even on failure for disk-persisted back-off
             throw new Error(`Failed to check for updates: ${error.message}`, { cause: error });
         }
     }
@@ -148,9 +150,8 @@ class UpdateMonitor {
     detectBreakingChanges(release) {
         const changelog = (release.changelog || '').toLowerCase();
         const breakingKeywords = [
-            'breaking change', 'breaking', 'incompatible',
-            'migration required', 'deprecated', 'removed',
-            'major version', 'breaking:'
+            'breaking change', 'breaking:', 'incompatible',
+            'migration required', 'major version'
         ];
         return breakingKeywords.some(keyword => changelog.includes(keyword));
     }
@@ -165,7 +166,7 @@ class UpdateMonitor {
         }
 
         if (this.detectBreakingChanges(release)) {
-            priority = priority === 'high' ? 'critical' : 'medium';
+            priority = priority === 'high' ? 'critical' : 'high';
         }
 
         return priority;

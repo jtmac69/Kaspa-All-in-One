@@ -148,11 +148,11 @@ create_backup() {
     log_info "Backed up .env configuration"
     
     if [[ -f "$DASHBOARD_HOME/package.json" ]]; then
-        cp "$DASHBOARD_HOME/package.json" "$backup_path/"
+        cp "$DASHBOARD_HOME/package.json" "$backup_path/" || log_warning "Failed to back up package.json — continuing"
     fi
-    
+
     if [[ -f "$DASHBOARD_HOME/package-lock.json" ]]; then
-        cp "$DASHBOARD_HOME/package-lock.json" "$backup_path/"
+        cp "$DASHBOARD_HOME/package-lock.json" "$backup_path/" || log_warning "Failed to back up package-lock.json — continuing"
     fi
     
     # Logs (last 7 days)
@@ -566,8 +566,10 @@ rollback_update() {
             log_success "Rollback completed — service is running"
         else
             log_error "Could not find backup data in archive"
+            rm -rf "$restore_temp"
+            return 1
         fi
-        
+
         rm -rf "$restore_temp"
     else
         log_error "No backup available for rollback"
