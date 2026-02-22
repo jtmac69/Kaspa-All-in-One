@@ -235,8 +235,8 @@ prepare_update() {
     log_info "Preparing update..."
     
     local temp_dir="/tmp/kaspa-dashboard-update-$$"
-    mkdir -p "$temp_dir"
-    
+    mkdir -p "$temp_dir" || { log_error "Cannot create temp directory '$temp_dir' — check disk space or /tmp permissions"; return 1; }
+
     if [[ -n "$UPDATE_SOURCE" && -d "$UPDATE_SOURCE" ]]; then
         # Update from local directory
         log_info "Updating from local source: $UPDATE_SOURCE"
@@ -310,7 +310,7 @@ apply_update() {
     )
     
     local temp_preserve="/tmp/dashboard-preserve-$$"
-    mkdir -p "$temp_preserve"
+    mkdir -p "$temp_preserve" || { log_error "Cannot create preserve temp directory '$temp_preserve' — aborting update"; rm -rf "$UPDATE_TEMP_DIR"; return 1; }
     
     for file in "${preserve_files[@]}"; do
         if [[ -e "$DASHBOARD_HOME/$file" ]]; then
@@ -649,11 +649,16 @@ main() {
         exit 0
     else
         log_error "Update failed"
-        
+
         if [[ "${NO_ROLLBACK:-}" != "true" ]]; then
-            rollback_update
+            if rollback_update; then
+                exit 1  # update failed but rollback succeeded
+            else
+                log_error "Rollback also failed — service may be stopped. Manual intervention required."
+                exit 2  # update failed AND rollback failed
+            fi
         fi
-        
+
         exit 1
     fi
 }

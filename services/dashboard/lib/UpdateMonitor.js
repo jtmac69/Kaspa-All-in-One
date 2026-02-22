@@ -63,6 +63,7 @@ class UpdateMonitor {
                 priority: this.calculateUpdatePriority(latestRelease)
             }];
         } catch (error) {
+            await this.saveLastCheckTime().catch(() => {}); // stamp even on failure for disk-persisted back-off
             throw new Error(`Failed to check for updates: ${error.message}`, { cause: error });
         }
     }

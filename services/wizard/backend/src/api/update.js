@@ -37,10 +37,18 @@ router.get('/available', async (req, res) => {
       const stateContent = await fs.readFile(installationStatePath, 'utf8');
       installationState = JSON.parse(stateContent);
     } catch (error) {
-      return res.status(404).json({
+      if (error.code === 'ENOENT') {
+        return res.status(404).json({
+          success: false,
+          error: 'No installation state found',
+          message: 'System must be installed before checking for updates'
+        });
+      }
+      console.error('Failed to read installation state:', error.message);
+      return res.status(500).json({
         success: false,
-        error: 'No installation state found',
-        message: 'System must be installed before checking for updates'
+        error: 'Failed to read installation state',
+        message: error.message
       });
     }
     
@@ -306,7 +314,8 @@ router.post('/rollback', authenticateToken, async (req, res) => {
         success: false,
         error: 'Rollback incomplete — critical files could not be restored',
         errors,
-        restoredFiles
+        restoredFiles,
+        warning: 'Services are stopped. Restart them manually: ./scripts/manage.sh start'
       });
     }
 
@@ -524,24 +533,17 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
   try {
     if (service === 'dashboard') {
       const updateScript = path.join(projectRoot, 'services', 'dashboard', 'scripts', 'update.sh');
+      // execFileAsync throws on non-zero exit — that is the authoritative failure signal
       const { stdout: dashStdout } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 600000 });
       const scriptWarnings = parseScriptWarnings(dashStdout);
-      const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
-      if (scriptErrors.length > 0) {
-        return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || null };
-      }
-      return { service, success: true, oldVersion, newVersion: version || null, message: `Dashboard updated successfully`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
+      return { service, success: true, oldVersion, newVersion: version || null, message: 'Dashboard updated successfully', ...(scriptWarnings.length > 0 && { scriptWarnings }) };
     }
 
     if (service === 'wizard') {
       const updateScript = path.join(projectRoot, 'services', 'wizard', 'scripts', 'update.sh');
       const { stdout: wizStdout } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 600000 });
       const scriptWarnings = parseScriptWarnings(wizStdout);
-      const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
-      if (scriptErrors.length > 0) {
-        return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || null };
-      }
-      return { service, success: true, oldVersion, newVersion: version || null, message: `Wizard updated successfully`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
+      return { service, success: true, oldVersion, newVersion: version || null, message: 'Wizard updated successfully', ...(scriptWarnings.length > 0 && { scriptWarnings }) };
     }
 
     if (service === 'kaspa-aio') {
@@ -550,21 +552,17 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
       const wizScript = path.join(projectRoot, 'services', 'wizard', 'scripts', 'update.sh');
       const { stdout: dashStdout } = await execFileAsync('sudo', ['bash', dashScript], { timeout: 600000 });
       const scriptWarnings = parseScriptWarnings(dashStdout);
-      const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
-      if (scriptErrors.length > 0) {
-        return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || null };
-      }
       // Schedule wizard self-update asynchronously: running it now would kill this process
       // before the HTTP response can be flushed. The caller should expect a connection drop
       // ~500ms after receiving this response as the wizard restarts.
       setTimeout(() => {
         execFileAsync('sudo', ['bash', wizScript], { timeout: 600000 })
           .catch(err => {
-            const stderr = err.stderr ? `\nScript stderr: ${err.stderr.trim()}` : '';
-            console.error(`Wizard self-update failed (exit ${err.code ?? 'unknown'}):`, err.message, stderr);
+            const stdout = err.stdout ? `\nScript output: ${err.stdout.trim()}` : '';
+            console.error(`Wizard self-update failed (exit ${err.code ?? 'unknown'}):`, err.message, stdout);
           });
       }, 500);
-      return { service, success: true, oldVersion, newVersion: version || null, message: `Kaspa All-in-One update initiated — wizard will restart momentarily`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
+      return { service, success: true, oldVersion, newVersion: version || null, message: 'Kaspa All-in-One update initiated — wizard will restart momentarily', ...(scriptWarnings.length > 0 && { scriptWarnings }) };
     }
 
     // Docker-based services: pull new image and restart
@@ -602,13 +600,18 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
     const scriptOutput = error.stdout ? `\nScript output: ${error.stdout.trim()}` : '';
     console.error(`applyServiceUpdate failed for ${service} (exit ${error.code ?? 'unknown'}):`, error.message, scriptOutput);
     const scriptWarnings = parseScriptWarnings(error.stdout);
+    const rollbackFailed = error.code === 2;
+    const errorMsg = rollbackFailed
+      ? `${error.message} — rollback also failed, service may be stopped`
+      : error.message;
     return {
       service,
       success: false,
-      error: error.message,
+      error: errorMsg,
       exitCode: error.code || null,
+      ...(rollbackFailed && { rollbackFailed: true }),
       ...(scriptWarnings.length > 0 && { scriptWarnings }),
-      message: `Failed to update ${service}: ${error.message}${scriptOutput}`
+      message: `Failed to update ${service}: ${errorMsg}${scriptOutput}`
     };
   }
 }
@@ -650,7 +653,12 @@ async function createConfigurationBackup(projectRoot, reason) {
   const backupDir = path.join(projectRoot, '.kaspa-backups', timestamp.toString());
   
   // Create backup directory
-  await fs.mkdir(backupDir, { recursive: true });
+  try {
+    await fs.mkdir(backupDir, { recursive: true });
+  } catch (mkdirErr) {
+    console.error(`Failed to create backup directory ${backupDir} (${mkdirErr.code || mkdirErr.constructor.name}):`, mkdirErr.message);
+    throw mkdirErr;
+  }
   
   const backedUpFiles = [];
   const errors = [];

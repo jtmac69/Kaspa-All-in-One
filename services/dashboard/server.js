@@ -2181,7 +2181,7 @@ app.get('/api/updates/available', async (req, res) => {
         const ONE_HOUR = 60 * 60 * 1000;
         const cacheStale = !lastUpdateCheck || (Date.now() - lastUpdateCheck > ONE_HOUR);
 
-        const needsRefresh = cacheStale || cachedUpdates === null;
+        const needsRefresh = cacheStale;
         const skippedDueToInflight = needsRefresh && updateCheckInProgress;
 
         if (needsRefresh && !updateCheckInProgress) {
@@ -2194,8 +2194,8 @@ app.get('/api/updates/available', async (req, res) => {
             }
         }
 
-        // Return 202 when a check is in-flight and no cached data exists yet
-        if (skippedDueToInflight && cachedUpdates === null) {
+        // Return 202 when a check is in-flight and no results have been cached yet
+        if (skippedDueToInflight && cachedUpdates.length === 0) {
             return res.status(202).json({
                 updates: [],
                 lastChecked: null,
@@ -2888,7 +2888,7 @@ updateBroadcaster.start();
 
 // Initialize Update Monitor
 const updateMonitor = new UpdateMonitor();
-let cachedUpdates = null;
+let cachedUpdates = [];
 let lastUpdateCheck = null;
 let updateCheckInProgress = false;
 

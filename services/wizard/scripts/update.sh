@@ -136,7 +136,7 @@ stop_wizard() {
 prepare_update() {
     log_info "Preparing update from repository..."
     local temp_dir="/tmp/kaspa-wizard-update-$$"
-    mkdir -p "$temp_dir"
+    mkdir -p "$temp_dir" || { log_error "Cannot create temp directory '$temp_dir' — check disk space or /tmp permissions"; return 1; }
 
     local update_src="${UPDATE_SOURCE:-}"
     if [[ -n "$update_src" && -d "$update_src" ]]; then
@@ -305,7 +305,16 @@ main() {
         exit 0
     else
         log_error "Update failed"
-        [[ "${NO_ROLLBACK:-}" != "true" ]] && rollback_update
+
+        if [[ "${NO_ROLLBACK:-}" != "true" ]]; then
+            if rollback_update; then
+                exit 1  # update failed but rollback succeeded
+            else
+                log_error "Rollback also failed — service may be stopped. Manual intervention required."
+                exit 2  # update failed AND rollback failed
+            fi
+        fi
+
         exit 1
     fi
 }
