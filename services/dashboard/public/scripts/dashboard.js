@@ -598,20 +598,65 @@ class Dashboard {
     }
 
     /**
-     * Load wallet info
+     * Load wallet info and populate the wallet section
      */
     async loadWalletInfo() {
+        const walletSection = document.getElementById('wallet-section');
+        const walletContainer = document.getElementById('wallet-container');
+        if (!walletSection || !walletContainer) return;
+
         try {
             const wallet = await this.api.getWalletInfo();
-            if (wallet.available) {
-                // Show wallet section
-                const walletSection = document.getElementById('wallet-section');
-                if (walletSection) {
-                    walletSection.style.display = 'block';
-                }
+
+            walletSection.style.display = 'block';
+
+            if (!wallet.available) {
+                const reason = escapeHtml(wallet.message || 'Wallet not configured');
+                walletContainer.innerHTML = `
+                    <div class="wallet-unconfigured">
+                        <p class="wallet-status-msg">${reason}</p>
+                        <p>To enable wallet connectivity, run the wizard and enable <strong>Wallet Connectivity</strong> in the Configure step.</p>
+                        <a href="http://localhost:3000/?mode=reconfigure" class="btn btn-secondary btn-sm">Open Wizard</a>
+                    </div>`;
+                return;
             }
+
+            const addrHtml = wallet.address
+                ? `<div class="wallet-row">
+                       <span class="wallet-label">Mining Address</span>
+                       <span class="wallet-value wallet-address" title="${escapeHtml(wallet.address)}">${escapeHtml(wallet.address)}</span>
+                       <button class="btn-icon copy-btn" title="Copy address" onclick="navigator.clipboard.writeText('${escapeHtml(wallet.address)}')">⧉</button>
+                   </div>`
+                : `<div class="wallet-row"><span class="wallet-label">Mining Address</span><span class="wallet-value muted">Not set</span></div>`;
+
+            const connStatus = wallet.connectivityEnabled
+                ? '<span class="badge badge-success">Enabled</span>'
+                : '<span class="badge badge-secondary">Disabled</span>';
+
+            const portsHtml = wallet.connectivityEnabled && wallet.connectionInstructions
+                ? `<div class="wallet-row">
+                       <span class="wallet-label">Connect Wallet</span>
+                       <span class="wallet-value"><code>${escapeHtml(wallet.connectionInstructions.kaspaNG)}</code></span>
+                   </div>
+                   <div class="wallet-row">
+                       <span class="wallet-label">wRPC Ports</span>
+                       <span class="wallet-value">Borsh: ${wallet.wrpcBorshPort} &nbsp;|&nbsp; JSON: ${wallet.wrpcJsonPort}</span>
+                   </div>`
+                : '';
+
+            walletContainer.innerHTML = `
+                <div class="wallet-info">
+                    ${addrHtml}
+                    <div class="wallet-row">
+                        <span class="wallet-label">Connectivity</span>
+                        <span class="wallet-value">${connStatus}</span>
+                    </div>
+                    ${portsHtml}
+                </div>`;
         } catch (error) {
             console.error('Failed to load wallet info:', error);
+            walletSection.style.display = 'block';
+            walletContainer.innerHTML = '<p class="wallet-status-msg muted">Could not load wallet information.</p>';
         }
     }
 

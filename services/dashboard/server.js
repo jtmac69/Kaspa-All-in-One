@@ -2153,24 +2153,75 @@ app.get('/api/kaspa/node/stats', async (req, res) => {
     }
 });
 
-// Wallet API endpoints (placeholder implementation)
+// Wallet API endpoint - reads wallet config from docker-compose.yml and .env
 app.get('/api/kaspa/wallet', async (req, res) => {
     try {
-        // For now, return a placeholder response since wallet functionality 
-        // is not yet implemented in the Kaspa node setup
-        const errorResult = errorDisplay.showServiceUnavailable('Wallet');
+        const installationState = await stateManager.readState();
+
+        if (!installationState) {
+            return res.json({ available: false, message: 'No installation found' });
+        }
+
+        const profiles = installationState.profiles?.selected || [];
+        const hasKaspaNode = profiles.some(p => p === 'kaspa-node' || p === 'kaspa-archive-node');
+
+        if (!hasKaspaNode) {
+            return res.json({ available: false, message: 'Kaspa node not installed' });
+        }
+
+        // Parse docker-compose.yml to detect wRPC configuration
+        const composePath = path.join(__dirname, '../../docker-compose.yml');
+        let connectivityEnabled = false;
+        let borshPort = 17110;
+        let jsonPort = 18110;
+
+        try {
+            const composeContent = await fs.readFile(composePath, 'utf8');
+            const utxoIndex = composeContent.includes('--utxoindex');
+            const borshMatch = composeContent.match(/--rpclisten-borsh=[\d.]+:(\d+)/);
+            const jsonMatch = composeContent.match(/--rpclisten-json=[\d.]+:(\d+)/);
+            const borshPortMapping = composeContent.match(/"(\d+):17110"/);
+            const jsonPortMapping = composeContent.match(/"(\d+):18110"/);
+
+            connectivityEnabled = utxoIndex && (!!borshMatch || !!borshPortMapping);
+            if (borshMatch) borshPort = parseInt(borshMatch[1], 10);
+            else if (borshPortMapping) borshPort = parseInt(borshPortMapping[1], 10);
+            if (jsonMatch) jsonPort = parseInt(jsonMatch[1], 10);
+            else if (jsonPortMapping) jsonPort = parseInt(jsonPortMapping[1], 10);
+        } catch (_) {
+            // docker-compose.yml not readable — connectivity unknown
+        }
+
+        // Read MINING_ADDRESS from .env (set when kaspa-stratum/mining profile is active)
+        let miningAddress = null;
+        try {
+            const envPath = path.join(__dirname, '../../.env');
+            const envContent = await fs.readFile(envPath, 'utf8');
+            const match = envContent.match(/^MINING_ADDRESS=(.+)$/m);
+            if (match && match[1].trim()) miningAddress = match[1].trim();
+        } catch (_) { /* .env not found or MINING_ADDRESS not set */ }
+
+        if (!connectivityEnabled && !miningAddress) {
+            return res.json({ available: false, message: 'Wallet connectivity not configured' });
+        }
+
         res.json({
-            error: errorResult.userMessage,
-            message: 'Wallet features are not currently configured in this installation',
-            available: false,
-            placeholder: errorResult.placeholder
+            available: true,
+            address: miningAddress,
+            connectivityEnabled,
+            wrpcBorshPort: borshPort,
+            wrpcJsonPort: jsonPort,
+            connectionInstructions: connectivityEnabled ? {
+                kaspaNG: `ws://localhost:${borshPort}`,
+                kdx: `ws://localhost:${borshPort}`,
+                json: `ws://localhost:${jsonPort}`
+            } : null
         });
     } catch (error) {
-        // Use ErrorDisplay for consistent error handling
         const errorResult = errorDisplay.showApiError('/api/kaspa/wallet', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: errorResult.userMessage,
-            details: errorResult.errorType 
+            details: errorResult.errorType
         });
     }
 });

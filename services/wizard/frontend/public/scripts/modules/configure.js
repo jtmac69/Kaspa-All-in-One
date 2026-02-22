@@ -1,6 +1,7 @@
 import { stateManager } from './state-manager.js';
 import { api } from './api-client.js';
 import { showNotification } from './utils.js';
+import { renderWalletSetupPanel, clearWalletState, updateWalletNetwork } from './wallet-setup.js';
 
 // Module-level state
 let profileData = null;
@@ -1219,6 +1220,12 @@ function gatherConfigurationFromForm() {
         config.TIMESCALEDB_DATA_DIR = timescaledbDataDirInput.value;
     }
     
+    // Wallet Connectivity (main toggle in wallet section)
+    const walletConnectivityToggle = document.getElementById('wallet-connectivity-toggle');
+    if (walletConnectivityToggle) {
+        config.WALLET_CONNECTIVITY_ENABLED = walletConnectivityToggle.checked;
+    }
+
     // Wallet Management (Advanced Configuration)
     const walletEnabledToggle = document.getElementById('wallet-enabled');
     if (walletEnabledToggle) {
@@ -1243,6 +1250,16 @@ function gatherConfigurationFromForm() {
     const miningAddressInput = document.getElementById('mining-address');
     if (miningAddressInput && miningAddressInput.value) {
         config.MINING_ADDRESS = miningAddressInput.value;
+    }
+    // Also read from wallet-setup panel (manual-address) or fallback to state
+    if (!config.MINING_ADDRESS) {
+        const manualAddressInput = document.getElementById('manual-address');
+        if (manualAddressInput && manualAddressInput.value) {
+            config.MINING_ADDRESS = manualAddressInput.value;
+        } else {
+            const savedAddress = stateManager.get('configuration')?.MINING_ADDRESS;
+            if (savedAddress) config.MINING_ADDRESS = savedAddress;
+        }
     }
 
     const stratumPortInput = document.getElementById('stratum-port');

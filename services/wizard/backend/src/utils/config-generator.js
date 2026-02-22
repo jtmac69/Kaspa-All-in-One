@@ -72,7 +72,8 @@ class ConfigGenerator {
       // Indexer settings
       INDEXER_MODE: Joi.string().valid('full', 'light', 'archive', 'personal').default('full'),
       
-      // Mining settings
+      // Wallet & Mining settings
+      WALLET_CONNECTIVITY_ENABLED: Joi.boolean().optional(),
       MINING_ADDRESS: Joi.string().allow('').optional(),
       STRATUM_PORT: Joi.number().integer().min(1024).max(65535).default(5555)
     });

@@ -43,8 +43,7 @@ let WalletService = null;
  */
 async function getWalletService() {
     if (!WalletService) {
-        const module = await import('./wallet-service.js');
-        WalletService = module.WalletService;
+        WalletService = await import('./wallet-service.js');
         await WalletService.initialize();
     }
     return WalletService;
@@ -1280,44 +1279,53 @@ async function validateManualAddress(value, input, validationMessage, onComplete
             return;
         }
         
-        // Full validation using WASM
-        const walletService = await getWalletService();
-        const isValid = await walletService.validateAddress(value, walletState.network);
-        
+        // Full validation using WASM (with graceful fallback)
+        let isValid = false;
+        let wasmAvailable = false;
+        try {
+            const walletService = await getWalletService();
+            isValid = await walletService.validateAddress(value, walletState.network);
+            wasmAvailable = true;
+        } catch (wasmError) {
+            // WASM unavailable — fall back to basic prefix + length check
+            const minLength = expectedPrefix.length + 40;
+            isValid = value.length >= minLength && /^[a-z0-9:]+$/.test(value);
+        }
+
         if (!isValid) {
             showAddressValidationError(
-                input, 
-                validationMessage, 
+                input,
+                validationMessage,
                 'Invalid Kaspa address. Please check and try again.'
             );
             return;
         }
-        
+
         // Address is valid
         walletState.address = value;
         walletState.isValid = true;
         walletState.backupConfirmed = true; // No backup needed for manual entry
-        
+
         input.classList.remove('field-error');
         input.classList.add('field-success');
-        validationMessage.innerHTML = '✓ Valid Kaspa address';
+        validationMessage.innerHTML = wasmAvailable ? '✓ Valid Kaspa address' : '✓ Address accepted (basic validation)';
         validationMessage.style.display = 'block';
         validationMessage.style.color = 'var(--success)';
-        
+
         // Notify callbacks
         if (onAddressChange) {
             onAddressChange(value);
         }
-        
+
         if (onComplete && isWalletSetupComplete()) {
             onComplete(getWalletState());
         }
-        
+
     } catch (error) {
         console.error('Address validation error:', error);
         showAddressValidationError(
-            input, 
-            validationMessage, 
+            input,
+            validationMessage,
             'Error validating address. Please try again.'
         );
     }
@@ -1532,15 +1540,3 @@ function setupUnloadHandler() {
 // Initialize unload handler
 setupUnloadHandler();
 
-// Final exports
-export {
-    renderWalletSetupPanel,
-    clearWalletState,
-    getWalletState,
-    isWalletSetupComplete,
-    updateWalletNetwork,
-    hideWalletSetupPanel,
-    showWalletSetupPanel,
-    getMiningAddress,
-    WalletSetupMode
-};
