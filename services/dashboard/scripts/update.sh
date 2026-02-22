@@ -122,14 +122,14 @@ create_backup() {
     log_info "Creating backup before update..."
     
     # Ensure backup directory exists
-    mkdir -p "$BACKUP_DIR"
-    
+    mkdir -p "$BACKUP_DIR" || { log_error "Cannot create backup directory '$BACKUP_DIR' — check permissions"; return 1; }
+
     # Create timestamped backup
     local backup_timestamp=$(date +%Y%m%d_%H%M%S)
     local backup_name="dashboard_backup_${backup_timestamp}"
     local backup_path="$BACKUP_DIR/$backup_name"
-    
-    mkdir -p "$backup_path"
+
+    mkdir -p "$backup_path" || { log_error "Cannot create backup staging directory — check disk space"; return 1; }
     
     # Backup critical files
     log_info "Backing up configuration and data..."
@@ -271,7 +271,14 @@ prepare_update() {
             return 1
         fi
         
-        mv kaspa-aio/services/dashboard/* .
+        shopt -s dotglob
+        if ! mv kaspa-aio/services/dashboard/* .; then
+            log_error "Failed to move files from cloned repository — disk full or permissions error"
+            shopt -u dotglob
+            rm -rf "$temp_dir"
+            return 1
+        fi
+        shopt -u dotglob
         rm -rf kaspa-aio
         if [[ ! -f "$temp_dir/package.json" ]]; then
             log_error "Cloned dashboard directory appears empty — aborting to prevent destructive rsync"
@@ -451,8 +458,13 @@ verify_update() {
     fi
     
     # Check if port is listening
-    local dashboard_port=$(grep "^PORT=" "$DASHBOARD_HOME/.env" 2>/dev/null | cut -d'=' -f2 || echo "8080")
-    
+    local dashboard_port
+    dashboard_port=$(grep "^PORT=" "$DASHBOARD_HOME/.env" 2>/dev/null | cut -d'=' -f2 | tr -d '[:space:]')
+    if [[ -z "$dashboard_port" || ! "$dashboard_port" =~ ^[0-9]+$ ]]; then
+        log_warning "Could not determine dashboard port from .env — using default 8080"
+        dashboard_port="8080"
+    fi
+
     if ! ss -tlnp | grep -q ":$dashboard_port "; then
         log_error "Dashboard is not listening on port $dashboard_port"
         return 1

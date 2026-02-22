@@ -506,7 +506,7 @@ async function checkForUpdates() {
     availableVersion,
     updateAvailable: true,
     changelog: (release.body || '').substring(0, 500),
-    breaking: false,
+    breaking: /breaking change|incompatible|migration required/i.test(release.body || ''),
     releaseDate: release.published_at,
     htmlUrl: release.html_url
   }];
@@ -528,9 +528,9 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
       const scriptWarnings = parseScriptWarnings(dashStdout);
       const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
       if (scriptErrors.length > 0) {
-        return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || 'latest' };
+        return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || null };
       }
-      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Dashboard updated successfully`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
+      return { service, success: true, oldVersion, newVersion: version || null, message: `Dashboard updated successfully`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
     }
 
     if (service === 'wizard') {
@@ -539,9 +539,9 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
       const scriptWarnings = parseScriptWarnings(wizStdout);
       const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
       if (scriptErrors.length > 0) {
-        return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || 'latest' };
+        return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || null };
       }
-      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Wizard updated successfully`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
+      return { service, success: true, oldVersion, newVersion: version || null, message: `Wizard updated successfully`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
     }
 
     if (service === 'kaspa-aio') {
@@ -552,7 +552,7 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
       const scriptWarnings = parseScriptWarnings(dashStdout);
       const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
       if (scriptErrors.length > 0) {
-        return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || 'latest' };
+        return { service, success: false, error: scriptErrors[0], scriptWarnings, oldVersion, newVersion: version || null };
       }
       // Schedule wizard self-update asynchronously: running it now would kill this process
       // before the HTTP response can be flushed. The caller should expect a connection drop
@@ -564,7 +564,7 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
             console.error(`Wizard self-update failed (exit ${err.code ?? 'unknown'}):`, err.message, stderr);
           });
       }, 500);
-      return { service, success: true, oldVersion, newVersion: version || 'latest', message: `Kaspa All-in-One update initiated — wizard will restart momentarily`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
+      return { service, success: true, oldVersion, newVersion: version || null, message: `Kaspa All-in-One update initiated — wizard will restart momentarily`, ...(scriptWarnings.length > 0 && { scriptWarnings }) };
     }
 
     // Docker-based services: pull new image and restart

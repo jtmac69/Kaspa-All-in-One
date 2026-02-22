@@ -2194,6 +2194,16 @@ app.get('/api/updates/available', async (req, res) => {
             }
         }
 
+        // Return 202 when a check is in-flight and no cached data exists yet
+        if (skippedDueToInflight && cachedUpdates === null) {
+            return res.status(202).json({
+                updates: [],
+                lastChecked: null,
+                checkInProgress: true,
+                message: 'Initial update check in progress — retry in a few seconds'
+            });
+        }
+
         res.json({
             updates: cachedUpdates,
             lastChecked: lastUpdateCheck ? new Date(lastUpdateCheck).toISOString() : null,
@@ -2887,7 +2897,9 @@ updateMonitor.scheduleUpdateChecks((err, updates) => {
     lastUpdateCheck = Date.now(); // always record attempt time to prevent retry storms
     if (err) {
         console.warn('[UpdateMonitor] Scheduled check failed:', err.message);
-    } else {
+    } else if (!updateCheckInProgress) {
+        // Only overwrite cache if no HTTP-triggered check is in flight; the HTTP
+        // handler will write cachedUpdates when it completes.
         cachedUpdates = updates;
     }
 });

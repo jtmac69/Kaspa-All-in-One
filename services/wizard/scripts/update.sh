@@ -68,12 +68,12 @@ get_current_version() {
 
 create_backup() {
     log_info "Creating backup..."
-    mkdir -p "$BACKUP_DIR"
+    mkdir -p "$BACKUP_DIR" || { log_error "Cannot create backup directory '$BACKUP_DIR' — check permissions"; return 1; }
     local ts backup_name backup_path
     ts=$(date +%Y%m%d_%H%M%S)
     backup_name="wizard_backup_${ts}"
     backup_path="$BACKUP_DIR/$backup_name"
-    mkdir -p "$backup_path"
+    mkdir -p "$backup_path" || { log_error "Cannot create backup staging directory — check disk space"; return 1; }
 
     if [[ ! -f "$WIZARD_HOME/.env" ]]; then
         log_error ".env not found at $WIZARD_HOME/.env — cannot create valid backup, aborting"
@@ -162,7 +162,14 @@ prepare_update() {
             rm -rf "$temp_dir"
             return 1
         fi
-        mv kaspa-aio/services/wizard/* .
+        shopt -s dotglob
+        if ! mv kaspa-aio/services/wizard/* .; then
+            log_error "Failed to move files from cloned repository — disk full or permissions error"
+            shopt -u dotglob
+            rm -rf "$temp_dir"
+            return 1
+        fi
+        shopt -u dotglob
         rm -rf kaspa-aio
         if [[ ! -f "$temp_dir/backend/package.json" ]]; then
             log_error "Cloned wizard directory appears empty — aborting to prevent destructive rsync"
@@ -190,6 +197,10 @@ apply_update() {
     set -e
     if [[ $rsync_rc -ne 0 ]]; then
         log_error "rsync failed (exit $rsync_rc)"
+        return 1
+    fi
+    if [[ ! -s "$WIZARD_HOME/.env" ]]; then
+        log_error ".env is missing or empty after rsync — possible exclude flag failure; aborting"
         return 1
     fi
     chown -R "$WIZARD_USER:$WIZARD_USER" "$WIZARD_HOME"
