@@ -2181,7 +2181,10 @@ app.get('/api/updates/available', async (req, res) => {
         const ONE_HOUR = 60 * 60 * 1000;
         const cacheStale = !lastUpdateCheck || (Date.now() - lastUpdateCheck > ONE_HOUR);
 
-        if ((cacheStale || cachedUpdates === null) && !updateCheckInProgress) {
+        const needsRefresh = cacheStale || cachedUpdates === null;
+        const skippedDueToInflight = needsRefresh && updateCheckInProgress;
+
+        if (needsRefresh && !updateCheckInProgress) {
             updateCheckInProgress = true;
             try {
                 cachedUpdates = await updateMonitor.getAvailableUpdates();
@@ -2194,7 +2197,7 @@ app.get('/api/updates/available', async (req, res) => {
         res.json({
             updates: cachedUpdates,
             lastChecked: lastUpdateCheck ? new Date(lastUpdateCheck).toISOString() : null,
-            ...(updateCheckInProgress && { checkInProgress: true })
+            ...(skippedDueToInflight && { checkInProgress: true })
         });
     } catch (error) {
         lastUpdateCheck = Date.now(); // stamp even on failure to enforce back-off
@@ -2210,20 +2213,26 @@ app.get('/api/updates/available', async (req, res) => {
 // Force a fresh update check (clears cache)
 app.post('/api/updates/check', async (req, res) => {
     try {
-        if (!updateCheckInProgress) {
-            updateCheckInProgress = true;
-            try {
-                cachedUpdates = await updateMonitor.getAvailableUpdates();
-                lastUpdateCheck = Date.now();
-            } finally {
-                updateCheckInProgress = false;
-            }
+        if (updateCheckInProgress) {
+            return res.status(202).json({
+                checkInProgress: true,
+                updates: cachedUpdates,
+                lastChecked: lastUpdateCheck ? new Date(lastUpdateCheck).toISOString() : null,
+                message: 'Update check already in progress — try again shortly'
+            });
+        }
+
+        updateCheckInProgress = true;
+        try {
+            cachedUpdates = await updateMonitor.getAvailableUpdates();
+            lastUpdateCheck = Date.now();
+        } finally {
+            updateCheckInProgress = false;
         }
 
         res.json({
             updates: cachedUpdates,
-            lastChecked: lastUpdateCheck ? new Date(lastUpdateCheck).toISOString() : null,
-            ...(updateCheckInProgress && { checkInProgress: true })
+            lastChecked: new Date(lastUpdateCheck).toISOString()
         });
     } catch (error) {
         lastUpdateCheck = Date.now(); // stamp even on failure to enforce back-off

@@ -161,7 +161,7 @@ router.post('/apply', authenticateToken, async (req, res) => {
     if (allSuccessful) {
       for (const result of results) {
         if (result.success) {
-          const serviceIndex = installationState.services.findIndex(s => s.name === result.service);
+          const serviceIndex = installationState.services?.findIndex(s => s.name === result.service) ?? -1;
           if (serviceIndex >= 0) {
             installationState.services[serviceIndex].version = result.newVersion;
             installationState.services[serviceIndex].lastUpdated = new Date().toISOString();
@@ -524,7 +524,7 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
   try {
     if (service === 'dashboard') {
       const updateScript = path.join(projectRoot, 'services', 'dashboard', 'scripts', 'update.sh');
-      const { stdout: dashStdout } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
+      const { stdout: dashStdout } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 600000 });
       const scriptWarnings = parseScriptWarnings(dashStdout);
       const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
       if (scriptErrors.length > 0) {
@@ -535,7 +535,7 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
 
     if (service === 'wizard') {
       const updateScript = path.join(projectRoot, 'services', 'wizard', 'scripts', 'update.sh');
-      const { stdout: wizStdout } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 120000 });
+      const { stdout: wizStdout } = await execFileAsync('sudo', ['bash', updateScript], { timeout: 600000 });
       const scriptWarnings = parseScriptWarnings(wizStdout);
       const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
       if (scriptErrors.length > 0) {
@@ -548,7 +548,7 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
       // Update dashboard first (synchronous — does not kill this process)
       const dashScript = path.join(projectRoot, 'services', 'dashboard', 'scripts', 'update.sh');
       const wizScript = path.join(projectRoot, 'services', 'wizard', 'scripts', 'update.sh');
-      const { stdout: dashStdout } = await execFileAsync('sudo', ['bash', dashScript], { timeout: 120000 });
+      const { stdout: dashStdout } = await execFileAsync('sudo', ['bash', dashScript], { timeout: 600000 });
       const scriptWarnings = parseScriptWarnings(dashStdout);
       const scriptErrors = scriptWarnings.filter(l => /\[ERROR\]/.test(l));
       if (scriptErrors.length > 0) {
@@ -558,7 +558,7 @@ async function applyServiceUpdate(update, projectRoot, oldVersion = 'unknown') {
       // before the HTTP response can be flushed. The caller should expect a connection drop
       // ~500ms after receiving this response as the wizard restarts.
       setTimeout(() => {
-        execFileAsync('sudo', ['bash', wizScript], { timeout: 120000 })
+        execFileAsync('sudo', ['bash', wizScript], { timeout: 600000 })
           .catch(err => {
             const stderr = err.stderr ? `\nScript stderr: ${err.stderr.trim()}` : '';
             console.error(`Wizard self-update failed (exit ${err.code ?? 'unknown'}):`, err.message, stderr);
@@ -701,10 +701,14 @@ async function createConfigurationBackup(projectRoot, reason) {
       JSON.stringify(metadata, null, 2)
     );
   } catch (metaErr) {
-    try { await fs.rm(backupDir, { recursive: true, force: true }); } catch (cleanupErr) {
-    console.error('Failed to clean up partial backup directory:', backupDir, cleanupErr.message);
-  }
-    throw new Error(`Backup failed: could not write metadata (${metaErr.message})`);
+    let cleanupNote = '';
+    try {
+      await fs.rm(backupDir, { recursive: true, force: true });
+    } catch (cleanupErr) {
+      console.error('Failed to clean up partial backup directory:', backupDir, cleanupErr.message);
+      cleanupNote = ` (also failed to remove partial backup at ${backupDir}: ${cleanupErr.message})`;
+    }
+    throw new Error(`Backup failed: could not write metadata (${metaErr.message})${cleanupNote}`);
   }
 
   return { timestamp, backupDir, files: backedUpFiles };

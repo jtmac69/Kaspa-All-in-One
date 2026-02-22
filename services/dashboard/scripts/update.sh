@@ -168,17 +168,16 @@ create_backup() {
     fi
     
     # Create backup metadata
-    cat > "$backup_path/backup_info.txt" << EOF
-Backup created: $(date)
-Dashboard version: $CURRENT_VERSION
-Last update: $LAST_UPDATE
-Backup type: Pre-update backup
-System: $(uname -a)
-EOF
+    if ! printf "Backup created: %s\nDashboard version: %s\nLast update: %s\nBackup type: Pre-update backup\nSystem: %s\n" \
+        "$(date)" "$CURRENT_VERSION" "$LAST_UPDATE" "$(uname -a)" > "$backup_path/backup_info.txt"; then
+        log_error "Failed to write backup metadata — aborting"
+        rm -rf "$backup_path"
+        return 1
+    fi
     
     # Create compressed archive
     log_info "Creating compressed backup archive..."
-    cd "$BACKUP_DIR"
+    cd "$BACKUP_DIR" || { log_error "Cannot cd to backup directory '$BACKUP_DIR' — aborting backup"; rm -rf "$backup_path"; return 1; }
     if ! tar -czf "${backup_name}.tar.gz" "$backup_name" 2>/dev/null; then
         log_error "Failed to create backup archive — disk full or permissions error"
         rm -rf "$backup_name"
@@ -259,7 +258,7 @@ prepare_update() {
         log_info "Updating from Git repository: $UPDATE_REPO"
         log_info "Branch: $UPDATE_BRANCH"
         
-        cd "$temp_dir"
+        cd "$temp_dir" || { log_error "Cannot cd to temp directory '$temp_dir' — aborting"; rm -rf "$temp_dir"; return 1; }
         if ! git clone --depth 1 --branch "$UPDATE_BRANCH" "$UPDATE_REPO" kaspa-aio; then
             log_error "git clone failed — check network connectivity and branch '$UPDATE_BRANCH'"
             rm -rf "$temp_dir"
@@ -369,8 +368,8 @@ apply_update() {
 update_dependencies() {
     log_info "Updating npm dependencies..."
     
-    cd "$DASHBOARD_HOME"
-    
+    cd "$DASHBOARD_HOME" || { log_error "Cannot cd to '$DASHBOARD_HOME' — aborting dependency update"; return 1; }
+
     # Check if package.json changed
     if [[ -f "package.json" ]]; then
         # Update dependencies as dashboard user
@@ -521,9 +520,9 @@ rollback_update() {
         
         # Extract backup
         local restore_temp="/tmp/dashboard-restore-$$"
-        mkdir -p "$restore_temp"
-        
-        cd "$restore_temp"
+        mkdir -p "$restore_temp" || { log_error "Rollback: cannot create restore temp directory — manual intervention required"; return 1; }
+
+        cd "$restore_temp" || { log_error "Rollback: cannot cd to restore temp directory — manual intervention required"; rm -rf "$restore_temp"; return 1; }
         tar -xzf "$BACKUP_FILE" || { log_error "Rollback: failed to extract backup archive — manual intervention required"; rm -rf "$restore_temp"; return 1; }
         
         # Find backup directory

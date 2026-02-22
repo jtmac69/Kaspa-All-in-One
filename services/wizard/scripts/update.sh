@@ -93,7 +93,7 @@ create_backup() {
         find "$WIZARD_HOME/logs" -name "*.log" -mtime -7 -exec cp {} "$backup_path/logs/" \; 2>/dev/null || true
     fi
 
-    cd "$BACKUP_DIR"
+    cd "$BACKUP_DIR" || { log_error "Cannot cd to backup directory '$BACKUP_DIR' — aborting backup"; rm -rf "$backup_path"; return 1; }
     if ! tar -czf "${backup_name}.tar.gz" "$backup_name" 2>/dev/null; then
         log_error "Failed to create backup archive — disk full or permissions error"
         rm -rf "$backup_path"
@@ -151,7 +151,7 @@ prepare_update() {
             return 1
         fi
     else
-        cd "$temp_dir"
+        cd "$temp_dir" || { log_error "Cannot cd to temp directory '$temp_dir' — aborting"; rm -rf "$temp_dir"; return 1; }
         if ! git clone --depth 1 --branch "$UPDATE_BRANCH" "$UPDATE_REPO" kaspa-aio; then
             log_error "git clone failed — check network connectivity and branch '$UPDATE_BRANCH'"
             rm -rf "$temp_dir"
@@ -199,7 +199,7 @@ apply_update() {
 
 update_dependencies() {
     log_info "Updating npm dependencies..."
-    cd "$WIZARD_HOME/backend"
+    cd "$WIZARD_HOME/backend" || { log_error "Cannot cd to '$WIZARD_HOME/backend' — aborting dependency update"; return 1; }
     set +e
     sudo -u "$WIZARD_USER" npm ci --omit=dev
     local npm_rc=$?
@@ -234,8 +234,8 @@ rollback_update() {
     if [[ -n "${BACKUP_FILE:-}" && -f "$BACKUP_FILE" ]]; then
         systemctl stop "$SERVICE_NAME" 2>/dev/null || true
         local restore_tmp="/tmp/wizard-restore-$$"
-        mkdir -p "$restore_tmp"
-        cd "$restore_tmp"
+        mkdir -p "$restore_tmp" || { log_error "Rollback: cannot create restore temp directory — manual intervention required"; return 1; }
+        cd "$restore_tmp" || { log_error "Rollback: cannot cd to restore temp directory — manual intervention required"; rm -rf "$restore_tmp"; return 1; }
         tar -xzf "$BACKUP_FILE" || { log_error "Rollback: failed to extract backup archive — manual intervention required"; rm -rf "$restore_tmp"; return 1; }
         local backup_dir
         backup_dir=$(find . -name "wizard_backup_*" -type d | head -1)
