@@ -1,6 +1,6 @@
 #!/bin/bash
 # Kaspa All-in-One Test Release - Restart Services
-# Version: v0.9.1
+# Version: v0.9.2
 
 set -e
 
@@ -16,7 +16,7 @@ print_banner() {
   echo ""
   echo "╔════════════════════════════════════════════════════════════╗"
   echo "║   Kaspa All-in-One - Restart Services                     ║"
-  echo "║   Version: v0.9.1                                     ║"
+  echo "║   Version: v0.9.2                                     ║"
   echo "╚════════════════════════════════════════════════════════════╝"
   echo ""
 }

@@ -3,7 +3,7 @@
 
 set -e
 
-VERSION="v0.9.1"
+VERSION="v0.9.2"
 ARCHIVE_NAME="kaspa-aio-${VERSION}.tar.gz"
 TEMP_DIR=$(mktemp -d)
 BUILD_DIR="${TEMP_DIR}/kaspa-aio-${VERSION}"
