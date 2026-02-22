@@ -21,7 +21,7 @@ class UpdateMonitor {
             const dataDir = process.env.DATA_DIR || './data';
             await fs.mkdir(dataDir, { recursive: true });
         } catch (error) {
-            console.error('Failed to create data directory — update check history will not persist (degraded mode):', error.message);
+            console.error('Failed to create data directory — update history, last-check timestamps, and back-off state will not persist (degraded mode):', error.message);
         }
     }
 
@@ -46,17 +46,22 @@ class UpdateMonitor {
             const currentVersion = await this.getInstalledVersion();
             const latestRelease = await this.getLatestGitHubRelease(this.repo);
 
-            result = this.isNewer(latestRelease.version, currentVersion) ? [{
-                service: 'kaspa-aio',
-                serviceName: 'Kaspa All-in-One',
-                currentVersion,
-                availableVersion: latestRelease.version,
-                changelog: latestRelease.changelog,
-                breaking: this.detectBreakingChanges(latestRelease),
-                releaseDate: latestRelease.publishedAt,
-                htmlUrl: latestRelease.htmlUrl,
-                priority: this.calculateUpdatePriority(latestRelease)
-            }] : [];
+            if (latestRelease.prerelease || latestRelease.draft) {
+                console.warn(`[UpdateMonitor] Latest release ${latestRelease.version} is a ${latestRelease.draft ? 'draft' : 'pre-release'} — skipping update notification`);
+                result = [];
+            } else {
+                result = this.isNewer(latestRelease.version, currentVersion) ? [{
+                    service: 'kaspa-aio',
+                    serviceName: 'Kaspa All-in-One',
+                    currentVersion,
+                    availableVersion: latestRelease.version,
+                    changelog: latestRelease.changelog,
+                    breaking: this.detectBreakingChanges(latestRelease),
+                    releaseDate: latestRelease.publishedAt,
+                    htmlUrl: latestRelease.htmlUrl,
+                    priority: this.calculateUpdatePriority(latestRelease)
+                }] : [];
+            }
         } catch (error) {
             await this.saveLastCheckTime().catch(err => {
                 console.error('checkForUpdates: failed to persist last-check timestamp:', err.message);
@@ -84,6 +89,10 @@ class UpdateMonitor {
             );
 
             const release = response.data;
+
+            if (!release.tag_name) {
+                throw new Error('GitHub API returned a release with no tag_name — the release may be malformed or a draft');
+            }
 
             return {
                 version: this.cleanVersion(release.tag_name),

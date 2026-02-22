@@ -574,6 +574,7 @@ rollback_update() {
     else
         log_error "No backup available for rollback"
         log_error "Manual intervention may be required"
+        return 1
     fi
 }
 

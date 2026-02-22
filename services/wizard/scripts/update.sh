@@ -304,6 +304,7 @@ rollback_update() {
         rm -rf "$restore_tmp"
     else
         log_error "No backup available for rollback"
+        return 1
     fi
 }
 

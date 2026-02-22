@@ -61,7 +61,7 @@ router.get('/available', async (req, res) => {
     });
   } catch (error) {
     console.error('Error checking for updates:', error.message);
-    const isNetworkError = /ECONNREFUSED|ETIMEDOUT|ENOTFOUND|rate limit|timeout|Update check failed/i.test(error.message);
+    const isNetworkError = /ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENOTFOUND|rate limit|timeout|Failed to reach GitHub/i.test(error.message);
     res.status(isNetworkError ? 503 : 500).json({
       success: false,
       error: isNetworkError ? 'Unable to reach GitHub to check for updates' : 'Failed to check for updates',
@@ -119,10 +119,11 @@ router.post('/apply', authenticateToken, async (req, res) => {
       const stateContent = await fs.readFile(installationStatePath, 'utf8');
       installationState = JSON.parse(stateContent);
     } catch (error) {
-      return res.status(404).json({
-        success: false,
-        error: 'No installation state found'
-      });
+      if (error.code === 'ENOENT') {
+        return res.status(404).json({ success: false, error: 'No installation state found' });
+      }
+      console.error('Failed to read installation state for apply:', error.message);
+      return res.status(500).json({ success: false, error: 'Failed to read installation state', message: error.message });
     }
     
     // Create comprehensive backup if requested
@@ -173,34 +174,30 @@ router.post('/apply', authenticateToken, async (req, res) => {
       }
     }
     
-    // Update installation state with new versions
-    if (allSuccessful) {
-      for (const result of results) {
-        if (result.success) {
-          const serviceIndex = installationState.services?.findIndex(s => s.name === result.service) ?? -1;
-          if (serviceIndex >= 0) {
-            installationState.services[serviceIndex].version = result.newVersion;
-            installationState.services[serviceIndex].lastUpdated = new Date().toISOString();
-          } else {
-            console.warn(`[update] Service '${result.service}' not found in installationState.services — installation state not updated for this service`);
-          }
+    // Update installation state for each service that succeeded (regardless of whether all succeeded)
+    const successfulResults = results.filter(r => r.success);
+    if (successfulResults.length > 0) {
+      for (const result of successfulResults) {
+        const serviceIndex = installationState.services?.findIndex(s => s.name === result.service) ?? -1;
+        if (serviceIndex >= 0) {
+          installationState.services[serviceIndex].version = result.newVersion;
+          installationState.services[serviceIndex].lastUpdated = new Date().toISOString();
+        } else {
+          console.warn(`[update] Service '${result.service}' not found in installationState.services — installation state not updated for this service`);
         }
       }
-      
-      // Add to history
+
       if (!installationState.history) {
         installationState.history = [];
       }
-      
       installationState.history.push({
         timestamp: new Date().toISOString(),
         action: 'update',
-        changes: results.filter(r => r.success).map(r => `${r.service}: ${r.oldVersion} → ${r.newVersion}`),
+        changes: successfulResults.map(r => `${r.service}: ${r.oldVersion} → ${r.newVersion}`),
         backupTimestamp: backupInfo?.timestamp
       });
-      
       installationState.lastModified = new Date().toISOString();
-      
+
       // Save updated installation state
       try {
         await fs.writeFile(installationStatePath, JSON.stringify(installationState, null, 2));
@@ -462,7 +459,9 @@ function fetchLatestRelease() {
         }
       });
     });
-    req.on('error', reject);
+    req.on('error', (rawErr) => {
+      reject(new Error(`Failed to reach GitHub API (${rawErr.code || rawErr.message}): ${rawErr.message}`));
+    });
     req.setTimeout(10000, () => { req.destroy(); reject(new Error('GitHub API timeout')); });
   });
 }
@@ -512,6 +511,15 @@ async function checkForUpdates(currentVersion) {
     throw new Error(`Update check failed: ${err.message}`, { cause: err });
   }
 
+  if (!release.tag_name) {
+    throw new Error('GitHub API returned a release with no tag_name — the release may be malformed');
+  }
+
+  if (release.prerelease || release.draft) {
+    console.warn(`[update] Latest release is a ${release.draft ? 'draft' : 'pre-release'} — skipping update notification`);
+    return [];
+  }
+
   const availableVersion = cleanVersion(release.tag_name);
 
   if (!isNewer(availableVersion, currentVersion)) {
@@ -525,7 +533,7 @@ async function checkForUpdates(currentVersion) {
     availableVersion,
     updateAvailable: true,
     changelog: (release.body || '').substring(0, 500),
-    breaking: /breaking change|incompatible|migration required/i.test(release.body || ''),
+    breaking: /breaking change|breaking:|incompatible|migration required|major version/i.test(release.body || ''),
     releaseDate: release.published_at,
     htmlUrl: release.html_url
   }];

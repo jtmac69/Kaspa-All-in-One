@@ -592,7 +592,7 @@ class Dashboard {
                     : isServerError
                     ? 'The dashboard server encountered an error. Check server logs.'
                     : 'Check your network connection and try again.';
-                contentEl.innerHTML = `<p class="updates-error">Failed to load update information: ${escapeHtml(error.message || 'Unknown error')}. ${escapeHtml(hint)}</p>`;
+                contentEl.innerHTML = `<p class="updates-error">Failed to load update information: ${escapeHtml(error?.message || String(error) || 'Unknown error')}. ${escapeHtml(hint)}</p>`;
             }
         }
     }
