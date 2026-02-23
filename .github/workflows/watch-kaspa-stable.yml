@@ -1,0 +1,119 @@
+name: Watch for Kaspa 1.1.0 Stable Release
+
+on:
+  schedule:
+    # Every Monday at 10:00 UTC
+    - cron: '0 10 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check-kaspa-stable:
+    name: Check if kaspa-node 1.1.0 is stable
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Check for stable kaspa 1.1.0+ release
+        id: check
+        uses: actions/github-script@v8
+        with:
+          script: |
+            // Fetch releases from kaspanet/rusty-kaspa
+            const { data: releases } = await github.rest.repos.listReleases({
+              owner: 'kaspanet',
+              repo: 'rusty-kaspa',
+              per_page: 20,
+            });
+
+            // Find a stable (non-prerelease, non-draft) release >= v1.1.0
+            const stable = releases.find(r => {
+              if (r.draft || r.prerelease) return false;
+              const match = r.tag_name.match(/^v(\d+)\.(\d+)\.(\d+)$/);
+              if (!match) return false;
+              const [, major, minor] = match.map(Number);
+              return major > 1 || (major === 1 && minor >= 1);
+            });
+
+            if (stable) {
+              console.log(`Found stable release: ${stable.tag_name} (${stable.published_at.slice(0, 10)})`);
+              core.setOutput('stable_found', 'true');
+              core.setOutput('stable_tag', stable.tag_name);
+              core.setOutput('stable_date', stable.published_at.slice(0, 10));
+              core.setOutput('stable_url', stable.html_url);
+            } else {
+              console.log('No stable 1.1.0+ release found yet.');
+              core.setOutput('stable_found', 'false');
+            }
+
+      - name: Close issue #28 and update KNOWN_ISSUES.md
+        if: steps.check.outputs.stable_found == 'true'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const tag  = '${{ steps.check.outputs.stable_tag }}';
+            const date = '${{ steps.check.outputs.stable_date }}';
+            const url  = '${{ steps.check.outputs.stable_url }}';
+
+            // Check if issue #28 is still open
+            let issue;
+            try {
+              ({ data: issue } = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: 28,
+              }));
+            } catch (e) {
+              console.log('Issue #28 not found or already closed — nothing to do.');
+              return;
+            }
+
+            if (issue.state === 'closed') {
+              console.log('Issue #28 is already closed.');
+              return;
+            }
+
+            // Comment and close the issue
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 28,
+              body: [
+                `kaspa-node **${tag}** was released on ${date}: ${url}`,
+                '',
+                'The version mismatch between `kasia-indexer` (built against kaspa 1.1.0-rc.2) and `kaspa-node` is now resolved. Closing this issue.',
+                '',
+                '**Next steps:**',
+                `1. Update \`docker-compose.yml\` to pin \`kaspanet/rusty-kaspad:${tag}\``,
+                '2. Verify kasia-indexer compatibility with the new node version',
+                '3. Remove the version mismatch entry from `KNOWN_ISSUES.md`',
+                '4. Cut a new kaspa-aio release',
+                '',
+                '_Closed automatically by the [watch-kaspa-stable](.github/workflows/watch-kaspa-stable.yml) workflow._',
+              ].join('\n'),
+            });
+
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 28,
+              state: 'closed',
+            });
+
+            console.log(`Issue #28 closed — kaspa ${tag} is stable.`);
+
+      - name: Summary
+        run: |
+          echo "## Kaspa Stable Release Watch" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "${{ steps.check.outputs.stable_found }}" == "true" ]]; then
+            echo "🎉 Stable release found: **${{ steps.check.outputs.stable_tag }}** (${{ steps.check.outputs.stable_date }})" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Issue #28 has been closed. Update \`docker-compose.yml\` and \`KNOWN_ISSUES.md\` manually." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "⏳ No stable kaspa 1.1.0+ release yet — still on RC. Checking again next week." >> "$GITHUB_STEP_SUMMARY"
+          fi
