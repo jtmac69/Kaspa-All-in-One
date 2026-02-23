@@ -390,6 +390,20 @@ export class UIManager {
             <div class="app-cards">
                 ${apps.map(s => this.createAppCard(s)).join('')}
             </div>`;
+
+        // Attach listeners after render (avoids inline onclick / unhandled Promise)
+        grid.querySelectorAll('.btn-copy[data-url]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                navigator.clipboard.writeText(btn.dataset.url).then(() => {
+                    const orig = btn.textContent;
+                    btn.textContent = '✓';
+                    setTimeout(() => { btn.textContent = orig; }, 1500);
+                }).catch(err => console.error('[ui] Clipboard write failed:', err.message));
+            });
+        });
+        grid.querySelectorAll('.app-launch[data-url]').forEach(btn => {
+            btn.addEventListener('click', () => window.open(btn.dataset.url, '_blank'));
+        });
     }
 
     /**
@@ -422,12 +436,11 @@ export class UIManager {
                 <div class="app-url">
                     <span class="url-label">URL:</span>
                     <span class="url-value">${appUrl}</span>
-                    <button class="btn-copy" title="Copy URL" onclick="navigator.clipboard.writeText('${appUrl}')">📋</button>
+                    <button class="btn-copy" title="Copy URL" data-url="${appUrl}">📋</button>
                 </div>` : ''}
                 <div class="app-actions">
                     <button class="app-launch"
-                        ${!isRunning || !appUrl ? 'disabled' : ''}
-                        ${isRunning && appUrl ? `onclick="window.open('${appUrl}', '_blank')"` : ''}>
+                        ${!isRunning || !appUrl ? 'disabled' : `data-url="${appUrl}"`}>
                         ${isRunning ? 'Open Application' : 'Service Stopped'}
                     </button>
                 </div>

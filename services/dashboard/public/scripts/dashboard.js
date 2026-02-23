@@ -252,7 +252,7 @@ class Dashboard {
             // Update node status to show unavailable
             this.ui.updateNodeStatus({ error: 'Node unavailable' }, {
                 connected: false,
-                error: data.error,
+                error: data?.error || 'Unknown error',
                 status: 'disconnected'
             });
 
@@ -661,7 +661,24 @@ class Dashboard {
             if (wallet.address) {
                 const copyBtn = walletContainer.querySelector('.copy-btn');
                 if (copyBtn) {
-                    copyBtn.addEventListener('click', () => navigator.clipboard.writeText(wallet.address));
+                    copyBtn.addEventListener('click', () => {
+                        navigator.clipboard.writeText(wallet.address).then(() => {
+                            const orig = copyBtn.textContent;
+                            copyBtn.textContent = '✓';
+                            setTimeout(() => { copyBtn.textContent = orig; }, 1500);
+                        }).catch((err) => {
+                            console.error('[wallet] Clipboard write failed:', err.message);
+                            // Fallback: select the address text so user can copy manually
+                            const addrSpan = walletContainer.querySelector('.wallet-address');
+                            if (addrSpan) {
+                                const sel = window.getSelection();
+                                const range = document.createRange();
+                                range.selectNodeContents(addrSpan);
+                                sel.removeAllRanges();
+                                sel.addRange(range);
+                            }
+                        });
+                    });
                 }
             }
         } catch (error) {

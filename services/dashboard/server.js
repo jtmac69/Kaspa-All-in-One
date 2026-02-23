@@ -2159,7 +2159,7 @@ app.get('/api/kaspa/wallet', async (req, res) => {
         const installationState = await stateManager.readState();
 
         if (!installationState) {
-            return res.json({ available: false, message: 'No installation found' });
+            return res.json({ available: false, message: 'Installation state not readable. Run the wizard or check file permissions.' });
         }
 
         const profiles = installationState.profiles?.selected || [];
@@ -2205,7 +2205,8 @@ app.get('/api/kaspa/wallet', async (req, res) => {
                 if (/^kaspa(test)?:[a-z0-9]+$/.test(addr)) {
                     miningAddress = addr;
                 } else {
-                    console.warn('[wallet] MINING_ADDRESS in .env has unexpected format, ignoring');
+                    const preview = addr.length > 12 ? addr.slice(0, 8) + '...' : '(short)';
+                    console.warn(`[wallet] MINING_ADDRESS in .env has unexpected format, ignoring. Starts with: ${preview}, length: ${addr.length}`);
                 }
             }
         } catch (envErr) {

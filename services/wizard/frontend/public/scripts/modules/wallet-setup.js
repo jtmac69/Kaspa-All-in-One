@@ -1283,12 +1283,23 @@ async function validateManualAddress(value, input, validationMessage, onComplete
         // Full validation using WASM (with graceful fallback)
         let isValid = false;
         let wasmAvailable = false;
+        let walletService = null;
         try {
-            const walletService = await getWalletService();
-            isValid = await walletService.validateAddress(value, walletState.network);
-            wasmAvailable = true;
-        } catch (wasmError) {
-            console.warn('[wallet] WASM validation unavailable, using fallback:', wasmError.message);
+            walletService = await getWalletService();
+        } catch (initError) {
+            console.error('[wallet] Failed to load wallet service module:', initError.message);
+        }
+
+        if (walletService) {
+            try {
+                isValid = await walletService.validateAddress(value, walletState.network);
+                wasmAvailable = true;
+            } catch (wasmError) {
+                console.warn('[wallet] WASM address validation failed, using fallback:', wasmError.message);
+                const minLength = expectedPrefix.length + 40;
+                isValid = value.length >= minLength && /^[a-z0-9:]+$/.test(value);
+            }
+        } else {
             const minLength = expectedPrefix.length + 40;
             isValid = value.length >= minLength && /^[a-z0-9:]+$/.test(value);
         }
