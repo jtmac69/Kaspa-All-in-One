@@ -25,6 +25,23 @@ None currently.
 
 ## High Priority Issues
 
+### Kasia Indexer / Kaspa Node Version Mismatch
+**Issue**: `kasia-indexer` (Docker Hub `:main`) is now built against kaspa 1.1.0-rc.2, while `kaspa-node` in this release is pinned to v1.0.1. This may cause protocol/API incompatibility between the node and indexer.
+
+**Severity**: High (affects Kasia suite profiles)
+
+**Impact**:
+- `kasia-indexer` may fail to connect to or sync from a v1.0.1 kaspa-node
+- Kasia application functionality dependent on the indexer will be degraded
+
+**Workaround**:
+- Avoid running profiles that include `kasia-indexer` until the mismatch is resolved
+- Tracked in [GitHub Issue #28](https://github.com/jtmac69/Kaspa-All-in-One/issues/28)
+
+**Status**: Pending — will be resolved in a coordinated upgrade of both `kaspa-node` and `kasia-indexer` once kaspa v1.1.0 goes stable (currently at rc.3 as of Feb 2026)
+
+---
+
 ### Node Sync Time
 **Issue**: Kaspa node synchronization can take several hours to complete (typically 4-8 hours depending on network speed and system resources)
 
