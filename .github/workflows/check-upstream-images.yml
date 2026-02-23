@@ -99,7 +99,7 @@ jobs:
 
       - name: Open issue for kasia-indexer update
         if: steps.changes.outputs.kasia_indexer_changed == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const oldDigest = '${{ steps.stored.outputs.kasia_indexer }}' || '(none — first run)';
@@ -136,7 +136,7 @@ jobs:
 
       - name: Open issue for simply-kaspa-indexer update
         if: steps.changes.outputs.simply_kaspa_changed == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const oldDigest = '${{ steps.stored.outputs.simply_kaspa }}' || '(none — first run)';
