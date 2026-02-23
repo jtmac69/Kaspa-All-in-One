@@ -4,10 +4,9 @@
 
 **Most Common Issues Testers Encounter:**
 1. 🕐 **Node sync takes hours** → See [Node Sync Time](#node-sync-time) - Use "Continue in background"
-2. ⏱️ **Kasia build takes 5-10 minutes** → See [Kasia App Build Time](#kasia-app-build-time) - Normal, be patient
-3. 🪟 **Windows users** → See [Windows Native Not Supported](#windows-native-not-supported) - Requires WSL2
-4. 🔌 **Port conflicts** → See [Port Conflicts](#port-conflicts) - Change ports in wizard
-5. 📊 **Dashboard** → Available at http://localhost:8080 — run `cd services/dashboard && npm start`
+2. 🪟 **Windows users** → See [Windows Native Not Supported](#windows-native-not-supported) - Requires WSL2
+3. 🔌 **Port conflicts** → See [Port Conflicts](#port-conflicts) - Change ports in wizard
+4. 📊 **Dashboard** → Available at http://localhost:8080 — run `cd services/dashboard && npm start`
 
 **Before You Start Testing:**
 - ✅ Docker 20.10+ installed
@@ -58,101 +57,7 @@ None currently.
 - Logs show sync activity in real-time
 - Services remain healthy during sync
 
-### Kasia App Build Time
-
-**Issue**: ~~The Kasia application fails to build from source~~ **FIXED** - Now builds successfully but takes 5-10 minutes
-
-**Severity**: ~~High~~ **Low** (informational)
-
-**Status**: **FIXED** - Builds successfully by downloading pre-built kaspa-wasm binaries
-
-**What Was Fixed**:
-The Kasia v0.6.2 release requires `kaspa-wasm` which wasn't available in the repository. The fix downloads pre-built WASM binaries from the same source used by Kasia's official CI pipeline.
-
-**Solution Implemented**:
-- Downloads pre-built `kaspa-wasm` from `IzioDev/rusty-kaspa` releases (v1.0.1-beta1)
-- Matches the exact approach used in Kasia's GitHub Actions workflow
-- Clones with `--recurse-submodules` for tauri-plugin-biometry dependency
-- Builds cipher WASM module and compiles the application
-
-**Build Time Expectations**:
-- **First build**: 5-10 minutes (depending on system resources and internet speed)
-- **Subsequent builds**: Faster due to Docker layer caching
-- Build includes: Rust/WASM compilation, npm dependencies, and application bundling
-
-**What Happens During Build**:
-1. Downloads pre-built kaspa-wasm binaries (~2-3 minutes)
-2. Installs Rust toolchain and wasm-pack (~1-2 minutes)
-3. Builds cipher WASM module (~1 minute)
-4. Installs npm dependencies (~1-2 minutes)
-5. Compiles TypeScript and bundles application (~2-3 minutes)
-
-**Testing Impact**:
-- ✅ Kasia app (port 3001) - **Now builds and works correctly**
-- ✅ K-Social app (port 3003) - Works correctly
-- ✅ Kaspa Explorer (port 3004) - Works correctly
-- ✅ Installation wizard - Completes successfully
-- ✅ "Kaspa User Applications" profile - Fully functional
-
-**For Testers**:
-- Expect a 5-10 minute build time when Kasia is included in your profile
-- The wizard will show "Building kasia-app..." during this time
-- This is normal - the build is compiling from source for security and reproducibility
-- Subsequent installations will be faster due to Docker caching
-- You can monitor build progress in the wizard or check Docker logs
-
-**Why Build from Source**:
-- **Security**: You can verify exactly what's being built
-- **Reproducibility**: Anyone can build the same image from source
-- **Flexibility**: Easy to update to newer Kasia versions
-- **No external dependencies**: Doesn't rely on pre-built images that might disappear
-- **Matches upstream**: Uses the same approach as Kasia's official CI
-
-**Technical Details**:
-- Uses Kasia v0.6.2 stable release
-- Downloads kaspa-wasm32-sdk-v1.0.1-beta1.zip from IzioDev/rusty-kaspa
-- Builds with Node 20 Alpine base image
-- Final image size: ~50MB (nginx + built application)
-
 ## Medium Priority Issues
-
-### TESTING.md Documentation Accuracy Issues (FIXED)
-**Issue**: ~~Scenario 5 in TESTING.md documented advanced reconfiguration features that don't exist in the current wizard~~ **FIXED**
-
-**Severity**: ~~Medium~~ **RESOLVED**
-
-**Status**: **FIXED** - Documentation updated to match actual wizard behavior
-
-**What Was Wrong**:
-- Scenario 5 described a sophisticated "Existing Installation Detection" screen that doesn't exist
-- Documented service addition/removal workflows not implemented in wizard
-- Described configuration change features not available in v0.9.1
-- Created confusion for testers expecting features that weren't there
-
-**What Was Fixed**:
-- **Scenario 5 Completely Rewritten**: Changed from "Reconfiguration" to "State Management and Fresh Start"
-- **Accurate Testing**: Now tests actual wizard behavior (state file detection, fresh start process)
-- **Realistic Expectations**: Reduced complexity from 🟡 Intermediate (20-30 min) to 🟢 Beginner (10-15 min)
-- **Clear Scope**: Added note that advanced reconfiguration is planned for future releases
-
-**New Scenario 5 Tests**:
-- ✅ State file detection (`.env`, `.kaspa-aio/`)
-- ✅ Fresh start prompts and warnings
-- ✅ State cleanup process
-- ✅ Container vs. state file management
-- ✅ Wizard restart functionality (`./restart-wizard.sh`)
-- ✅ Cleanup script usage (`./cleanup-test.sh`)
-
-**Impact on Testers**:
-- **Before Fix**: Testers were confused when wizard didn't show expected reconfiguration features
-- **After Fix**: Testers can successfully complete Scenario 5 and test real functionality
-- **Documentation Accuracy**: TESTING.md now matches actual wizard behavior
-
-**Root Cause**:
-The documentation was written to describe an ideal reconfiguration system that was planned but not implemented in the v0.9.1 wizard. The current wizard focuses on fresh installations rather than modifying existing ones.
-
-**Future Plans**:
-Advanced reconfiguration features (service addition/removal, configuration changes) are planned for future releases (v1.0+) and will be documented when actually implemented.
 
 ### Windows Native Not Supported
 **Issue**: Windows requires WSL2 (Windows Subsystem for Linux) - native Windows is not supported
@@ -349,7 +254,7 @@ Advanced reconfiguration features (service addition/removal, configuration chang
 
 ## Limitations
 
-These are known limitations of the test release, categorized by their impact on testing and usage.
+These are known limitations of the current release, categorized by their impact on usage.
 
 ### System Requirements and Prerequisites
 
@@ -494,12 +399,7 @@ These are known limitations of the test release, categorized by their impact on 
    - No log aggregation or analysis tools
    - Dashboard provides basic status only
 
-10. ~~**Dashboard Refresh Badge Staleness**~~ [Fixed in c2f6aaa]
-
-    ~~The Refresh button in the dashboard may not always update service status badges when WebSocket data is stale.~~
-    Fixed: Refresh button now immediately polls the REST API for current status rather than waiting passively for a WebSocket event.
-
-11. **No Backup Automation** [Severity: Low]
+10. **No Backup Automation** [Severity: Low]
     
     Manual backup management only
     - No scheduled automatic backups
@@ -510,14 +410,14 @@ These are known limitations of the test release, categorized by their impact on 
 
 ### Operational Limitations
 
-12. **Node Sync Required** [Severity: High]
-    
+11. **Node Sync Required** [Severity: High]
+
     Full node profiles require complete blockchain sync before full functionality
     - Can take 4-8 hours or more depending on system and network
     - Cannot skip or accelerate initial sync
     - Services dependent on node won't work until sync completes
     - No snapshot/fast-sync option available
-    
+
     **Workaround**:
     - Use "Continue in background" option in wizard
     - Monitor progress via dashboard or `./status.sh`
@@ -525,68 +425,40 @@ These are known limitations of the test release, categorized by their impact on 
     - For testing purposes, consider using "Kaspa User Applications" profile with public indexers (no local node sync required)
     - Leave system running overnight for sync to complete
 
-13. **No Automatic Updates** [Severity: Low]
-    
-    Updates must be applied manually
-    - No automatic update checking
-    - No one-click update mechanism
-    - Must download new release and reconfigure
-    - No rolling updates or zero-downtime upgrades
-    
-    **Workaround**:
-    - Watch GitHub releases: https://github.com/[repo]/releases
-    - Subscribe to release notifications (Watch → Custom → Releases)
-    - Before updating:
-      1. Backup your data: Configuration is in `.kaspa-aio/`
-      2. Stop services: `./stop-services.sh`
-      3. Download new release
-      4. Extract and run: `./start-test.sh`
-      5. Wizard will detect existing installation and offer to preserve data
+12. **No Migration Tools** [Severity: Low]
 
-14. **No Migration Tools** [Severity: Low]
-    
     No automated migration from other setups
     - Cannot import existing Kaspa node data
     - Cannot migrate from other Docker configurations
     - Fresh installation required
     - Manual data migration if needed
 
-15. **Limited Reconfiguration** [Severity: Medium]
-    
-    Advanced reconfiguration features are not available in v0.9.1
-    - **No service addition/removal**: Cannot add or remove services from existing installation
-    - **No configuration changes**: Cannot modify existing service configurations through wizard
-    - **No existing installation detection**: Wizard doesn't detect or display running Docker containers
-    - **State file detection only**: Wizard only detects `.env` and `.kaspa-aio/` files, not running services
-    - **Fresh installation focus**: Wizard is designed for new installations, not modifications
-    
+13. **Limited Service Reconfiguration** [Severity: Low]
+
+    The wizard supports reconfiguration mode for modifying existing installations, but service-level add/remove is not yet available through the UI
+    - **No service addition/removal via wizard**: Cannot add or remove individual services from an existing installation through the wizard UI; requires re-running the full wizard
+    - **No zero-downtime reconfiguration**: Configuration changes require a service restart
+    - **No rolling updates**: All services in a profile are updated together
+
     **Current Behavior**:
-    - When restarting wizard with existing state files, it prompts: "Remove existing state and start fresh? (Y/n)"
-    - Answering 'n' keeps state files but wizard starts normally (no reconfiguration mode)
-    - Answering 'y' removes state files for fresh installation
-    - No sophisticated "Existing Installation Detected" screen exists
-    
+    - The wizard detects existing installations and offers a reconfiguration mode (sidebar panel)
+    - Reconfiguration mode allows modifying settings (ports, passwords, etc.) and re-deploying
+    - Use `./fresh-start.sh` for a complete clean reset
+
     **Workaround**:
-    - **For major changes**: Use `./fresh-start.sh` to start completely clean
-    - **For service management**: Use Docker commands directly:
+    - **Add/remove services**: Re-run the wizard and select a different template/profile
+    - **Direct service management**: Use Docker commands:
       ```bash
-      # Stop specific service
       docker-compose stop <service-name>
-      
-      # Remove service
-      docker-compose rm <service-name>
-      
-      # Add service by editing docker-compose.yml and running
       docker-compose up -d <service-name>
       ```
-    - **For configuration changes**: Edit configuration files manually and restart services
-    - **For testing different profiles**: Use separate directories for each test
-    
-    **Future Plans**:
-    Advanced reconfiguration features (service addition/removal, configuration changes, existing installation detection) are planned for future releases (v1.0+)
+    - **For configuration changes**: Use reconfiguration mode in the wizard
 
-16. **No Commercial Support** [Severity: Low]
-    
+    **Future Plans**:
+    Granular service addition/removal through the wizard UI is planned for a future release.
+
+14. **No Commercial Support** [Severity: Low]
+
     Community support only
     - No SLA guarantees
     - No dedicated support team
@@ -595,32 +467,32 @@ These are known limitations of the test release, categorized by their impact on 
 
 ### Network and Security Limitations
 
-17. **Port Conflicts** [Severity: Medium]
-    
+15. **Port Conflicts** [Severity: Medium]
+
     Must manually resolve port conflicts
     - No automatic port conflict detection (planned for future)
     - No automatic port reassignment
     - Must manually check and change conflicting ports
     - Default ports may conflict with existing services
 
-18. **No Advanced Networking** [Severity: Low]
-    
+16. **No Advanced Networking** [Severity: Low]
+
     Basic Docker networking only
     - No custom network configurations
     - No VPN integration
     - No advanced routing or firewall rules
     - No network isolation between services (all on same Docker network)
 
-19. **No External Database Support** [Severity: Low]
-    
+17. **No External Database Support** [Severity: Low]
+
     Uses bundled PostgreSQL/TimescaleDB only
     - Cannot connect to external PostgreSQL instances
     - Cannot use managed database services
     - Database runs in Docker container only
     - No database clustering or replication
 
-20. **Limited Security Features** [Severity: Medium]
-    
+18. **Limited Security Features** [Severity: Medium]
+
     Basic security only
     - No rate limiting on most endpoints
     - No DDoS protection
@@ -630,7 +502,7 @@ These are known limitations of the test release, categorized by their impact on 
 
 ### Data and Storage Limitations
 
-21. **No Data Export Tools** [Severity: Low]
+19. **No Data Export Tools** [Severity: Low]
     
     Limited data export capabilities
     - No built-in data export functionality
@@ -658,7 +530,7 @@ These are known limitations of the test release, categorized by their impact on 
       docker run --rm -v kaspa-node-data:/data -v $(pwd):/backup ubuntu tar czf /backup/kaspa-node-backup.tar.gz /data
       ```
 
-22. **Local Storage Only** [Severity: Low]
+20. **Local Storage Only** [Severity: Low]
     
     All data stored locally
     - No cloud storage integration
@@ -666,7 +538,7 @@ These are known limitations of the test release, categorized by their impact on 
     - No distributed storage systems
     - Limited by local disk capacity
 
-23. **No Data Retention Policies** [Severity: Low]
+21. **No Data Retention Policies** [Severity: Low]
     
     Manual data management required
     - No automatic log rotation (Docker handles container logs)
@@ -702,15 +574,14 @@ These are known limitations of the test release, categorized by their impact on 
 
 ### Testing and Development Limitations
 
-24. **Test Release Status** [Severity: Medium]
+22. **Pre-Production Status** [Severity: Medium]
     
-    This is a pre-production test release
+    This is a pre-production release
     - May contain bugs and issues
     - Features may change before v1.0
     - Not recommended for production use
-    - Limited testing period (2-4 weeks)
 
-25. **No Development Mode** [Severity: Low]
+23. **No Development Mode** [Severity: Low]
     
     No special development/debug mode
     - Cannot easily switch between test and production configs
@@ -744,7 +615,7 @@ These are known limitations of the test release, categorized by their impact on 
       docker stats <container-name>
       ```
 
-26. **Limited Customization** [Severity: Low]
+24. **Limited Customization** [Severity: Low]
     
     Limited ability to customize
     - Cannot easily modify Docker images
@@ -771,7 +642,7 @@ These are known limitations of the test release, categorized by their impact on 
 
 ### Performance Limitations
 
-27. **No Performance Optimization** [Severity: Low]
+25. **No Performance Optimization** [Severity: Low]
     
     Basic performance only
     - No performance tuning options
@@ -803,7 +674,7 @@ These are known limitations of the test release, categorized by their impact on 
       ```
     - **Monitor performance**: Use `./status.sh` to identify bottlenecks
 
-28. **Resource Limits Not Configurable** [Severity: Low]
+26. **Resource Limits Not Configurable** [Severity: Low]
     
     Fixed resource allocations
     - Cannot set custom memory limits per service
@@ -813,7 +684,7 @@ These are known limitations of the test release, categorized by their impact on 
 
 ### Documentation and Support Limitations
 
-29. **Limited Documentation** [Severity: Low]
+27. **Limited Documentation** [Severity: Low]
     
     Basic documentation only
     - No advanced configuration guides
@@ -833,7 +704,7 @@ These are known limitations of the test release, categorized by their impact on 
     - **Docker documentation**: https://docs.docker.com/ for Docker-specific questions
     - **Kaspa documentation**: https://kaspa.org/ for Kaspa-specific information
 
-30. **No Training Materials** [Severity: Low]
+28. **No Training Materials** [Severity: Low]
     
     Self-service learning only
     - No official training courses
@@ -841,7 +712,7 @@ These are known limitations of the test release, categorized by their impact on 
     - No webinars or workshops
     - Community-driven learning only
 
-31. **English Only** [Severity: Low]
+29. **English Only** [Severity: Low]
     
     Documentation in English only
     - No internationalization (i18n)
@@ -858,6 +729,11 @@ These are known limitations of the test release, categorized by their impact on 
 - ✅ Improved error messages and troubleshooting guidance
 - ✅ Service management scripts (restart, stop, fresh-start, status)
 - ✅ **TESTING.md Scenario 5 Documentation Alignment** - Fixed major discrepancy between documented and actual wizard behavior
+- ✅ **Kasia App Build** - Kasia now builds successfully by downloading pre-built kaspa-wasm binaries; first build takes 5-10 minutes (normal)
+- ✅ **Dashboard Refresh Badge Staleness** - Refresh button now polls the REST API immediately instead of waiting for a stale WebSocket event (c2f6aaa)
+- ✅ **Automatic Update System** - Dashboard and wizard now check for new GitHub releases, display an update badge, and support one-click updates with rollback capability
+- ✅ **Reconfiguration Mode** - Wizard now detects existing installations and provides a reconfiguration mode for modifying settings and re-deploying
+- ✅ **Node.js base images** - All service Dockerfiles updated to Node 22 LTS (Alpine)
 
 ## Document Updates and Version History
 
@@ -873,6 +749,12 @@ When new issues are discovered:
 5. **Notify testers** if the issue is critical
 
 ### Version History
+
+**v0.9.2**
+- Removed issues resolved since v0.9.1 (Kasia build, TESTING.md docs, dashboard refresh badge, reconfiguration mode, update system)
+- Updated limitation #13 to reflect partial reconfiguration implementation
+- Renumbered limitations from 31 to 29 after removals
+- Last updated: February 2026
 
 **v0.9.1 (Initial Release)**
 - Initial documentation of known issues
@@ -911,7 +793,7 @@ Found a bug not listed here? Please report it!
 
 ---
 
-**Note**: This is v0.9.2. Known issues are expected and help us improve the system before the v1.0 production release. Thank you for your patience and feedback!
+**Note**: This is v0.9.2. Known issues are expected and help improve the system before the v1.0 production release. Thank you for your patience and feedback!
 
 
 ---
