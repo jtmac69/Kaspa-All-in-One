@@ -1,4 +1,4 @@
-FROM rust:1.88-alpine AS builder
+FROM rust:1.93-alpine AS builder
 
 # Build arguments for version control
 ARG K_INDEXER_VERSION=master
