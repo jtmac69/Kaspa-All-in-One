@@ -398,7 +398,10 @@ export class UIManager {
                     const orig = btn.textContent;
                     btn.textContent = '✓';
                     setTimeout(() => { btn.textContent = orig; }, 1500);
-                }).catch(err => console.error('[ui] Clipboard write failed:', err.message));
+                }).catch(err => {
+                    console.error('[ui] Clipboard write failed:', err?.message || String(err));
+                    this.showNotification('Could not copy URL. Please copy it manually.', 'warning');
+                });
             });
         });
         grid.querySelectorAll('.app-launch[data-url]').forEach(btn => {

@@ -1287,21 +1287,22 @@ async function validateManualAddress(value, input, validationMessage, onComplete
         try {
             walletService = await getWalletService();
         } catch (initError) {
-            console.error('[wallet] Failed to load wallet service module:', initError.message);
+            console.error('[wallet] Failed to load wallet service module:', initError?.message || String(initError));
         }
+
+        const minLength = expectedPrefix.length + 40;
+        const basicCheck = () => value.length >= minLength && /^[a-z0-9:]+$/.test(value);
 
         if (walletService) {
             try {
                 isValid = await walletService.validateAddress(value, walletState.network);
                 wasmAvailable = true;
             } catch (wasmError) {
-                console.warn('[wallet] WASM address validation failed, using fallback:', wasmError.message);
-                const minLength = expectedPrefix.length + 40;
-                isValid = value.length >= minLength && /^[a-z0-9:]+$/.test(value);
+                console.warn('[wallet] WASM address validation failed, using fallback:', wasmError?.message || String(wasmError));
+                isValid = basicCheck();
             }
         } else {
-            const minLength = expectedPrefix.length + 40;
-            isValid = value.length >= minLength && /^[a-z0-9:]+$/.test(value);
+            isValid = basicCheck();
         }
 
         if (!isValid) {
@@ -1320,7 +1321,11 @@ async function validateManualAddress(value, input, validationMessage, onComplete
 
         input.classList.remove('field-error');
         input.classList.add('field-success');
-        validationMessage.innerHTML = wasmAvailable ? '✓ Valid Kaspa address' : '✓ Address accepted (basic validation)';
+        validationMessage.innerHTML = wasmAvailable
+            ? '✓ Valid Kaspa address'
+            : walletService
+                ? '✓ Address accepted (basic validation — WASM unavailable)'
+                : '✓ Address accepted (basic validation — wallet module unavailable)';
         validationMessage.style.display = 'block';
         validationMessage.style.color = 'var(--success)';
 

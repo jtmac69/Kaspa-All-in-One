@@ -657,7 +657,9 @@ class Dashboard {
                     ${portsHtml}
                 </div>`;
 
-            // Attach copy button listener (avoids inline onclick / single-quote injection)
+            // Attach copy button listener (avoids inline onclick / single-quote injection).
+            // Note: walletContainer.innerHTML is reassigned on each loadWalletInfo() call,
+            // detaching the old button — so this listener cannot fire on a stale element.
             if (wallet.address) {
                 const copyBtn = walletContainer.querySelector('.copy-btn');
                 if (copyBtn) {
@@ -667,16 +669,25 @@ class Dashboard {
                             copyBtn.textContent = '✓';
                             setTimeout(() => { copyBtn.textContent = orig; }, 1500);
                         }).catch((err) => {
-                            console.error('[wallet] Clipboard write failed:', err.message);
+                            console.error('[wallet] Clipboard write failed:', err?.message || String(err));
                             // Fallback: select the address text so user can copy manually
-                            const addrSpan = walletContainer.querySelector('.wallet-address');
-                            if (addrSpan) {
-                                const sel = window.getSelection();
-                                const range = document.createRange();
-                                range.selectNodeContents(addrSpan);
-                                sel.removeAllRanges();
-                                sel.addRange(range);
+                            try {
+                                const addrSpan = walletContainer.querySelector('.wallet-address');
+                                if (addrSpan) {
+                                    const sel = window.getSelection();
+                                    if (sel) {
+                                        const range = document.createRange();
+                                        range.selectNodeContents(addrSpan);
+                                        sel.removeAllRanges();
+                                        sel.addRange(range);
+                                        this.ui.showNotification('Clipboard unavailable — address text selected for manual copy', 'warning');
+                                        return;
+                                    }
+                                }
+                            } catch (selErr) {
+                                console.error('[wallet] Selection fallback failed:', selErr?.message || String(selErr));
                             }
+                            this.ui.showNotification('Could not copy address. Please copy it manually.', 'warning');
                         });
                     });
                 }
