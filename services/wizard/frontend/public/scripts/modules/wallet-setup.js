@@ -43,8 +43,9 @@ let WalletService = null;
  */
 async function getWalletService() {
     if (!WalletService) {
-        WalletService = await import('./wallet-service.js');
-        await WalletService.initialize();
+        const walletModule = await import('./wallet-service.js');
+        await walletModule.initialize(); // only cache after successful init
+        WalletService = walletModule;
     }
     return WalletService;
 }
@@ -1287,7 +1288,7 @@ async function validateManualAddress(value, input, validationMessage, onComplete
             isValid = await walletService.validateAddress(value, walletState.network);
             wasmAvailable = true;
         } catch (wasmError) {
-            // WASM unavailable — fall back to basic prefix + length check
+            console.warn('[wallet] WASM validation unavailable, using fallback:', wasmError.message);
             const minLength = expectedPrefix.length + 40;
             isValid = value.length >= minLength && /^[a-z0-9:]+$/.test(value);
         }

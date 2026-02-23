@@ -2184,12 +2184,14 @@ app.get('/api/kaspa/wallet', async (req, res) => {
             const jsonPortMapping = composeContent.match(/"(\d+):18110"/);
 
             connectivityEnabled = utxoIndex && (!!borshMatch || !!borshPortMapping);
-            if (borshMatch) borshPort = parseInt(borshMatch[1], 10);
-            else if (borshPortMapping) borshPort = parseInt(borshPortMapping[1], 10);
-            if (jsonMatch) jsonPort = parseInt(jsonMatch[1], 10);
-            else if (jsonPortMapping) jsonPort = parseInt(jsonPortMapping[1], 10);
-        } catch (_) {
-            // docker-compose.yml not readable — connectivity unknown
+            const parsedBorsh = borshMatch ? parseInt(borshMatch[1], 10) : (borshPortMapping ? parseInt(borshPortMapping[1], 10) : NaN);
+            const parsedJson = jsonMatch ? parseInt(jsonMatch[1], 10) : (jsonPortMapping ? parseInt(jsonPortMapping[1], 10) : NaN);
+            if (!Number.isNaN(parsedBorsh)) borshPort = parsedBorsh;
+            if (!Number.isNaN(parsedJson)) jsonPort = parsedJson;
+        } catch (composeErr) {
+            if (composeErr.code !== 'ENOENT') {
+                console.error('[wallet] Failed to read docker-compose.yml:', composeErr.code, composeErr.message);
+            }
         }
 
         // Read MINING_ADDRESS from .env (set when kaspa-stratum/mining profile is active)
@@ -2198,8 +2200,19 @@ app.get('/api/kaspa/wallet', async (req, res) => {
             const envPath = path.join(__dirname, '../../.env');
             const envContent = await fs.readFile(envPath, 'utf8');
             const match = envContent.match(/^MINING_ADDRESS=(.+)$/m);
-            if (match && match[1].trim()) miningAddress = match[1].trim();
-        } catch (_) { /* .env not found or MINING_ADDRESS not set */ }
+            if (match && match[1].trim()) {
+                const addr = match[1].trim();
+                if (/^kaspa(test)?:[a-z0-9]+$/.test(addr)) {
+                    miningAddress = addr;
+                } else {
+                    console.warn('[wallet] MINING_ADDRESS in .env has unexpected format, ignoring');
+                }
+            }
+        } catch (envErr) {
+            if (envErr.code !== 'ENOENT') {
+                console.error('[wallet] Failed to read .env:', envErr.code, envErr.message);
+            }
+        }
 
         if (!connectivityEnabled && !miningAddress) {
             return res.json({ available: false, message: 'Wallet connectivity not configured' });

@@ -1282,6 +1282,18 @@ export class UIManager {
         if (!serviceCard) return;
 
         const phase = syncStatus.syncPhase || 'unknown';
+
+        // Node went offline — clear stale sync overlay without touching the Docker status badge
+        if (phase === 'unavailable') {
+            const errorEl = serviceCard.querySelector('.service-error');
+            const messageEl = serviceCard.querySelector('.service-sync-message, .sync-warning, .service-message');
+            const progressContainer = serviceCard.querySelector('.service-progress-container');
+            if (errorEl) errorEl.style.display = 'none';
+            if (messageEl) messageEl.style.display = 'none';
+            if (progressContainer) progressContainer.remove();
+            return;
+        }
+
         const phaseConfig = SYNC_PHASES[phase] || SYNC_PHASES.unknown;
 
         // Update status badge

@@ -248,13 +248,16 @@ class Dashboard {
         this.ws.on('kaspa_node_unavailable', (data) => {
             console.log('Kaspa node unavailable:', data);
             this.ui.showNotification('Kaspa node unavailable - retrying connection...', 'warning');
-            
+
             // Update node status to show unavailable
-            this.ui.updateNodeStatus({ error: 'Node unavailable' }, { 
-                connected: false, 
+            this.ui.updateNodeStatus({ error: 'Node unavailable' }, {
+                connected: false,
                 error: data.error,
                 status: 'disconnected'
             });
+
+            // Clear stale sync overlay from the service card
+            this.ui.updateKaspaServiceCardSync({ syncPhase: 'unavailable', isSynced: false, detail: null, progress: 0 });
         });
 
         this.ws.on('kaspa_node_reconnected', (data) => {
@@ -625,7 +628,7 @@ class Dashboard {
                 ? `<div class="wallet-row">
                        <span class="wallet-label">Mining Address</span>
                        <span class="wallet-value wallet-address" title="${escapeHtml(wallet.address)}">${escapeHtml(wallet.address)}</span>
-                       <button class="btn-icon copy-btn" title="Copy address" onclick="navigator.clipboard.writeText('${escapeHtml(wallet.address)}')">⧉</button>
+                       <button class="btn-icon copy-btn" title="Copy address">⧉</button>
                    </div>`
                 : `<div class="wallet-row"><span class="wallet-label">Mining Address</span><span class="wallet-value muted">Not set</span></div>`;
 
@@ -653,10 +656,19 @@ class Dashboard {
                     </div>
                     ${portsHtml}
                 </div>`;
+
+            // Attach copy button listener (avoids inline onclick / single-quote injection)
+            if (wallet.address) {
+                const copyBtn = walletContainer.querySelector('.copy-btn');
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', () => navigator.clipboard.writeText(wallet.address));
+                }
+            }
         } catch (error) {
             console.error('Failed to load wallet info:', error);
             walletSection.style.display = 'block';
-            walletContainer.innerHTML = '<p class="wallet-status-msg muted">Could not load wallet information.</p>';
+            const reason = escapeHtml(error?.message || 'Network error');
+            walletContainer.innerHTML = `<p class="wallet-status-msg muted">Could not load wallet information (${reason}).</p>`;
         }
     }
 
