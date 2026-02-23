@@ -355,13 +355,18 @@ describe('PortFallbackService', () => {
               // Chain should have no duplicates
               const uniquePorts = [...new Set(portChain)];
               expect(uniquePorts.length).toBe(portChain.length);
-              
-              // Chain should be exactly 3 ports (configured + 2 fallbacks)
-              expect(portChain.length).toBe(3);
-              
-              // If configured port is not 16110 or 16111, verify order
-              if (configuredPort !== 16110 && configuredPort !== 16111) {
+
+              // Chain length depends on whether configuredPort overlaps with fallbacks
+              const isFallbackPort = configuredPort === 16110 || configuredPort === 16111;
+              expect(portChain.length).toBe(isFallbackPort ? 2 : 3);
+
+              // Verify full order
+              if (!isFallbackPort) {
                 expect(portChain).toEqual([configuredPort, 16110, 16111]);
+              } else if (configuredPort === 16110) {
+                expect(portChain).toEqual([16110, 16111]);
+              } else {
+                expect(portChain).toEqual([16111, 16110]);
               }
             } finally {
               service.destroy();

@@ -14,9 +14,9 @@ const path = require('path');
 const { SharedStateManager } = require('./state-manager');
 const { getProjectRoot } = require('./path-resolver');
 
-// Test configuration - use relative path from project root
+// Test configuration — unique dir per test file to avoid parallel-run collisions
 const PROJECT_ROOT = getProjectRoot(__dirname);
-const TEST_STATE_DIR = path.join(PROJECT_ROOT, '.kaspa-aio-test');
+const TEST_STATE_DIR = path.join(PROJECT_ROOT, '.kaspa-aio-test-data-preservation');
 const TEST_STATE_PATH = path.join(TEST_STATE_DIR, 'installation-state.json');
 
 // Available services that could have data

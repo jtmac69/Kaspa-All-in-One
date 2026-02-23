@@ -13,8 +13,8 @@ const fs = require('fs').promises;
 const path = require('path');
 const { SharedStateManager } = require('./state-manager');
 
-// Test configuration
-const TEST_STATE_DIR = path.join(__dirname, '..', '..', '..', '.kaspa-aio-test');
+// Test configuration — unique dir per test file to avoid parallel-run collisions
+const TEST_STATE_DIR = path.join(__dirname, '..', '..', '..', '.kaspa-aio-test-reconfig');
 const TEST_STATE_PATH = path.join(TEST_STATE_DIR, 'installation-state.json');
 
 // Available profiles that could be installed (NEW 8-profile system)

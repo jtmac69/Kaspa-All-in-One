@@ -1,271 +1,152 @@
 /**
  * Property Test: Retry on Unavailability
  * Validates Requirements 3.7, 3.8
- * 
- * This test verifies that the Dashboard correctly implements retry logic
- * when the Kaspa node becomes unavailable and updates status within 5 seconds
- * when the node becomes available again.
+ *
+ * Verifies that KaspaNodeClient correctly handles retry logic:
+ * - forceReconnect() resets state and re-attempts connection
+ * - ensureConnected() lazily initializes on first use
+ * - Failures are reported cleanly without crashing
  */
+
+let mockClient;
+let mockWrapper;
+
+jest.mock('kaspa-rpc-client', () => {
+  mockClient = {
+    getInfo: jest.fn(),
+    ping: jest.fn(),
+    url: 'localhost:16110',
+  };
+  mockWrapper = {
+    initialize: jest.fn().mockResolvedValue(undefined),
+    getClient: jest.fn().mockResolvedValue(mockClient),
+    destroy: jest.fn(),
+  };
+  return {
+    ClientWrapper: jest.fn().mockImplementation(() => mockWrapper),
+  };
+});
 
 const fc = require('fast-check');
 const KaspaNodeClient = require('../lib/KaspaNodeClient');
-const PortFallbackService = require('../../shared/lib/port-fallback');
-
-// Mock axios to simulate network conditions
-jest.mock('axios');
-const axios = require('axios');
 
 describe('Property Test: Retry on Unavailability', () => {
-    let kaspaNodeClient;
-    let originalSetInterval;
-    let originalClearInterval;
-    let intervals = [];
+  let kaspaNodeClient;
 
-    beforeEach(() => {
-        // Mock timers to control retry intervals
-        originalSetInterval = global.setInterval;
-        originalClearInterval = global.clearInterval;
-        
-        global.setInterval = jest.fn((callback, delay) => {
-            const id = Math.random();
-            intervals.push({ id, callback, delay });
-            return id;
-        });
-        
-        global.clearInterval = jest.fn((id) => {
-            intervals = intervals.filter(interval => interval.id !== id);
-        });
+  beforeEach(() => {
+    mockWrapper.initialize.mockReset().mockResolvedValue(undefined);
+    mockWrapper.getClient.mockReset().mockResolvedValue(mockClient);
+    mockWrapper.destroy.mockReset();
+    mockClient.ping.mockReset();
+    mockClient.getInfo.mockReset();
 
-        // Create client with mocked timer environment
-        kaspaNodeClient = new KaspaNodeClient({
-            configuredPort: 16111,
-            timeout: 1000
-        });
-        
-        // Ensure the PortFallbackService uses our mocked timers
-        kaspaNodeClient.portFallback.retryInterval = 30000;
-    });
+    kaspaNodeClient = new KaspaNodeClient({ host: 'localhost', port: 16110 });
+  });
 
-    afterEach(async () => {
-        // Clean up any active intervals
-        intervals.forEach(interval => {
-            if (originalClearInterval) {
-                originalClearInterval(interval.id);
-            }
-        });
-        
-        // Stop any active retries
-        if (kaspaNodeClient) {
-            kaspaNodeClient.stopRetry();
-            kaspaNodeClient.destroy();
+  afterEach(() => {
+    kaspaNodeClient.destroy();
+    jest.clearAllMocks();
+  });
+
+  /**
+   * Property 8.1: forceReconnect always resets connection state before retrying.
+   * For any number of prior connection attempts, forceReconnect should reset
+   * the wrapper and client to null before attempting to reconnect.
+   */
+  test('Property 8: Retry on Unavailability - forceReconnect resets and retries', async () => {
+    await fc.assert(fc.asyncProperty(
+      fc.integer({ min: 1, max: 5 }),
+      async (priorAttempts) => {
+        // Simulate prior connection attempts
+        for (let i = 0; i < priorAttempts; i++) {
+          await kaspaNodeClient.initialize().catch(() => {});
         }
-        
-        // Restore original timer functions
-        global.setInterval = originalSetInterval;
-        global.clearInterval = originalClearInterval;
-        intervals = [];
-        
-        jest.clearAllMocks();
-        
-        // Give a moment for cleanup to complete
-        await new Promise(resolve => setTimeout(resolve, 10));
-    });
 
-    /**
-     * Property 8: Retry on Unavailability
-     * For any period when the Kaspa node is unavailable, the Dashboard SHALL re-attempt 
-     * connection every 30 seconds, and when the node becomes available, status SHALL 
-     * update within 5 seconds.
-     */
-    test('Property 8: Retry on Unavailability - sets up 30-second retry timer', async () => {
-        await fc.assert(fc.asyncProperty(
-            // Generate test scenarios
-            fc.record({
-                initialFailures: fc.integer({ min: 1, max: 3 }),
-            }),
-            async ({ initialFailures }) => {
-                let callCount = 0;
-                let retryCallbacks = [];
+        // Reset mock to succeed on forceReconnect
+        mockWrapper.initialize.mockResolvedValue(undefined);
+        mockWrapper.getClient.mockResolvedValue(mockClient);
+        kaspaNodeClient.wrapper = null;
 
-                // Mock axios to simulate failures
-                axios.post.mockImplementation(() => {
-                    callCount++;
-                    const error = new Error('Connection refused');
-                    error.code = 'ECONNREFUSED';
-                    return Promise.reject(error);
-                });
+        const result = await kaspaNodeClient.forceReconnect();
 
-                // Start retry logic
-                kaspaNodeClient.startRetry((result) => {
-                    retryCallbacks.push({
-                        timestamp: Date.now(),
-                        result: result
-                    });
-                });
+        expect(result.connected).toBe(true);
+        expect(result.error).toBeNull();
+      }
+    ), { numRuns: 10 });
+  });
 
-                // Verify retry timer was set up with 30-second interval
-                expect(global.setInterval).toHaveBeenCalled();
-                const retryTimer = intervals.find(interval => interval.delay === 30000);
-                expect(retryTimer).toBeDefined();
+  /**
+   * Property 8.2: When connection is unavailable, forceReconnect returns an error
+   * result (never throws) so callers can handle it gracefully.
+   */
+  test('Property 8: Retry on Unavailability - forceReconnect returns error result on failure', async () => {
+    await fc.assert(fc.asyncProperty(
+      fc.string({ minLength: 1, maxLength: 50 }),
+      async (errorMessage) => {
+        mockWrapper.initialize.mockRejectedValue(new Error(errorMessage));
 
-                // Verify retry interval is exactly 30 seconds (30000ms)
-                expect(retryTimer.delay).toBe(30000);
+        const result = await kaspaNodeClient.forceReconnect();
 
-                // Verify the timer callback is a function
-                expect(typeof retryTimer.callback).toBe('function');
-            }
-        ), {
-            numRuns: 10,
-            timeout: 2000
+        expect(result.connected).toBe(false);
+        expect(result.host).toBeNull();
+        expect(typeof result.error).toBe('string');
+      }
+    ), { numRuns: 20 });
+  });
+
+  /**
+   * Property 8.3: ping() always returns a boolean — never throws — so it is
+   * safe to call as a liveness probe regardless of connection state.
+   */
+  test('Property 8: Retry on Unavailability - ping never throws, returns boolean', async () => {
+    await fc.assert(fc.asyncProperty(
+      fc.boolean(),
+      async (shouldSucceed) => {
+        if (shouldSucceed) {
+          mockWrapper.initialize.mockResolvedValue(undefined);
+          mockWrapper.getClient.mockResolvedValue(mockClient);
+          mockClient.ping.mockResolvedValue(undefined);
+        } else {
+          mockWrapper.initialize.mockRejectedValue(new Error('ECONNREFUSED'));
+        }
+
+        // Reset wrapper so ensureConnected re-initializes
+        kaspaNodeClient.wrapper = null;
+        kaspaNodeClient.client = null;
+
+        const result = await kaspaNodeClient.ping();
+        expect(typeof result).toBe('boolean');
+      }
+    ), { numRuns: 20 });
+  });
+
+  /**
+   * Property 8.4: Multiple sequential forceReconnect calls converge to a
+   * consistent connected state once the node becomes available.
+   */
+  test('Property 8: Retry on Unavailability - eventually connects after N failures then success', async () => {
+    await fc.assert(fc.asyncProperty(
+      fc.integer({ min: 1, max: 4 }),
+      async (failureCount) => {
+        let attempts = 0;
+        mockWrapper.initialize.mockImplementation(() => {
+          attempts++;
+          if (attempts <= failureCount) {
+            return Promise.reject(new Error('Not yet available'));
+          }
+          return Promise.resolve();
         });
-    });
+        mockWrapper.getClient.mockResolvedValue(mockClient);
 
-    test('Property 8: Retry on Unavailability - updates status within 5 seconds when available', async () => {
-        await fc.assert(fc.asyncProperty(
-            // Generate scenarios with different timing patterns
-            fc.record({
-                failureCount: fc.integer({ min: 1, max: 3 }),
-                responseDelay: fc.integer({ min: 100, max: 500 }) // response time when available
-            }),
-            async ({ failureCount, responseDelay }) => {
-                let callCount = 0;
-                let connectionRestoredTime = null;
+        let lastResult;
+        for (let i = 0; i <= failureCount; i++) {
+          kaspaNodeClient.wrapper = null;
+          kaspaNodeClient.client = null;
+          lastResult = await kaspaNodeClient.forceReconnect();
+        }
 
-                // Mock axios to simulate failures then success
-                axios.post.mockImplementation(() => {
-                    callCount++;
-                    return new Promise((resolve, reject) => {
-                        setTimeout(() => {
-                            if (callCount <= failureCount) {
-                                const error = new Error('Connection refused');
-                                error.code = 'ECONNREFUSED';
-                                reject(error);
-                            } else {
-                                resolve({ data: { result: 'pong' } });
-                            }
-                        }, responseDelay);
-                    });
-                });
-
-                // Start retry logic
-                kaspaNodeClient.startRetry((result) => {
-                    connectionRestoredTime = Date.now();
-                });
-
-                // Find retry timer
-                const retryTimer = intervals.find(interval => interval.delay === 30000);
-                expect(retryTimer).toBeDefined();
-
-                // Simulate retry attempts until success
-                const startTime = Date.now();
-                for (let i = 0; i <= failureCount; i++) {
-                    await retryTimer.callback();
-                }
-
-                // Verify status updated within reasonable time (including response delay)
-                if (connectionRestoredTime) {
-                    const updateTime = connectionRestoredTime - startTime;
-                    // Should be less than 5 seconds plus response delays
-                    expect(updateTime).toBeLessThanOrEqual(5000 + (responseDelay * (failureCount + 1)));
-                }
-            }
-        ), {
-            numRuns: 15,
-            timeout: 8000
-        });
-    });
-
-    test('Property 8: Retry on Unavailability - stops retry when connection restored', async () => {
-        await fc.assert(fc.asyncProperty(
-            fc.record({
-                failureCount: fc.integer({ min: 1, max: 2 }),
-            }),
-            async ({ failureCount }) => {
-                let callCount = 0;
-                let retryStoppedCorrectly = false;
-
-                // Mock axios to fail initially then succeed
-                axios.post.mockImplementation(() => {
-                    callCount++;
-                    if (callCount <= failureCount) {
-                        const error = new Error('Connection refused');
-                        error.code = 'ECONNREFUSED';
-                        return Promise.reject(error);
-                    } else {
-                        return Promise.resolve({ data: { result: 'pong' } });
-                    }
-                });
-
-                // Start retry
-                kaspaNodeClient.startRetry((result) => {
-                    // Connection restored - verify retry stops
-                    kaspaNodeClient.stopRetry();
-                    retryStoppedCorrectly = true;
-                });
-
-                // Verify retry timer was created
-                expect(global.setInterval).toHaveBeenCalled();
-                const retryTimer = intervals.find(interval => interval.delay === 30000);
-                expect(retryTimer).toBeDefined();
-
-                // Verify the retry mechanism is set up correctly
-                expect(retryTimer.delay).toBe(30000);
-                expect(typeof retryTimer.callback).toBe('function');
-
-                // Simulate one retry attempt
-                if (retryTimer) {
-                    await retryTimer.callback();
-                }
-
-                // Verify clearInterval is available for stopping retries
-                expect(global.clearInterval).toBeDefined();
-            }
-        ), {
-            numRuns: 10,
-            timeout: 3000
-        });
-    });
-
-    test('Property 8: Retry on Unavailability - maintains retry interval consistency', async () => {
-        await fc.assert(fc.asyncProperty(
-            fc.record({
-                retryCount: fc.integer({ min: 2, max: 5 }),
-                jitterMs: fc.integer({ min: 0, max: 100 }) // Small timing variations
-            }),
-            async ({ retryCount, jitterMs }) => {
-                // Mock axios to always fail for this test
-                axios.post.mockImplementation(() => {
-                    const error = new Error('Connection refused');
-                    error.code = 'ECONNREFUSED';
-                    return Promise.reject(error);
-                });
-
-                // Start retry
-                kaspaNodeClient.startRetry(() => {});
-
-                // Verify exactly one retry timer is created
-                const retryTimers = intervals.filter(interval => interval.delay === 30000);
-                expect(retryTimers.length).toBe(1);
-
-                // Verify the retry interval is exactly 30 seconds
-                expect(retryTimers[0].delay).toBe(30000);
-
-                // Simulate multiple retry attempts
-                for (let i = 0; i < retryCount; i++) {
-                    await retryTimers[0].callback();
-                    
-                    // Add small jitter to simulate real-world timing variations
-                    await new Promise(resolve => setTimeout(resolve, jitterMs));
-                }
-
-                // Verify retry timer remains consistent (still 30 seconds)
-                const currentRetryTimers = intervals.filter(interval => interval.delay === 30000);
-                expect(currentRetryTimers.length).toBe(1);
-                expect(currentRetryTimers[0].delay).toBe(30000);
-            }
-        ), {
-            numRuns: 20,
-            timeout: 5000
-        });
-    });
+        expect(lastResult.connected).toBe(true);
+      }
+    ), { numRuns: 15 });
+  });
 });

@@ -1,124 +1,104 @@
-const KaspaNodeClient = require('../KaspaNodeClient');
-const axios = require('axios');
+let mockClient;
+let mockWrapper;
 
-jest.mock('axios');
+jest.mock('kaspa-rpc-client', () => {
+  mockClient = {
+    getInfo: jest.fn(),
+    ping: jest.fn(),
+    url: 'localhost:16110',
+  };
+  mockWrapper = {
+    initialize: jest.fn().mockResolvedValue(undefined),
+    getClient: jest.fn().mockResolvedValue(mockClient),
+    destroy: jest.fn(),
+  };
+  return {
+    ClientWrapper: jest.fn().mockImplementation(() => mockWrapper),
+  };
+});
+
+const KaspaNodeClient = require('../KaspaNodeClient');
 
 describe('KaspaNodeClient', () => {
   let client;
 
   beforeEach(() => {
-    client = new KaspaNodeClient('http://test-node:16111');
-    jest.clearAllMocks();
+    client = new KaspaNodeClient({ host: 'test-node', port: 16110 });
+    mockClient.getInfo.mockReset();
+    mockClient.ping.mockReset();
+    mockWrapper.initialize.mockReset().mockResolvedValue(undefined);
+    mockWrapper.getClient.mockReset().mockResolvedValue(mockClient);
+    mockWrapper.destroy.mockReset();
+  });
+
+  afterEach(() => {
+    client.destroy();
   });
 
   describe('constructor', () => {
-    it('should initialize with default port', () => {
+    it('should include configured host in hosts list', () => {
+      expect(client.hosts).toBeDefined();
+      expect(client.hosts.length).toBeGreaterThan(0);
+      expect(client.hosts[0]).toContain('test-node');
+    });
+
+    it('should start disconnected', () => {
+      expect(client.connected).toBe(false);
+      expect(client.connectionStatus.connected).toBe(false);
+    });
+
+    it('should use default host and port when no options given', () => {
       const defaultClient = new KaspaNodeClient();
-      expect(defaultClient.portFallback).toBeDefined();
-      expect(defaultClient.portFallback.configuredPort).toBe(16111);
-    });
-
-    it('should initialize with custom port from rpcUrl', () => {
-      expect(client.portFallback).toBeDefined();
-      expect(client.portFallback.configuredPort).toBe(16111);
-    });
-
-    it('should set default timeout', () => {
-      expect(client.timeout).toBe(10000);
+      expect(defaultClient.hosts[0]).toContain('localhost');
+      defaultClient.destroy();
     });
   });
 
-  describe('makeRpcCall', () => {
-    beforeEach(() => {
-      // Mock the portFallback.connect() to return successful connection
-      client.portFallback.connect = jest.fn().mockResolvedValue({
-        connected: true,
-        port: 16111,
-        url: 'http://test-node:16111'
-      });
+  describe('initialize', () => {
+    it('should connect using ClientWrapper', async () => {
+      await client.initialize();
+      expect(mockWrapper.initialize).toHaveBeenCalled();
+      expect(mockWrapper.getClient).toHaveBeenCalled();
+      expect(client.connected).toBe(true);
     });
 
-    it('should make successful RPC call', async () => {
-      const mockResponse = {
-        data: {
-          result: { test: 'data' }
-        }
-      };
-      axios.post.mockResolvedValue(mockResponse);
-
-      const result = await client.makeRpcCall('testMethod', { param: 'value' });
-      
-      expect(client.portFallback.connect).toHaveBeenCalled();
-      expect(axios.post).toHaveBeenCalledWith(
-        'http://test-node:16111',
-        {
-          method: 'testMethod',
-          params: { param: 'value' }
-        },
-        expect.objectContaining({
-          timeout: 10000
-        })
-      );
-      expect(result).toEqual({ test: 'data' });
+    it('should set connected status on success', async () => {
+      await client.initialize();
+      expect(client.connectionStatus.connected).toBe(true);
+      expect(client.connectionStatus.error).toBeNull();
     });
 
-    it('should handle RPC error response', async () => {
-      const mockResponse = {
-        data: {
-          error: { message: 'RPC error occurred' }
-        }
-      };
-      axios.post.mockResolvedValue(mockResponse);
-
-      await expect(client.makeRpcCall('testMethod')).rejects.toThrow('RPC Error: RPC error occurred');
+    it('should set error status on failure', async () => {
+      mockWrapper.initialize.mockRejectedValue(new Error('Connection refused'));
+      await expect(client.initialize()).rejects.toThrow('Failed to initialize');
+      expect(client.connected).toBe(false);
+      expect(client.connectionStatus.connected).toBe(false);
     });
 
-    it('should handle connection refused error', async () => {
-      // Mock connection failure
-      client.portFallback.connect = jest.fn().mockResolvedValue({
-        connected: false,
-        port: null,
-        error: 'Failed to connect to Kaspa node on any port: 16111, 16110'
-      });
-
-      await expect(client.makeRpcCall('testMethod')).rejects.toThrow('Cannot connect to Kaspa node');
-    });
-
-    it('should handle timeout error', async () => {
-      const error = new Error('Timeout');
-      error.code = 'ETIMEDOUT';
-      axios.post.mockRejectedValue(error);
-
-      await expect(client.makeRpcCall('testMethod')).rejects.toThrow('Kaspa node request timed out');
+    it('should not re-initialize if already connected', async () => {
+      await client.initialize();
+      await client.initialize(); // second call should be no-op
+      expect(mockWrapper.initialize).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('getNodeInfo', () => {
-    beforeEach(() => {
-      // Mock the portFallback.connect() to return successful connection
-      client.portFallback.connect = jest.fn().mockResolvedValue({
-        connected: true,
-        port: 16111,
-        url: 'http://test-node:16111'
-      });
+    beforeEach(async () => {
+      await client.initialize();
     });
 
     it('should return formatted node info', async () => {
-      const mockResponse = {
-        data: {
-          result: {
-            serverVersion: '0.14.0',
-            isSynced: true,
-            peerCount: 42,
-            networkName: 'mainnet',
-            mempoolSize: 10
-          }
-        }
-      };
-      axios.post.mockResolvedValue(mockResponse);
+      mockClient.getInfo.mockResolvedValue({
+        serverVersion: '0.14.0',
+        isSynced: true,
+        peerCount: 42,
+        networkName: 'mainnet',
+        mempoolSize: 10,
+        hasUtxoIndex: true,
+      });
 
       const info = await client.getNodeInfo();
-      
+
       expect(info.serverVersion).toBe('0.14.0');
       expect(info.isSynced).toBe(true);
       expect(info.peerCount).toBe(42);
@@ -126,162 +106,142 @@ describe('KaspaNodeClient', () => {
       expect(info.mempoolSize).toBe(10);
     });
 
-    it('should handle missing optional fields', async () => {
-      const mockResponse = {
-        data: {
-          result: {
-            serverVersion: '0.14.0',
-            isSynced: false
-          }
-        }
-      };
-      axios.post.mockResolvedValue(mockResponse);
+    it('should default missing optional fields to 0/false', async () => {
+      mockClient.getInfo.mockResolvedValue({
+        serverVersion: '0.14.0',
+        isSynced: false,
+      });
 
       const info = await client.getNodeInfo();
-      
+
       expect(info.peerCount).toBe(0);
       expect(info.mempoolSize).toBe(0);
+      expect(info.hasUtxoIndex).toBe(false);
+    });
+
+    it('should throw when getInfo fails', async () => {
+      mockClient.getInfo.mockRejectedValue(new Error('RPC error'));
+      await expect(client.getNodeInfo()).rejects.toThrow('Failed to get node info');
     });
   });
 
-  describe('calculateSyncProgress', () => {
-    it('should calculate sync progress correctly', () => {
-      const currentHeight = 5000000;
-      const networkHeight = 10000000;
-      
-      client.networkHeight = networkHeight;
-      const progress = (currentHeight / networkHeight) * 100;
-      
-      expect(progress).toBe(50);
+  describe('ping', () => {
+    beforeEach(async () => {
+      await client.initialize();
     });
 
-    it('should cap progress at 100%', () => {
-      const currentHeight = 11000000;
-      const networkHeight = 10000000;
-      
-      const progress = Math.min((currentHeight / networkHeight) * 100, 100);
-      
-      expect(progress).toBe(100);
+    it('should return true on successful ping', async () => {
+      mockClient.ping.mockResolvedValue(undefined);
+      expect(await client.ping()).toBe(true);
+    });
+
+    it('should return false on failed ping', async () => {
+      mockClient.ping.mockRejectedValue(new Error('Connection failed'));
+      expect(await client.ping()).toBe(false);
+    });
+  });
+
+  describe('getConnectionStatus', () => {
+    it('should return disconnected status before init', () => {
+      const status = client.getConnectionStatus();
+      expect(status.connected).toBe(false);
+      expect(status.hosts).toBeDefined();
+    });
+
+    it('should return connected status after init', async () => {
+      await client.initialize();
+      const status = client.getConnectionStatus();
+      expect(status.connected).toBe(true);
+    });
+  });
+
+  describe('forceReconnect', () => {
+    it('should reconnect and return connected status', async () => {
+      await client.initialize();
+      const result = await client.forceReconnect();
+      expect(result.connected).toBe(true);
+      expect(result.error).toBeNull();
+    });
+
+    it('should return error status when reconnect fails', async () => {
+      mockWrapper.initialize.mockRejectedValue(new Error('Network unreachable'));
+      const result = await client.forceReconnect();
+      expect(result.connected).toBe(false);
+      expect(result.error).toBeTruthy();
     });
   });
 
   describe('determineSyncState', () => {
     it('should return synced when isSynced is true', () => {
-      const state = client.determineSyncState(true, 100);
-      expect(state).toBe('synced');
+      expect(client.determineSyncState(true, 100)).toBe('synced');
     });
 
     it('should return nearly_synced when progress > 99', () => {
-      const state = client.determineSyncState(false, 99.5);
-      expect(state).toBe('nearly_synced');
+      expect(client.determineSyncState(false, 99.5)).toBe('nearly_synced');
     });
 
     it('should return syncing when progress > 50', () => {
-      const state = client.determineSyncState(false, 75);
-      expect(state).toBe('syncing');
+      expect(client.determineSyncState(false, 75)).toBe('syncing');
     });
 
     it('should return initial_sync when progress > 0', () => {
-      const state = client.determineSyncState(false, 25);
-      expect(state).toBe('initial_sync');
+      expect(client.determineSyncState(false, 25)).toBe('initial_sync');
     });
 
     it('should return not_synced when progress is 0', () => {
-      const state = client.determineSyncState(false, 0);
-      expect(state).toBe('not_synced');
+      expect(client.determineSyncState(false, 0)).toBe('not_synced');
     });
   });
 
   describe('estimateHashRate', () => {
     it('should estimate hash rate from difficulty', () => {
-      const difficulty = 1000000;
-      const hashRate = client.estimateHashRate(difficulty);
-      
+      const hashRate = client.estimateHashRate(1000000);
       expect(hashRate).toBeGreaterThan(0);
       expect(typeof hashRate).toBe('number');
     });
 
     it('should return 0 for zero difficulty', () => {
-      const hashRate = client.estimateHashRate(0);
-      expect(hashRate).toBe(0);
+      expect(client.estimateHashRate(0)).toBe(0);
     });
 
     it('should return 0 for null difficulty', () => {
-      const hashRate = client.estimateHashRate(null);
-      expect(hashRate).toBe(0);
+      expect(client.estimateHashRate(null)).toBe(0);
     });
   });
 
   describe('formatUptime', () => {
-    it('should format uptime in days, hours, minutes', () => {
-      const seconds = 2 * 86400 + 5 * 3600 + 30 * 60; // 2 days, 5 hours, 30 minutes
-      const formatted = client.formatUptime(seconds);
-      expect(formatted).toBe('2d 5h 30m');
+    it('should format days, hours, minutes', () => {
+      expect(client.formatUptime(2 * 86400 + 5 * 3600 + 30 * 60)).toBe('2d 5h 30m');
     });
 
-    it('should format uptime in hours and minutes', () => {
-      const seconds = 3 * 3600 + 15 * 60; // 3 hours, 15 minutes
-      const formatted = client.formatUptime(seconds);
-      expect(formatted).toBe('3h 15m');
+    it('should format hours and minutes', () => {
+      expect(client.formatUptime(3 * 3600 + 15 * 60)).toBe('3h 15m');
     });
 
-    it('should format uptime in minutes only', () => {
-      const seconds = 45 * 60; // 45 minutes
-      const formatted = client.formatUptime(seconds);
-      expect(formatted).toBe('45m');
+    it('should format minutes only', () => {
+      expect(client.formatUptime(45 * 60)).toBe('45m');
     });
 
-    it('should return Unknown for null uptime', () => {
-      const formatted = client.formatUptime(null);
-      expect(formatted).toBe('Unknown');
+    it('should return Unknown for null', () => {
+      expect(client.formatUptime(null)).toBe('Unknown');
     });
 
-    it('should return Unknown for negative uptime', () => {
-      const formatted = client.formatUptime(-100);
-      expect(formatted).toBe('Unknown');
+    it('should return Unknown for negative', () => {
+      expect(client.formatUptime(-100)).toBe('Unknown');
     });
   });
 
   describe('formatHashRate', () => {
-    it('should format hash rate with appropriate unit', () => {
-      const hashRate = 1500000; // 1.5 MH/s
-      const formatted = client.formatHashRate(hashRate);
-      expect(formatted).toContain('MH/s');
+    it('should format with MH/s unit', () => {
+      expect(client.formatHashRate(1500000)).toContain('MH/s');
     });
 
-    it('should return 0 H/s for zero hash rate', () => {
-      const formatted = client.formatHashRate(0);
-      expect(formatted).toBe('0 H/s');
+    it('should return 0 H/s for zero', () => {
+      expect(client.formatHashRate(0)).toBe('0 H/s');
     });
 
-    it('should return 0 H/s for null hash rate', () => {
-      const formatted = client.formatHashRate(null);
-      expect(formatted).toBe('0 H/s');
-    });
-  });
-
-  describe('ping', () => {
-    beforeEach(() => {
-      // Mock the portFallback.connect() to return successful connection
-      client.portFallback.connect = jest.fn().mockResolvedValue({
-        connected: true,
-        port: 16111,
-        url: 'http://test-node:16111'
-      });
-    });
-
-    it('should return true on successful ping', async () => {
-      axios.post.mockResolvedValue({ data: { result: 'pong' } });
-      
-      const result = await client.ping();
-      expect(result).toBe(true);
-    });
-
-    it('should return false on failed ping', async () => {
-      axios.post.mockRejectedValue(new Error('Connection failed'));
-      
-      const result = await client.ping();
-      expect(result).toBe(false);
+    it('should return 0 H/s for null', () => {
+      expect(client.formatHashRate(null)).toBe('0 H/s');
     });
   });
 });

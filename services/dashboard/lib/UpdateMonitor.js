@@ -121,7 +121,7 @@ class UpdateMonitor {
 
     isNewer(availableVersion, currentVersion) {
         if (currentVersion === 'latest') {
-            return false; // Cannot compare meaningfully — suppress spurious update notifications
+            return true; // A tagged release is available; 'latest' is a floating/dev build
         }
         if (currentVersion === 'unknown') {
             return false;
