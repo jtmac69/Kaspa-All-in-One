@@ -462,6 +462,10 @@ test_installation() {
         return 1
     fi
     
+    # Check installation status
+    log "Checking installation status..."
+    test_api "GET" "/api/install/status/kaspa-node" 200 "" || true
+
     # Deploy services
     log "Deploying services..."
     local deploy_result=$(test_api "POST" "/api/install/deploy" 200 '{"profiles":["prod"]}')
