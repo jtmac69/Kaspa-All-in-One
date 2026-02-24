@@ -482,6 +482,14 @@ These are known limitations of the current release, categorized by their impact 
     - No priority bug fixes
     - Support via GitHub Issues and Discussions only
 
+### Optional Add-on Caveats
+
+#### Portainer
+
+- **Docker socket permissions**: Portainer mounts `/var/run/docker.sock`. The user running Docker must belong to the `docker` group — the same requirement as running any Docker command. If not, the Portainer container will fail to start.
+- **Portainer exposes full Docker control**: Anyone who can reach port 9000 (default) can manage all containers, volumes, and images on the host. Do not expose this port publicly without authentication hardening (e.g. behind a VPN or with Portainer's built-in user management enabled).
+- **Port 9000 default**: If port 9000 is already in use, set `PORTAINER_PORT` in `.env` to a free port before deploying.
+
 ### Network and Security Limitations
 
 15. **Port Conflicts** [Severity: Medium]

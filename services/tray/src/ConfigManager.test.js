@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const { parseEnvFile, parsePort, getProjectRoot } = require('./ConfigManager');
+const { parseEnvFile, parsePort, getProjectRoot, getActiveProfiles } = require('./ConfigManager');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -166,5 +166,64 @@ describe('getProjectRoot', () => {
       assert.equal(typeof result, 'string');
       assert.ok(result.length > 0);
     }
+  });
+});
+
+// ─── getActiveProfiles ────────────────────────────────────────────────────────
+
+describe('getActiveProfiles', () => {
+  it('returns [] when the installation-config.json file does not exist', () => {
+    const nonExistentRoot = path.join(tmpDir, 'no-such-root');
+    assert.deepEqual(getActiveProfiles(nonExistentRoot), []);
+  });
+
+  it('returns [] when installation-config.json has no profiles key', () => {
+    const root = path.join(tmpDir, 'no-profiles');
+    fs.mkdirSync(path.join(root, 'services'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'services', 'installation-config.json'), JSON.stringify({ version: '1.0.0' }));
+    assert.deepEqual(getActiveProfiles(root), []);
+  });
+
+  it('returns [] when profiles key is not an array', () => {
+    const root = path.join(tmpDir, 'bad-profiles');
+    fs.mkdirSync(path.join(root, 'services'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'services', 'installation-config.json'), JSON.stringify({ profiles: 'kaspa-node' }));
+    assert.deepEqual(getActiveProfiles(root), []);
+  });
+
+  it('returns [] and logs a warning when installation-config.json contains invalid JSON', () => {
+    const root = path.join(tmpDir, 'invalid-json');
+    fs.mkdirSync(path.join(root, 'services'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'services', 'installation-config.json'), 'not valid json {{{');
+    const warnings = [];
+    const origWarn = console.warn;
+    console.warn = (...args) => warnings.push(args.join(' '));
+    try {
+      assert.deepEqual(getActiveProfiles(root), []);
+      assert.ok(warnings.some((w) => w.includes('installation-config.json')),
+        'should log a warning mentioning installation-config.json');
+    } finally {
+      console.warn = origWarn;
+    }
+  });
+
+  it('returns the profiles array from a valid installation-config.json', () => {
+    const root = path.join(tmpDir, 'valid-profiles');
+    fs.mkdirSync(path.join(root, 'services'), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, 'services', 'installation-config.json'),
+      JSON.stringify({ profiles: ['kaspa-node', 'portainer'] })
+    );
+    assert.deepEqual(getActiveProfiles(root), ['kaspa-node', 'portainer']);
+  });
+
+  it('returns [] for an empty profiles array', () => {
+    const root = path.join(tmpDir, 'empty-profiles');
+    fs.mkdirSync(path.join(root, 'services'), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, 'services', 'installation-config.json'),
+      JSON.stringify({ profiles: [] })
+    );
+    assert.deepEqual(getActiveProfiles(root), []);
   });
 });

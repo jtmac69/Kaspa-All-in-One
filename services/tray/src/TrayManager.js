@@ -93,7 +93,7 @@ class TrayManager {
     const status = this._status;
     const wizardRunning = status ? status.wizard : false;
     const dashboardRunning = status ? status.dashboard : false;
-    const { wizardUrl, dashboardUrl } = this._config;
+    const { wizardUrl, dashboardUrl, portainerUrl, portainerActive } = this._config;
     const sc = this._serviceController;
     const hm = this._healthMonitor;
     const actionsEnabled = this._prereqsOk;
@@ -143,6 +143,19 @@ class TrayManager {
         enabled: actionsEnabled,
         click: openDashboard,
       },
+      ...(portainerActive ? [{
+        label: 'Open Portainer',
+        enabled: actionsEnabled,
+        click: () => {
+          if (!portainerUrl) {
+            this._handleActionError('Open Portainer',
+              new Error('Portainer URL could not be determined. Check PORTAINER_PORT in .env.'));
+            return;
+          }
+          Promise.resolve(shell.openExternal(portainerUrl))
+            .catch((err) => this._handleActionError('Open Portainer', err));
+        },
+      }] : []),
       { type: 'separator' },
       {
         label: 'Start All Services',

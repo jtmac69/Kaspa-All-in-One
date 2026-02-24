@@ -57,6 +57,8 @@ const TrayManager = require('./TrayManager');
 const TEST_CONFIG = {
   wizardUrl: 'http://localhost:3000',
   dashboardUrl: 'http://localhost:8080',
+  portainerUrl: 'http://localhost:9000',
+  portainerActive: false,
   projectRoot: '/opt/kaspa-aio',
 };
 
@@ -71,9 +73,11 @@ const mockHM = { pollNow: () => {} };
 /**
  * Creates a TrayManager with _tray, _serviceController, and _healthMonitor
  * pre-wired so _rebuildMenu() can be called directly without going through build().
+ * @param {boolean} prereqsOk - Whether prerequisites are satisfied
+ * @param {Object} configOverrides - Optional overrides merged into TEST_CONFIG
  */
-function makeWiredManager(prereqsOk = true) {
-  const tm = new TrayManager(TEST_CONFIG);
+function makeWiredManager(prereqsOk = true, configOverrides = {}) {
+  const tm = new TrayManager({ ...TEST_CONFIG, ...configOverrides });
   tm._tray = new mockElectron.Tray();
   tm._serviceController = mockSC;
   tm._healthMonitor = mockHM;
@@ -220,5 +224,43 @@ describe('TrayManager._rebuildMenu', () => {
     tm._rebuildMenu();
     const separators = capturedTemplate.filter((i) => i.type === 'separator');
     assert.ok(separators.length >= 2, 'menu should have at least 2 separators');
+  });
+
+  it('omits Open Portainer when portainerActive is false', () => {
+    const tm = makeWiredManager(true, { portainerActive: false });
+    tm._rebuildMenu();
+    const portainerItem = capturedTemplate.find((i) => i.label === 'Open Portainer');
+    assert.equal(portainerItem, undefined, 'Open Portainer should not appear when portainerActive is false');
+  });
+
+  it('includes Open Portainer when portainerActive is true', () => {
+    const tm = makeWiredManager(true, { portainerActive: true });
+    tm._rebuildMenu();
+    const portainerItem = capturedTemplate.find((i) => i.label === 'Open Portainer');
+    assert.ok(portainerItem, 'Open Portainer should appear when portainerActive is true');
+    assert.equal(portainerItem.enabled, true, 'Open Portainer should be enabled when prerequisites are met');
+  });
+
+  it('disables Open Portainer when portainerActive is true but prerequisites are missing', () => {
+    const tm = makeWiredManager(false, { portainerActive: true });
+    tm._rebuildMenu();
+    const portainerItem = capturedTemplate.find((i) => i.label === 'Open Portainer');
+    assert.ok(portainerItem, 'Open Portainer should still appear when portainerActive is true');
+    assert.equal(portainerItem.enabled, false, 'Open Portainer should be disabled when prerequisites are missing');
+  });
+
+  it('Open Portainer click opens portainerUrl via shell.openExternal', () => {
+    let openedUrl = null;
+    const origOpenExternal = mockElectron.shell.openExternal;
+    mockElectron.shell.openExternal = (url) => { openedUrl = url; return Promise.resolve(); };
+    try {
+      const tm = makeWiredManager(true, { portainerActive: true, portainerUrl: 'http://localhost:9000' });
+      tm._rebuildMenu();
+      const portainerItem = capturedTemplate.find((i) => i.label === 'Open Portainer');
+      portainerItem.click();
+      assert.equal(openedUrl, 'http://localhost:9000', 'click should open portainerUrl');
+    } finally {
+      mockElectron.shell.openExternal = origOpenExternal;
+    }
   });
 });

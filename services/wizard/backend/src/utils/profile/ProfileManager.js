@@ -365,6 +365,38 @@ class ProfileManager {
           }
         },
         category: 'advanced'
+      },
+
+      // =========================================================================
+      // PROFILE 9: portainer (Advanced — optional add-on)
+      // =========================================================================
+      'portainer': {
+        id: 'portainer',
+        name: 'Portainer',
+        description: 'Web UI for managing Docker containers, images, volumes, and networks',
+        services: [
+          { name: 'portainer', required: true, startupOrder: 99, description: 'Portainer Docker management UI' }
+        ],
+        dependencies: [],
+        prerequisites: [],
+        conflicts: [],
+        resources: {
+          minMemory: 1,
+          minCpu: 1,
+          minDisk: 1,
+          recommendedMemory: 1,
+          recommendedCpu: 1,
+          recommendedDisk: 2
+        },
+        ports: [9000],
+        configuration: {
+          required: [],
+          optional: ['PORTAINER_PORT'],
+          defaults: {
+            PORTAINER_PORT: 9000
+          }
+        },
+        category: 'advanced'
       }
     };
 

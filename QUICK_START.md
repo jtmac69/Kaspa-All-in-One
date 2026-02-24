@@ -51,6 +51,7 @@ docker compose --profile kaspa-node --profile kasia-app up -d
 - **Kasia App**: http://your-server:3001 (if enabled)
 - **K-Social**: http://your-server:3003 (if enabled)
 - **Explorer**: http://your-server:3008 (if enabled)
+- **Portainer**: http://your-server:9000 (if enabled — optional add-on)
 
 ### Common Templates
 
@@ -107,6 +108,22 @@ open http://localhost:8080
 # View template logs
 ./scripts/manage.sh logs --template kasia-suite
 ```
+
+## Optional Add-ons
+
+### Portainer (Docker Web UI)
+
+Portainer provides a web-based management interface for Docker containers, images, volumes, and networks — useful if you prefer a GUI over the command line.
+
+To enable it, select **Custom Setup** in the wizard and check the **Portainer** option, or add `portainer` to your profiles manually:
+
+```bash
+docker compose --profile portainer up -d
+```
+
+Access Portainer at: **http://your-server:9000**
+
+> **Note**: Portainer mounts the Docker socket (`/var/run/docker.sock`). This requires the user running Docker to have appropriate permissions — the same requirement as running Docker itself. On Linux, your user must be in the `docker` group.
 
 ## Next Steps
 

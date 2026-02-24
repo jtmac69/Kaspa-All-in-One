@@ -550,6 +550,91 @@ describe('Phase 3: Image Source Verification', () => {
   }, 10000);
 });
 
+// ─── Portainer Add-on Tests ───────────────────────────────────────────────────
+
+describe('Portainer optional add-on', () => {
+  let generator;
+
+  beforeEach(() => {
+    generator = new ConfigGenerator();
+  });
+
+  describe('_generatePortainerService()', () => {
+    test('uses default port 9000 when PORTAINER_PORT is not set', () => {
+      const out = generator._generatePortainerService({});
+      expect(out).toContain('"9000:9000"');
+    });
+
+    test('uses custom PORTAINER_PORT when set', () => {
+      const out = generator._generatePortainerService({ PORTAINER_PORT: 9001 });
+      expect(out).toContain('"9001:9000"');
+      expect(out).not.toContain('"9000:9000"');
+    });
+
+    test('uses default DATA_VOLUME_PATH fallback for bind mount', () => {
+      const out = generator._generatePortainerService({});
+      expect(out).toContain('/var/lib/kaspa-aio/portainer:/data');
+    });
+
+    test('uses custom DATA_VOLUME_PATH when set', () => {
+      const out = generator._generatePortainerService({ DATA_VOLUME_PATH: '/srv/kaspa' });
+      expect(out).toContain('/srv/kaspa/portainer:/data');
+    });
+
+    test('does not use a named Docker volume (portainer_data)', () => {
+      const out = generator._generatePortainerService({ DATA_VOLUME_PATH: '/srv/kaspa' });
+      expect(out).not.toContain('portainer_data');
+    });
+
+    test('includes Docker socket mount', () => {
+      const out = generator._generatePortainerService({});
+      expect(out).toContain('/var/run/docker.sock:/var/run/docker.sock');
+    });
+
+    test('includes healthcheck via wget against status API', () => {
+      const out = generator._generatePortainerService({});
+      expect(out).toContain('healthcheck:');
+      expect(out).toContain('localhost:9000/api/system/status');
+    });
+
+    test('connects to kaspa-network', () => {
+      const out = generator._generatePortainerService({});
+      expect(out).toContain('kaspa-network');
+    });
+
+    test('uses portainer/portainer-ce:latest image', () => {
+      const out = generator._generatePortainerService({});
+      expect(out).toContain('portainer/portainer-ce:latest');
+    });
+
+    test('sets container_name to portainer', () => {
+      const out = generator._generatePortainerService({});
+      expect(out).toContain('container_name: portainer');
+      expect(out).not.toContain('kaspa-portainer');
+    });
+  });
+
+  describe('generateDockerCompose() with portainer profile', () => {
+    test('includes portainer service when portainer profile is selected', async () => {
+      const compose = await generator.generateDockerCompose(TEST_CONFIG, ['portainer']);
+      expect(compose).toContain('portainer/portainer-ce:latest');
+      expect(compose).toContain('container_name: portainer');
+    }, 10000);
+
+    test('omits portainer service when portainer profile is not selected', async () => {
+      const compose = await generator.generateDockerCompose(TEST_CONFIG, ['kaspa-node']);
+      expect(compose).not.toContain('portainer/portainer-ce:latest');
+    }, 10000);
+
+    test('portainer compose output uses DATA_VOLUME_PATH from config', async () => {
+      const config = { ...TEST_CONFIG, PORTAINER_PORT: 9001, DATA_VOLUME_PATH: '/tmp/kaspa-test' };
+      const compose = await generator.generateDockerCompose(config, ['portainer']);
+      expect(compose).toContain('"9001:9000"');
+      expect(compose).toContain('/tmp/kaspa-test/portainer:/data');
+    }, 10000);
+  });
+});
+
 // Test runner summary
 afterAll(() => {
   console.log('\n' + '='.repeat(70));

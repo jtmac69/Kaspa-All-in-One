@@ -56,6 +56,32 @@ function parseEnvFile(envPath) {
   return vars;
 }
 
+/**
+ * Reads the installed profiles from services/installation-config.json.
+ * Returns the profiles array, or [] when:
+ *   - the file does not exist yet (ENOENT — not installed, silent)
+ *   - the profiles key is missing or not an array
+ * Logs a warning for all other errors (EACCES, corrupt JSON, etc.) so the
+ * user can diagnose why add-on menu items are not appearing.
+ */
+function getActiveProfiles(projectRoot) {
+  const configPath = path.join(projectRoot, 'services', 'installation-config.json');
+  try {
+    const raw = fs.readFileSync(configPath, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.profiles)) return [];
+    return parsed.profiles;
+  } catch (err) {
+    if (err.code === 'ENOENT') return []; // Not installed yet — expected
+    // Unexpected error: permission denied, corrupt JSON, etc.
+    console.warn(
+      `[ConfigManager] Could not read installation-config.json at "${configPath}": ` +
+      `${err.message}. Add-on menu items (e.g. Portainer) will be hidden.`
+    );
+    return [];
+  }
+}
+
 // Validates the parsed port value and falls back to the default on invalid input.
 // Accepts the full 1–65535 range; the deployment environment controls whether
 // the process can bind to privileged ports (< 1024).
@@ -82,6 +108,21 @@ async function load() {
     8080,
     'PORT'
   );
+  const portainerPort = parsePort(
+    envVars.PORTAINER_PORT || process.env.PORTAINER_PORT || '9000',
+    9000,
+    'PORTAINER_PORT'
+  );
+
+  // getActiveProfiles() is non-fatal: an unreadable config should never
+  // prevent the tray from starting. Errors are already logged inside the function.
+  let activeProfiles;
+  try {
+    activeProfiles = getActiveProfiles(projectRoot);
+  } catch (err) {
+    console.warn(`[ConfigManager] getActiveProfiles() threw unexpectedly: ${err.message}. Defaulting to no active profiles.`);
+    activeProfiles = [];
+  }
 
   return {
     projectRoot,
@@ -89,7 +130,10 @@ async function load() {
     dashboardPort,
     wizardUrl: `http://localhost:${wizardPort}`,
     dashboardUrl: `http://localhost:${dashboardPort}`,
+    portainerPort,
+    portainerUrl: `http://localhost:${portainerPort}`,
+    portainerActive: activeProfiles.includes('portainer'),
   };
 }
 
-module.exports = { load, getProjectRoot, parseEnvFile, parsePort };
+module.exports = { load, getProjectRoot, parseEnvFile, parsePort, getActiveProfiles };

@@ -75,7 +75,10 @@ class ConfigGenerator {
       // Wallet & Mining settings
       WALLET_CONNECTIVITY_ENABLED: Joi.boolean().optional(),
       MINING_ADDRESS: Joi.string().allow('').optional(),
-      STRATUM_PORT: Joi.number().integer().min(1024).max(65535).default(5555)
+      STRATUM_PORT: Joi.number().integer().min(1024).max(65535).default(5555),
+
+      // Portainer settings
+      PORTAINER_PORT: Joi.number().integer().min(1024).max(65535).default(9000)
     });
 
     // Profile-to-Service Mappings (NEW 8-PROFILE ARCHITECTURE)
@@ -89,7 +92,8 @@ class ConfigGenerator {
       'k-indexer-bundle': ['k-indexer', 'timescaledb-kindexer'],
       'kaspa-archive-node': ['kaspa-archive-node'],
       'kaspa-stratum': ['kaspa-stratum'],
-      
+      'portainer': ['portainer'],
+
       // Legacy Profile IDs → Services (BACKWARD COMPATIBILITY)
       'core': ['kaspa-node'],  // Dashboard is now local, not containerized
       'kaspa-user-applications': ['kasia-app', 'k-social', 'kaspa-explorer'],
@@ -653,21 +657,12 @@ class ConfigGenerator {
       ''
     ];
 
-    // Add Portainer service
-    lines.push(
-      '  portainer:',
-      '    image: portainer/portainer-ce:latest',
-      '    container_name: kaspa-portainer',
-      '    restart: unless-stopped',
-      '    ports:',
-      `      - "${config.PORTAINER_PORT || 9000}:9000"`,
-      '    volumes:',
-      '      - /var/run/docker.sock:/var/run/docker.sock',
-      '      - portainer_data:/data',
-      '    networks:',
-      '      - kaspa-network',
-      ''
-    );
+    // Add Portainer service (only when portainer profile is selected).
+    // Delegates to _generatePortainerService() to avoid duplicating the service
+    // definition — including port quoting, bind-mount path, and healthcheck.
+    if (profiles.includes('portainer')) {
+      lines.push(this._generatePortainerService(config).trimEnd(), '');
+    }
 
     // Add pgAdmin service if database profiles are selected
     // Note: Only profiles that use TimescaleDB need pgAdmin
@@ -716,12 +711,10 @@ class ConfigGenerator {
       );
     }
 
-    // Add volumes
-    lines.push(
-      'volumes:',
-      '  portainer_data:',
-      '    driver: local'
-    );
+    // Portainer previously used a named volume (portainer_data); it now uses a
+    // bind mount under DATA_VOLUME_PATH instead. pgadmin_data is still a named
+    // volume when developer profiles are active (see conditional below).
+    lines.push('volumes:');
 
     if (profiles.includes('indexer-services') || profiles.includes('kaspa-user-applications') || profiles.includes('archive-node')) {
       lines.push(
@@ -1900,6 +1893,36 @@ ${portsYaml}
   }
 
   /**
+   * Generate portainer service definition
+   * @param {Object} config - Configuration object
+   * @returns {string} Docker Compose service definition
+   * @private
+   */
+  _generatePortainerService(config) {
+    const portainerPort = config.PORTAINER_PORT || 9000;
+    const dataPath = config.DATA_VOLUME_PATH || '/var/lib/kaspa-aio';
+
+    return `  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+      - "${portainerPort}:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - "${dataPath}/portainer:/data"
+    networks:
+      - kaspa-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9000/api/system/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+`;
+  }
+
+  /**
    * Generate docker-compose.yml with dynamic port configuration (task 5.1)
    * This generates a complete docker-compose.yml file with configured ports
    * @param {Object} config - Configuration object with port settings
@@ -1967,7 +1990,12 @@ ${portsYaml}
     if (services.includes('kaspa-stratum')) {
       compose += this._generateKaspaStratumService(config);
     }
-    
+
+    // portainer service (optional add-on)
+    if (services.includes('portainer')) {
+      compose += this._generatePortainerService(config);
+    }
+
     // Add networks section
     compose += `
 networks:
