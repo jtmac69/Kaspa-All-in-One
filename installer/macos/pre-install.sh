@@ -1,11 +1,14 @@
 #!/bin/bash
 # Kaspa AIO — macOS pre-install script
-# Checks for Homebrew, Docker Desktop, and Node.js 18+.
+# Checks for Homebrew, Docker Desktop, and Node.js 20 LTS.
 set -euo pipefail
 
 log() { echo "[kaspa-aio-pre-install] $*"; }
 
 # ─── Homebrew ────────────────────────────────────────────────────────────────
+# Homebrew is the standard package manager for macOS developer tools and has
+# no alternative non-interactive installer. The official install script is the
+# only supported method; see https://brew.sh for source and security details.
 if ! command -v brew &>/dev/null; then
   log "Homebrew not found — installing..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -25,16 +28,17 @@ else
   log "Docker already installed: $(docker --version)"
 fi
 
-# ─── Node.js 18+ ─────────────────────────────────────────────────────────────
+# ─── Node.js 20 LTS ──────────────────────────────────────────────────────────
+# Node 18 is EOL (Apr 2025) — use Node 20 LTS to match the Linux installer.
 NODE_MAJOR=0
 if command -v node &>/dev/null; then
   NODE_MAJOR=$(node --version 2>/dev/null | grep -oE '[0-9]+' | head -1 || echo 0)
 fi
 
-if [ "$NODE_MAJOR" -lt 18 ]; then
-  log "Node.js 18+ not found — installing via Homebrew..."
-  brew install node@18
-  brew link node@18 --force --overwrite 2>/dev/null || true
+if [ "$NODE_MAJOR" -lt 20 ]; then
+  log "Node.js 20+ not found (found v${NODE_MAJOR}) — installing via Homebrew..."
+  brew install node@20
+  brew link node@20 --force --overwrite 2>/dev/null || true
   log "Node.js installed: $(node --version)"
 else
   log "Node.js already installed: $(node --version)"

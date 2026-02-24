@@ -19,10 +19,10 @@ function getProjectRoot() {
   if (process.env.KASPA_AIO_ROOT) return process.env.KASPA_AIO_ROOT;
   const platformDefault = PLATFORM_DEFAULTS[process.platform] || '/opt/kaspa-aio';
   if (!fs.existsSync(platformDefault)) {
-    // Dev fallback: running from within the repo
+    // Dev fallback: __dirname is services/tray/src, so three levels up is the repo root
     const repoRoot = path.resolve(__dirname, '../../..');
     if (fs.existsSync(path.join(repoRoot, 'docker-compose.yml'))) return repoRoot;
-    // M6: Warn when no valid root found — downstream failures will be diagnosable
+    // Warn when no valid root found so downstream failures are diagnosable
     console.warn(
       `[ConfigManager] Project root not found at "${platformDefault}" and no ` +
       `docker-compose.yml found at "${repoRoot}". ` +
@@ -39,7 +39,8 @@ function parseEnvFile(envPath) {
   try {
     content = fs.readFileSync(envPath, 'utf8');
   } catch (err) {
-    // H5: Don't throw on EACCES/EISDIR — log and fall back to defaults
+    // Fall back to defaults on any read error (e.g. EACCES, EISDIR) —
+    // the .env file is optional for the tray app
     console.warn(`[ConfigManager] Could not read .env at ${envPath}: ${err.message}. Using default ports.`);
     return vars;
   }
@@ -55,7 +56,9 @@ function parseEnvFile(envPath) {
   return vars;
 }
 
-// M3: Validate parsed port; fall back to default with a warning on invalid value
+// Validates the parsed port value and falls back to the default on invalid input.
+// Accepts the full 1–65535 range; the deployment environment controls whether
+// the process can bind to privileged ports (< 1024).
 function parsePort(rawValue, defaultPort, varName) {
   const parsed = parseInt(rawValue, 10);
   if (isNaN(parsed) || parsed < 1 || parsed > 65535) {

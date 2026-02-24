@@ -19,19 +19,16 @@ if (!app.requestSingleInstanceLock()) {
   process.exit(0);
 }
 
-// C1: Top-level .catch() so any startup exception shows a dialog instead of
-// silently failing with no tray icon and no user feedback.
+// Top-level .catch() ensures any startup exception shows a dialog and quits
+// rather than silently failing with no tray icon and no user feedback.
 app.whenReady().then(async () => {
   // Load config (.env port overrides + project root detection)
   const config = await ConfigManager.load();
 
-  // Check prerequisites at startup
+  // Check prerequisites at startup. Show a warning but continue — the tray
+  // app is still useful for monitoring, and the user may fix prerequisites
+  // without restarting. Service-start actions are disabled until prereqs are met.
   const prereqs = await PrerequisiteChecker.check();
-
-  // H8: Pass prereqsOk to TrayManager so it can disable service actions
-  // when prerequisites are missing, preventing silent failures on menu clicks.
-  // Show warning dialog but continue — the tray app is still useful for
-  // monitoring and the user may fix prerequisites without restarting.
   if (!prereqs.ok) {
     dialog.showMessageBoxSync({
       type: 'warning',
@@ -48,7 +45,6 @@ app.whenReady().then(async () => {
     trayManager.updateStatus(status);
   });
 
-  // H8: prereqsOk disables service-start menu items when prerequisites are missing
   trayManager.build(serviceController, healthMonitor, prereqs.ok);
 
   // Register auto-launch on login (silent — don't bother user if it fails)
@@ -67,7 +63,7 @@ app.whenReady().then(async () => {
   healthMonitor.start();
 
 }).catch((err) => {
-  // C1: Fatal startup error — show dialog and quit rather than silently hanging
+  // Fatal startup error — show dialog and quit rather than silently hanging
   console.error('[main] Fatal startup error:', err);
   dialog.showMessageBoxSync({
     type: 'error',

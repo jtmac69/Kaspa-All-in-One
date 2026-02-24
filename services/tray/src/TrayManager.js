@@ -22,9 +22,11 @@ class TrayManager {
     this._serviceController = null;
     this._healthMonitor = null;
     this._status = null; // null = unknown
-    this._prereqsOk = true; // set to false if prerequisites are missing
+    this._prereqsOk = true;
   }
 
+  // prereqsOk=false disables all service-start/stop menu items and shows a
+  // warning banner, preventing silent failures when prerequisites are missing.
   build(serviceController, healthMonitor, prereqsOk = true) {
     this._serviceController = serviceController;
     this._healthMonitor = healthMonitor;
@@ -38,10 +40,16 @@ class TrayManager {
 
   updateStatus(status) {
     this._status = status;
-    const iconName = this._iconForStatus(status);
-    this._tray.setImage(this._loadIcon(iconName));
-    const tooltip = `Kaspa AIO — Wizard: ${status.wizard ? 'Running' : 'Stopped'} | Dashboard: ${status.dashboard ? 'Running' : 'Stopped'}`;
-    this._tray.setToolTip(tooltip);
+    // Wrap icon update in try-catch: a missing icon file after startup should
+    // not crash the polling loop or silently freeze the tray with no indication.
+    try {
+      const iconName = this._iconForStatus(status);
+      this._tray.setImage(this._loadIcon(iconName));
+      const tooltip = `Kaspa AIO — Wizard: ${status.wizard ? 'Running' : 'Stopped'} | Dashboard: ${status.dashboard ? 'Running' : 'Stopped'}`;
+      this._tray.setToolTip(tooltip);
+    } catch (err) {
+      console.error('[TrayManager] Failed to update tray icon:', err.message);
+    }
     this._rebuildMenu();
   }
 
@@ -53,8 +61,9 @@ class TrayManager {
   }
 
   _loadIcon(name) {
-    // C2: Check that the icon file exists before calling createFromPath.
-    // nativeImage.createFromPath() silently returns an empty image for missing files.
+    // nativeImage.createFromPath() silently returns an empty image for missing
+    // files, so we validate existence first. On macOS, icons must be named
+    // *Template.png so the OS applies automatic light/dark adaptive rendering.
     const suffix = process.platform === 'darwin' ? `${name}Template.png` : `${name}.png`;
     const iconPath = path.join(ASSETS_DIR, suffix);
     if (!fs.existsSync(iconPath)) {
@@ -69,7 +78,7 @@ class TrayManager {
     return `${dot}  ${name}: ${state}`;
   }
 
-  // H1: Shared error handler for all menu action failures — shows dialog + logs
+  // Shared error handler for all menu action failures — shows a dialog and logs.
   _handleActionError(actionName, err) {
     console.error(`[TrayManager] Action "${actionName}" failed:`, err.message);
     dialog.showMessageBox({
@@ -77,7 +86,7 @@ class TrayManager {
       title: 'Kaspa AIO — Action Failed',
       message: `"${actionName}" failed:\n\n${err.message}`,
       buttons: ['OK'],
-    }).catch(() => {}); // dialog itself should never fail, but guard anyway
+    }).catch(() => {});
   }
 
   _rebuildMenu() {
@@ -87,8 +96,22 @@ class TrayManager {
     const { wizardUrl, dashboardUrl } = this._config;
     const sc = this._serviceController;
     const hm = this._healthMonitor;
-    // H8: Disable service-start actions when prerequisites are missing
     const actionsEnabled = this._prereqsOk;
+
+    // Helper: start service if not running, then open URL.
+    // All async actions attach .catch() so failures surface as error dialogs.
+    const openWizard = () => {
+      const p = wizardRunning
+        ? shell.openExternal(wizardUrl)
+        : sc.startWizard().then(() => shell.openExternal(wizardUrl));
+      Promise.resolve(p).catch((err) => this._handleActionError('Open Wizard', err));
+    };
+    const openDashboard = () => {
+      const p = dashboardRunning
+        ? shell.openExternal(dashboardUrl)
+        : sc.startDashboard().then(() => shell.openExternal(dashboardUrl));
+      Promise.resolve(p).catch((err) => this._handleActionError('Open Dashboard', err));
+    };
 
     const template = [
       {
@@ -100,53 +123,31 @@ class TrayManager {
         enabled: false,
       }]),
       { type: 'separator' },
+      // Status rows are informational only — click "Open Wizard/Dashboard" below to act.
       {
         label: this._statusLabel('Wizard', wizardRunning),
-        enabled: actionsEnabled,
-        // H1: All click handlers attach .catch() so async failures surface as dialogs
-        click: () => {
-          const action = wizardRunning
-            ? shell.openExternal(wizardUrl)
-            : sc.startWizard().then(() => shell.openExternal(wizardUrl));
-          Promise.resolve(action).catch((err) => this._handleActionError('Open Wizard', err));
-        },
+        enabled: false,
       },
       {
         label: this._statusLabel('Dashboard', dashboardRunning),
-        enabled: actionsEnabled,
-        click: () => {
-          const action = dashboardRunning
-            ? shell.openExternal(dashboardUrl)
-            : sc.startDashboard().then(() => shell.openExternal(dashboardUrl));
-          Promise.resolve(action).catch((err) => this._handleActionError('Open Dashboard', err));
-        },
+        enabled: false,
       },
       { type: 'separator' },
       {
         label: 'Open Wizard',
         enabled: actionsEnabled,
-        click: () => {
-          const action = wizardRunning
-            ? shell.openExternal(wizardUrl)
-            : sc.startWizard().then(() => shell.openExternal(wizardUrl));
-          Promise.resolve(action).catch((err) => this._handleActionError('Open Wizard', err));
-        },
+        click: openWizard,
       },
       {
         label: 'Open Dashboard',
         enabled: actionsEnabled,
-        click: () => {
-          const action = dashboardRunning
-            ? shell.openExternal(dashboardUrl)
-            : sc.startDashboard().then(() => shell.openExternal(dashboardUrl));
-          Promise.resolve(action).catch((err) => this._handleActionError('Open Dashboard', err));
-        },
+        click: openDashboard,
       },
       { type: 'separator' },
       {
         label: 'Start All Services',
         enabled: actionsEnabled,
-        // M2: Use public pollNow() instead of accessing private _poll()
+        // Trigger an immediate status refresh after the service action completes.
         click: () => sc.startAll()
           .then(() => hm && hm.pollNow())
           .catch((err) => this._handleActionError('Start All Services', err)),

@@ -18,7 +18,7 @@ class HealthMonitor {
     this._lastStatus = { wizard: false, dashboard: false };
   }
 
-  // H2: Attach .catch() to all _poll() calls so async exceptions don't become
+  // Attach .catch() to all _poll() calls so async exceptions don't become
   // unhandled rejections that silently kill the polling loop.
   start() {
     this._poll().catch((err) => console.error('[HealthMonitor] Poll error:', err.message));
@@ -35,7 +35,8 @@ class HealthMonitor {
     }
   }
 
-  // M2: Public method for external callers (replaces direct _poll() access from TrayManager)
+  // Fire-and-forget poll: errors are logged but not propagated to callers.
+  // Returns void intentionally — callers cannot await poll completion.
   pollNow() {
     this._poll().catch((err) => console.error('[HealthMonitor] Poll error:', err.message));
   }
