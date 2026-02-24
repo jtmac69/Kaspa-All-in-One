@@ -1,0 +1,116 @@
+name: Build Installers
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux-deb:
+    name: Build Linux .deb
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: services/tray/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: services/tray
+
+      - name: Install Linux build dependencies
+        run: sudo apt-get install -y rpm
+
+      - name: Build .deb (x64)
+        run: npm run dist:linux -- --x64
+        working-directory: services/tray
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload .deb artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: services/tray/dist/*.deb
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos-dmg:
+    name: Build macOS .dmg
+    runs-on: macos-13
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: services/tray/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: services/tray
+
+      - name: Build .dmg (x64 + arm64)
+        run: npm run dist:mac -- --x64 --arm64
+        working-directory: services/tray
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Code signing (optional — set these secrets to enable)
+          CSC_LINK: ${{ secrets.MAC_CERTS }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTS_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Upload .dmg artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: services/tray/dist/*.dmg
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows-exe:
+    name: Build Windows .exe
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: services/tray/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: services/tray
+
+      - name: Build NSIS installer (x64)
+        run: npm run dist:win -- --x64
+        working-directory: services/tray
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload .exe artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: services/tray/dist/*.exe
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
