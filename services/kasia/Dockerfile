@@ -3,10 +3,11 @@
 # Using v0.6.2 release from https://github.com/K-Kluster/Kasia/releases/tag/v0.6.2
 # Downloads pre-built kaspa-wasm from IzioDev/rusty-kaspa (same as Kasia CI)
 
-# Pin builder to amd64: Rust/wasm-pack compilation produces platform-independent
-# static web files, so there's no benefit to emulating arm64 in the builder stage.
+# Use the build host's native platform for the builder stage. Rust/wasm-pack
+# compilation produces platform-independent static web files, so the builder
+# always runs natively regardless of the final image target platform.
 # The final nginx stage uses the target platform natively.
-FROM --platform=linux/amd64 node:22-alpine AS builder
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
 WORKDIR /app
 
