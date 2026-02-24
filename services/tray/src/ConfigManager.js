@@ -6,7 +6,7 @@ const os = require('os');
 
 /**
  * Resolves project root and reads .env for port overrides.
- * Priority: KASPA_AIO_ROOT env var → platform default path.
+ * Priority: KASPA_AIO_ROOT env var → platform default path → repo root fallback.
  */
 
 const PLATFORM_DEFAULTS = {
@@ -18,11 +18,16 @@ const PLATFORM_DEFAULTS = {
 function getProjectRoot() {
   if (process.env.KASPA_AIO_ROOT) return process.env.KASPA_AIO_ROOT;
   const platformDefault = PLATFORM_DEFAULTS[process.platform] || '/opt/kaspa-aio';
-  // If we can't find the platform default, fall back to directory relative to this file
-  // (useful for development: running tray app from the repo)
   if (!fs.existsSync(platformDefault)) {
+    // Dev fallback: running from within the repo
     const repoRoot = path.resolve(__dirname, '../../..');
     if (fs.existsSync(path.join(repoRoot, 'docker-compose.yml'))) return repoRoot;
+    // M6: Warn when no valid root found — downstream failures will be diagnosable
+    console.warn(
+      `[ConfigManager] Project root not found at "${platformDefault}" and no ` +
+      `docker-compose.yml found at "${repoRoot}". ` +
+      `Set KASPA_AIO_ROOT to the correct path. Defaulting to "${platformDefault}".`
+    );
   }
   return platformDefault;
 }
@@ -30,8 +35,15 @@ function getProjectRoot() {
 function parseEnvFile(envPath) {
   const vars = {};
   if (!fs.existsSync(envPath)) return vars;
-  const lines = fs.readFileSync(envPath, 'utf8').split('\n');
-  for (const line of lines) {
+  let content;
+  try {
+    content = fs.readFileSync(envPath, 'utf8');
+  } catch (err) {
+    // H5: Don't throw on EACCES/EISDIR — log and fall back to defaults
+    console.warn(`[ConfigManager] Could not read .env at ${envPath}: ${err.message}. Using default ports.`);
+    return vars;
+  }
+  for (const line of content.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
     const eq = trimmed.indexOf('=');
@@ -43,12 +55,30 @@ function parseEnvFile(envPath) {
   return vars;
 }
 
+// M3: Validate parsed port; fall back to default with a warning on invalid value
+function parsePort(rawValue, defaultPort, varName) {
+  const parsed = parseInt(rawValue, 10);
+  if (isNaN(parsed) || parsed < 1 || parsed > 65535) {
+    console.warn(`[ConfigManager] Invalid value for ${varName}: "${rawValue}". Using default port ${defaultPort}.`);
+    return defaultPort;
+  }
+  return parsed;
+}
+
 async function load() {
   const projectRoot = getProjectRoot();
   const envVars = parseEnvFile(path.join(projectRoot, '.env'));
 
-  const wizardPort = parseInt(envVars.WIZARD_PORT || process.env.WIZARD_PORT || '3000', 10);
-  const dashboardPort = parseInt(envVars.PORT || process.env.PORT || '8080', 10);
+  const wizardPort = parsePort(
+    envVars.WIZARD_PORT || process.env.WIZARD_PORT || '3000',
+    3000,
+    'WIZARD_PORT'
+  );
+  const dashboardPort = parsePort(
+    envVars.PORT || process.env.PORT || '8080',
+    8080,
+    'PORT'
+  );
 
   return {
     projectRoot,

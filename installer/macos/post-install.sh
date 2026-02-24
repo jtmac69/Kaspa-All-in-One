@@ -11,6 +11,16 @@ NODE_BIN=$(command -v node || echo "/usr/local/bin/node")
 
 mkdir -p "$LAUNCH_AGENTS_DIR"
 
+# M4: Determine the log directory first so the plist and the mkdir are always consistent.
+# Try /var/log/kaspa-aio (requires root write access); fall back to user-local path.
+if mkdir -p /var/log/kaspa-aio 2>/dev/null; then
+  LOG_DIR="/var/log/kaspa-aio"
+else
+  LOG_DIR="$HOME/.kaspa-aio/logs"
+  mkdir -p "$LOG_DIR"
+fi
+log "Log directory: $LOG_DIR"
+
 # ─── Dashboard LaunchAgent ────────────────────────────────────────────────────
 DASHBOARD_PLIST="$LAUNCH_AGENTS_DIR/com.kaspa-aio.dashboard.plist"
 cat > "$DASHBOARD_PLIST" <<EOF
@@ -37,9 +47,9 @@ cat > "$DASHBOARD_PLIST" <<EOF
   <key>KeepAlive</key>
   <true/>
   <key>StandardOutPath</key>
-  <string>/var/log/kaspa-aio/dashboard.log</string>
+  <string>${LOG_DIR}/dashboard.log</string>
   <key>StandardErrorPath</key>
-  <string>/var/log/kaspa-aio/dashboard-error.log</string>
+  <string>${LOG_DIR}/dashboard-error.log</string>
 </dict>
 </plist>
 EOF
@@ -49,8 +59,5 @@ log "Dashboard LaunchAgent created: $DASHBOARD_PLIST"
 # Load the agent for the current login session
 launchctl load "$DASHBOARD_PLIST" 2>/dev/null || true
 log "Dashboard LaunchAgent loaded."
-
-# ─── Log directory ────────────────────────────────────────────────────────────
-mkdir -p /var/log/kaspa-aio 2>/dev/null || mkdir -p "$HOME/.kaspa-aio/logs"
 
 log "macOS post-install complete."

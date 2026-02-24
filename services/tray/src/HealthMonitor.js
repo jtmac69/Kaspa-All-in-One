@@ -18,9 +18,14 @@ class HealthMonitor {
     this._lastStatus = { wizard: false, dashboard: false };
   }
 
+  // H2: Attach .catch() to all _poll() calls so async exceptions don't become
+  // unhandled rejections that silently kill the polling loop.
   start() {
-    this._poll();
-    this._interval = setInterval(() => this._poll(), POLL_INTERVAL_MS);
+    this._poll().catch((err) => console.error('[HealthMonitor] Poll error:', err.message));
+    this._interval = setInterval(
+      () => this._poll().catch((err) => console.error('[HealthMonitor] Poll error:', err.message)),
+      POLL_INTERVAL_MS
+    );
   }
 
   stop() {
@@ -28,6 +33,11 @@ class HealthMonitor {
       clearInterval(this._interval);
       this._interval = null;
     }
+  }
+
+  // M2: Public method for external callers (replaces direct _poll() access from TrayManager)
+  pollNow() {
+    this._poll().catch((err) => console.error('[HealthMonitor] Poll error:', err.message));
   }
 
   async _poll() {
@@ -48,7 +58,13 @@ class HealthMonitor {
         resolve(res.statusCode >= 200 && res.statusCode < 400);
         res.resume(); // drain response
       });
-      req.on('error', () => resolve(false));
+      req.on('error', (err) => {
+        // Log non-connection-refused errors to aid debugging (ENOTFOUND, EHOSTUNREACH, etc.)
+        if (err.code !== 'ECONNREFUSED' && err.code !== 'ECONNRESET') {
+          console.warn(`[HealthMonitor] ${url} — ${err.code || err.message}`);
+        }
+        resolve(false);
+      });
       req.on('timeout', () => { req.destroy(); resolve(false); });
     });
   }

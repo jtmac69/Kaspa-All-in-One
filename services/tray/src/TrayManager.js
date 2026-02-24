@@ -1,7 +1,8 @@
 'use strict';
 
-const { Tray, Menu, shell, nativeImage, app } = require('electron');
+const { Tray, Menu, shell, nativeImage, app, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 const ASSETS_DIR = path.join(__dirname, '..', 'assets');
 
@@ -21,11 +22,13 @@ class TrayManager {
     this._serviceController = null;
     this._healthMonitor = null;
     this._status = null; // null = unknown
+    this._prereqsOk = true; // set to false if prerequisites are missing
   }
 
-  build(serviceController, healthMonitor) {
+  build(serviceController, healthMonitor, prereqsOk = true) {
     this._serviceController = serviceController;
     this._healthMonitor = healthMonitor;
+    this._prereqsOk = prereqsOk;
 
     const icon = this._loadIcon('tray-grey');
     this._tray = new Tray(icon);
@@ -50,17 +53,31 @@ class TrayManager {
   }
 
   _loadIcon(name) {
-    // On macOS, use template images (white/black adaptive)
-    if (process.platform === 'darwin') {
-      return nativeImage.createFromPath(path.join(ASSETS_DIR, `${name}Template.png`));
+    // C2: Check that the icon file exists before calling createFromPath.
+    // nativeImage.createFromPath() silently returns an empty image for missing files.
+    const suffix = process.platform === 'darwin' ? `${name}Template.png` : `${name}.png`;
+    const iconPath = path.join(ASSETS_DIR, suffix);
+    if (!fs.existsSync(iconPath)) {
+      throw new Error(`Tray icon not found: ${iconPath}. Ensure assets are packaged correctly.`);
     }
-    return nativeImage.createFromPath(path.join(ASSETS_DIR, `${name}.png`));
+    return nativeImage.createFromPath(iconPath);
   }
 
   _statusLabel(name, isRunning) {
     const dot = isRunning ? '●' : '○';
     const state = isRunning ? 'Running' : 'Stopped';
     return `${dot}  ${name}: ${state}`;
+  }
+
+  // H1: Shared error handler for all menu action failures — shows dialog + logs
+  _handleActionError(actionName, err) {
+    console.error(`[TrayManager] Action "${actionName}" failed:`, err.message);
+    dialog.showMessageBox({
+      type: 'error',
+      title: 'Kaspa AIO — Action Failed',
+      message: `"${actionName}" failed:\n\n${err.message}`,
+      buttons: ['OK'],
+    }).catch(() => {}); // dialog itself should never fail, but guard anyway
   }
 
   _rebuildMenu() {
@@ -70,49 +87,76 @@ class TrayManager {
     const { wizardUrl, dashboardUrl } = this._config;
     const sc = this._serviceController;
     const hm = this._healthMonitor;
-    const self = this;
+    // H8: Disable service-start actions when prerequisites are missing
+    const actionsEnabled = this._prereqsOk;
 
     const template = [
       {
         label: 'Kaspa AIO',
         enabled: false,
       },
+      ...(actionsEnabled ? [] : [{
+        label: '⚠ Prerequisites missing — service actions disabled',
+        enabled: false,
+      }]),
       { type: 'separator' },
       {
         label: this._statusLabel('Wizard', wizardRunning),
-        enabled: true,
-        click: () => wizardRunning
-          ? shell.openExternal(wizardUrl)
-          : sc.startWizard().then(() => shell.openExternal(wizardUrl)),
+        enabled: actionsEnabled,
+        // H1: All click handlers attach .catch() so async failures surface as dialogs
+        click: () => {
+          const action = wizardRunning
+            ? shell.openExternal(wizardUrl)
+            : sc.startWizard().then(() => shell.openExternal(wizardUrl));
+          Promise.resolve(action).catch((err) => this._handleActionError('Open Wizard', err));
+        },
       },
       {
         label: this._statusLabel('Dashboard', dashboardRunning),
-        enabled: true,
-        click: () => dashboardRunning
-          ? shell.openExternal(dashboardUrl)
-          : sc.startDashboard().then(() => shell.openExternal(dashboardUrl)),
+        enabled: actionsEnabled,
+        click: () => {
+          const action = dashboardRunning
+            ? shell.openExternal(dashboardUrl)
+            : sc.startDashboard().then(() => shell.openExternal(dashboardUrl));
+          Promise.resolve(action).catch((err) => this._handleActionError('Open Dashboard', err));
+        },
       },
       { type: 'separator' },
       {
         label: 'Open Wizard',
-        click: () => wizardRunning
-          ? shell.openExternal(wizardUrl)
-          : sc.startWizard().then(() => shell.openExternal(wizardUrl)),
+        enabled: actionsEnabled,
+        click: () => {
+          const action = wizardRunning
+            ? shell.openExternal(wizardUrl)
+            : sc.startWizard().then(() => shell.openExternal(wizardUrl));
+          Promise.resolve(action).catch((err) => this._handleActionError('Open Wizard', err));
+        },
       },
       {
         label: 'Open Dashboard',
-        click: () => dashboardRunning
-          ? shell.openExternal(dashboardUrl)
-          : sc.startDashboard().then(() => shell.openExternal(dashboardUrl)),
+        enabled: actionsEnabled,
+        click: () => {
+          const action = dashboardRunning
+            ? shell.openExternal(dashboardUrl)
+            : sc.startDashboard().then(() => shell.openExternal(dashboardUrl));
+          Promise.resolve(action).catch((err) => this._handleActionError('Open Dashboard', err));
+        },
       },
       { type: 'separator' },
       {
         label: 'Start All Services',
-        click: () => sc.startAll().then(() => hm && self._poll(hm)),
+        enabled: actionsEnabled,
+        // M2: Use public pollNow() instead of accessing private _poll()
+        click: () => sc.startAll()
+          .then(() => hm && hm.pollNow())
+          .catch((err) => this._handleActionError('Start All Services', err)),
       },
       {
         label: 'Stop All Services',
-        click: () => sc.stopAll().then(() => hm && self._poll(hm)),
+        enabled: actionsEnabled,
+        click: () => sc.stopAll()
+          .then(() => hm && hm.pollNow())
+          .catch((err) => this._handleActionError('Stop All Services', err)),
       },
       { type: 'separator' },
       {
@@ -127,11 +171,6 @@ class TrayManager {
 
     const menu = Menu.buildFromTemplate(template);
     this._tray.setContextMenu(menu);
-  }
-
-  _poll(healthMonitor) {
-    // Trigger an immediate re-poll after a state change action
-    healthMonitor._poll();
   }
 }
 
