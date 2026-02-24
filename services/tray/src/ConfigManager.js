@@ -92,4 +92,4 @@ async function load() {
   };
 }
 
-module.exports = { load, getProjectRoot, parseEnvFile };
+module.exports = { load, getProjectRoot, parseEnvFile, parsePort };

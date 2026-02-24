@@ -49,6 +49,21 @@ jobs:
           name: coverage-${{ matrix.service }}
           path: ${{ matrix.path }}/coverage
 
+  tray-unit-tests:
+    name: Tray Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      # Tray tests use only Node built-ins and module-level electron mocking,
+      # so npm install is not required to run them.
+      - name: Run tray unit tests
+        run: node --test services/tray/src/*.test.js
+
   integration-tests:
     name: Integration Tests (Mock)
     runs-on: ubuntu-latest
@@ -128,7 +143,7 @@ jobs:
   publish-edge:
     name: Publish Edge Images (${{ matrix.service }})
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [unit-tests, docker-build]
+    needs: [unit-tests, tray-unit-tests, docker-build]
     runs-on: ubuntu-latest
     permissions:
       packages: write

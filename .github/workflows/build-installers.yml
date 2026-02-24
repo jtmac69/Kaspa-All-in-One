@@ -10,8 +10,22 @@ permissions:
   contents: write
 
 jobs:
+  tray-unit-tests:
+    name: Tray Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run tray unit tests
+        run: node --test services/tray/src/*.test.js
+
   build-linux-deb:
     name: Build Linux .deb
+    needs: [tray-unit-tests]
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -47,6 +61,7 @@ jobs:
 
   build-macos-dmg:
     name: Build macOS .dmg
+    needs: [tray-unit-tests]
     runs-on: macos-13
     steps:
       - name: Checkout
@@ -85,6 +100,7 @@ jobs:
 
   build-windows-exe:
     name: Build Windows .exe
+    needs: [tray-unit-tests]
     runs-on: windows-2022
     steps:
       - name: Checkout
