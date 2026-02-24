@@ -28,34 +28,68 @@ function Get-NodeMajorVersion {
 }
 
 # ─── Docker runtime ───────────────────────────────────────────────────────────
-# Rancher Desktop is recommended over Docker Desktop because:
-#   * Free and open source — Docker Desktop requires a paid commercial license
-#     for organizations with >250 employees or >$10M annual revenue.
-#   * Full Docker CLI and Docker Compose support — no Kaspa AIO changes needed.
-# Note: both use WSL2 on Windows, so the underlying disk file (ext4.vhdx) grows
-# as images are pulled. Run `docker system prune` periodically to reclaim space
-# inside the VM. To compact the VHDX itself, see: https://rancherdesktop.io/faq
+# Rancher Desktop is the first choice, Podman Desktop the second, Docker Desktop
+# the last resort. Comparison:
+#
+#   Rancher Desktop  — free/OSS, full Docker CLI + Compose support, uses WSL2
+#                      (ext4.vhdx grows as images are pulled, same as Docker Desktop)
+#
+#   Podman Desktop   — free/OSS, daemonless (no WSL2 VM, no growing VHDX file),
+#                      best option for disk space. Docker Compose works via the
+#                      Podman socket but may have edge cases on complex projects.
+#
+#   Docker Desktop   — commercial license required for organisations >250 employees
+#                      or >$10M revenue; same WSL2 disk-growth issue as Rancher.
+#
+# Run `docker system prune` periodically with any runtime to reclaim space inside
+# the VM (removes stopped containers, dangling images, and unused networks).
 if (-not (Test-CommandExists "docker")) {
     Write-Log ""
-    Write-Log "No Docker runtime found. Installing Rancher Desktop (recommended)..."
+    Write-Log "No Docker runtime found. Trying Rancher Desktop, then Podman Desktop, then Docker Desktop..."
     Write-Log ""
-    Write-Log "Why Rancher Desktop instead of Docker Desktop?"
-    Write-Log "  * Free for all users — Docker Desktop requires a commercial license for organizations."
-    Write-Log "  * Full Docker CLI and Docker Compose support — no Kaspa AIO changes needed."
-    Write-Log "  * See https://rancherdesktop.io for details."
+    Write-Log "Runtime comparison:"
+    Write-Log "  Rancher Desktop  — free/OSS, full Docker Compose support, uses WSL2 (disk grows with images)"
+    Write-Log "  Podman Desktop   — free/OSS, daemonless (no WSL2 VM = no growing disk file, best for space)"
+    Write-Log "  Docker Desktop   — requires commercial license for larger organizations"
     Write-Log ""
 
     $dockerInstalled = $false
-    try {
-        $wingetArgs = @("install", "-e", "--id", "SUSE.RancherDesktop")
-        if ($Silent) { $wingetArgs += "--silent" }
-        winget @wingetArgs
-        $dockerInstalled = $true
-        Write-Log "Rancher Desktop installed. Launch it from the Start Menu to start the Docker runtime,"
-        Write-Log "then re-run the Kaspa AIO setup."
-    } catch {
-        Write-Log "Rancher Desktop installation failed. Falling back to Docker Desktop..."
+
+    # 1st choice: Rancher Desktop
+    if (-not $dockerInstalled) {
         try {
+            Write-Log "Installing Rancher Desktop..."
+            $wingetArgs = @("install", "-e", "--id", "SUSE.RancherDesktop")
+            if ($Silent) { $wingetArgs += "--silent" }
+            winget @wingetArgs
+            $dockerInstalled = $true
+            Write-Log "Rancher Desktop installed. Launch it from the Start Menu to start the Docker runtime,"
+            Write-Log "then re-run the Kaspa AIO setup."
+        } catch {
+            Write-Log "Rancher Desktop installation failed — trying Podman Desktop..."
+        }
+    }
+
+    # 2nd choice: Podman Desktop
+    if (-not $dockerInstalled) {
+        try {
+            Write-Log "Installing Podman Desktop..."
+            $wingetArgs = @("install", "-e", "--id", "RedHat.Podman-Desktop")
+            if ($Silent) { $wingetArgs += "--silent" }
+            winget @wingetArgs
+            $dockerInstalled = $true
+            Write-Log "Podman Desktop installed. Launch it from the Start Menu and enable the Docker socket"
+            Write-Log "compatibility layer so that Docker Compose commands work, then re-run the Kaspa AIO setup."
+            Write-Log "  See: https://podman-desktop.io/docs/compose"
+        } catch {
+            Write-Log "Podman Desktop installation failed — falling back to Docker Desktop..."
+        }
+    }
+
+    # Last resort: Docker Desktop
+    if (-not $dockerInstalled) {
+        try {
+            Write-Log "Installing Docker Desktop..."
             $wingetArgs = @("install", "-e", "--id", "Docker.DockerDesktop")
             if ($Silent) { $wingetArgs += "--silent" }
             winget @wingetArgs
@@ -63,26 +97,31 @@ if (-not (Test-CommandExists "docker")) {
             Write-Log "Docker Desktop installed. A system restart may be required."
         } catch {
             Write-Log "WARNING: Could not install a Docker runtime automatically."
-            Write-Log "  Install Rancher Desktop: https://rancherdesktop.io"
-            Write-Log "  Or Docker Desktop:       https://www.docker.com/products/docker-desktop/"
+            Write-Log "  Rancher Desktop: https://rancherdesktop.io"
+            Write-Log "  Podman Desktop:  https://podman-desktop.io"
+            Write-Log "  Docker Desktop:  https://www.docker.com/products/docker-desktop/"
         }
     }
 } else {
     Write-Log "Docker already installed: $(docker --version)"
 
-    # If Docker Desktop is present but Rancher Desktop is not, suggest switching.
+    # If Docker Desktop is present but neither alternative is installed, suggest both options.
     $dockerDesktopExe = Join-Path $env:ProgramFiles "Docker\Docker\Docker Desktop.exe"
     $rancherExe       = Join-Path $env:ProgramFiles "Rancher Desktop\Rancher Desktop.exe"
-    if ((Test-Path $dockerDesktopExe) -and (-not (Test-Path $rancherExe))) {
+    $podmanExe        = Join-Path $env:ProgramFiles "Podman Desktop\Podman Desktop.exe"
+    if ((Test-Path $dockerDesktopExe) -and (-not (Test-Path $rancherExe)) -and (-not (Test-Path $podmanExe))) {
         Write-Log ""
-        Write-Log "TIP: You are using Docker Desktop. Rancher Desktop is a free open-source alternative:"
-        Write-Log "  * Free for all users — Docker Desktop requires a paid license for organizations."
-        Write-Log "  * Full Docker CLI and Docker Compose support — no Kaspa AIO changes needed."
-        Write-Log "  * Install: winget install -e --id SUSE.RancherDesktop"
-        Write-Log "  * See https://rancherdesktop.io for details."
+        Write-Log "TIP: You are using Docker Desktop. Two free alternatives are available:"
         Write-Log ""
-        Write-Log "TIP: To reclaim disk space with either runtime, run: docker system prune"
-        Write-Log "  This removes stopped containers, dangling images, and unused networks."
+        Write-Log "  Rancher Desktop — free/OSS, best Docker Compose compatibility:"
+        Write-Log "    winget install -e --id SUSE.RancherDesktop"
+        Write-Log "    https://rancherdesktop.io"
+        Write-Log ""
+        Write-Log "  Podman Desktop  — free/OSS, daemonless (no growing WSL2 disk file, best for disk space):"
+        Write-Log "    winget install -e --id RedHat.Podman-Desktop"
+        Write-Log "    https://podman-desktop.io"
+        Write-Log ""
+        Write-Log "TIP: To reclaim space inside the current runtime's VM: docker system prune"
         Write-Log ""
     }
 }
