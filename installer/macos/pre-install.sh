@@ -1,6 +1,6 @@
 #!/bin/bash
 # Kaspa AIO — macOS pre-install script
-# Checks for Homebrew, Docker Desktop, and Node.js 20 LTS.
+# Checks for Homebrew, a Docker runtime (OrbStack preferred), and Node.js 20 LTS.
 set -euo pipefail
 
 log() { echo "[kaspa-aio-pre-install] $*"; }
@@ -18,14 +18,54 @@ if ! command -v brew &>/dev/null; then
   fi
 fi
 
-# ─── Docker Desktop ──────────────────────────────────────────────────────────
-if ! command -v docker &>/dev/null; then
-  log "Docker not found — please install Docker Desktop from https://www.docker.com/products/docker-desktop/"
-  log "Or install via Homebrew: brew install --cask docker"
-  # Non-interactive installer can't launch Docker Desktop GUI, so just warn
-  open "https://www.docker.com/products/docker-desktop/" 2>/dev/null || true
-else
+# ─── Docker runtime ──────────────────────────────────────────────────────────
+# OrbStack is recommended over Docker Desktop for the following reasons:
+#   • Disk: OrbStack's VM image shrinks automatically when images/containers
+#     are removed. Docker Desktop's disk file (Docker.raw) grows permanently
+#     and must be manually purged via "Clean / Purge data" in settings — even
+#     after running `docker system prune`.
+#   • Performance: OrbStack uses Apple's native Virtualization.framework,
+#     giving it faster startup times and significantly lower RAM usage than
+#     Docker Desktop's QEMU/HyperKit VM.
+#   • OrbStack is free for personal use and is a full drop-in replacement —
+#     no changes to Kaspa AIO or Docker Compose workflows are needed.
+if command -v docker &>/dev/null; then
   log "Docker already installed: $(docker --version)"
+
+  # If Docker Desktop is present but OrbStack is not, suggest switching.
+  # OrbStack installs as a side-by-side replacement — Docker Desktop can be
+  # removed afterwards if desired.
+  if [ -d "/Applications/Docker.app" ] && [ ! -d "/Applications/OrbStack.app" ]; then
+    log ""
+    log "TIP: You are using Docker Desktop. OrbStack is a lighter-weight alternative:"
+    log "  * Disk space: OrbStack's VM image shrinks when images are removed;"
+    log "    Docker Desktop's disk file grows permanently until manually purged."
+    log "  * Lower RAM usage and faster startup via Apple's native Virtualization.framework."
+    log "  * Free for personal use — install with: brew install --cask orbstack"
+    log "  * See https://orbstack.dev for details. Kaspa AIO needs no changes to switch."
+    log ""
+  fi
+else
+  # No Docker runtime found — install OrbStack, fall back to Docker Desktop guidance.
+  log ""
+  log "No Docker runtime found. Installing OrbStack (recommended)..."
+  log ""
+  log "Why OrbStack instead of Docker Desktop?"
+  log "  * Disk: OrbStack's VM image shrinks automatically when images/containers are removed."
+  log "    Docker Desktop's disk file grows permanently and must be manually purged."
+  log "  * Uses Apple's native Virtualization.framework: faster startup, lower RAM usage."
+  log "  * Free for personal use — full Docker Compose support, no project changes needed."
+  log ""
+
+  if brew install --cask orbstack; then
+    log "OrbStack installed. Launch OrbStack from Applications to start the Docker runtime,"
+    log "then re-run the Kaspa AIO setup."
+  else
+    log "OrbStack installation failed. Falling back to Docker Desktop:"
+    log "  brew install --cask docker"
+    log "  or visit https://www.docker.com/products/docker-desktop/"
+    open "https://www.docker.com/products/docker-desktop/" 2>/dev/null || true
+  fi
 fi
 
 # ─── Node.js 20 LTS ──────────────────────────────────────────────────────────
