@@ -1042,13 +1042,20 @@ class TemplateSelection {
             if (e.target.classList.contains('template-btn-primary')) {
                 e.stopPropagation();
                 const templateCard = e.target.closest('.template-card');
-                this.applyTemplate(templateCard.dataset.templateId);
+                if (!templateCard) return;
+                this.applyTemplate(templateCard.dataset.templateId).catch(err => {
+                    console.error('[TEMPLATE] applyTemplate unhandled error:', err);
+                });
             }
-            
+
             if (e.target.classList.contains('template-btn-secondary')) {
                 e.stopPropagation();
                 const templateCard = e.target.closest('.template-card');
-                this.showTemplateDetails(templateCard.dataset.templateId);
+                if (!templateCard) return;
+                this.showTemplateDetails(templateCard.dataset.templateId).catch(err => {
+                    console.error('[TEMPLATE] showTemplateDetails unhandled error:', err);
+                    this.showError('Could not open template details. Please refresh the page.');
+                });
             }
         });
 
@@ -1274,12 +1281,17 @@ class TemplateSelection {
         const modal = document.getElementById('template-details-modal');
         const title = document.getElementById('template-modal-title');
         const content = document.getElementById('template-details-content');
+        const applyBtn = document.getElementById('apply-template-btn');
+
+        if (!modal || !title || !content || !applyBtn) {
+            console.error('[TEMPLATE] Template details modal elements not found in DOM');
+            return;
+        }
 
         title.textContent = template.name;
         content.innerHTML = this.renderTemplateDetails(template);
 
-        // Store template ID for apply button
-        document.getElementById('apply-template-btn').dataset.templateId = templateId;
+        applyBtn.dataset.templateId = templateId;
 
         modal.style.display = 'flex';
     }
@@ -1435,10 +1447,10 @@ class TemplateSelection {
             // Step 3: Validate that template profiles map to existing profile system
             console.log(`[TEMPLATE] Validating profile mapping for profiles:`, template.profiles);
             const invalidProfiles = template.profiles.filter(p => !isValidProfileId(p));
-            
+
             if (invalidProfiles.length > 0) {
-                console.warn('[TEMPLATE] Invalid profiles detected:', invalidProfiles);
-                // Continue but log warning - this shouldn't break the flow
+                console.error('[TEMPLATE] Template contains unrecognized profile IDs:', invalidProfiles);
+                throw new Error(`Template contains unrecognized profiles: ${invalidProfiles.join(', ')}. Please reload and try again.`);
             }
 
             // Step 4: Merge configurations properly
