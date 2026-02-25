@@ -42,7 +42,7 @@ export async function runFullSystemCheck() {
         try {
             showResourceRecommendations(results);
         } catch (recErr) {
-            console.warn('[SYSTEM-CHECK] Could not render resource recommendations:', recErr);
+            console.error('[SYSTEM-CHECK] Could not render resource recommendations:', recErr);
         }
 
         // Show summary notification

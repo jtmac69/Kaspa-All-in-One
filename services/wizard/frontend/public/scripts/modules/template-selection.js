@@ -179,6 +179,7 @@ class TemplateSelection {
         this.profileStates = null;
         this.installedProfiles = [];
         this.wizardMode = 'initial'; // 'initial' or 'reconfigure'
+        this.profileStateLoadFailed = false;
         
         this.initializeEventListeners();
     }
@@ -229,18 +230,26 @@ class TemplateSelection {
         try {
             console.log('[TEMPLATE] Loading templates from API');
             const response = await fetch('/api/simple-templates/all');
-            
+
             if (!response.ok) {
-                // If templates API is not available, use fallback templates
-                console.warn('Templates API not available, using fallback templates');
-                this.handleTemplateLoadingFailure('Templates API not available', true);
+                console.error(`Templates API returned HTTP ${response.status}, using fallback templates`);
+                this.handleTemplateLoadingFailure(`Templates API returned HTTP ${response.status}`, true);
                 this.templates = this.getFallbackTemplates();
                 return;
             }
-            
-            const data = await response.json();
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                console.error('Templates API returned non-JSON response:', parseError);
+                this.handleTemplateLoadingFailure('Server returned an invalid response', true);
+                this.templates = this.getFallbackTemplates();
+                return;
+            }
+
             this.templates = data.templates || data || [];
-            
+
             if (this.templates.length === 0) {
                 console.warn('No templates returned from API, using fallback');
                 this.handleTemplateLoadingFailure('No templates available from server', true);
@@ -266,20 +275,22 @@ class TemplateSelection {
             const response = await fetch('/api/wizard/profiles/state');
             
             if (!response.ok) {
-                console.warn('[TEMPLATE] Failed to load profile states, assuming initial installation');
+                console.error(`[TEMPLATE] Failed to load profile states (HTTP ${response.status}), cannot confirm existing installation`);
                 this.profileStates = null;
                 this.installedProfiles = [];
                 this.wizardMode = 'initial';
+                this.profileStateLoadFailed = true;
                 return;
             }
-            
+
             const data = await response.json();
-            
+
             if (!data.success) {
-                console.warn('[TEMPLATE] Profile state API returned error:', data.error);
+                console.error('[TEMPLATE] Profile state API returned error:', data.error);
                 this.profileStates = null;
                 this.installedProfiles = [];
                 this.wizardMode = 'initial';
+                this.profileStateLoadFailed = true;
                 return;
             }
             
@@ -302,10 +313,10 @@ class TemplateSelection {
             
         } catch (error) {
             console.error('[TEMPLATE] Error loading profile states:', error);
-            // Default to initial mode on error
             this.profileStates = null;
             this.installedProfiles = [];
             this.wizardMode = 'initial';
+            this.profileStateLoadFailed = true;
         }
     }
 
@@ -852,11 +863,16 @@ class TemplateSelection {
      */
     calculateRecommendationScore(template) {
         if (!this.systemResources) return 50;
-        
-        const memoryRatio = this.systemResources.memory / template.resources.minMemory;
-        const cpuRatio = this.systemResources.cpu / template.resources.minCpu;
-        const diskRatio = this.systemResources.disk / template.resources.minDisk;
-        
+
+        const { minMemory, minCpu, minDisk } = template.resources;
+        // Templates with zero requirements (e.g. custom-setup) get a neutral score
+        // to prevent division-by-zero producing Infinity → 100 via Math.min
+        if (!minMemory || !minCpu || !minDisk) return 50;
+
+        const memoryRatio = this.systemResources.memory / minMemory;
+        const cpuRatio = this.systemResources.cpu / minCpu;
+        const diskRatio = this.systemResources.disk / minDisk;
+
         return Math.min(100, Math.floor((memoryRatio + cpuRatio + diskRatio) / 3 * 50));
     }
 
@@ -1350,6 +1366,18 @@ class TemplateSelection {
                 throw new Error('Template not found');
             }
 
+            // If profile state failed to load, retry once and warn if still unavailable
+            if (this.profileStateLoadFailed) {
+                console.warn('[TEMPLATE] Profile state was not loaded — retrying before applying template');
+                await this.loadProfileStates();
+                if (this.profileStateLoadFailed) {
+                    console.error('[TEMPLATE] Profile state still unavailable — proceeding without installation check');
+                    this.showError('Warning: Could not verify your existing installation state. Applying this template may affect running services.');
+                    // Give the user a moment to read the warning before continuing
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                }
+            }
+
             // Show loading state
             this.showLoading('Applying template...');
 
@@ -1388,8 +1416,14 @@ class TemplateSelection {
             });
             
             if (!applyResponse.ok) {
-                const errorData = await applyResponse.json();
-                throw new Error(errorData.message || 'Failed to apply template');
+                let message = `Failed to apply template (HTTP ${applyResponse.status})`;
+                try {
+                    const errorData = await applyResponse.json();
+                    message = errorData.message || message;
+                } catch (_) {
+                    // Server returned a non-JSON body (e.g. HTML error page from proxy)
+                }
+                throw new Error(message);
             }
             
             const applyResult = await applyResponse.json();
