@@ -37,14 +37,21 @@ export async function runFullSystemCheck() {
         // Determine if we can proceed
         const canProceed = results.summary?.canProceed !== false;
         updateContinueButton(canProceed, results.summary?.message);
-        
+
+        // Show resource recommendations panel
+        try {
+            showResourceRecommendations(results);
+        } catch (recErr) {
+            console.warn('[SYSTEM-CHECK] Could not render resource recommendations:', recErr);
+        }
+
         // Show summary notification
         if (canProceed) {
             showNotification('System check passed! Ready to proceed.', 'success', 3000);
         } else {
             showNotification('System check found issues. Please review below.', 'warning', 5000);
         }
-        
+
         return results;
     } catch (error) {
         console.error('System check failed:', error);
@@ -419,6 +426,69 @@ function showAllChecksFailed(error) {
     
     // Disable continue button
     updateContinueButton(false, 'System check failed. Please resolve issues and try again.');
+}
+
+/**
+ * Show resource-based recommendations below the check items list
+ */
+function showResourceRecommendations(results) {
+    const PROFILE_NAMES = {
+        'core': 'Dashboard Only',
+        'core-remote': 'Dashboard + Remote Node',
+        'core-local': 'Local Kaspa Node',
+        'indexer-services': 'Indexer Suite',
+        'archive-node': 'Archive Node',
+        'mining': 'Mining Setup'
+    };
+
+    const recommendations = results.recommendations;
+    const recommendedProfile = results.summary?.recommendedProfile;
+    const useRemoteNode = results.summary?.useRemoteNode;
+
+    // Nothing to show if no data
+    if (!recommendations && !recommendedProfile) return;
+
+    const warnings = (recommendations?.warnings || []);
+    const suggestions = (recommendations?.suggestions || []);
+    if (warnings.length === 0 && suggestions.length === 0 && !recommendedProfile) return;
+
+    // Remove any existing panel first
+    const existing = document.getElementById('resource-recommendations-panel');
+    if (existing) existing.remove();
+
+    const profileName = recommendedProfile ? (PROFILE_NAMES[recommendedProfile] || recommendedProfile) : null;
+    const remoteNote = useRemoteNode ? ' <span class="recommendation-remote-note">(remote node recommended)</span>' : '';
+
+    const warningsHtml = warnings.length > 0 ? `
+        <ul class="recommendation-warnings">
+            ${warnings.map(w => `<li>⚠️ ${w}</li>`).join('')}
+        </ul>` : '';
+
+    const suggestionsHtml = suggestions.length > 0 ? `
+        <ul class="recommendation-suggestions">
+            ${suggestions.map(s => `<li>💡 ${s}</li>`).join('')}
+        </ul>` : '';
+
+    const panel = document.createElement('div');
+    panel.id = 'resource-recommendations-panel';
+    panel.className = 'resource-recommendations-panel';
+    panel.innerHTML = `
+        <h4>Resource Analysis</h4>
+        ${profileName ? `<p class="recommendation-primary">Recommended setup: <strong>${profileName}</strong>${remoteNote}</p>` : ''}
+        ${warningsHtml}
+        ${suggestionsHtml}
+    `;
+
+    // Insert after the last .check-item
+    const checkItems = document.querySelectorAll('.check-item');
+    if (checkItems.length > 0) {
+        const last = checkItems[checkItems.length - 1];
+        last.insertAdjacentElement('afterend', panel);
+    } else {
+        // Fallback: append to step-system-check
+        const step = document.getElementById('step-system-check');
+        if (step) step.appendChild(panel);
+    }
 }
 
 /**

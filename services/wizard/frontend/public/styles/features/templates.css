@@ -332,3 +332,111 @@
 [data-theme="dark"] .reconfiguration-mode-banner .banner-info {
     border-left-color: var(--kaspa-light);
 }
+
+/* ============================================================================
+   Resource Compatibility Indicators
+   ============================================================================ */
+
+/* Insufficient resource value on template card */
+.template-resource-value.resource-insufficient {
+    color: var(--error, #dc2626);
+    font-weight: 700;
+}
+
+/* Inline compatibility badge below description */
+.compat-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.compat-badge.compat-incompatible {
+    background: rgba(220, 38, 38, 0.1);
+    color: var(--error, #dc2626);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+.compat-badge.compat-marginal {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-dark, #92400e);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Compatibility check rows in the details modal */
+.compat-check-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.compat-check-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.compat-check-row.compat-fail {
+    color: var(--error, #dc2626);
+}
+
+.compat-check-icon {
+    flex-shrink: 0;
+    width: 18px;
+}
+
+.compat-check-label {
+    font-weight: 600;
+    min-width: 45px;
+}
+
+.compat-check-value {
+    color: var(--text-secondary);
+}
+
+.compat-check-row.compat-fail .compat-check-value {
+    color: var(--error, #dc2626);
+}
+
+/* Warning box inside modal */
+.compat-warning-box {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: rgba(220, 38, 38, 0.08);
+    border: 1px solid rgba(220, 38, 38, 0.25);
+    border-radius: 6px;
+    color: var(--error, #dc2626);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.compat-warning-box.compat-warning-marginal {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.25);
+    color: var(--warning-dark, #92400e);
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .compat-badge.compat-incompatible {
+    background: rgba(220, 38, 38, 0.2);
+}
+
+[data-theme="dark"] .compat-badge.compat-marginal {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+[data-theme="dark"] .compat-warning-box {
+    background: rgba(220, 38, 38, 0.15);
+}
+
+[data-theme="dark"] .compat-warning-box.compat-warning-marginal {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+}

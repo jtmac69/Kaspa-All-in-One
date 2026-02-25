@@ -72,8 +72,10 @@ check_requirements() {
     
     # Check RAM
     RAM_GB=$(free -g | awk '/^Mem:/{print $2}')
-    if [[ $RAM_GB -lt 16 ]]; then
-        warn "Recommended RAM is 32GB, detected ${RAM_GB}GB"
+    if [[ $RAM_GB -lt 4 ]]; then
+        warn "RAM is ${RAM_GB}GB — minimum 4GB needed for a local Kaspa node. The wizard will guide you to a remote-node configuration."
+    elif [[ $RAM_GB -lt 8 ]]; then
+        warn "RAM is ${RAM_GB}GB — a local Kaspa node needs 8GB+ for reliable operation. Remote node mode is recommended."
     else
         log "RAM check passed: ${RAM_GB}GB"
     fi

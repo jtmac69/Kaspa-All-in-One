@@ -1035,6 +1035,70 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ============================================================================
+   Resource Recommendations Panel (System Check step)
+   ============================================================================ */
+
+.resource-recommendations-panel {
+    margin-top: var(--space-4, 16px);
+    padding: 16px 20px;
+    background: var(--surface-secondary, #f8fafc);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: var(--radius-md, 8px);
+}
+
+.resource-recommendations-panel h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.resource-recommendations-panel .recommendation-primary {
+    font-size: 14px;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.resource-recommendations-panel .recommendation-remote-note {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: normal;
+}
+
+.resource-recommendations-panel .recommendation-warnings {
+    list-style: none;
+    margin: 8px 0;
+    padding: 0;
+}
+
+.resource-recommendations-panel .recommendation-warnings li {
+    font-size: 13px;
+    color: var(--warning-dark, #92400e);
+    padding: 2px 0;
+}
+
+.resource-recommendations-panel .recommendation-suggestions {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+}
+
+.resource-recommendations-panel .recommendation-suggestions li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 2px 0;
+}
+
+[data-theme="dark"] .resource-recommendations-panel {
+    background: var(--surface-secondary, rgba(255, 255, 255, 0.05));
+    border-color: var(--border, rgba(255, 255, 255, 0.1));
+}
+
+[data-theme="dark"] .resource-recommendations-panel .recommendation-warnings li {
+    color: #fbbf24;
+}
+
+/* ============================================================================
    Spinner
    ============================================================================ */
 

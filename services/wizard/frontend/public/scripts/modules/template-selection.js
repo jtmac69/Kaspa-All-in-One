@@ -903,6 +903,81 @@ class TemplateSelection {
     }
 
     /**
+     * Determine resource compatibility level for a template
+     */
+    _getTemplateCompatibility(template) {
+        if (!this.systemResources || template.resources.minMemory === 0) {
+            return { level: 'unknown', memOk: true, cpuOk: true, diskOk: true, issues: [] };
+        }
+        const { memory: mem, cpu, disk } = this.systemResources;
+        const { minMemory, minCpu, minDisk } = template.resources;
+        const memOk = mem >= minMemory;
+        const cpuOk = !minCpu || cpu >= minCpu;
+        const diskOk = !minDisk || disk >= minDisk;
+        const issues = [];
+        if (!memOk) issues.push(`${minMemory}GB RAM needed (you have ${mem}GB)`);
+        if (!cpuOk) issues.push(`${minCpu} CPU cores needed (you have ${cpu})`);
+        if (!diskOk) issues.push(`${minDisk}GB disk needed (you have ${disk}GB)`);
+        // Marginal: below min RAM but within 75% (warn only)
+        const marginal = issues.length > 0 && mem >= minMemory * 0.75 && cpuOk && diskOk;
+        return {
+            level: issues.length === 0 ? 'compatible' : (marginal ? 'marginal' : 'incompatible'),
+            memOk, cpuOk, diskOk, issues
+        };
+    }
+
+    /**
+     * Render compatibility check rows for template details modal
+     */
+    _renderCompatibilityCheck(template) {
+        if (!this.systemResources || template.resources.minMemory === 0) {
+            return '';
+        }
+        const compat = this._getTemplateCompatibility(template);
+        const { memory: mem, cpu, disk } = this.systemResources;
+        const { minMemory, minCpu, minDisk } = template.resources;
+
+        const memRow = `<div class="compat-check-row${compat.memOk ? '' : ' compat-fail'}">
+            <span class="compat-check-icon">${compat.memOk ? '✅' : '❌'}</span>
+            <span class="compat-check-label">RAM:</span>
+            <span class="compat-check-value">${mem}GB available / ${minMemory}GB required</span>
+        </div>`;
+
+        const cpuRow = minCpu ? `<div class="compat-check-row${compat.cpuOk ? '' : ' compat-fail'}">
+            <span class="compat-check-icon">${compat.cpuOk ? '✅' : '❌'}</span>
+            <span class="compat-check-label">CPU:</span>
+            <span class="compat-check-value">${cpu} cores available / ${minCpu} required</span>
+        </div>` : '';
+
+        const diskRow = minDisk ? `<div class="compat-check-row${compat.diskOk ? '' : ' compat-fail'}">
+            <span class="compat-check-icon">${compat.diskOk ? '✅' : '❌'}</span>
+            <span class="compat-check-label">Disk:</span>
+            <span class="compat-check-value">${disk}GB available / ${minDisk}GB required</span>
+        </div>` : '';
+
+        const warningBox = compat.level === 'incompatible' ? `
+            <div class="compat-warning-box">
+                ⚠️ Your system does not meet the minimum requirements for this template.
+                You can still proceed, but performance may be impacted.
+            </div>` : (compat.level === 'marginal' ? `
+            <div class="compat-warning-box compat-warning-marginal">
+                ⚠️ Your system is close to the minimum requirements. Performance may vary.
+            </div>` : '');
+
+        if (compat.level === 'compatible') return '';
+
+        return `
+            <div class="template-details-section">
+                <h4>🖥️ Compatibility Check</h4>
+                <div class="compat-check-list">
+                    ${memRow}${cpuRow}${diskRow}
+                </div>
+                ${warningBox}
+            </div>
+        `;
+    }
+
+    /**
      * Mark recommended templates
      */
     markRecommendedTemplates() {
@@ -1060,16 +1135,28 @@ class TemplateSelection {
     renderTemplateCard(template) {
         const recommendedClass = template.recommended ? 'recommended' : '';
         const selectedClass = this.selectedTemplate === template.id ? 'selected' : '';
-        
+
         // Add installation state classes
         const installationStatus = template._installationStatus || { isInstalled: false, isPartial: false };
         const installedClass = installationStatus.isInstalled ? 'template-installed' : '';
         const partialClass = installationStatus.isPartial ? 'template-partial' : '';
         const disabledClass = installationStatus.isInstalled ? 'template-disabled' : '';
-        
+
+        // Compatibility check
+        const compat = this._getTemplateCompatibility(template);
+        const compatBadge = (compat.level === 'incompatible' || compat.level === 'marginal') && compat.issues.length > 0
+            ? `<div class="compat-badge compat-${compat.level}">⚠️ ${compat.issues[0]}</div>`
+            : '';
+
+        // Resource value classes
+        const memClass = compat.memOk ? '' : ' resource-insufficient';
+        const cpuClass = compat.cpuOk ? '' : ' resource-insufficient';
+        const diskClass = compat.diskOk ? '' : ' resource-insufficient';
+
         return `
             <div class="template-card ${recommendedClass} ${selectedClass} ${installedClass} ${partialClass} ${disabledClass}"
                  data-template-id="${template.id}"
+                 data-compat="${compat.level}"
                  data-is-installed="${installationStatus.isInstalled}"
                  data-is-partial="${installationStatus.isPartial}">
                 <div class="template-header">
@@ -1080,9 +1167,10 @@ class TemplateSelection {
                     </div>
                     ${this.renderInstallationBadge(installationStatus)}
                 </div>
-                
+
                 <p class="template-description">${template.description}</p>
-                
+                ${compatBadge}
+
                 <div class="template-meta">
                     <div class="template-meta-item">
                         <span class="template-meta-icon">⏱️</span>
@@ -1093,18 +1181,18 @@ class TemplateSelection {
                         <span>Sync: ${template.syncTime}</span>
                     </div>
                 </div>
-                
+
                 <div class="template-resources">
                     <div class="template-resource">
-                        <span class="template-resource-value">${template.resources.minMemory}GB</span>
+                        <span class="template-resource-value${memClass}">${template.resources.minMemory}GB</span>
                         <span class="template-resource-label">RAM</span>
                     </div>
                     <div class="template-resource">
-                        <span class="template-resource-value">${template.resources.minCpu}</span>
+                        <span class="template-resource-value${cpuClass}">${template.resources.minCpu}</span>
                         <span class="template-resource-label">CPU</span>
                     </div>
                     <div class="template-resource">
-                        <span class="template-resource-value">${template.resources.minDisk}GB</span>
+                        <span class="template-resource-value${diskClass}">${template.resources.minDisk}GB</span>
                         <span class="template-resource-label">Disk</span>
                     </div>
                 </div>
@@ -1211,6 +1299,8 @@ class TemplateSelection {
                 </ul>
             </div>
             
+            ${this._renderCompatibilityCheck(template)}
+
             <div class="template-details-section">
                 <h4>💻 Resource Requirements</h4>
                 <div class="template-resource-grid">
