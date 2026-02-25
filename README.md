@@ -478,10 +478,8 @@ SIMPLY_INDEXER_PORT=3005
 ENABLE_MINING_PROFILE=true
 STRATUM_PORT=5555
 
-# Development tools
-ENABLE_DEVELOPMENT_PROFILE=true
-PORTAINER_PORT=9000
-PGADMIN_PORT=9001
+# Optional add-ons
+PORTAINER_PORT=9000   # Portainer web UI — enable with: docker compose --profile portainer up -d
 ```
 
 ### Distributed Deployment
@@ -534,9 +532,8 @@ REMOTE_KASPA_NODE_URL=http://192.168.1.100:16111
 #### Mining Profile
 - **Mining Stratum**: tcp://localhost:5555
 
-#### Development Profile
-- **Portainer**: http://localhost:9000
-- **pgAdmin**: http://localhost:9001
+#### Optional Add-ons
+- **Portainer**: http://localhost:9000 (enable with `--profile portainer`)
 
 ## 🔒 Security Features
 
@@ -561,7 +558,7 @@ REMOTE_KASPA_NODE_URL=http://192.168.1.100:16111
 - **Wizard Overview**: [services/wizard/README.md](services/wizard/README.md) - Complete wizard features and usage
 - **Template vs Custom Setup**: [docs/guides/template-vs-custom-guide.md](docs/guides/template-vs-custom-guide.md) - When to use templates vs custom setup
 - **Error Recovery Procedures**: [docs/guides/wizard-error-recovery-guide.md](docs/guides/wizard-error-recovery-guide.md) - Troubleshooting template and installation issues
-- **Resource Checker**: [docs/quick-references/RESOURCE_CHECKER_QUICK_REFERENCE.md](docs/quick-references/RESOURCE_CHECKER_QUICK_REFERENCE.md) - Hardware detection and template recommendations
+- **Resource Checker**: [docs/quick-references/RESOURCE_CALCULATION_QUICK_REFERENCE.md](docs/quick-references/RESOURCE_CALCULATION_QUICK_REFERENCE.md) - Hardware detection, template compatibility, and resource recommendations
 - **Installation Guides**: [docs/quick-references/INSTALLATION_GUIDES_QUICK_REFERENCE.md](docs/quick-references/INSTALLATION_GUIDES_QUICK_REFERENCE.md) - OS-specific installation help
 - **Safety System**: [docs/quick-references/SAFETY_SYSTEM_QUICK_REFERENCE.md](docs/quick-references/SAFETY_SYSTEM_QUICK_REFERENCE.md) - Warnings and confirmations
 - **Diagnostic Help**: [services/wizard/DIAGNOSTIC_HELP_QUICK_REFERENCE.md](services/wizard/DIAGNOSTIC_HELP_QUICK_REFERENCE.md) - Troubleshooting and diagnostics
