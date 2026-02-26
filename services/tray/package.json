@@ -8,7 +8,9 @@
     "dist:linux": "electron-builder --linux deb",
     "dist:mac": "electron-builder --mac dmg",
     "dist:win": "electron-builder --win nsis",
-    "test": "node --test src/*.test.js"
+    "test": "node --test src/*.test.js",
+    "icons": "node scripts/create-placeholder-icons.js",
+    "icons:icns": "bash scripts/create-icns.sh"
   },
   "dependencies": {
     "auto-launch": "^5.0.6"

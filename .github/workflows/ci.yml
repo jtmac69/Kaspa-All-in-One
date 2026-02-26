@@ -64,6 +64,77 @@ jobs:
       - name: Run tray unit tests
         run: node --test services/tray/src/*.test.js
 
+  smoke-test:
+    name: Smoke Test (Services Start)
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+
+      # ── Wizard ────────────────────────────────────────────────────────────────
+
+      - name: Install wizard dependencies
+        run: npm install
+        working-directory: services/wizard/backend
+
+      - name: Start wizard server
+        run: node src/server.js > /tmp/wizard.log 2>&1 &
+        working-directory: services/wizard/backend
+        env:
+          PORT: 3000
+
+      - name: Wait for wizard to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/api/health > /dev/null; then
+              echo "Wizard responded after ${i}s"
+              break
+            fi
+            [ "$i" -eq 30 ] && { echo "Wizard did not start in 30s:"; cat /tmp/wizard.log; exit 1; }
+            sleep 1
+          done
+
+      - name: Assert wizard health endpoint
+        run: |
+          BODY=$(curl -sf http://localhost:3000/api/health)
+          STATUS=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+          [ "$STATUS" = "ok" ] || { echo "Expected status=ok, got: $BODY"; exit 1; }
+          echo "Wizard health OK: $BODY"
+
+      # ── Dashboard ─────────────────────────────────────────────────────────────
+
+      - name: Install dashboard dependencies
+        run: npm install
+        working-directory: services/dashboard
+
+      - name: Start dashboard server
+        run: node server.js > /tmp/dashboard.log 2>&1 &
+        working-directory: services/dashboard
+        env:
+          PORT: 8080
+
+      - name: Wait for dashboard to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/health > /dev/null; then
+              echo "Dashboard responded after ${i}s"
+              break
+            fi
+            [ "$i" -eq 30 ] && { echo "Dashboard did not start in 30s:"; cat /tmp/dashboard.log; exit 1; }
+            sleep 1
+          done
+
+      - name: Assert dashboard health endpoint
+        run: |
+          BODY=$(curl -sf http://localhost:8080/health)
+          STATUS=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+          [ "$STATUS" = "healthy" ] || { echo "Expected status=healthy, got: $BODY"; exit 1; }
+          echo "Dashboard health OK: $BODY"
+
   integration-tests:
     name: Integration Tests (Mock)
     runs-on: ubuntu-latest
@@ -143,7 +214,7 @@ jobs:
   publish-edge:
     name: Publish Edge Images (${{ matrix.service }})
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [unit-tests, tray-unit-tests, docker-build]
+    needs: [unit-tests, tray-unit-tests, smoke-test, docker-build]
     runs-on: ubuntu-latest
     # Edge images are amd64-only. Multi-platform (arm64) builds via QEMU
     # emulation stall for 1-3h+ on heavy Node.js images (kaspa-explorer,
