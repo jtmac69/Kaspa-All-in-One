@@ -21,7 +21,12 @@ fi
 
 mkdir -p "$ICONSET"
 
-# macOS requires all of these sizes in the iconset
+# Clean up the temporary iconset directory on any exit (success or failure)
+# so partial runs don't leave stale intermediate PNGs behind.
+trap 'rm -rf "$ICONSET"' EXIT
+
+# Apple recommends all ten sizes for sharp rendering at every scale factor.
+# iconutil will accept a subset and scale up, but omitting sizes produces blurry results.
 sips -z 16   16   "$PNG" --out "$ICONSET/icon_16x16.png"       >/dev/null
 sips -z 32   32   "$PNG" --out "$ICONSET/icon_16x16@2x.png"    >/dev/null
 sips -z 32   32   "$PNG" --out "$ICONSET/icon_32x32.png"        >/dev/null
@@ -34,6 +39,5 @@ sips -z 512  512  "$PNG" --out "$ICONSET/icon_512x512.png"      >/dev/null
 sips -z 1024 1024 "$PNG" --out "$ICONSET/icon_512x512@2x.png"  >/dev/null
 
 iconutil -c icns "$ICONSET" -o "$ICNS"
-rm -rf "$ICONSET"
 
 echo "Created: assets/icon.icns"

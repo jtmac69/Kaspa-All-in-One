@@ -149,7 +149,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Download installer artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           pattern: "*"
           path: release-artifacts
@@ -169,19 +169,21 @@ jobs:
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "ARCHIVE=${ARCHIVE}" >> "$GITHUB_ENV"
 
-      - name: Collect installer files
-        run: |
-          INSTALLERS=$(find release-artifacts/ \( -name "*.deb" -o -name "*.dmg" -o -name "*.exe" \) 2>/dev/null | tr '\n' ' ')
-          echo "INSTALLERS=${INSTALLERS}" >> "$GITHUB_ENV"
-          echo "Found installers: ${INSTALLERS:-none}"
-
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Collect installer files into an array to avoid word-splitting on paths with spaces
+          # and to catch the case where build-installers produced no output files.
+          mapfile -t INSTALLERS < <(find release-artifacts/ \( -name "*.deb" -o -name "*.dmg" -o -name "*.exe" \) 2>/dev/null | sort)
+          echo "Found ${#INSTALLERS[@]} installer(s): ${INSTALLERS[*]:-none}"
+          if [ "${#INSTALLERS[@]}" -eq 0 ]; then
+            echo "Error: no installer files found in release-artifacts/ — aborting release." >&2
+            exit 1
+          fi
           gh release create "$GITHUB_REF_NAME" \
             --generate-notes \
             --repo "$GITHUB_REPOSITORY" \
             "kaspa-aio-${VERSION}.tar.gz" \
             "kaspa-aio-${VERSION}.tar.gz.sha256" \
-            $INSTALLERS
+            "${INSTALLERS[@]}"

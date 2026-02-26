@@ -80,7 +80,7 @@ function createPng(size, r, g, b) {
   ]);
 }
 
-// ─── ICO builder (embeds PNG data directly — supported on Windows Vista+) ───
+// ─── ICO builder (PNG-in-ICO: embeds PNG data directly without BMP re-encoding) ───
 
 function createIco(pngData) {
   // ICONDIR header (6 bytes): reserved=0, type=1 (icon), count=1
@@ -89,14 +89,16 @@ function createIco(pngData) {
   iconDir.writeUInt16LE(1, 2);
   iconDir.writeUInt16LE(1, 4);
 
-  // ICONDIRENTRY (16 bytes): width=0(→256), height=0(→256), colors=0, reserved=0, planes=0, bpp=32, size, offset=22
+  // ICONDIRENTRY (16 bytes): width=0(→256), height=0(→256), colors=0, reserved=0, planes=0,
+  // bpp=32 (conventional placeholder; Windows ignores this field for PNG-in-ICO and reads
+  // actual depth from the PNG IHDR — the PNG itself is 24bpp RGB), size, offset=22
   const entry = Buffer.alloc(16);
   entry[0] = 0;  // width: 0 means 256
   entry[1] = 0;  // height: 0 means 256
   entry[2] = 0;  // color count (0 = no palette)
   entry[3] = 0;  // reserved
   entry.writeUInt16LE(0, 4);              // planes
-  entry.writeUInt16LE(32, 6);             // bits per pixel
+  entry.writeUInt16LE(32, 6);             // bits per pixel (see comment above)
   entry.writeUInt32LE(pngData.length, 8); // bytes in image data
   entry.writeUInt32LE(22, 12);            // offset = 6 (ICONDIR) + 16 (ICONDIRENTRY)
 
@@ -105,7 +107,12 @@ function createIco(pngData) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-fs.mkdirSync(ASSETS_DIR, { recursive: true });
+try {
+  fs.mkdirSync(ASSETS_DIR, { recursive: true });
+} catch (err) {
+  console.error(`Failed to create assets directory at ${ASSETS_DIR}: ${err.message}`);
+  process.exit(1);
+}
 
 const PNG_PATH = path.join(ASSETS_DIR, 'icon.png');
 const ICO_PATH = path.join(ASSETS_DIR, 'icon.ico');
@@ -114,15 +121,25 @@ const ICO_PATH = path.join(ASSETS_DIR, 'icon.ico');
 const pngData = createPng(256, 73, 234, 203);
 
 if (!fs.existsSync(PNG_PATH)) {
-  fs.writeFileSync(PNG_PATH, pngData);
-  console.log('Created placeholder: assets/icon.png  (256×256 Kaspa teal)');
+  try {
+    fs.writeFileSync(PNG_PATH, pngData);
+    console.log('Created placeholder: assets/icon.png  (256×256 Kaspa teal)');
+  } catch (err) {
+    console.error(`Failed to write ${PNG_PATH}: ${err.message}`);
+    process.exit(1);
+  }
 } else {
   console.log('Skipped: assets/icon.png already exists');
 }
 
 if (!fs.existsSync(ICO_PATH)) {
-  fs.writeFileSync(ICO_PATH, createIco(pngData));
-  console.log('Created placeholder: assets/icon.ico  (256×256, PNG-embedded)');
+  try {
+    fs.writeFileSync(ICO_PATH, createIco(pngData));
+    console.log('Created placeholder: assets/icon.ico  (256×256, PNG-embedded)');
+  } catch (err) {
+    console.error(`Failed to write ${ICO_PATH}: ${err.message}`);
+    process.exit(1);
+  }
 } else {
   console.log('Skipped: assets/icon.ico already exists');
 }

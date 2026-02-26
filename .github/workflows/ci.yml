@@ -67,6 +67,7 @@ jobs:
   smoke-test:
     name: Smoke Test (Services Start)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [unit-tests]
     steps:
       - uses: actions/checkout@v6
@@ -78,7 +79,7 @@ jobs:
       # ── Wizard ────────────────────────────────────────────────────────────────
 
       - name: Install wizard dependencies
-        run: npm install
+        run: npm ci
         working-directory: services/wizard/backend
 
       - name: Start wizard server
@@ -89,14 +90,20 @@ jobs:
 
       - name: Wait for wizard to be ready
         run: |
+          ready=0
           for i in $(seq 1 30); do
             if curl -sf http://localhost:3000/api/health > /dev/null; then
               echo "Wizard responded after ${i}s"
+              ready=1
               break
             fi
-            [ "$i" -eq 30 ] && { echo "Wizard did not start in 30s:"; cat /tmp/wizard.log; exit 1; }
             sleep 1
           done
+          if [ "$ready" -eq 0 ]; then
+            echo "Wizard did not start in 30s:"
+            cat /tmp/wizard.log
+            exit 1
+          fi
 
       - name: Assert wizard health endpoint
         run: |
@@ -108,7 +115,7 @@ jobs:
       # ── Dashboard ─────────────────────────────────────────────────────────────
 
       - name: Install dashboard dependencies
-        run: npm install
+        run: npm ci
         working-directory: services/dashboard
 
       - name: Start dashboard server
@@ -119,14 +126,20 @@ jobs:
 
       - name: Wait for dashboard to be ready
         run: |
+          ready=0
           for i in $(seq 1 30); do
             if curl -sf http://localhost:8080/health > /dev/null; then
               echo "Dashboard responded after ${i}s"
+              ready=1
               break
             fi
-            [ "$i" -eq 30 ] && { echo "Dashboard did not start in 30s:"; cat /tmp/dashboard.log; exit 1; }
             sleep 1
           done
+          if [ "$ready" -eq 0 ]; then
+            echo "Dashboard did not start in 30s:"
+            cat /tmp/dashboard.log
+            exit 1
+          fi
 
       - name: Assert dashboard health endpoint
         run: |
