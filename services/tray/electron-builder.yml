@@ -24,6 +24,8 @@ linux:
     Name: Kaspa AIO
     Comment: Kaspa blockchain infrastructure manager
     Categories: Network;
+
+deb:
   beforeInstall: "../../installer/linux/pre-install.sh"
   afterInstall: "../../installer/linux/post-install.sh"
 
