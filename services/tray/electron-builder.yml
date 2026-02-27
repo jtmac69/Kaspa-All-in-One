@@ -26,7 +26,10 @@ linux:
     Categories: Network;
 
 deb:
-  beforeInstall: "../../installer/linux/pre-install.sh"
+  # electron-builder deb: does not have a beforeInstall field; pass the preinst
+  # script via fpm --before-install instead.
+  fpm:
+    - "--before-install=../../installer/linux/pre-install.sh"
   afterInstall: "../../installer/linux/post-install.sh"
 
 mac:
