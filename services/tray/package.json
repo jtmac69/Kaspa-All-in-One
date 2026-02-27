@@ -19,7 +19,10 @@
     "electron": "^33.0.0",
     "electron-builder": "^25.0.0"
   },
-  "author": "Kaspa AIO Contributors",
+  "author": {
+    "name": "Kaspa AIO Contributors",
+    "email": "noreply@github.com"
+  },
   "homepage": "https://github.com/jtmac69/Kaspa-All-in-One",
   "license": "MIT"
 }
