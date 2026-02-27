@@ -26,11 +26,13 @@ linux:
     Categories: Network;
 
 deb:
-  # electron-builder deb: does not have a beforeInstall field; pass the preinst
-  # script via fpm --before-install instead.
+  # electron-builder's afterInstall field reads the script and substitutes
+  # ${...} patterns as macro templates, which breaks scripts containing bash
+  # variable syntax (e.g. dpkg-query -f='${Version}').  Pass both hooks via
+  # fpm directly so the scripts are forwarded as-is without templating.
   fpm:
     - "--before-install=../../installer/linux/pre-install.sh"
-  afterInstall: "../../installer/linux/post-install.sh"
+    - "--after-install=../../installer/linux/post-install.sh"
 
 mac:
   target:
@@ -40,6 +42,9 @@ mac:
         - arm64
   category: public.app-category.utilities
   icon: assets/icon.icns
+  # identity: null skips code signing when CSC_LINK is not configured.
+  # Remove this line and set CSC_LINK/CSC_KEY_PASSWORD secrets for signed releases.
+  identity: null
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
