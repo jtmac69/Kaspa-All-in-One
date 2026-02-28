@@ -151,7 +151,10 @@ jobs:
       - name: Download installer artifacts
         uses: actions/download-artifact@v6
         with:
-          pattern: "*"
+          # Explicitly name the three installer artifacts; pattern:"*" also
+          # matches internal .dockerbuild cache artifacts which are not
+          # downloadable and cause the step to fail.
+          pattern: "{linux-deb,macos-dmg,windows-exe}"
           path: release-artifacts
           merge-multiple: true
 
