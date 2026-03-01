@@ -1638,25 +1638,27 @@ app.get('/api/kaspa/node/status/enhanced', async (req, res) => {
         const nodeInfo = await kaspaNodeClient.getNodeInfo();
         const dagInfo = await kaspaNodeClient.getBlockDagInfo();
         
-        // Get container uptime
+        // Get container uptime — only count uptime if container is actually running
         let uptime = '-';
         try {
-            const { stdout: statsOutput } = await execAsync('docker inspect kaspa-node --format="{{.State.StartedAt}}"', {
+            const { stdout: stateOut } = await execAsync('docker inspect kaspa-node --format="{{.State.Status}} {{.State.StartedAt}}"', {
                 timeout: 3000
             });
-            const startTime = new Date(statsOutput.trim());
-            const uptimeSeconds = Math.floor((Date.now() - startTime.getTime()) / 1000);
-            
-            const days = Math.floor(uptimeSeconds / 86400);
-            const hours = Math.floor((uptimeSeconds % 86400) / 3600);
-            const minutes = Math.floor((uptimeSeconds % 3600) / 60);
-            
-            if (days > 0) {
-                uptime = `${days}d ${hours}h`;
-            } else if (hours > 0) {
-                uptime = `${hours}h ${minutes}m`;
-            } else {
-                uptime = `${minutes}m`;
+            const parts = stateOut.trim().replace(/"/g, '').split(' ');
+            const state = parts[0];
+            if (state === 'running') {
+                const startTime = new Date(parts[1]);
+                const uptimeSeconds = Math.floor((Date.now() - startTime.getTime()) / 1000);
+                const days = Math.floor(uptimeSeconds / 86400);
+                const hours = Math.floor((uptimeSeconds % 86400) / 3600);
+                const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+                if (days > 0) {
+                    uptime = `${days}d ${hours}h`;
+                } else if (hours > 0) {
+                    uptime = `${hours}h ${minutes}m`;
+                } else {
+                    uptime = `${minutes}m`;
+                }
             }
         } catch (uptimeError) {
             // Uptime not critical, continue without it
@@ -1694,7 +1696,29 @@ app.get('/api/kaspa/node/sync-status', async (req, res) => {
         const { exec } = require('child_process');
         const { promisify } = require('util');
         const execAsync = promisify(exec);
-        
+
+        // Check container state first — docker logs works on stopped containers,
+        // so we must explicitly verify the container is running before reading logs.
+        let containerState = 'not-found';
+        try {
+            const { stdout: stateOut } = await execAsync('docker inspect kaspa-node --format="{{.State.Status}}"', { timeout: 3000 });
+            containerState = stateOut.trim().replace(/"/g, '');
+        } catch (_) { /* container not found */ }
+
+        if (containerState !== 'running') {
+            return res.json({
+                isSynced: false,
+                syncPhase: 'unavailable',
+                syncPhaseName: 'Container Stopped',
+                progress: 0,
+                containerRunning: false,
+                containerState,
+                error: containerState === 'not-found' ? 'Container not found' : `Container is ${containerState}`,
+                timestamp: new Date().toISOString(),
+                source: 'container-check'
+            });
+        }
+
         // Get more logs to find IBD messages (they might be older)
         const { stdout: logs } = await execAsync('docker logs kaspa-node --tail 200 --timestamps', {
             timeout: 15000,

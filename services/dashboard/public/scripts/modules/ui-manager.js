@@ -17,7 +17,8 @@ const SYNC_PHASES = {
     blocks: { name: 'Blocks', icon: '📦', color: '#1abc9c', order: 3 },
     virtual: { name: 'Virtual', icon: '🔗', color: '#2ecc71', order: 4 },
     synced: { name: 'Synced', icon: '✅', color: '#27ae60', order: 5 },
-    unknown: { name: 'Unknown', icon: '❓', color: '#95a5a6', order: -1 }
+    unknown: { name: 'Unknown', icon: '❓', color: '#95a5a6', order: -1 },
+    unavailable: { name: 'Stopped', icon: '⏹', color: '#95a5a6', order: -1 }
 };
 
 /**
@@ -832,7 +833,28 @@ export class UIManager {
 
         const phase = syncStatus.syncPhase || 'unknown';
         const phaseConfig = SYNC_PHASES[phase] || SYNC_PHASES.unknown;
-        
+
+        // Container is stopped — show stopped state and clear any stale sync UI
+        if (phase === 'unavailable') {
+            const syncStatusEl = document.getElementById('sync-status') || this.elements.syncStatus;
+            if (syncStatusEl) {
+                syncStatusEl.textContent = 'Stopped';
+                syncStatusEl.style.color = '#95a5a6';
+                syncStatusEl.classList.remove('syncing', 'synced');
+            }
+            this.hideSyncProgress();
+            const syncContainer = document.getElementById('sync-container');
+            if (syncContainer) syncContainer.classList.remove('syncing');
+            // Clear Local Node Status fields
+            this.updateElement('current-height', '-');
+            this.updateElement('network-height', '-');
+            this.updateElement('peer-count-node', '-');
+            this.updateElement('node-version', '-');
+            this.updateElement('uptime', '-');
+            this.updateElement('mempool-size', '-');
+            return;
+        }
+
         // Update sync status text with phase name
         const syncStatusEl = document.getElementById('sync-status') || this.elements.syncStatus;
         if (syncStatusEl) {
