@@ -5,6 +5,19 @@
 
 import { createIcon, createIconButton, Icons } from '/shared/icons/icons.js';
 
+/**
+ * Bind tooltip show/hide via JS mouseenter/mouseleave.
+ * Pure CSS :hover extends the hit area to include the absolutely-positioned
+ * ::after element, causing the tooltip to get "stuck" when the cursor moves
+ * into the tooltip text. JS events fire only on the element itself.
+ */
+function bindTooltip(el) {
+    el.addEventListener('mouseenter', () => el.classList.add('tooltip-visible'));
+    el.addEventListener('mouseleave', () => el.classList.remove('tooltip-visible'));
+    el.addEventListener('focus',      () => el.classList.add('tooltip-visible'));
+    el.addEventListener('blur',       () => el.classList.remove('tooltip-visible'));
+}
+
 export class IconManager {
     constructor() {
         this.iconMap = {
@@ -110,6 +123,7 @@ export class IconManager {
             updatesBtn.classList.add('icon-tooltip');
             updatesBtn.setAttribute('data-tooltip', 'Check for updates');
             updatesBtn.removeAttribute('title');
+            bindTooltip(updatesBtn);
 
             // Re-add badge if it exists
             const badge = document.createElement('span');
@@ -130,6 +144,7 @@ export class IconManager {
             configBtn.classList.add('icon-tooltip');
             configBtn.setAttribute('data-tooltip', 'Configuration settings');
             configBtn.removeAttribute('title');
+            bindTooltip(configBtn);
         }
 
         // Wizard running indicator

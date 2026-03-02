@@ -836,7 +836,7 @@ body.wizard-running {
     z-index: 200;
 }
 
-.icon-tooltip:hover::after {
+.icon-tooltip.tooltip-visible::after {
     opacity: 1;
 }
 
