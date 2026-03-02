@@ -536,7 +536,7 @@ export class UIManager {
                     <button class="btn-small" data-action="start" data-service="${service.name}" 
                             data-original-title="Start ${service.displayName || service.name}"
                             title="Start ${service.displayName || service.name}"
-                            ${service.status === 'healthy' ? 'disabled' : ''}>
+                            ${service.status !== 'stopped' ? 'disabled' : ''}>
                         Start
                     </button>
                     <button class="btn-small" data-action="stop" data-service="${service.name}"

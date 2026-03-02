@@ -109,7 +109,8 @@ export class IconManager {
             updatesBtn.appendChild(icon);
             updatesBtn.classList.add('icon-tooltip');
             updatesBtn.setAttribute('data-tooltip', 'Check for updates');
-            
+            updatesBtn.removeAttribute('title');
+
             // Re-add badge if it exists
             const badge = document.createElement('span');
             badge.className = 'update-badge';
@@ -128,6 +129,7 @@ export class IconManager {
             configBtn.appendChild(icon);
             configBtn.classList.add('icon-tooltip');
             configBtn.setAttribute('data-tooltip', 'Configuration settings');
+            configBtn.removeAttribute('title');
         }
 
         // Wizard running indicator

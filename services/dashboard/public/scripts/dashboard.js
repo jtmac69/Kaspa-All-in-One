@@ -77,9 +77,10 @@ class Dashboard {
                 this.handleServiceAction(target.dataset.action, target.dataset.service);
             }
 
-            // Modal close buttons
-            if (target.classList.contains('close')) {
-                const modal = target.closest('.modal');
+            // Modal close buttons — use closest() so clicks on SVG icons inside the button still match
+            const closeBtn = target.closest('.close');
+            if (closeBtn) {
+                const modal = closeBtn.closest('.modal');
                 if (modal) this.ui.closeModal(modal);
             }
         });

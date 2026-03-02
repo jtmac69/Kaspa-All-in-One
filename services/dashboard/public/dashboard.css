@@ -813,6 +813,33 @@ body.wizard-running {
     100% { box-shadow: 0 0 0 0 rgba(208, 2, 27, 0); }
 }
 
+/* CSS tooltip for icon-only buttons — appears below to avoid viewport clipping */
+.icon-tooltip {
+    position: relative;
+}
+
+.icon-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text-primary);
+    color: var(--surface);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    z-index: 200;
+}
+
+.icon-tooltip:hover::after {
+    opacity: 1;
+}
+
 /* Update Badge - Using shared status styles */
 .update-badge {
     position: absolute;
