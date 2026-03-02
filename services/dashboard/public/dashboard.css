@@ -840,6 +840,13 @@ body.wizard-running {
     opacity: 1;
 }
 
+/* Right-align tooltip for header buttons so it doesn't clip at viewport edge */
+.header-controls .icon-tooltip::after {
+    left: auto;
+    right: 0;
+    transform: none;
+}
+
 /* Update Badge - Using shared status styles */
 .update-badge {
     position: absolute;
