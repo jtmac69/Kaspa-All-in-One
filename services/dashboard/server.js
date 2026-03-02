@@ -3189,38 +3189,43 @@ setInterval(async () => {
             kaspaNodeRetryActive = true;
             console.log('Kaspa node unavailable, starting retry logic');
             
-            kaspaNodeClient.startRetry((result) => {
-                console.log(`Kaspa node reconnected on port ${result.port}`);
-                
-                // Broadcast reconnection
-                wsManager.broadcast({
-                    type: 'kaspa_node_reconnected',
-                    data: {
-                        message: `Kaspa node reconnected on port ${result.port}`,
-                        port: result.port,
-                        url: result.url,
-                        timestamp: new Date().toISOString()
-                    }
-                });
-                
-                // Update status within 5 seconds by triggering immediate sync check
-                setTimeout(async () => {
-                    try {
-                        const syncStatus = await kaspaNodeClient.getSyncStatus();
-                        wsManager.broadcast({
-                            type: 'sync_status_update',
-                            data: syncStatus,
+            const attemptReconnect = async () => {
+                const result = await kaspaNodeClient.forceReconnect();
+                if (result.connected) {
+                    console.log(`Kaspa node reconnected at ${result.host}`);
+                    kaspaNodeRetryActive = false;
+
+                    wsManager.broadcast({
+                        type: 'kaspa_node_reconnected',
+                        data: {
+                            message: `Kaspa node reconnected at ${result.host}`,
+                            host: result.host,
                             timestamp: new Date().toISOString()
-                        });
-                    } catch (retryError) {
-                        // Use ErrorDisplay for consistent error logging
-                        const retryErrorResult = errorDisplay.show({
-                            type: 'KASPA_NODE_UNAVAILABLE',
-                            details: { error: retryError.message, operation: 'sync_status_after_reconnection' }
-                        });
-                    }
-                }, 1000); // Check after 1 second to ensure connection is stable
-            });
+                        }
+                    });
+
+                    // Trigger an immediate sync status broadcast after reconnection
+                    setTimeout(async () => {
+                        try {
+                            const syncStatus = await kaspaNodeClient.getSyncStatus();
+                            wsManager.broadcast({
+                                type: 'sync_status_update',
+                                data: syncStatus,
+                                timestamp: new Date().toISOString()
+                            });
+                        } catch (retryError) {
+                            errorDisplay.show({
+                                type: 'KASPA_NODE_UNAVAILABLE',
+                                details: { error: retryError.message, operation: 'sync_status_after_reconnection' }
+                            });
+                        }
+                    }, 1000);
+                } else {
+                    // Still unavailable — try again after 30 seconds
+                    setTimeout(attemptReconnect, 30000);
+                }
+            };
+            attemptReconnect();
             
             // Broadcast that node is unavailable and retry started
             wsManager.broadcast({
