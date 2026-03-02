@@ -43,11 +43,13 @@ class ServiceMonitor {
         return [
             // Kaspa Node
             // Dashboard runs on host — use localhost with host-mapped ports, not Docker hostnames
+            // Uses TCP health check: gRPC runs over TCP so a successful connect to port 16110
+            // confirms the node process is up and accepting connections.
             {
                 name: 'kaspa-node',
                 displayName: 'Kaspa Node',
                 url: 'http://localhost:16110',
-                type: 'grpc',
+                type: 'tcp',
                 profile: 'kaspa-node',  // Changed from 'core'
                 dependencies: [],
                 healthCheckPath: null,
@@ -59,7 +61,7 @@ class ServiceMonitor {
                 name: 'kaspa-archive-node',
                 displayName: 'Kaspa Archive Node',
                 url: 'http://localhost:16110',
-                type: 'grpc',
+                type: 'tcp',
                 profile: 'kaspa-archive-node',  // Changed from 'archive-node'
                 dependencies: [],
                 healthCheckPath: null,

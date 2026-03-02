@@ -27,6 +27,32 @@ class Dashboard {
         this.currentFilter = 'all';
         this.updateInterval = null;
         this.kaspaNodeInstalled = false;
+        // Cache the last known sync status so service cards render correctly
+        // on the first pass without waiting for a second async call.
+        this.lastSyncStatus = null;
+    }
+
+    /**
+     * Apply cached sync status to kaspa-node service data before rendering.
+     * Prevents the two-phase flash (raw unhealthy → sync-aware state) by
+     * making the initial render already reflect what we last knew about sync.
+     */
+    applyKaspaSyncToServices(services) {
+        if (!this.lastSyncStatus) return services;
+        const sync = this.lastSyncStatus;
+        return services.map(service => {
+            if (service.name !== 'kaspa-node' && service.name !== 'kaspa-archive-node') {
+                return service;
+            }
+            // Node is unreachable — leave status as-is
+            if (sync.syncPhase === 'unavailable') return service;
+            // Enrich with sync-aware values so the card renders correctly first time
+            return {
+                ...service,
+                status: sync.isSynced ? 'healthy' : 'unhealthy',
+                error: sync.isSynced ? null : (sync.detail || service.error)
+            };
+        });
     }
 
     /**
@@ -166,7 +192,10 @@ class Dashboard {
 
         this.ws.on('update', (data) => {
             if (data.services) {
-                this.ui.updateServices(data.services, this.currentFilter);
+                this.ui.updateServices(
+                    this.applyKaspaSyncToServices(data.services),
+                    this.currentFilter
+                );
             }
             if (data.resources) {
                 this.ui.updateResources(data.resources);
@@ -190,13 +219,16 @@ class Dashboard {
             
             // Update services display
             if (data.hasInstallation) {
-                this.ui.updateServices(data.services || [], this.currentFilter);
+                this.ui.updateServices(
+                    this.applyKaspaSyncToServices(data.services || []),
+                    this.currentFilter
+                );
                 // Reload profiles to get updated counts
                 this.loadProfiles();
             } else {
                 this.ui.showNoInstallation();
             }
-            
+
             // Update installation state info if available
             if (data.installationState) {
                 this.updateInstallationInfo(data.installationState);
@@ -226,13 +258,16 @@ class Dashboard {
             
             // Update services display
             if (data.hasInstallation) {
-                this.ui.updateServices(data.services || [], this.currentFilter);
+                this.ui.updateServices(
+                    this.applyKaspaSyncToServices(data.services || []),
+                    this.currentFilter
+                );
                 // Reload profiles to get updated counts
                 this.loadProfiles();
             } else {
                 this.ui.showNoInstallation();
             }
-            
+
             // Update installation state info if available
             if (data.installationState) {
                 this.updateInstallationInfo(data.installationState);
@@ -348,42 +383,43 @@ class Dashboard {
     async refreshServices() {
         try {
             const response = await this.api.getServiceStatus();
-            
+
             // Update last status check timestamp (Requirements 7.8)
             const timestamp = new Date().toISOString();
             this.ui.updateLastStatusCheck(timestamp);
-            
+
             // Check if no installation detected
             if (response.noInstallation) {
                 this.ui.showNoInstallation();
                 return;
             }
-            
-            // Normal service display
-            const services = response.services || response;
+
+            // Apply cached sync status before rendering so cards show the correct
+            // state immediately rather than flashing through the raw API state.
+            const rawServices = response.services || response;
+            const services = this.applyKaspaSyncToServices(
+                Array.isArray(rawServices) ? rawServices : []
+            );
             this.ui.updateServices(services, this.currentFilter);
 
             // Check if kaspa-node is among the installed services
-            const serviceList = Array.isArray(services) ? services : [];
-            this.kaspaNodeInstalled = serviceList.some(s => s.name === 'kaspa-node');
+            this.kaspaNodeInstalled = services.some(s => s.name === 'kaspa-node');
             this.ui.setNodePanelVisible(this.kaspaNodeInstalled);
 
-            // IMPORTANT: After services are rendered, immediately update Kaspa node sync status
-            // This prevents flickering between Docker status and actual sync status
+            // Fetch fresh sync status, update cache, then patch card if anything changed
             if (this.kaspaNodeInstalled) {
                 try {
                     const syncStatus = await this.api.getKaspaSyncStatus();
                     if (syncStatus) {
+                        this.lastSyncStatus = syncStatus;
                         this.ui.updateKaspaServiceCardSync(syncStatus);
                     }
                 } catch (syncError) {
-                    // Sync status update failed, but don't break the service refresh
                     console.warn('Failed to update Kaspa sync status:', syncError);
                 }
             }
         } catch (error) {
             console.error('Failed to refresh services:', error);
-            // Still update timestamp even on error to show when last attempt was made
             const timestamp = new Date().toISOString();
             this.ui.updateLastStatusCheck(timestamp);
         }
@@ -464,6 +500,7 @@ class Dashboard {
 
             // Load log-based sync status (more reliable than RPC)
             const syncStatus = await this.api.getKaspaSyncStatus();
+            this.lastSyncStatus = syncStatus; // keep cache warm
             this.ui.updateNodeSyncStatus(syncStatus);
 
             // Update Services Status card
@@ -996,42 +1033,42 @@ class Dashboard {
     async refreshServiceStatus() {
         try {
             const response = await this.api.getServiceStatus();
-            
+
             // Update last status check timestamp (Requirements 7.8)
             const timestamp = new Date().toISOString();
             this.ui.updateLastStatusCheck(timestamp);
-            
+
             // Check if no installation detected
             if (response.noInstallation) {
                 this.ui.showNoInstallation();
                 return;
             }
-            
-            // Normal service display
-            const services = response.services || response;
+
+            // Apply cached sync status before rendering to avoid the flash
+            // where the card briefly shows the raw health-check state.
+            const rawServices = response.services || response;
+            const services = this.applyKaspaSyncToServices(
+                Array.isArray(rawServices) ? rawServices : []
+            );
             this.ui.updateServices(services, this.currentFilter);
 
-            // Check if kaspa-node is among the installed services
-            const serviceList = Array.isArray(services) ? services : [];
-            this.kaspaNodeInstalled = serviceList.some(s => s.name === 'kaspa-node');
+            this.kaspaNodeInstalled = services.some(s => s.name === 'kaspa-node');
             this.ui.setNodePanelVisible(this.kaspaNodeInstalled);
 
-            // IMPORTANT: After services are rendered, immediately update Kaspa node sync status
-            // This prevents flickering between Docker status and actual sync status
+            // Fetch fresh sync status, update cache, then patch card
             if (this.kaspaNodeInstalled) {
                 try {
                     const syncStatus = await this.api.getKaspaSyncStatus();
                     if (syncStatus) {
+                        this.lastSyncStatus = syncStatus;
                         this.ui.updateKaspaServiceCardSync(syncStatus);
                     }
                 } catch (syncError) {
-                    // Sync status update failed, but don't break the service refresh
                     console.warn('Failed to update Kaspa sync status:', syncError);
                 }
             }
         } catch (error) {
             console.error('Failed to refresh service status:', error);
-            // Still update timestamp even on error to show when last attempt was made
             const timestamp = new Date().toISOString();
             this.ui.updateLastStatusCheck(timestamp);
         }
