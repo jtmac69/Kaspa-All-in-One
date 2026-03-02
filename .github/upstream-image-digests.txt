@@ -1,4 +1,4 @@
 # Auto-updated by check-upstream-images workflow — do not edit manually
-# Last checked: 2026-02-23T09:45:23Z
+# Last checked: 2026-03-02T09:39:53Z
 kasia-indexer=sha256:1fbc2a670a643a155b9c2e6243afa409bceea79e8d577e51bb5d5d1f4fbf2468
-simply-kaspa-indexer=sha256:9d0001e2e54412e1e93538976733e4c238e4d26ab243ade70a9280b74f133bee
+simply-kaspa-indexer=sha256:59c6a97567cf74b3e539ededeb2383e899942871fd48254baef0b9f347fef510
