@@ -156,7 +156,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Download installer artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           # Explicitly name the three installer artifacts; pattern:"*" also
           # matches internal .dockerbuild cache artifacts which are not
