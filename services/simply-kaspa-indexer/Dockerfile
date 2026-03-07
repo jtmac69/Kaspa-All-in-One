@@ -1,10 +1,10 @@
 # Simply Kaspa Indexer - Use official pre-built image
 # Official images: https://hub.docker.com/r/supertypo/simply-kaspa-indexer
 
-ARG SIMPLY_KASPA_VERSION=latest
+ARG SIMPLY_KASPA_VERSION=v2.0.0
 
 # Use the official pre-built image
-FROM supertypo/simply-kaspa-indexer:latest
+FROM supertypo/simply-kaspa-indexer:${SIMPLY_KASPA_VERSION}
 
 # Copy wait-for-db script (must be executable before copying)
 COPY --chmod=755 wait-for-db.sh /app/
@@ -15,4 +15,4 @@ COPY --chmod=755 wait-for-db.sh /app/
 # Listen on 0.0.0.0:3000 to be accessible from outside the container
 WORKDIR /app
 ENTRYPOINT []
-CMD ["sh", "-c", "/app/wait-for-db.sh && /usr/local/bin/simply-kaspa-indexer --database-url \"$DATABASE_URL\" --listen 0.0.0.0:3000"]
+CMD ["sh", "-c", "/app/wait-for-db.sh && /usr/local/bin/simply-kaspa-indexer --database-url \"$DATABASE_URL\" --listen 0.0.0.0:8080"]

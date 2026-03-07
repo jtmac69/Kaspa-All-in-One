@@ -16,7 +16,8 @@ retry_attempts = 3
 retry_delay_seconds = 5
 
 [batch_processing.transactions]
-# Transaction processing configuration
+# v2.0.0+: transactions table includes inputs/outputs as denormalized array columns
+# Previously separate transaction_inputs/transaction_outputs tables are gone
 batch_size = 1000  # Optimal for TimescaleDB COPY operations
 parallel_workers = 4
 queue_size = 10000
@@ -24,20 +25,6 @@ timeout_seconds = 300
 retry_attempts = 3
 retry_delay_seconds = 5
 use_copy_command = true  # Use PostgreSQL COPY for bulk inserts
-
-[batch_processing.transaction_inputs]
-batch_size = 5000  # Larger batches for inputs
-parallel_workers = 2
-queue_size = 20000
-timeout_seconds = 300
-use_copy_command = true
-
-[batch_processing.transaction_outputs]
-batch_size = 5000  # Larger batches for outputs
-parallel_workers = 2
-queue_size = 20000
-timeout_seconds = 300
-use_copy_command = true
 
 [batch_processing.addresses]
 # Address updates (less frequent)

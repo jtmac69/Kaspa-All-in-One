@@ -1520,7 +1520,7 @@ ${portsYaml}
     // Fetch latest release from GitHub
     const indexerRelease = await this._fetchLatestGitHubRelease(
       'supertypo/simply-kaspa-indexer',
-      'v1.6.1'  // Fallback version if fetch fails
+      'v2.0.0'  // Fallback version if fetch fails
     );
     
     console.log(`[ConfigGenerator] Using supertypo/simply-kaspa-indexer:${indexerRelease} for simply-kaspa-indexer`);

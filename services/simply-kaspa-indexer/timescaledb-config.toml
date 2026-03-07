@@ -1,5 +1,7 @@
 # Simply Kaspa Indexer TimescaleDB Configuration
 # Optimized for Kaspa's 10 blocks/second rate (864,000 blocks/day)
+# Schema note: v2.0.0+ uses denormalized transactions table with inputs/outputs
+# as array columns (transactions_inputs[] and transactions_outputs[])
 
 [database]
 # TimescaleDB connection settings
@@ -22,26 +24,11 @@ compress_after_hours = 2
 compression_enabled = true
 
 [hypertables.transactions]
+# v2.0.0+: transactions includes inputs/outputs as denormalized array columns
 enabled = true
 chunk_interval_minutes = 15  # High frequency, smaller chunks
-time_column = "created_at"
-partition_column = "created_at"
-compress_after_hours = 2
-compression_enabled = true
-
-[hypertables.transaction_inputs]
-enabled = true
-chunk_interval_minutes = 15
-time_column = "created_at"
-partition_column = "created_at"
-compress_after_hours = 2
-compression_enabled = true
-
-[hypertables.transaction_outputs]
-enabled = true
-chunk_interval_minutes = 15
-time_column = "created_at"
-partition_column = "created_at"
+time_column = "block_time"
+partition_column = "block_time"
 compress_after_hours = 2
 compression_enabled = true
 
@@ -67,7 +54,7 @@ enabled = true
 compress_after_hours = 2
 compression_algorithm = "lz4"  # Fast compression, good ratio
 segment_by_columns = ["block_hash", "transaction_id"]
-order_by_columns = ["created_at DESC"]
+order_by_columns = ["block_time DESC"]
 
 # Compression policies per table
 [compression.blocks]
@@ -76,19 +63,10 @@ segment_by = ["hash"]
 order_by = ["created_at DESC", "daa_score DESC"]
 
 [compression.transactions]
+# v2.0.0+: inputs and outputs are denormalized array columns in this table
 compress_after_hours = 2
-segment_by = ["block_hash"]
-order_by = ["created_at DESC", "block_time DESC"]
-
-[compression.transaction_inputs]
-compress_after_hours = 2
-segment_by = ["transaction_id"]
-order_by = ["created_at DESC"]
-
-[compression.transaction_outputs]
-compress_after_hours = 2
-segment_by = ["transaction_id"]
-order_by = ["created_at DESC", "output_index"]
+segment_by = ["block_time"]
+order_by = ["block_time DESC"]
 
 [compression.addresses]
 compress_after_hours = 24
@@ -140,15 +118,7 @@ retention_days = 0  # Keep all blocks by default
 
 [retention.transactions]
 enabled = false
-retention_days = 0  # Keep all transactions by default
-
-[retention.transaction_inputs]
-enabled = false
-retention_days = 365  # Can be enabled for personal mode
-
-[retention.transaction_outputs]
-enabled = false
-retention_days = 365  # Can be enabled for personal mode
+retention_days = 0  # Keep all transactions by default (includes inputs/outputs)
 
 [retention.addresses]
 enabled = false
@@ -167,21 +137,10 @@ blue_score_index = true
 previous_hash_index = true
 
 [indexes.transactions]
+# v2.0.0+: inputs and outputs are array columns, indexed via GIN indexes
 block_hash_index = true
 block_time_index = true
-value_index = true
 transaction_id_index = true
-
-[indexes.transaction_inputs]
-transaction_id_index = true
-address_index = true
-outpoint_index = true
-
-[indexes.transaction_outputs]
-transaction_id_index = true
-address_index = true
-value_index = true
-unspent_index = true
 
 [indexes.addresses]
 balance_index = true
