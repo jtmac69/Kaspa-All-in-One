@@ -1,6 +1,6 @@
 {
   "name": "kaspa-aio-tray",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "Kaspa AIO system tray controller",
   "main": "main.js",
   "scripts": {

@@ -1,4 +1,4 @@
-# Known Issues - v0.9.2
+# Known Issues - v0.9.3
 
 ## Quick Reference
 
@@ -818,7 +818,7 @@ Found a bug not listed here? Please report it!
 
 ---
 
-**Note**: This is v0.9.2. Known issues are expected and help improve the system before the v1.0 production release. Thank you for your patience and feedback!
+**Note**: This is v0.9.3. Known issues are expected and help improve the system before the v1.0 production release. Thank you for your patience and feedback!
 
 
 ---
