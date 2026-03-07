@@ -1311,7 +1311,7 @@ class ConfigGenerator {
     // Fetch latest release from GitHub
     const kaspaVersion = await this._fetchLatestGitHubRelease(
       'kaspanet/rusty-kaspa',
-      'v1.0.1'  // Fallback to known stable version
+      'v1.1.0'  // Fallback to known stable version
     );
 
     // Use versioned Docker image
@@ -1368,7 +1368,7 @@ ${portsYaml}
       // Fetch latest release from GitHub (same as kaspa-node)
       const kaspaRelease = await this._fetchLatestGitHubRelease(
         'kaspanet/rusty-kaspa',
-        'v1.0.1'  // Fallback version if fetch fails
+        'v1.1.0'  // Fallback version if fetch fails
       );
 
       console.log(`[ConfigGenerator] Generating kaspa-archive-node service:`);
