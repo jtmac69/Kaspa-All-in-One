@@ -78,92 +78,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  build-installers:
-    name: Build Installer (${{ matrix.name }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: linux-deb
-            os: ubuntu-latest
-            dist_script: dist:linux
-            artifact_pattern: "services/tray/dist/*.deb"
-
-          - name: macos-dmg
-            os: macos-latest
-            dist_script: dist:mac
-            artifact_pattern: "services/tray/dist/*.dmg"
-
-          - name: windows-exe
-            os: windows-latest
-            dist_script: dist:win
-            artifact_pattern: "services/tray/dist/*.exe"
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-
-      - name: Install tray dependencies
-        run: npm install
-        working-directory: services/tray
-
-      - name: Create placeholder icons (if real icons not present)
-        if: runner.os != 'macOS'
-        run: node scripts/create-placeholder-icons.js
-        working-directory: services/tray
-
-      - name: Create placeholder icons + icns (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          node scripts/create-placeholder-icons.js
-          bash scripts/create-icns.sh
-        working-directory: services/tray
-
-      - name: Build installer
-        run: npm run ${{ matrix.dist_script }}
-        working-directory: services/tray
-        env:
-          # Code signing — silently skipped by electron-builder when not set.
-          # Configure these secrets in GitHub repository settings for signed releases.
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-
-      - name: Upload installer artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ matrix.name }}
-          path: ${{ matrix.artifact_pattern }}
-          if-no-files-found: error
-
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    # Only gate on build-installers — Docker image publishing runs in parallel
-    # and can take 1-2h for arm64 QEMU builds. The GitHub Release (tarball +
-    # installers) should not be blocked by image publishing.
-    needs: [build-installers]
+    # Runs in parallel with publish-images (Docker image publishing can take
+    # 1-2h for arm64 QEMU builds). Installers are built and uploaded to the
+    # release by the separate build-installers.yml workflow.
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v6
-
-      - name: Download installer artifacts
-        uses: actions/download-artifact@v8
-        with:
-          # Explicitly name the three installer artifacts; pattern:"*" also
-          # matches internal .dockerbuild cache artifacts which are not
-          # downloadable and cause the step to fail.
-          pattern: "{linux-deb,macos-dmg,windows-exe}"
-          path: release-artifacts
-          merge-multiple: true
 
       - name: Build release tarball
         run: |
@@ -179,21 +103,19 @@ jobs:
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "ARCHIVE=${ARCHIVE}" >> "$GITHUB_ENV"
 
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Collect installer files into an array to avoid word-splitting on paths with spaces
-          # and to catch the case where build-installers produced no output files.
-          mapfile -t INSTALLERS < <(find release-artifacts/ \( -name "*.deb" -o -name "*.dmg" -o -name "*.exe" \) 2>/dev/null | sort)
-          echo "Found ${#INSTALLERS[@]} installer(s): ${INSTALLERS[*]:-none}"
-          if [ "${#INSTALLERS[@]}" -eq 0 ]; then
-            echo "Error: no installer files found in release-artifacts/ — aborting release." >&2
-            exit 1
-          fi
+          # build-installers.yml may have already created the release when it
+          # uploaded installer artifacts via softprops/action-gh-release.
+          # Try to create; fall back to uploading the tarball to the existing release.
           gh release create "$GITHUB_REF_NAME" \
             --generate-notes \
             --repo "$GITHUB_REPOSITORY" \
             "kaspa-aio-${VERSION}.tar.gz" \
             "kaspa-aio-${VERSION}.tar.gz.sha256" \
-            "${INSTALLERS[@]}"
+          || gh release upload "$GITHUB_REF_NAME" \
+            "kaspa-aio-${VERSION}.tar.gz" \
+            "kaspa-aio-${VERSION}.tar.gz.sha256" \
+            --clobber
