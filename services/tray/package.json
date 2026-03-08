@@ -23,6 +23,10 @@
     "name": "Kaspa AIO Contributors",
     "email": "noreply@github.com"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jtmac69/Kaspa-All-in-One.git"
+  },
   "homepage": "https://github.com/jtmac69/Kaspa-All-in-One",
   "license": "MIT"
 }
