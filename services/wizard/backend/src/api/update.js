@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
 const path = require('path');
-const { execFile } = require('child_process');
+const { execFile, exec } = require('child_process');
 const { promisify } = require('util');
 const https = require('https');
 const DockerManager = require('../utils/docker-manager');
@@ -10,6 +10,24 @@ const StateManager = require('../utils/state-manager');
 const { authenticateToken } = require('../middleware/security');
 
 const execFileAsync = promisify(execFile);
+const execAsync = promisify(exec);
+
+// External Docker services with upstream GitHub repos for version tracking.
+// Only services using a versioned image tag (not 'latest' / 'main') are listed.
+const TRACKED_DOCKER_SERVICES = [
+  {
+    service: 'kaspa-node',
+    displayName: 'Kaspa Node',
+    containerName: 'kaspa-node',
+    githubRepo: 'kaspanet/rusty-kaspa',
+  },
+  {
+    service: 'simply-kaspa-indexer',
+    displayName: 'Simply Kaspa Indexer',
+    containerName: 'simply-kaspa-indexer',
+    githubRepo: 'supertypo/simply-kaspa-indexer',
+  },
+];
 
 // Extract [WARNING]/[ERROR] lines from shell script stdout for inclusion in API responses.
 // The update scripts write all log output (including [ERROR]) to stdout via echo, not stderr.
@@ -484,7 +502,95 @@ function isNewer(available, current) {
 }
 
 /**
+ * Get the image tag of a running Docker container.
+ * Returns null if the container is not running or not found.
+ */
+async function getContainerImageVersion(containerName) {
+  try {
+    const { stdout } = await execAsync(
+      `docker inspect ${containerName} --format='{{.Config.Image}}'`,
+      { timeout: 5000 }
+    );
+    const image = stdout.trim().replace(/^'|'$/g, '');
+    const tagMatch = image.match(/:([^:/]+)$/);
+    return tagMatch ? tagMatch[1] : null;
+  } catch {
+    return null; // container not running or Docker unavailable
+  }
+}
+
+/**
+ * Fetch the latest release for an arbitrary GitHub repo using the same https module.
+ */
+function fetchGitHubRelease(repo) {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.github.com',
+      path: `/repos/${repo}/releases/latest`,
+      headers: {
+        'User-Agent': 'Kaspa-AIO-Wizard/1.0',
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    };
+    const req = https.get(options, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try {
+          if (res.statusCode === 404) { reject(new Error(`${repo}: no releases found (404)`)); return; }
+          if (res.statusCode === 403) { reject(new Error('GitHub API rate limit exceeded (403)')); return; }
+          if (res.statusCode === 429) { reject(new Error('GitHub API secondary rate limit (429)')); return; }
+          if (res.statusCode < 200 || res.statusCode >= 300) { reject(new Error(`GitHub API status ${res.statusCode}`)); return; }
+          resolve(JSON.parse(data));
+        } catch (e) {
+          reject(new Error(`Invalid JSON from GitHub API: ${e.message}`));
+        }
+      });
+    });
+    req.on('error', (rawErr) => reject(new Error(`Failed to reach GitHub API (${rawErr.code || rawErr.message}): ${rawErr.message}`)));
+    req.setTimeout(10000, () => { req.destroy(); reject(new Error('GitHub API timeout')); });
+  });
+}
+
+/**
+ * Check running Docker service versions against their upstream GitHub releases.
+ * Individual service failures are logged as warnings and skipped.
+ */
+async function checkDockerServiceUpdates() {
+  const updates = [];
+  for (const svc of TRACKED_DOCKER_SERVICES) {
+    try {
+      const currentTag = await getContainerImageVersion(svc.containerName);
+      if (!currentTag || currentTag === 'latest' || currentTag === 'main') continue;
+
+      const release = await fetchGitHubRelease(svc.githubRepo);
+      if (!release.tag_name || release.prerelease || release.draft) continue;
+
+      const availableVersion = cleanVersion(release.tag_name);
+      if (!isNewer(availableVersion, currentTag)) continue;
+
+      const breaking = /breaking change|breaking:|incompatible|migration required|major version/i.test(release.body || '');
+      updates.push({
+        service: svc.service,
+        serviceName: svc.displayName,
+        currentVersion: currentTag,
+        availableVersion,
+        updateAvailable: true,
+        changelog: (release.body || '').substring(0, 500),
+        breaking,
+        releaseDate: release.published_at,
+        htmlUrl: release.html_url
+      });
+    } catch (err) {
+      console.warn(`[update] Skipping ${svc.service} version check: ${err.message}`);
+    }
+  }
+  return updates;
+}
+
+/**
  * Check for available kaspa-aio updates against real GitHub releases.
+ * Also checks tracked Docker service versions (kaspa-node, simply-kaspa-indexer).
  * Pass currentVersion to avoid re-reading installation-state.json when the caller already has it.
  */
 async function checkForUpdates(currentVersion) {
@@ -515,28 +621,29 @@ async function checkForUpdates(currentVersion) {
     throw new Error('GitHub API returned a release with no tag_name — the release may be malformed');
   }
 
+  let aioUpdates = [];
   if (release.prerelease || release.draft) {
     console.warn(`[update] Latest release is a ${release.draft ? 'draft' : 'pre-release'} — skipping update notification`);
-    return [];
+  } else {
+    const availableVersion = cleanVersion(release.tag_name);
+    if (isNewer(availableVersion, currentVersion)) {
+      aioUpdates = [{
+        service: 'kaspa-aio',
+        serviceName: 'Kaspa All-in-One',
+        currentVersion,
+        availableVersion,
+        updateAvailable: true,
+        changelog: (release.body || '').substring(0, 500),
+        breaking: /breaking change|breaking:|incompatible|migration required|major version/i.test(release.body || ''),
+        releaseDate: release.published_at,
+        htmlUrl: release.html_url
+      }];
+    }
   }
 
-  const availableVersion = cleanVersion(release.tag_name);
-
-  if (!isNewer(availableVersion, currentVersion)) {
-    return [];
-  }
-
-  return [{
-    service: 'kaspa-aio',
-    serviceName: 'Kaspa All-in-One',
-    currentVersion,
-    availableVersion,
-    updateAvailable: true,
-    changelog: (release.body || '').substring(0, 500),
-    breaking: /breaking change|breaking:|incompatible|migration required|major version/i.test(release.body || ''),
-    releaseDate: release.published_at,
-    htmlUrl: release.html_url
-  }];
+  // Check Docker service versions — failures are non-fatal
+  const serviceUpdates = await checkDockerServiceUpdates();
+  return [...aioUpdates, ...serviceUpdates];
 }
 
 /**

@@ -1,6 +1,26 @@
 const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const execAsync = promisify(exec);
+
+// External Docker services with upstream GitHub repos for version tracking.
+// Only services that use a versioned image tag (not 'latest' / 'main') are listed.
+const TRACKED_DOCKER_SERVICES = [
+    {
+        service: 'kaspa-node',
+        displayName: 'Kaspa Node',
+        containerName: 'kaspa-node',
+        githubRepo: 'kaspanet/rusty-kaspa',
+    },
+    {
+        service: 'simply-kaspa-indexer',
+        displayName: 'Simply Kaspa Indexer',
+        containerName: 'simply-kaspa-indexer',
+        githubRepo: 'supertypo/simply-kaspa-indexer',
+    },
+];
 
 class UpdateMonitor {
     constructor() {
@@ -46,11 +66,11 @@ class UpdateMonitor {
             const currentVersion = await this.getInstalledVersion();
             const latestRelease = await this.getLatestGitHubRelease(this.repo);
 
+            let aioUpdates = [];
             if (latestRelease.prerelease || latestRelease.draft) {
                 console.warn(`[UpdateMonitor] Latest release ${latestRelease.version} is a ${latestRelease.draft ? 'draft' : 'pre-release'} — skipping update notification`);
-                result = [];
-            } else {
-                result = this.isNewer(latestRelease.version, currentVersion) ? [{
+            } else if (this.isNewer(latestRelease.version, currentVersion)) {
+                aioUpdates = [{
                     service: 'kaspa-aio',
                     serviceName: 'Kaspa All-in-One',
                     currentVersion,
@@ -60,8 +80,12 @@ class UpdateMonitor {
                     releaseDate: latestRelease.publishedAt,
                     htmlUrl: latestRelease.htmlUrl,
                     priority: this.calculateUpdatePriority(latestRelease)
-                }] : [];
+                }];
             }
+
+            // Check each tracked Docker service — failures are non-fatal (logged as warnings)
+            const serviceUpdates = await this.checkDockerServiceUpdates();
+            result = [...aioUpdates, ...serviceUpdates];
         } catch (error) {
             await this.saveLastCheckTime().catch(err => {
                 console.error('checkForUpdates: failed to persist last-check timestamp:', err.message);
@@ -73,6 +97,61 @@ class UpdateMonitor {
         // (saveLastCheckTime has its own internal catch and never throws)
         await this.saveLastCheckTime();
         return result;
+    }
+
+    /**
+     * Get the image tag of a running Docker container.
+     * Returns null if the container is not running or not found.
+     */
+    async getContainerImageVersion(containerName) {
+        try {
+            const { stdout } = await execAsync(
+                `docker inspect ${containerName} --format='{{.Config.Image}}'`,
+                { timeout: 5000 }
+            );
+            const image = stdout.trim().replace(/^'|'$/g, '');
+            const tagMatch = image.match(/:([^:/]+)$/);
+            return tagMatch ? tagMatch[1] : null;
+        } catch {
+            return null; // container not running or Docker unavailable
+        }
+    }
+
+    /**
+     * Check each entry in TRACKED_DOCKER_SERVICES for available upstream updates.
+     * Individual service failures are logged as warnings and skipped — they do not
+     * throw or affect the overall update check result.
+     */
+    async checkDockerServiceUpdates() {
+        const updates = [];
+        for (const svc of TRACKED_DOCKER_SERVICES) {
+            try {
+                const currentTag = await this.getContainerImageVersion(svc.containerName);
+                // Skip containers that are not running or use floating tags
+                if (!currentTag || currentTag === 'latest' || currentTag === 'main') continue;
+
+                const latestRelease = await this.getLatestGitHubRelease(svc.githubRepo);
+                if (latestRelease.prerelease || latestRelease.draft) continue;
+
+                if (this.isNewer(latestRelease.version, currentTag)) {
+                    updates.push({
+                        service: svc.service,
+                        serviceName: svc.displayName,
+                        currentVersion: currentTag,
+                        availableVersion: latestRelease.version,
+                        updateAvailable: true,
+                        changelog: latestRelease.changelog,
+                        breaking: this.detectBreakingChanges(latestRelease),
+                        releaseDate: latestRelease.publishedAt,
+                        htmlUrl: latestRelease.htmlUrl,
+                        priority: this.calculateUpdatePriority(latestRelease)
+                    });
+                }
+            } catch (err) {
+                console.warn(`[UpdateMonitor] Skipping ${svc.service} version check: ${err.message}`);
+            }
+        }
+        return updates;
     }
 
     async getLatestGitHubRelease(repo) {

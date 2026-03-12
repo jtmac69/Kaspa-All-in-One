@@ -1281,10 +1281,10 @@ async function showUpdateInterface(updates) {
                             <div class="update-versions">
                                 <span class="current-version">${update.currentVersion}</span>
                                 <span class="arrow">→</span>
-                                <span class="new-version">${update.latestVersion}</span>
+                                <span class="new-version">${update.availableVersion}</span>
                             </div>
                             <div class="update-details">
-                                <button class="btn-link" onclick="showChangelog('${update.service}', '${update.latestVersion}')">
+                                <button class="btn-link" onclick="showChangelog('${update.service}', '${update.availableVersion}')">
                                     View Changelog
                                 </button>
                             </div>
