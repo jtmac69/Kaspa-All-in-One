@@ -20,7 +20,7 @@ jobs:
 
       - name: Check for stable kaspa 1.1.0+ release
         id: check
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             // Fetch releases from kaspanet/rusty-kaspa
@@ -52,7 +52,7 @@ jobs:
 
       - name: Close issue #28 and update KNOWN_ISSUES.md
         if: steps.check.outputs.stable_found == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const tag  = '${{ steps.check.outputs.stable_tag }}';
