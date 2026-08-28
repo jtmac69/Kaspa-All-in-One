@@ -7,7 +7,7 @@
 # compilation produces platform-independent static web files, so the builder
 # always runs natively regardless of the final image target platform.
 # The final nginx stage uses the target platform natively.
-FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
+FROM --platform=$BUILDPLATFORM node:26-alpine AS builder
 
 WORKDIR /app
 
